@@ -1169,6 +1169,31 @@ export function initLanderGame(root: HTMLElement) {
       audio.stopThrust();
       music.duck(false);
     }
+    // v12 Commit 4: track continuous-thrust duration for the flame's
+    // ramp-in (drawShip's thrustT = min(1, thrustHeldT / 0.25)).
+    thrustHeldT = ship.thrusting ? thrustHeldT + dt : 0;
+
+    // v12 Commit 9: critters brace and kick up dust when the ship thrusts
+    // within 55px of them. Cheap at <=6 critters; particle emission is
+    // owned by main.ts (world.ts's drawCritters is render-only, I1).
+    if (ship.thrusting) {
+      for (const critter of critters) {
+        if (Math.hypot(critter.x - ship.x, critter.baseY - ship.y) < 55) {
+          for (let i = 0; i < emitCount(2); i++) {
+            particlePool.alloc(
+              critter.x + (Math.random() - 0.5) * 4,
+              critter.baseY - 1,
+              (Math.random() - 0.5) * 50,
+              -(10 + Math.random() * 20),
+              Math.random() > 0.5 ? 'rgba(185,164,128,0.5)' : 'rgba(122,100,70,0.5)',
+              0.4 + Math.random() * 0.3,
+              (1.5 + Math.random() * 1.5) * S,
+              14
+            );
+          }
+        }
+      }
+    }
     // Dyson Sail — always-on regen regardless of thrust state (§7 table:
     // "+4 fuel/s regen ALWAYS (even thrusting)").
     if (stats.sailRegen > 0) {
@@ -1416,6 +1441,7 @@ export function initLanderGame(root: HTMLElement) {
     if (stats.phoenixCharges > phoenixUsed) {
       phoenixUsed += 1;
       explode();
+      hitStopT = 0.07;
       phoenixFlashT = 0.9;
       ship.x = width * 0.5;
       ship.y = height * 0.12;
@@ -1429,6 +1455,7 @@ export function initLanderGame(root: HTMLElement) {
     }
     runStats.crashes += 1;
     explode();
+    hitStopT = 0.07;
     audio.crash();
     state = 'crashed';
     crashTimerId = window.setTimeout(showCrashScreen, 600);
@@ -1487,6 +1514,8 @@ export function initLanderGame(root: HTMLElement) {
       if (completed > bestFor(difficulty)) saveBest(difficulty, completed);
       audio.landingSuccess();
       confetti();
+      emitLandingDustRing(groundY);
+      hitStopT = 0.04;
 
       // Stardust payout — deeper levels and harder modes pay more. Credited
       // once per level advanced (Big Crunch: both/all levels get paid).

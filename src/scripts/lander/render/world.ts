@@ -74,70 +74,124 @@ export function drawAsteroids(ctx: CanvasRenderingContext2D, asteroids: Asteroid
   }
 }
 
-export function drawCritters(ctx: CanvasRenderingContext2D, critters: Critter[], t: number) {
+// v12 Commit 9: shaded, grounded, ambiently alive, and ship-aware. Purely
+// render-side (I1/§9 steelman #9 in the plan) — the only gameplay-adjacent
+// addition is the ship-thrusting dust kick, which lives in main.ts's step()
+// (this module never emits particles). `shipX`/`shipY`/`shipThrusting`
+// default to values that put every critter "far away" so callers that
+// haven't been updated still render the plain idle pose; `celebrateT`
+// defaults to 0 (no landing celebration in progress).
+export function drawCritters(
+  ctx: CanvasRenderingContext2D, critters: Critter[], t: number,
+  shipX = -1e6, shipY = -1e6, shipThrusting = false, celebrateT = 0
+) {
   const c = ctx;
   for (const critter of critters) {
     const bob = Math.sin(t * 1.6 + critter.phase) * 1.1;
+    const dist = Math.hypot(critter.x - shipX, critter.baseY - shipY);
+    const aware = dist < 120;
+    const braced = shipThrusting && dist < 55;
+    const celebrating = celebrateT > 0 && dist < 200;
+
+    // Landing celebration pose — pure math off celebrateT (1.25 -> 0), no
+    // new state.
+    const celebrateProgress = celebrating ? 1 - celebrateT / 1.25 : 0;
+    const hop = celebrating ? Math.max(0, Math.sin(celebrateProgress * Math.PI * 3)) * 2 : 0;
+    const spin = celebrating ? celebrateProgress * Math.PI * 2 : 0;
+
+    // Ship-awareness lean/squash — cows raise their head toward the ship;
+    // scurriers turn away and lean (pre-flee pose); both squash 15%
+    // vertically when braced in the thruster wash.
+    const shipDir = aware ? Math.sign(shipX - critter.x) || 1 : critter.facing;
+    const squashY = braced ? 0.85 : 1;
+
     c.save();
-    c.translate(critter.x, critter.baseY + bob);
-    c.scale(critter.facing * 1.2, 1.2);
+    c.translate(critter.x, critter.baseY + bob - hop);
+    c.scale(critter.facing * 1.2, 1.2 * squashY);
+
     if (critter.kind === 'cow') {
-      c.strokeStyle = '#3B2C16';
-      c.lineWidth = 1.1;
-      [-4, -1.6, 1.6, 4].forEach((lx) => {
+      // Idle life: tail swish (continuous), occasional ear flick, occasional
+      // grazing head-dip — all phase-driven, no stored state.
+      const tailSwish = Math.sin(t * 2.2 + critter.phase) * 0.3;
+      const earFlick = Math.sin(t * 1.5 + critter.phase * 3) > 0.92 ? 1 : 0;
+      const grazeDip = Math.sin(t * 0.4 + critter.phase * 5) > 0.85 ? 1.1 : 0;
+      // Awareness: head raises toward the ship (offset shipward + tracks).
+      const headShift = aware ? shipDir * critter.facing * 1.5 : 0;
+
+      metalStroke(c, () => {
         c.beginPath();
-        c.moveTo(lx, 3.2);
-        c.lineTo(lx, 7);
-        c.stroke();
-      });
-      c.beginPath();
-      c.ellipse(0, 0, 7, 4.4, 0, 0, Math.PI * 2);
-      c.fillStyle = '#B9A480';
-      c.fill();
-      c.stroke();
+        c.moveTo(-4, 3.2); c.lineTo(-4 + tailSwish, 7);
+        c.moveTo(-1.6, 3.2); c.lineTo(-1.6, 7);
+        c.moveTo(1.6, 3.2); c.lineTo(1.6, 7);
+        c.moveTo(4, 3.2); c.lineTo(4, 7);
+      }, '#3B2C16');
+
+      const bodyPath = () => { c.beginPath(); c.ellipse(0, grazeDip * 0.6, 7, 4.4, 0, 0, Math.PI * 2); };
+      litFill(c, bodyPath, '#B9A480', 0.14);
+      metalStroke(c, bodyPath, '#B9A480');
+
       c.fillStyle = '#7C8F5C';
-      c.beginPath(); c.ellipse(-2, -1, 1.6, 1.2, 0.4, 0, Math.PI * 2); c.fill();
-      c.beginPath(); c.ellipse(3, 1, 1.3, 1, -0.3, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.ellipse(-2, -1 + grazeDip * 0.6, 1.6, 1.2, 0.4, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.ellipse(3, 1 + grazeDip * 0.6, 1.3, 1, -0.3, 0, Math.PI * 2); c.fill();
+
+      const headPath = () => { c.beginPath(); c.ellipse(6.8 + headShift, -1.5 - grazeDip + (aware ? -0.4 : 0), 2.5, 2.1, 0, 0, Math.PI * 2); };
+      litFill(c, headPath, '#B9A480', 0.14);
+      metalStroke(c, headPath, '#B9A480');
+
       c.beginPath();
-      c.ellipse(6.8, -1.5, 2.5, 2.1, 0, 0, Math.PI * 2);
-      c.fillStyle = '#B9A480';
-      c.fill();
-      c.stroke();
-      c.beginPath();
-      c.moveTo(6.2, -3.3); c.lineTo(5.2, -6.2);
-      c.moveTo(8.2, -3.1); c.lineTo(9.2, -6.2);
+      c.moveTo(6.2 + headShift, -3.3 - grazeDip); c.lineTo(5.2 + headShift + earFlick * 0.6, -6.2 - grazeDip);
+      c.moveTo(8.2 + headShift, -3.1 - grazeDip); c.lineTo(9.2 + headShift - earFlick * 0.6, -6.2 - grazeDip);
       c.strokeStyle = '#3B2C16';
       c.lineWidth = 0.7;
       c.stroke();
       c.fillStyle = '#94B03D';
-      c.beginPath(); c.arc(5.2, -6.6, 0.9, 0, Math.PI * 2); c.fill();
-      c.beginPath(); c.arc(9.2, -6.6, 0.9, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(5.2 + headShift, -6.6 - grazeDip, 0.9, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(9.2 + headShift, -6.6 - grazeDip, 0.9, 0, Math.PI * 2); c.fill();
       c.fillStyle = '#221808';
-      c.beginPath(); c.arc(7.8, -1.8, 0.55, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(7.8 + headShift, -1.8 - grazeDip + (aware ? -0.4 : 0), 0.55, 0, Math.PI * 2); c.fill();
     } else {
-      c.beginPath();
-      c.arc(0, 0, 2.8, 0, Math.PI * 2);
-      c.fillStyle = '#7C8F5C';
-      c.fill();
+      // Scurrier idle life: leg-scuttle shuffle bursts + antennae-eye blink.
+      const burstPhase = (t * 0.3 + critter.phase) % 3;
+      const scuttling = burstPhase < 0.4 ? 1 : 0;
+      const jitter = scuttling ? Math.sin(t * 6 * Math.PI * 2) * 2 : 0;
+      const blinkPhase = (t + critter.phase * 7) % 3;
+      const blinking = blinkPhase < 0.06;
+      // Awareness: turns away from the ship and leans (pre-flee pose).
+      const leanX = aware ? -shipDir * critter.facing * Math.sin(0.14) * 3 : 0;
+      const leanRot = aware ? -shipDir * critter.facing * 0.14 : 0;
+
+      c.rotate(leanRot + spin);
+      const bodyPath = () => { c.beginPath(); c.arc(jitter + leanX, 0, 2.8, 0, Math.PI * 2); };
+      litFill(c, bodyPath, '#7C8F5C', 0.14);
+      metalStroke(c, bodyPath, '#7C8F5C');
+
       c.strokeStyle = '#3B2C16';
       c.lineWidth = 0.7;
+      c.beginPath();
+      c.moveTo(-1.8 + jitter + leanX, 2); c.lineTo(-2.8 + jitter + leanX, 4);
+      c.moveTo(1.8 + jitter + leanX, 2); c.lineTo(2.8 + jitter + leanX, 4);
       c.stroke();
       c.beginPath();
-      c.moveTo(-1.8, 2); c.lineTo(-2.8, 4);
-      c.moveTo(1.8, 2); c.lineTo(2.8, 4);
+      c.moveTo(-1 + leanX, -2.3); c.lineTo(-1.6 + leanX, -4.3);
+      c.moveTo(1 + leanX, -2.3); c.lineTo(1.6 + leanX, -4.3);
       c.stroke();
-      c.beginPath();
-      c.moveTo(-1, -2.3); c.lineTo(-1.6, -4.3);
-      c.moveTo(1, -2.3); c.lineTo(1.6, -4.3);
-      c.stroke();
-      c.fillStyle = '#94B03D';
-      c.beginPath(); c.arc(-1.6, -4.6, 0.65, 0, Math.PI * 2); c.fill();
-      c.beginPath(); c.arc(1.6, -4.6, 0.65, 0, Math.PI * 2); c.fill();
+      if (!blinking) {
+        c.fillStyle = '#94B03D';
+        c.beginPath(); c.arc(-1.6 + leanX, -4.6, 0.65, 0, Math.PI * 2); c.fill();
+        c.beginPath(); c.arc(1.6 + leanX, -4.6, 0.65, 0, Math.PI * 2); c.fill();
+      }
     }
     c.restore();
+
+    // Grounding — a soft contact shadow, same treatment as the ship's
+    // Commit 4 shadow, instantly seats the critter ON the terrain.
+    const shadowW = critter.kind === 'cow' ? 6 : 2.4;
+    c.beginPath();
+    c.ellipse(critter.x, critter.baseY + 1, shadowW, shadowW * 0.32, 0, 0, Math.PI * 2);
+    c.fillStyle = 'rgba(10,6,2,0.3)';
+    c.fill();
   }
 }
-
 
 // v12 Commit 6: the telegraph is now a cone aimed at the ship (instead of a
 // pulsing blob) so it reads as an aimed threat, the dome brightens while
