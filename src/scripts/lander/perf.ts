@@ -76,3 +76,37 @@ export class DegradationGuard {
     this.degradedState = false;
   }
 }
+
+// ---------------------------------------------------------------------------
+// v12 Commit 2 (§Commit 2): parallax transform math, factored out as a pure
+// function so it can be unit-tested without a canvas. `factor` is how much
+// of the camera's zoom/pan a given plane feels: 0 = screen-fixed ("infinite"
+// distance, e.g. the sky), 1 = the normal full camera transform (terrain +
+// entities). Returns the three transform steps main.ts's withParallax()
+// applies in order: translate(tx1,ty1) -> scale(z,z) -> translate(tx2,ty2).
+//
+// Identity proof at camZoom === 1: updateCamera() clamps camX/camY to
+// exactly width/2, height/2 whenever the viewport (width/camZoom) fills the
+// full level width (i.e. camZoom === 1), so (camX - width/2) and
+// (camY - height/2) are both 0 regardless of factor, making z = 1 and
+// tx2/ty2 collapse to -width/2/-height/2 for every factor — the same result
+// the existing factor-1.0 camera transform already produces. Covered by
+// __tests__/perf.test.ts.
+// ---------------------------------------------------------------------------
+export function parallaxTransform(
+  factor: number,
+  camX: number,
+  camY: number,
+  camZoom: number,
+  width: number,
+  height: number
+): { tx1: number; ty1: number; z: number; tx2: number; ty2: number } {
+  const z = 1 + (camZoom - 1) * factor;
+  return {
+    tx1: width / 2,
+    ty1: height / 2,
+    z,
+    tx2: -(width / 2 + (camX - width / 2) * factor),
+    ty2: -(height / 2 + (camY - height / 2) * factor),
+  };
+}

@@ -49,8 +49,9 @@ import { resolveReadyAbility, tickAbilityCooldowns, consumeAbilityCharge } from 
 import {
   createNoodlePile, checkNoodleSquish, applyNoodleSquish, NOODLE_SQUISH_VY, NoodlePool, decayNoodlePile,
 } from './noodles';
-import { LayerCache, blitLayers } from './render/layers';
-import { DegradationGuard } from './perf';
+import { LayerCache, blitSky, blitStars, blitRidge, blitTerrain } from './render/layers';
+import { addGlow } from './render/fx';
+import { DegradationGuard, parallaxTransform } from './perf';
 import type {
   UpgradeId, LevelConfig, Terrain, Star, Planet, Critter, Ufo, Projectile, Particle,
   ShipStats, FaceMap, Mood, GameState, Difficulty, ScoreRow, Toast, UpgradeDef, Rarity, RunStats,
@@ -348,6 +349,28 @@ export function initLanderGame(root: HTMLElement) {
   // rebuilds are additionally throttled per-tick via layerCache.tryRebuildTerrain().
   const layerCache = new LayerCache();
   // §8.5 degradation guard — EMA of frame time; halves particle emission and
+  // v12 Commit 2: parallax helper — applies a camera transform scaled by
+  // `factor` (0 = screen-fixed/infinite distance, 1 = the normal full
+  // camera transform) around the same center as the real camera. At
+  // camZoom === 1 this collapses to the identity for ANY factor (see
+  // parallaxTransform() in perf.ts / __tests__ for the pure math + proof).
+  // §Commit 7: when the degradation guard trips, all callers pass 1.0 so
+  // every plane renders in lockstep (one effective transform).
+  function withParallax(factor: number, fn: () => void) {
+    if (!ctx) return;
+    // §Commit 7 gate 1: collapse every plane to the same 1.0 (full-camera)
+    // transform under degradation — one effective transform, no per-plane
+    // drift math, matching the "single transform" acceptance criterion.
+    const effFactor = perfGuard.degraded ? 1 : factor;
+    const m = parallaxTransform(effFactor, camX, camY, camZoom, width, height);
+    ctx.save();
+    ctx.translate(m.tx1, m.ty1);
+    ctx.scale(m.z, m.z);
+    ctx.translate(m.tx2, m.ty2);
+    fn();
+    ctx.restore();
+  }
+
   // disables star twinkle under sustained load, restores when it recovers.
   const perfGuard = new DegradationGuard();
 
@@ -2240,31 +2263,22 @@ export function initLanderGame(root: HTMLElement) {
     ctx.scale(camZoom, camZoom);
     ctx.translate(-camX, -camY);
 
-    // §8.1: sky gradient + planet + ridge, star field, and terrain
-    // fill/stroke/texture were previously rebuilt from scratch every single
-    // frame (a full gradient + up to ~150-star loop + terrain polyline
-    // re-stroke + 26 texture strokes, none of which changes frame-to-frame
-    // except star twinkle phase). They're now prerendered once per
-    // loadLevel/resize into layerCache's offscreen canvases and just
-    // blitted here. Twinkle is fully disabled (single flat blit, no
-    // alternating-alpha sine work) when the §8.5 degradation guard is
-    // tripped.
-    blitLayers(ctx, layerCache, t, !perfGuard.degraded);
+    blitTerrain(ctx, layerCache);
 
     // §6.1 Noodle piles — soft rounded blob layer directly over the terrain,
     // drawn before critters/pad so they visually sit "in" the ground.
     if (noodlePile.length > 0) drawNoodlePiles(ctx, noodlePile, terrain.points);
 
-    drawCritters(ctx, critters, t);
-    drawPad(ctx, terrain, cfg, stats, t);
-    drawCanisters(ctx, canisters, t);
-    drawBonusPad(ctx, terrain, t);
+    drawCritters(ctx, critters, t, ship.x, ship.y, ship.thrusting, celebrateT);
+    drawPad(ctx, terrain, cfg, stats, t, perfGuard.degraded);
+    drawCanisters(ctx, canisters, t, perfGuard.degraded);
+    drawBonusPad(ctx, terrain, t, perfGuard.degraded);
 
     // Asteroids — pure blit; position/collision computed in the physics
     // step via entities.ts (§4.4, no gameplay mutation in the render path).
-    drawAsteroids(ctx, asteroids);
+    drawAsteroids(ctx, asteroids, simTime);
 
-    drawUfos(ctx, ufos, projectiles, stats);
+    drawUfos(ctx, ufos, projectiles, stats, ship.x, ship.y, perfGuard.degraded);
 
     // §6.3 Drones — placeholder generic look; no-op while the pool is empty.
     if (drones.length > 0) drawDrones(ctx, drones, ship.x, ship.y);
@@ -2416,6 +2430,26 @@ export function initLanderGame(root: HTMLElement) {
 
     // Scanner guidance — above the fog so it punches through it. §5.1
     // escalation: stack 1 = guidance line (as before); stack 2+ additionally
+
+    // §8.1/v12 Commit 2: sky gradient + planet + horizon glow were
+    // previously rebuilt from scratch every frame; now prerendered once per
+    // loadLevel/resize into layerCache's offscreen canvas and just blitted
+    // here. Sky sits at "infinite" distance — blitted BEFORE the camera
+    // zoom/pan transform (still inside the shake-translate, so screen shake
+    // still reads) so it never pans or zooms with the ship.
+    blitSky(ctx, layerCache);
+
+    // v12 Commit 2: parallax depth planes, each feeling a fraction of the
+    // camera's zoom/pan via withParallax's factor (0 = screen-fixed,
+    // 1 = full camera motion). Stars barely drift (0.12), the far ridge a
+    // bit more (0.3), the near ridge noticeably more (0.55) — terrain and
+    // everything else below still gets the full 1.0 transform, unchanged.
+    // Twinkle (and, per §Commit 7, the parallax itself) is disabled when
+    // the degradation guard is tripped.
+    withParallax(0.12, () => blitStars(ctx!, layerCache, t, !perfGuard.degraded));
+    withParallax(0.3, () => blitRidge(ctx!, layerCache, 'far'));
+    withParallax(0.55, () => blitRidge(ctx!, layerCache, 'near'));
+
     // projects a touchdown-forecast marker (where current vx will carry the
     // ship by the time it reaches the pad's altitude); stack 3+ widens the
     // beam glow around the guidance line.

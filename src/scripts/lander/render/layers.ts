@@ -75,6 +75,8 @@ export class LayerCache {
   skyCanvas: HTMLCanvasElement | null = null;
   starCanvasA: HTMLCanvasElement | null = null;
   starCanvasB: HTMLCanvasElement | null = null;
+  ridgeFarCanvas: HTMLCanvasElement | null = null;
+  ridgeNearCanvas: HTMLCanvasElement | null = null;
   terrainCanvas: HTMLCanvasElement | null = null;
 
   private width = 0;
@@ -149,15 +151,74 @@ export class LayerCache {
       ctx.restore();
     }
 
+    // v12 Commit 2: the ridge silhouette moved out of the sky layer into
+    // its own parallax plane (buildRidgeFarLayer) — sky is now gradient +
+    // planet + depth tint only, at infinite parallax distance.
+
+    // Depth tint — deeper runs read subtly colder/moodier, on TOP of the
+    // equipped sky theme (never replaces it — I5).
+    const tint = depthTint(levelIndex);
+    if (tint.alpha > 0) {
+      const tr = parseInt(tint.color.slice(1, 3), 16), tg = parseInt(tint.color.slice(3, 5), 16), tb = parseInt(tint.color.slice(5, 7), 16);
+      ctx.fillStyle = `rgba(${tr},${tg},${tb},${tint.alpha})`;
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    this.skyCanvas = c;
+  }
+
+  // v12 Commit 2: atmospheric perspective — the far ridge (v11's `ridge`)
+  // is lighter/hazier (farther = lighter), with a haze band blended toward
+  // the sky's bottom color pooling at its crest line.
+  private buildRidgeFarLayer(input: LayerBuildInput) {
+    const { width, height, terrain, skyTheme } = input;
+    const c = makeOffscreen(width, height);
+    const ctx = c.getContext('2d')!;
     ctx.beginPath();
     ctx.moveTo(0, height);
     terrain.ridge.forEach((p) => ctx.lineTo(p.x, p.y));
     ctx.lineTo(width, height);
     ctx.closePath();
+    ctx.fillStyle = shade('#20170c', 0.35);
+    ctx.fill();
+
+    const meanY = terrain.ridge.reduce((a, p) => a + p.y, 0) / terrain.ridge.length;
+    const bc = skyTheme.bot;
+    const br = parseInt(bc.slice(1, 3), 16), bg = parseInt(bc.slice(3, 5), 16), bb = parseInt(bc.slice(5, 7), 16);
+    const haze = ctx.createLinearGradient(0, meanY, 0, meanY + 60);
+    haze.addColorStop(0, `rgba(${br},${bg},${bb},0.30)`);
+    haze.addColorStop(1, `rgba(${br},${bg},${bb},0)`);
+    ctx.fillStyle = haze;
+    ctx.fillRect(0, meanY, width, 60);
+
+    this.ridgeFarCanvas = c;
+  }
+
+  // v12 Commit 2: the near ridge is darker/closer (matches the terrain's
+  // base tone) with a much fainter haze — the contrast between this and
+  // the far ridge IS the depth cue.
+  private buildRidgeNearLayer(input: LayerBuildInput) {
+    const { width, height, terrain, skyTheme } = input;
+    const c = makeOffscreen(width, height);
+    const ctx = c.getContext('2d')!;
+    ctx.beginPath();
+    ctx.moveTo(0, height);
+    terrain.ridgeNear.forEach((p) => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(width, height);
+    ctx.closePath();
     ctx.fillStyle = '#20170c';
     ctx.fill();
 
-    this.skyCanvas = c;
+    const meanY = terrain.ridgeNear.reduce((a, p) => a + p.y, 0) / terrain.ridgeNear.length;
+    const bc = skyTheme.bot;
+    const br = parseInt(bc.slice(1, 3), 16), bg = parseInt(bc.slice(3, 5), 16), bb = parseInt(bc.slice(5, 7), 16);
+    const haze = ctx.createLinearGradient(0, meanY, 0, meanY + 60);
+    haze.addColorStop(0, `rgba(${br},${bg},${bb},0.15)`);
+    haze.addColorStop(1, `rgba(${br},${bg},${bb},0)`);
+    ctx.fillStyle = haze;
+    ctx.fillRect(0, meanY, width, 60);
+
+    this.ridgeNearCanvas = c;
   }
 
   // (b) star field, full brightness, split into two phase-offset subsets.
@@ -252,13 +313,13 @@ export class LayerCache {
   }
 }
 
-// Per-frame blit helper. `twinkle` false => degradation guard has disabled
-// twinkle (§8.5): draw the full star layer once at flat alpha instead of
-// two phase-offset blits. `t` is seconds (performance.now()/1000) driving
-// the two independent sine phases (offset by PI so the subsets visibly
-// counter-twinkle rather than moving in lockstep).
-export function blitLayers(ctx: CanvasRenderingContext2D, cache: LayerCache, t: number, twinkle: boolean): void {
-  if (!cache.ready) return;
+// v12 Commit 2: blitLayers() split into one function per parallax plane so
+// main.ts's draw() can wrap each in its own `withParallax(factor, ...)`
+// transform. `blitSky` is screen-fixed (called before the camera save, at
+// "infinite" distance — no factor needed). The others are called inside a
+// parallax transform at their assigned factor.
+
+export function blitSky(ctx: CanvasRenderingContext2D, cache: LayerCache): void {
   if (cache.skyCanvas) ctx.drawImage(cache.skyCanvas, 0, 0);
   if (twinkle) {
     const alphaA = 0.6 + Math.sin(t * 1.5) * 0.4;
@@ -275,3 +336,19 @@ export function blitLayers(ctx: CanvasRenderingContext2D, cache: LayerCache, t: 
   }
   if (cache.terrainCanvas) ctx.drawImage(cache.terrainCanvas, 0, 0);
 }
+}
+
+// `twinkle` false => degradation guard has disabled twinkle (§8.5): draw
+// the full star layer once at flat alpha instead of two phase-offset
+// blits. `t` is seconds (performance.now()/1000) driving the two
+// independent sine phases (offset by PI so the subsets visibly
+// counter-twinkle rather than moving in lockstep).
+export function blitStars(ctx: CanvasRenderingContext2D, cache: LayerCache, t: number, twinkle: boolean): void {
+}
+
+export function blitRidge(ctx: CanvasRenderingContext2D, cache: LayerCache, which: 'far' | 'near'): void {
+  const canvas = which === 'far' ? cache.ridgeFarCanvas : cache.ridgeNearCanvas;
+  if (canvas) ctx.drawImage(canvas, 0, 0);
+}
+
+export function blitTerrain(ctx: CanvasRenderingContext2D, cache: LayerCache): void {

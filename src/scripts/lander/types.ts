@@ -83,6 +83,9 @@ export interface Terrain {
   // §Commit 6: an optional secondary high-risk/high-reward pad, off-center
   // from the main pad. Absent when generation didn't roll one for this level.
   bonusPad?: { xStart: number; xEnd: number; y: number };
+  // v12 Commit 2: a closer, taller silhouette between `ridge` (far) and the
+  // playable terrain — the third parallax plane.
+  ridgeNear: TerrainPoint[];
 }
 
 // --- §Commit 6: Fuel canisters — pickups scattered above the terrain -------

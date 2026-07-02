@@ -223,6 +223,17 @@ export function generateTerrain(cfg: LevelConfig, width: number, height: number)
     ridge.push({ x, y: ridgeBase - Math.sin(i * 0.7 + rr() * 3) * 26 - Math.sin(i * 0.23 + rr()) * 34 });
   }
 
+  // v12 Commit 2: a closer, taller ridge plane — own rng, appended after
+  // every existing consumer of `rand`/`rr` so no existing seeded sequence
+  // is perturbed (I1).
+  const ridgeNear: TerrainPoint[] = [];
+  const rn = mulberry32(cfg.seed * 613 + 29);
+  const ridgeNearBase = height * (cfg.terrain === 'canyon' ? 0.55 : 0.62);
+  for (let i = 0; i <= 28; i++) {
+    const x = (i / 28) * width;
+    ridgeNear.push({ x, y: ridgeNearBase - Math.sin(i * 0.6 + rn() * 3) * 40 - Math.sin(i * 0.21 + rn()) * 22 });
+  }
+
   const pad: Pad = {
     xStart: padCenter - halfW,
     xEnd: padCenter + halfW,
@@ -232,7 +243,7 @@ export function generateTerrain(cfg: LevelConfig, width: number, height: number)
     range,
   };
 
-  return { points, ridge, pad, width, height, bonusPad };
+  return { points, ridge, pad, width, height, bonusPad, ridgeNear };
 }
 
 // §Commit 6: fuel canisters — level idx < 3 has none (early levels stay
