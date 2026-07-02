@@ -42,7 +42,7 @@ function fmt(date: Date) {
         <h2 class="font-display text-xl font-semibold">Tweets <span class="font-mono text-xs text-muted">2008–2018</span></h2>
         <p class="mt-1 text-sm text-muted">14,684 original tweets (replies and retweets left in the past).</p>
         <a href="/archive/tweets" class="tile block mt-4 p-5 retro-box">
-          <span class="font-mono text-sm text-accent">→ browse the timeline</span>
+          <span class="font-mono text-sm text-accent">→ on this day in tweets</span>
         </a>
       </section>
 
@@ -62,26 +62,19 @@ function fmt(date: Date) {
   </div>
 
   <script>
-    type Tweet = { id: string; ts: string; text: string; urls?: string[] };
-    type BlogEntry = { slug: string; title: string; date: string; text: string };
-
-    let corpus: { tweets: (Tweet & { year: string })[]; blog: BlogEntry[] } | null = null;
+    let corpus: { tweets: any[]; blog: any[] } | null = null;
     let loading: Promise<void> | null = null;
 
     async function loadCorpus() {
       if (corpus) return;
       if (!loading) {
         loading = (async () => {
-          const meta = await (await fetch('/archive/tweets-meta.json')).json();
-          const years: { year: string }[] = meta.years;
+          const months = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
           const [blog, ...tweetSets] = await Promise.all([
             fetch('/archive/blog-index.json').then((r) => r.json()),
-            ...years.map((y) => fetch(`/archive/tweets-${y.year}.json`).then((r) => r.json())),
+            ...months.map((m) => fetch(`/archive/tweets-m${m}.json`).then((r) => (r.ok ? r.json() : []))),
           ]);
-          const tweets = tweetSets.flatMap((set: Tweet[], i: number) =>
-            set.map((t) => ({ ...t, year: years[i].year }))
-          );
-          corpus = { tweets, blog };
+          corpus = { tweets: tweetSets.flat(), blog };
         })();
       }
       await loading;
@@ -136,7 +129,7 @@ function fmt(date: Date) {
             shown.push(
               `<li class="border-b border-dotted border-line pb-2">
                 <span class="badge font-mono text-xs">tweet</span>
-                <a href="/archive/tweets?year=${t.year}#t${t.id}" class="ml-2 font-mono text-xs text-muted hover:text-accent">${t.ts}</a>
+                <a href="/archive/tweets?date=${t.ts.slice(5, 10)}#t${t.id}" class="ml-2 font-mono text-xs text-muted hover:text-accent">${t.ts}</a>
                 <p class="mt-1 text-sm">${snippet(t.text, q)}</p>
               </li>`
             );

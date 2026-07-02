@@ -1,159 +1,199 @@
 ---
-// Tweet timeline — /archive/tweets. Loads year-chunked JSON client-side,
-// with year tabs and in-year search. Supports ?year=YYYY#tID deep links
-// from the unified archive search.
+// "On This Day" tweet archive — /archive/tweets. Shows every tweet posted on
+// today's calendar date across 2008–2018, grouped by year, with prev/next day
+// navigation and a search box across the full archive. Data is month-chunked
+// JSON in /public/archive/. Supports ?date=MM-DD#tID deep links.
 import Layout from '../../layouts/Layout.astro';
 ---
 
-<Layout title="Old Tweets — Tom of the Past" description="14,684 tweets from 2008–2018, preserved for the record.">
+<Layout title="Old Tweets — Tom of the Past" description="14,684 tweets from 2008–2018, served one day at a time.">
   <a href="/archive" class="badge hover:text-ink transition-colors">← the vault</a>
-  <h1 class="font-display text-3xl md:text-4xl font-semibold mt-3">Old Tweets</h1>
+  <h1 class="font-display text-3xl md:text-4xl font-semibold mt-3">On This Day</h1>
   <p class="mt-2 text-muted max-w-xl">
-    14,684 original tweets, 2008–2018. What Twitter was like when it was mostly
-    complaining about being awake at 1am.
+    14,684 original tweets, 2008–2018 — served one calendar day at a time.
   </p>
 
-  <div id="year-tabs" class="mt-6 flex flex-wrap gap-2 font-mono text-sm"></div>
+  <!-- Day navigation -->
+  <div class="mt-6 flex items-center gap-3">
+    <button id="prev-day" class="day-nav" aria-label="previous day">← prev</button>
+    <div class="text-center min-w-[12rem]">
+      <div id="day-label" class="font-display text-2xl font-semibold">&nbsp;</div>
+      <div id="day-count" class="font-mono text-xs text-muted">&nbsp;</div>
+    </div>
+    <button id="next-day" class="day-nav" aria-label="next day">next →</button>
+    <button id="today-btn" class="day-nav hidden" title="back to today">today</button>
+  </div>
 
-  <input
-    id="tweet-search"
-    type="search"
-    placeholder="search this year…"
-    autocomplete="off"
-    class="mt-4 w-full max-w-md bg-surface border border-line px-3 py-2 font-mono text-sm focus:outline-none focus:border-accent"
-  />
-  <div id="tweet-status" class="mt-2 font-mono text-xs text-muted"></div>
+  <ol id="tweet-list" class="mt-6 space-y-6 max-w-xl"></ol>
 
-  <ol id="tweet-list" class="mt-6 space-y-4 max-w-xl"></ol>
-  <button id="load-more" class="hidden mt-6 badge hover:text-ink transition-colors cursor-pointer">show more ↓</button>
+  <!-- Search -->
+  <div class="mt-12 max-w-xl border-t border-dotted border-line pt-6">
+    <label for="tweet-search" class="font-mono text-xs text-muted uppercase tracking-wider">Or search all ten years</label>
+    <input
+      id="tweet-search"
+      type="search"
+      placeholder="search every tweet…"
+      autocomplete="off"
+      class="mt-2 w-full bg-surface border border-line px-3 py-2 font-mono text-sm focus:outline-none focus:border-accent"
+    />
+    <div id="search-status" class="mt-2 font-mono text-xs text-muted"></div>
+    <ol id="search-results" class="mt-4 space-y-4"></ol>
+  </div>
 
   <script>
-    type Tweet = { id: string; ts: string; text: string; urls?: string[] };
+    const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const monthCache = {};
+    let cur = { m: 0, d: 0 }; // 1-based month/day currently shown
 
-    const PAGE = 200;
-    const cache: Record<string, Tweet[]> = {};
-    let currentYear = '';
-    let filtered: Tweet[] = [];
-    let rendered = 0;
-
-    function esc(s: string) {
-      return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+    function esc(s) {
+      return s.replace(/[&<>"']/g, (c) => '&#' + c.charCodeAt(0) + ';');
     }
 
-    function linkify(text: string, urls?: string[]) {
-      let out = esc(text);
+    function linkify(text, urls) {
       let i = 0;
-      out = out.replace(/https?:\/\/t\.co\/\w+/g, (m) => {
+      return esc(text).replace(/https?:\/\/t\.co\/\w+/g, (m) => {
         const target = urls && urls[i] ? urls[i] : m;
         i++;
-        return `<a href="${esc(target)}" class="text-accent underline decoration-dotted" rel="nofollow noopener">${esc(target.replace(/^https?:\/\/(www\.)?/, '').slice(0, 40))}</a>`;
+        const label = target.replace(/^https?:\/\/(www\.)?/, '').slice(0, 40);
+        return '<a href="' + esc(target) + '" class="text-accent underline decoration-dotted" rel="nofollow noopener">' + esc(label) + '</a>';
       });
-      return out;
     }
 
-    function fmtTs(ts: string) {
-      const d = new Date(ts.replace(' ', 'T') + ':00Z');
-      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+    async function getMonth(m) {
+      const key = String(m).padStart(2, '0');
+      if (!monthCache[key]) {
+        const res = await fetch('/archive/tweets-m' + key + '.json');
+        monthCache[key] = res.ok ? await res.json() : [];
+      }
+      return monthCache[key];
     }
 
-    function renderMore() {
-      const list = document.getElementById('tweet-list')!;
-      const more = document.getElementById('load-more')!;
-      const chunk = filtered.slice(rendered, rendered + PAGE);
-      list.insertAdjacentHTML(
-        'beforeend',
-        chunk
-          .map(
-            (t) => `<li id="t${t.id}" class="tweet-card">
-              <p class="text-[0.95rem] leading-relaxed">${linkify(t.text, t.urls)}</p>
-              <p class="mt-1 font-mono text-xs text-muted">${fmtTs(t.ts)}</p>
-            </li>`
-          )
-          .join('')
+    function tweetCard(t, withYear) {
+      const time = t.ts.slice(11, 16);
+      const date = withYear ? t.ts.slice(0, 10) + ' · ' : '';
+      return '<li id="t' + t.id + '" class="tweet-card">' +
+        '<p class="text-[0.95rem] leading-relaxed">' + linkify(t.text, t.urls) + '</p>' +
+        '<p class="mt-1 font-mono text-xs text-muted">' + date + time + '</p></li>';
+    }
+
+    function shiftDay(m, d, delta) {
+      // navigate calendar month-days; year 2012 chosen as leap so Feb 29 exists
+      const dt = new Date(Date.UTC(2012, m - 1, d));
+      dt.setUTCDate(dt.getUTCDate() + delta);
+      return { m: dt.getUTCMonth() + 1, d: dt.getUTCDate() };
+    }
+
+    async function showDay(m, d, anchor) {
+      cur = { m, d };
+      const label = document.getElementById('day-label');
+      const countEl = document.getElementById('day-count');
+      const list = document.getElementById('tweet-list');
+      label.textContent = MONTH_NAMES[m - 1] + ' ' + d;
+      countEl.textContent = 'loading…';
+      list.innerHTML = '';
+
+      const now = new Date();
+      document.getElementById('today-btn').classList.toggle(
+        'hidden', m === now.getMonth() + 1 && d === now.getDate()
       );
-      rendered += chunk.length;
-      more.classList.toggle('hidden', rendered >= filtered.length);
-    }
+      const url = new URL(location.href);
+      url.searchParams.set('date', String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0'));
+      history.replaceState(null, '', url.pathname + url.search + (anchor ? '#' + anchor : ''));
 
-    function applyFilter() {
-      const q = (document.getElementById('tweet-search') as HTMLInputElement).value.trim().toLowerCase();
-      const all = cache[currentYear] ?? [];
-      filtered = q ? all.filter((t) => t.text.toLowerCase().includes(q)) : all;
-      rendered = 0;
-      document.getElementById('tweet-list')!.innerHTML = '';
-      document.getElementById('tweet-status')!.textContent =
-        `${filtered.length.toLocaleString()} tweet${filtered.length === 1 ? '' : 's'} in ${currentYear}${q ? ` matching “${q}”` : ''}`;
-      renderMore();
-    }
+      const mmdd = '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+      const hits = (await getMonth(m)).filter((t) => t.ts.slice(4, 10) === mmdd);
 
-    async function selectYear(year: string, anchor?: string) {
-      currentYear = year;
-      document.querySelectorAll('#year-tabs button').forEach((b) => {
-        b.classList.toggle('year-active', (b as HTMLElement).dataset.year === year);
-      });
-      if (!cache[year]) {
-        document.getElementById('tweet-status')!.textContent = `loading ${year}…`;
-        cache[year] = await (await fetch(`/archive/tweets-${year}.json`)).json();
+      if (hits.length === 0) {
+        countEl.textContent = 'no tweets on this day';
+        list.innerHTML = '<li class="text-muted text-sm font-mono">past Tom was quiet on ' +
+          MONTH_NAMES[m - 1] + ' ' + d + '. try the arrows.</li>';
+        return;
       }
-      applyFilter();
+      countEl.textContent = hits.length + ' tweet' + (hits.length === 1 ? '' : 's') + ' across the years';
+
+      const byYear = {};
+      hits.forEach((t) => (byYear[t.ts.slice(0, 4)] = byYear[t.ts.slice(0, 4)] || []).push(t));
+      list.innerHTML = Object.keys(byYear).sort().reverse().map((y) =>
+        '<li><h2 class="font-display text-lg font-semibold border-b border-dotted border-line pb-1">' +
+        MONTH_NAMES[m - 1] + ' ' + d + ', ' + y +
+        '</h2><ol class="mt-3 space-y-3">' +
+        byYear[y].map((t) => tweetCard(t, false)).join('') +
+        '</ol></li>'
+      ).join('');
+
       if (anchor) {
-        // Render pages until the anchor tweet exists, then scroll to it.
-        while (!document.getElementById(anchor) && rendered < filtered.length) renderMore();
         const el = document.getElementById(anchor);
-        if (el) {
-          el.scrollIntoView({ block: 'center' });
-          el.classList.add('tweet-hit');
-        }
+        if (el) { el.scrollIntoView({ block: 'center' }); el.classList.add('tweet-hit'); }
       }
     }
 
-    async function init() {
-      const tabs = document.getElementById('year-tabs');
-      if (!tabs || tabs.dataset.ready) return;
-      tabs.dataset.ready = 'true';
+    async function searchAll(q) {
+      const status = document.getElementById('search-status');
+      const out = document.getElementById('search-results');
+      out.innerHTML = '';
+      if (q.length < 2) { status.textContent = ''; return; }
+      status.textContent = 'digging through ten years…';
+      const months = await Promise.all(Array.from({ length: 12 }, (_, i) => getMonth(i + 1)));
+      const hits = months.flat().filter((t) => t.text.toLowerCase().includes(q)).sort((a, b) => a.ts < b.ts ? -1 : 1);
+      status.textContent = hits.length + ' tweet' + (hits.length === 1 ? '' : 's') + ' match' +
+        (hits.length === 1 ? 'es' : '') + (hits.length > 100 ? ' (showing first 100)' : '');
+      out.innerHTML = hits.slice(0, 100).map((t) => tweetCard(t, true)).join('');
+      // clicking a search result's date jumps the day view to that date
+      out.querySelectorAll('.tweet-card').forEach((el, i) => {
+        const t = hits[i];
+        el.addEventListener('click', () => {
+          showDay(parseInt(t.ts.slice(5, 7), 10), parseInt(t.ts.slice(8, 10), 10), 't' + t.id);
+          window.scrollTo({ top: 0 });
+        });
+        el.classList.add('cursor-pointer');
+      });
+    }
 
-      const meta = await (await fetch('/archive/tweets-meta.json')).json();
-      tabs.innerHTML = meta.years
-        .map(
-          (y: { year: string; count: number }) =>
-            `<button data-year="${y.year}" class="year-tab" title="${y.count} tweets">${y.year}</button>`
-        )
-        .join('');
-      tabs.addEventListener('click', (e) => {
-        const btn = (e.target as HTMLElement).closest('button');
-        if (btn?.dataset.year) selectYear(btn.dataset.year);
+    function init() {
+      const prev = document.getElementById('prev-day');
+      if (!prev || prev.dataset.ready) return;
+      prev.dataset.ready = 'true';
+
+      prev.addEventListener('click', () => { const n = shiftDay(cur.m, cur.d, -1); showDay(n.m, n.d); });
+      document.getElementById('next-day').addEventListener('click', () => { const n = shiftDay(cur.m, cur.d, 1); showDay(n.m, n.d); });
+      document.getElementById('today-btn').addEventListener('click', () => {
+        const now = new Date(); showDay(now.getMonth() + 1, now.getDate());
       });
 
-      let searchTimer: number;
-      document.getElementById('tweet-search')!.addEventListener('input', () => {
-        clearTimeout(searchTimer);
-        searchTimer = window.setTimeout(applyFilter, 200);
+      let timer;
+      document.getElementById('tweet-search').addEventListener('input', (e) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => searchAll(e.target.value.trim().toLowerCase()), 250);
       });
-      document.getElementById('load-more')!.addEventListener('click', renderMore);
 
       const params = new URLSearchParams(location.search);
-      const year = params.get('year') ?? meta.years[0].year;
+      const dateParam = params.get('date');
       const anchor = location.hash ? location.hash.slice(1) : undefined;
-      await selectYear(year, anchor);
+      if (dateParam && /^\d{2}-\d{2}$/.test(dateParam)) {
+        showDay(parseInt(dateParam.slice(0, 2), 10), parseInt(dateParam.slice(3), 10), anchor);
+      } else {
+        const now = new Date();
+        showDay(now.getMonth() + 1, now.getDate(), anchor);
+      }
     }
 
     document.addEventListener('astro:page-load', init);
+    init();
   </script>
 
   <style>
-    .year-tab {
+    .day-nav {
       border: 1px solid var(--color-line);
       background: var(--color-surface);
-      padding: 0.25rem 0.75rem;
+      padding: 0.35rem 0.9rem;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
       cursor: pointer;
+      box-shadow: 2px 2px 0 var(--color-surface-2);
       transition: all 0.15s;
     }
-    .year-tab:hover { border-color: var(--color-accent); color: var(--color-accent); }
-    .year-active {
-      background: var(--color-ink);
-      color: var(--color-canvas);
-      border-color: var(--color-ink);
-    }
+    .day-nav:hover { border-color: var(--color-accent); color: var(--color-accent); }
+    .day-nav:active { box-shadow: none; transform: translate(2px, 2px); }
     .tweet-card {
       border: 1px solid var(--color-line);
       background: var(--color-surface);
