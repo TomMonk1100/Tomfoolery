@@ -7,7 +7,9 @@ import {
 import { terraform, buildDronePool, updateDrones, droneOrbitRadius, MAX_DRONES, shouldRebuild, REBUILD_INTERVAL_S } from '../entities';
 import { terrainYAt, generateTerrain, levelConfigFor } from '../levels';
 import { resolveReadyAbility, tickAbilityCooldowns, consumeAbilityCharge, ABILITY_PRIORITY } from '../abilities';
-import type { AbilityDef, TerrainPoint } from '../types';
+import { UPGRADES, ACHIEVEMENTS } from '../upgrades';
+import { computeStats, RARITY, rollCosmicDice, COSMIC_DICE_POOL, starForgeRarityWeight } from '../stats';
+import type { AbilityDef, TerrainPoint, UpgradeId } from '../types';
 
 // ---------------------------------------------------------------------------
 // §6.1 Noodle piles — deposit/decay math is bounded.
@@ -251,5 +253,152 @@ describe('abilities: priority resolver picks the correct highest-priority ready 
     const d = def('grappling_hook', 0);
     consumeAbilityCharge(d);
     expect(d.charges).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// lander-v10 commit 4b (§7): 69-upgrade catalog, computeStats robustness
+// across all 69 ids, Cosmic Dice distinctness, Star Forge weight compounding.
+// ---------------------------------------------------------------------------
+describe('upgrades: §7 catalog — 69 total, exact rarity counts, unique ids', () => {
+  it('every upgrade id is unique across all 69', () => {
+    const ids = UPGRADES.map((u) => u.id);
+    expect(ids.length).toBe(69);
+    expect(new Set(ids).size).toBe(69);
+  });
+
+  it('every rarity bucket has exactly the right count: common 15, uncommon 15, rare 15, epic 12, legendary 12', () => {
+    const counts: Record<string, number> = {};
+    for (const u of UPGRADES) counts[u.rarity] = (counts[u.rarity] ?? 0) + 1;
+    expect(counts.common).toBe(15);
+    expect(counts.uncommon).toBe(15);
+    expect(counts.rare).toBe(15);
+    expect(counts.epic).toBe(12);
+    expect(counts.legendary).toBe(12);
+  });
+
+  it('the original 19 upgrade ids/names/rarities are unchanged (invariant I6)', () => {
+    const original: { id: string; name: string; rarity: string }[] = [
+      { id: 'fuel_tank', name: 'Extra Fuel Tank', rarity: 'common' },
+      { id: 'gyro', name: 'Gyro Stabilizer', rarity: 'common' },
+      { id: 'precision_jets', name: 'Precision Jets', rarity: 'common' },
+      { id: 'magnetic_pad', name: 'Magnetic Grapple', rarity: 'common' },
+      { id: 'feather_gear', name: 'Feather Gear', rarity: 'common' },
+      { id: 'boost_thrusters', name: 'Boost Thrusters', rarity: 'uncommon' },
+      { id: 'scanner', name: 'Scanner', rarity: 'uncommon' },
+      { id: 'reserve_chute', name: 'Reserve Chute', rarity: 'uncommon' },
+      { id: 'fuel_scoop', name: 'Fuel Scoop', rarity: 'uncommon' },
+      { id: 'storm_dampeners', name: 'Storm Dampeners', rarity: 'uncommon' },
+      { id: 'shield', name: 'Shield', rarity: 'rare' },
+      { id: 'gravity_anchor', name: 'Gravity Anchor', rarity: 'rare' },
+      { id: 'jalapeno_injectors', name: 'Jalapeño Injectors', rarity: 'rare' },
+      { id: 'boomerang_hull', name: 'Boomerang Hull', rarity: 'rare' },
+      { id: 'alien_diplomacy', name: 'Alien Embassy Plates', rarity: 'rare' },
+      { id: 'chrono_crystal', name: 'Chrono Crystal', rarity: 'epic' },
+      { id: 'overdrive_core', name: 'Overdrive Core', rarity: 'epic' },
+      { id: 'phoenix_feather', name: 'Phoenix Feather', rarity: 'legendary' },
+      { id: 'star_core', name: 'Star Core', rarity: 'legendary' },
+    ];
+    for (const o of original) {
+      const found = UPGRADES.find((u) => u.id === o.id);
+      expect(found, `missing original upgrade ${o.id}`).toBeTruthy();
+      expect(found!.name).toBe(o.name);
+      expect(found!.rarity).toBe(o.rarity);
+    }
+  });
+
+  it('the 8 new achievements are present alongside the 2 already added in earlier commits (no duplicates)', () => {
+    const ids = ACHIEVEMENTS.map((a) => a.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const id of [
+      'ach_minimalist', 'ach_pasta', 'ach_hoarder2', 'ach_stack5',
+      'ach_dice', 'ach_autopilot', 'ach_crunch', 'ach_skip3',
+    ]) {
+      expect(ids, `missing achievement ${id}`).toContain(id);
+    }
+  });
+});
+
+describe('stats: computeStats handles 1000 random picks across all 69 upgrade ids without NaN/Infinity', () => {
+  it('random selection with repetition across all 69 ids never produces NaN/Infinity in any numeric field', () => {
+    const allIds = UPGRADES.map((u) => u.id);
+    const picks: UpgradeId[] = [];
+    // Deterministic pseudo-random selection (no external seed dependency)
+    let seed = 12345;
+    const rand = () => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed / 0x7fffffff;
+    };
+    for (let i = 0; i < 1000; i++) {
+      picks.push(allIds[Math.floor(rand() * allIds.length)]);
+    }
+    const s = computeStats(picks, 'pilot');
+    for (const [key, val] of Object.entries(s)) {
+      if (typeof val === 'number') {
+        expect(Number.isFinite(val), `${key} was ${val}`).toBe(true);
+      }
+    }
+  });
+
+  it('every single one of the 69 ids individually survives 1000 stacks without NaN/Infinity', () => {
+    const allIds = UPGRADES.map((u) => u.id);
+    for (const id of allIds) {
+      const picks = new Array(1000).fill(id) as UpgradeId[];
+      const s = computeStats(picks, 'pilot');
+      for (const [key, val] of Object.entries(s)) {
+        if (typeof val === 'number') {
+          expect(Number.isFinite(val), `${id} -> ${key} was ${val}`).toBe(true);
+        }
+      }
+    }
+  });
+});
+
+describe('stats: §7 Cosmic Dice — never doubles and halves the same stat', () => {
+  it('rollCosmicDice always returns two distinct stats across 1000 iterations', () => {
+    for (let i = 0; i < 1000; i++) {
+      const { up, down } = rollCosmicDice();
+      expect(up).not.toBe(down);
+      expect(COSMIC_DICE_POOL).toContain(up);
+      expect(COSMIC_DICE_POOL).toContain(down);
+    }
+  });
+
+  it('rollCosmicDice is uniform-ish over the 6-stat pool given a seeded rand (sanity, not a strict distribution test)', () => {
+    let seed = 42;
+    const rand = () => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed / 0x7fffffff;
+    };
+    const seen = new Set<string>();
+    for (let i = 0; i < 200; i++) {
+      const { up, down } = rollCosmicDice(rand);
+      seen.add(up as string);
+      seen.add(down as string);
+    }
+    expect(seen.size).toBeGreaterThan(1);
+  });
+});
+
+describe('stats: §7 Star Forge — rarity weight multiplier compounds per stack', () => {
+  it('weight at stacks=2 is 9x base and stacks=3 is 27x base for uncommon+ rarities', () => {
+    const base = 55;
+    expect(starForgeRarityWeight('uncommon', base, 0)).toBe(base);
+    expect(starForgeRarityWeight('uncommon', base, 1)).toBeCloseTo(base * 3, 6);
+    expect(starForgeRarityWeight('uncommon', base, 2)).toBeCloseTo(base * 9, 6);
+    expect(starForgeRarityWeight('uncommon', base, 3)).toBeCloseTo(base * 27, 6);
+  });
+
+  it('compounds identically for rare, epic, and legendary', () => {
+    for (const rarity of ['rare', 'epic', 'legendary'] as const) {
+      const base = RARITY[rarity].weight;
+      expect(starForgeRarityWeight(rarity, base, 2)).toBeCloseTo(base * 9, 6);
+    }
+  });
+
+  it('common rarity weight is never affected by Star Forge stacks', () => {
+    const base = RARITY.common.weight;
+    expect(starForgeRarityWeight('common', base, 1)).toBe(base);
+    expect(starForgeRarityWeight('common', base, 5)).toBe(base);
   });
 });

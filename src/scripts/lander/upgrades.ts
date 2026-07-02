@@ -4,30 +4,80 @@ import type { AchievementDef, PaintDef, SkyDef, TrailDef, UpgradeDef } from './t
 // weight (gravity), power draw (fuel burn), or handling costs. Clamps in
 // computeStats() keep stacked drawbacks from ever making the ship unflyable.
 export const UPGRADES: UpgradeDef[] = [
-  // --- common: reliable bread-and-butter ---
+  // --- common: reliable bread-and-butter (15: 5 existing + 10 new) ---
   { id: 'fuel_tank',       rarity: 'common',    name: 'Extra Fuel Tank',  icon: '⛽', pro: '+45 max fuel, refills now',                 con: 'Heavier — gravity +6%' },
   { id: 'gyro',            rarity: 'common',    name: 'Gyro Stabilizer',  icon: '🌀', pro: 'Much more forgiving landing angle',         con: 'Power draw — fuel burns 8% faster' },
   { id: 'precision_jets',  rarity: 'common',    name: 'Precision Jets',   icon: '🚀', pro: 'Rotate 40% faster',                         con: 'Jets sip fuel — burn +6%' },
   { id: 'magnetic_pad',    rarity: 'common',    name: 'Magnetic Grapple', icon: '🧲', pro: 'Wider catch zone, +15% landing tolerance',  con: 'Magnet weight — gravity +4%' },
   { id: 'feather_gear',    rarity: 'common',    name: 'Feather Gear',     icon: '🪶', pro: 'Land 30% harder safely',                    con: 'Lightweight — wind pushes 20% more' },
-  // --- uncommon: build-shapers ---
+  { id: 'lightweight_alloy', rarity: 'common',  name: 'Lightweight Alloy', icon: '🧱', pro: 'mass −0.05 (floor §4.5)',                  con: 'speed tol ×0.96' },
+  { id: 'wide_legs',       rarity: 'common',    name: 'Wide-Stance Legs', icon: '🦿', pro: 'angle tolerance +0.10 rad',                 con: 'mass +0.03' },
+  { id: 'fuel_lines',      rarity: 'common',    name: 'Slick Fuel Lines', icon: '🧪', pro: 'burn ×0.93',                                con: 'thrust ×0.96' },
+  { id: 'bumper_skids',    rarity: 'common',    name: 'Bumper Skids',     icon: '🛷', pro: 'speed tol ×1.12',                           con: 'rotation ×0.95' },
+  { id: 'trim_flaps',      rarity: 'common',    name: 'Trim Flaps',       icon: '🪁', pro: 'wind ×0.85',                                con: 'burn ×1.04' },
+  { id: 'solar_wings',     rarity: 'common',    name: 'Solar Wings',      icon: '☀️', pro: '+1.5 fuel/s regen (engines off)',           con: 'dragArea +0.06' },
+  { id: 'landing_lights',  rarity: 'common',    name: 'Landing Lights',   icon: '🔦', pro: 'below 150 m: pad arrow + touchdown marker', con: 'max fuel −5' },
+  { id: 'sticky_pads',     rarity: 'common',    name: 'Sticky Landing Pads', icon: '🥾', pro: 'horizontal speed forgiven ×1.2 on pad',  con: 'mass +0.03' },
+  { id: 'nimble_fins',     rarity: 'common',    name: 'Nimble Fins',      icon: '🐟', pro: 'rotation ×1.15',                            con: 'wind ×1.08' },
+  { id: 'drop_tanks',      rarity: 'common',    name: 'Drop Tanks',       icon: '🛢️', pro: '+20 max fuel; tanks visibly jettison at half fuel', con: 'mass +0.04 (0 after jettison)' },
+  // --- uncommon: build-shapers (15: 5 existing + 10 new) ---
   { id: 'boost_thrusters', rarity: 'uncommon',  name: 'Boost Thrusters',  icon: '🔥', pro: '+40% thrust power',                        con: 'Burns fuel 15% faster' },
   { id: 'scanner',         rarity: 'uncommon',  name: 'Scanner',          icon: '📡', pro: 'Guidance line pointing straight to the pad', con: 'Housing costs 10 max fuel' },
   { id: 'reserve_chute',   rarity: 'uncommon',  name: 'Reserve Chute',    icon: '🪂', pro: 'Auto-brakes once per level if tank runs dry', con: 'Chute pack — gravity +4%' },
   { id: 'fuel_scoop',      rarity: 'uncommon',  name: 'Fuel Scoop',       icon: '♻️', pro: 'Regain 3 fuel/s while engines are off',     con: 'Scoop replaces 15 max fuel' },
   { id: 'storm_dampeners', rarity: 'uncommon',  name: 'Storm Dampeners',  icon: '🌬️', pro: 'Wind pushes you 50% less',                  con: 'Vents bleed 8% thrust' },
-  // --- rare: run-changers with personality ---
+  { id: 'air_brakes',      rarity: 'uncommon',  name: 'Air Brakes',       icon: '🛑', pro: 'hold L+R: damp velocity 20%/s (×n)',        con: '3 fuel/s while braking' },
+  { id: 'kick_thrusters',  rarity: 'uncommon',  name: 'Kick Thrusters',   icon: '🦵', pro: 'double-tap L/R: 60 px/s sideways impulse (×n)', con: '4 fuel per kick' },
+  { id: 'tractor_winch',   rarity: 'uncommon',  name: 'Pad Tractor Winch', icon: '🪝', pro: 'below 100 m, gentle pull toward pad center (8 px/s² ×n)', con: 'mass +0.05' },
+  { id: 'cloud_seeder',    rarity: 'uncommon',  name: 'Cloud Seeder',     icon: '🌧️', pro: 'gust amplitude ×0.4',                       con: 'thrust ×0.95' },
+  { id: 'vampire_coils',   rarity: 'uncommon',  name: 'Vampire Coils',    icon: '🧛', pro: 'projectile passing within 30 px: +8 fuel (graze)', con: 'projectile speed ×1.1' },
+  { id: 'lucky_antenna',   rarity: 'uncommon',  name: 'Lucky Antenna',    icon: '🍀', pro: '+1 upgrade choice per offer (×n, max 6 cards rendered)', con: 'max fuel −5' },
+  { id: 'stardust_condenser', rarity: 'uncommon', name: 'Stardust Condenser', icon: '✨', pro: 'stardust payouts ×1.3',                 con: 'mass +0.04' },
+  { id: 'echo_altimeter',  rarity: 'uncommon',  name: 'Echo Altimeter',   icon: '🦇', pro: 'touchdown-point forecast marker + landing-speed readout', con: 'burn ×1.05' },
+  { id: 'gecko_struts',    rarity: 'uncommon',  name: 'Gecko Struts',     icon: '🦎', pro: '+1 charge/level: safe landing on any ≤0.35 rad slope (no level-complete, half stardust, refuels +15)', con: 'mass +0.05' },
+  { id: 'bounce_bumpers',  rarity: 'uncommon',  name: 'Bounce Bumpers',   icon: '🎈', pro: 'screen-edge bounces lossless + outward boost', con: 'dragArea +0.05' },
+  // --- rare: run-changers with personality (15: 5 existing + 10 new) ---
   { id: 'shield',          rarity: 'rare',      name: 'Shield',           icon: '🛡️', pro: 'Survive one impact (recharges each level)', con: 'Plating — gravity +6%' },
   { id: 'gravity_anchor',  rarity: 'rare',      name: 'Gravity Anchor',   icon: '⚓', pro: 'Gravity pulls 15% less',                   con: 'Sluggish — rotation 12% slower' },
   { id: 'jalapeno_injectors', rarity: 'rare',   name: 'Jalapeño Injectors', icon: '🌶️', pro: '+30% thrust, exhaust burns spicy-green',  con: 'Spicy fuel burns 12% faster' },
   { id: 'boomerang_hull',  rarity: 'rare',      name: 'Boomerang Hull',   icon: '🪃', pro: 'Bounce off terrain instead of crashing (1/level)', con: 'Each bounce shakes out 15 fuel' },
   { id: 'alien_diplomacy', rarity: 'rare',      name: 'Alien Embassy Plates', icon: '👽', pro: 'UFOs recognize you and hold fire',      con: 'Ceremonial plating — gravity +5%' },
-  // --- epic: bend the rules ---
+  { id: 'spaghetti_engine', rarity: 'rare',     name: 'Spaghetti Engine', icon: '🍝', pro: 'exhaust drops noodles that pile on terrain; piles ≥8 px turn fatal terrain hits into soft squish landings (§6.1)', con: 'burn ×1.10' },
+  { id: 'grappling_hook',  rarity: 'rare',      name: 'Grappling Hook',   icon: '🪝', pro: 'ability (§6.2): fire hook at pad within 240 px, winch at 90 px/s; 1 charge/level (+1 per stack)', con: 'max fuel −10' },
+  { id: 'hover_module',    rarity: 'rare',      name: 'Hover Module',     icon: '🛸', pro: 'below 60 m, auto-limit descent to 40 px/s while fuel lasts', con: '6 fuel/s while hovering' },
+  { id: 'asteroid_miner',  rarity: 'rare',      name: 'Asteroid Miner',   icon: '⛏️', pro: 'asteroid contact shatters it: +10 fuel, small kick, +10✨', con: 'shatter kick 60 px/s random' },
+  { id: 'ufo_hacker',      rarity: 'rare',      name: 'UFO Hacker',       icon: '📶', pro: 'first UFO each level becomes an ally that shoots other UFOs (×n UFOs)', con: 'max fuel −8' },
+  { id: 'bubble_wrap',     rarity: 'rare',      name: 'Bubble Wrap Hull', icon: '🫧', pro: '+1 charge/level: fatal impact → huge slow bounce (vy ×−0.4, capped 80)', con: 'dragArea +0.08' },
+  { id: 'magnet_storm',    rarity: 'rare',      name: 'Deflector Coils',  icon: '🧲', pro: 'projectiles curve away (120 px/s² repulsion within 90 px, ×n)', con: 'rotation ×0.92' },
+  { id: 'tailwind_turbine', rarity: 'rare',     name: 'Tailwind Turbine', icon: '🌀', pro: '+1 fuel/s per 10 wind speed (×n)',          con: 'wind ×1.1' },
+  { id: 'moon_cheese_drill', rarity: 'rare',    name: 'Cheese Drill',     icon: '🧀', pro: '+1 charge/level: touchdown anywhere drills +15 fuel (no level-complete)', con: 'mass +0.05' },
+  { id: 'swarm_drones',    rarity: 'rare',      name: 'Swarm Drones',     icon: '🐝', pro: '+1 orbiting drone; each blocks 1 projectile/level (§6.3)', con: 'burn ×1.06' },
+  // --- epic: bend the rules (12: 2 existing + 10 new) ---
   { id: 'chrono_crystal',  rarity: 'epic',      name: 'Chrono Crystal',   icon: '⏳', pro: 'Time slows 25% below 120m altitude',        con: 'Fuel still drains at full speed' },
   { id: 'overdrive_core',  rarity: 'epic',      name: 'Overdrive Core',   icon: '🧨', pro: '+55% thrust, +20% rotation',               con: 'Guzzler — fuel burn +22%' },
-  // --- legendary: an event ---
+  { id: 'wormhole_pocket', rarity: 'epic',      name: 'Wormhole Pocket',  icon: '🕳️', pro: 'ability: teleport 80 px toward pad (+80 per stack); 1 charge/level', con: '12 fuel per jump' },
+  { id: 'gravity_flip',    rarity: 'epic',      name: 'Gravity Flip Coil', icon: '🙃', pro: 'hold L+R 1 s: gravity reverses 2 s (cooldown 8 s; duration +1 s per stack)', con: 'burn ×1.10' },
+  { id: 'midas_hull',      rarity: 'epic',      name: 'Midas Hull',       icon: '🏆', pro: 'stardust payouts ×3 (compounds)',           con: 'mass +0.08' },
+  { id: 'quantum_duplicate', rarity: 'epic',    name: 'Quantum Duplicate', icon: '👯', pro: 'on fatal crash: 50% chance the ghost crashed instead (per stack: independent extra roll)', con: 'max fuel −15' },
+  { id: 'storm_caller',    rarity: 'epic',      name: 'Storm Caller',     icon: '⛈️', pro: 'wind always blows toward the pad',          con: 'wind strength ×1.25' },
+  { id: 'time_bank',       rarity: 'epic',      name: 'Time Bank',        icon: '⏱️', pro: 'ability: 3 s of 0.5× slow-mo on demand (+3 s bank per stack), recharges each level', con: 'fuel drains at real time during' },
+  { id: 'terraformer',     rarity: 'epic',      name: 'Terraformer',      icon: '🚜', pro: 'below 40 m, smooths terrain beneath ship (§6.4; radius +40% per stack)', con: 'burn ×1.12' },
+  { id: 'singularity_anchor', rarity: 'epic',   name: 'Singularity Anchor', icon: '🌑', pro: 'ability: freeze all hazards 4 s/level (+2 s per stack)', con: 'max fuel −12' },
+  { id: 'nano_repair',     rarity: 'epic',      name: 'Nano-Repair Swarm', icon: '🔧', pro: 'every 20 s airborne, +1 shield charge (max bank = stacks)', con: 'burn ×1.08' },
+  { id: 'rocket_skates',   rarity: 'epic',      name: 'Rocket Skates',    icon: '🛼', pro: 'too-fast-but-level pad landings convert to a slide-to-stop along the pad (speed tol ×2 if angle < tol/2)', con: 'effective pad width ×0.9' },
+  // --- legendary: an event (12: 2 existing + 10 new) ---
   { id: 'phoenix_feather', rarity: 'legendary', name: 'Phoenix Feather',  icon: '🐦‍🔥', pro: 'Rise from one crash per run (60% fuel)',   con: 'The feather nests in the tank — max fuel −10' },
   { id: 'star_core',       rarity: 'legendary', name: 'Star Core',        icon: '🌟', pro: 'EVERYTHING +12%, gravity −8%',              con: 'Your glow draws 20% faster UFO fire' },
+  { id: 'black_hole_engine', rarity: 'legendary', name: 'Black Hole Engine', icon: '⚫', pro: 'thrust costs zero fuel below 25% tank',   con: 'mass +0.12' },
+  { id: 'golden_goose',    rarity: 'legendary', name: 'Golden Goose',     icon: '🪿', pro: '+50✨ per landing (×n)',                    con: 'mass +0.06' },
+  { id: 'cosmic_dice',     rarity: 'legendary', name: 'Cosmic Dice',      icon: '🎲', pro: 'each level: one random stat ×2 (shown in intro banner)', con: 'same roll: another stat ×0.5' },
+  { id: 'dyson_sail',      rarity: 'legendary', name: 'Dyson Sail',       icon: '⛵', pro: '+4 fuel/s regen ALWAYS (even thrusting)',    con: 'dragArea +0.20' },
+  { id: 'pocket_moon',     rarity: 'legendary', name: 'Pocket Moon',      icon: '🌖', pro: 'orbiting moonlet permanently blocks projectiles & shatters asteroids it touches', con: 'sinusoidal tug ±10 px/s²' },
+  { id: 'valkyrie_autopilot', rarity: 'legendary', name: 'Valkyrie Autopilot', icon: '🤖', pro: 'ability, 1/run (+1 per stack): full auto perfect landing from any state', con: 'max fuel −20' },
+  { id: 'star_forge',      rarity: 'legendary', name: 'Star Forge',       icon: '🌠', pro: 'rarity weights ×3 toward rare+ in all future offers (compounds)', con: 'max fuel −10' },
+  { id: 'antigrav_paint',  rarity: 'legendary', name: 'Antigrav Paint',   icon: '🎨', pro: 'gravity coupling ×0.8',                     con: 'rotation ×0.9' },
+  { id: 'mothership_favor', rarity: 'legendary', name: "Mothership's Favor", icon: '👑', pro: '+1 friendly escort UFO that shoots asteroids & hostile UFOs', con: 'sky gets +1 (friendly) UFO of crowding' },
+  { id: 'big_crunch',      rarity: 'legendary', name: 'Big Crunch Drive', icon: '🌌', pro: 'each landing advances 2 levels (rewards for both)', con: 'you face the harder config immediately' },
 ];
 
 export const PAINTS: PaintDef[] = [
@@ -78,4 +128,11 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   // possible if a future upgrade sets noodleStacks — added now since the
   // touchdown code path that unlocks it lives in this commit).
   { id: 'ach_pasta', icon: '🍝', name: 'Soft Landing',          desc: 'Survive a fatal impact via a noodle pile squish' },
+  // lander-v10 commit 4b (§7): 6 new achievements from the 69-upgrade catalog.
+  { id: 'ach_hoarder2',   icon: '🐉', name: "Dragon's Hoard",    desc: 'Carry 20 upgrades at once' },
+  { id: 'ach_stack5',     icon: '🧬', name: 'Mono-Build',        desc: 'Stack 5 copies of one upgrade' },
+  { id: 'ach_dice',       icon: '🎲', name: 'Roll the Bones',    desc: 'Land with Cosmic Dice active' },
+  { id: 'ach_autopilot',  icon: '🤖', name: 'Hands Off',         desc: 'Land via Valkyrie Autopilot' },
+  { id: 'ach_crunch',     icon: '🌌', name: 'Big Crunch',        desc: 'Reach level 15 with Big Crunch Drive' },
+  { id: 'ach_skip3',      icon: '🚶', name: 'Purist',            desc: 'Skip 3 upgrade offers in one run' },
 ];

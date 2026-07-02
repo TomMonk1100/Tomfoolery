@@ -106,6 +106,21 @@ export function computeStats(picked: UpgradeId[], diff: Difficulty): ShipStats {
     nanoRegenSec: 0,
     blackholeReserve: 0,
     antigravPaint: 0,
+    // --- lander-v10 commit 4b (§7): additional stat hooks (see types.ts). ---
+    airBrakes: 0,
+    gustMult: 1,
+    stickyPadStacks: 0,
+    landingLightStacks: 0,
+    dropTankStacks: 0,
+    ufoHackerStacks: 0,
+    bubbleWrapCharges: 0,
+    gravityFlipCharges: 0,
+    gravityFlipDuration: 0,
+    slideLandingMult: 1,
+    cosmicDiceStacks: 0,
+    bigCrunchStacks: 0,
+    starForgeStacks: 0,
+    echoAltimeterStacks: 0,
   };
   for (const id of picked) {
     switch (id) {
@@ -132,6 +147,85 @@ export function computeStats(picked: UpgradeId[], diff: Difficulty): ShipStats {
         s.landingSpeedTol *= 1.12; s.landingAngleTol *= 1.12; s.rotMult *= 1.12;
         s.gravityMult *= 0.92; s.projSpeedMult *= 1.2; s.starCore = true; s.starCoreStacks += 1;
         break;
+
+      // --- lander-v10 commit 4b (§7): 50 new upgrades ------------------------
+      // Common (10 new)
+      case 'lightweight_alloy': s.massSum -= 0.05;            s.landingSpeedTol *= 0.96; break;
+      case 'wide_legs':       s.landingAngleTol += 0.10;      s.massSum += 0.03; break;
+      case 'fuel_lines':      s.fuelBurnMult *= 0.93;         s.thrustPower *= 0.96; break;
+      case 'bumper_skids':    s.landingSpeedTol *= 1.12;      s.rotMult *= 0.95; break;
+      case 'trim_flaps':      s.windMult *= 0.85;             s.fuelBurnMult *= 1.04; break;
+      case 'solar_wings':     s.fuelRegen += 1.5;             s.areaSum += 0.06; break;
+      case 'landing_lights':  s.landingLightStacks += 1;      s.maxFuel -= 5; break;
+      case 'sticky_pads':     s.stickyPadStacks += 1;         s.massSum += 0.03; break;
+      case 'nimble_fins':     s.rotMult *= 1.15;              s.windMult *= 1.08; break;
+      case 'drop_tanks':      s.maxFuel += 20;                s.massSum += 0.04; s.dropTankStacks += 1; break;
+
+      // Uncommon (10 new)
+      case 'air_brakes':      s.airBrakes += 1; break;
+      case 'kick_thrusters':  s.kickThrusters += 1; break;
+      case 'tractor_winch':   s.padPull += 8;                 s.massSum += 0.05; break;
+      case 'cloud_seeder':    s.gustMult *= 0.4;               s.thrustPower *= 0.95; break;
+      case 'vampire_coils':   s.grazeFuel += 8;                s.projSpeedMult *= 1.1; break;
+      case 'lucky_antenna':   s.extraChoices += 1;             s.maxFuel -= 5; break;
+      case 'stardust_condenser': s.stardustMult *= 1.3;        s.massSum += 0.04; break;
+      case 'echo_altimeter':  s.echoAltimeterStacks += 1;      s.fuelBurnMult *= 1.05; break;
+      case 'gecko_struts':    s.slopeLandCharges += 1;         s.massSum += 0.05; break;
+      case 'bounce_bumpers':  s.areaSum += 0.05; break;
+
+      // Rare (10 new)
+      case 'spaghetti_engine': s.noodleStacks += 1;            s.fuelBurnMult *= 1.10; break;
+      case 'grappling_hook':
+        s.maxFuel -= 10;
+        s.abilityDefs = [...s.abilityDefs, 'grappling_hook'];
+        break;
+      case 'hover_module':    s.hoverModule += 1; break;
+      case 'asteroid_miner':  s.asteroidMiner += 1; break;
+      case 'ufo_hacker':      s.ufoHackerStacks += 1;          s.maxFuel -= 8; break;
+      case 'bubble_wrap':     s.bubbleWrapCharges += 1;        s.areaSum += 0.08; break;
+      case 'magnet_storm':    s.magnetDeflect += 1;            s.rotMult *= 0.92; break;
+      case 'tailwind_turbine': s.tailwindTurbine += 1;         s.windMult *= 1.1; break;
+      case 'moon_cheese_drill': s.cheeseDrillCharges += 1;     s.massSum += 0.05; break;
+      case 'swarm_drones':    s.droneCharges += 1;             s.fuelBurnMult *= 1.06; break;
+
+      // Epic (10 new)
+      case 'wormhole_pocket':
+        s.maxFuel -= 0; // fuel cost is per-jump (12), applied at use time in main.ts
+        s.abilityDefs = [...s.abilityDefs, 'wormhole_pocket'];
+        break;
+      case 'gravity_flip':
+        s.gravityFlipCharges += 1;
+        s.gravityFlipDuration += s.gravityFlipCharges === 1 ? 2 : 1;
+        s.fuelBurnMult *= 1.10;
+        break;
+      case 'midas_hull':      s.stardustMult = Math.min(1e12, s.stardustMult * 3); s.massSum += 0.08; break;
+      case 'quantum_duplicate': s.ghostSave += 1;              s.maxFuel -= 15; break;
+      case 'storm_caller':    s.stormTowardPad = true;         s.windMult *= 1.25; break;
+      case 'time_bank':
+        s.abilityDefs = [...s.abilityDefs, 'time_bank'];
+        break;
+      case 'terraformer':     s.fuelBurnMult *= 1.12; break;
+      case 'singularity_anchor':
+        s.abilityDefs = [...s.abilityDefs, 'singularity_anchor'];
+        s.maxFuel -= 12;
+        break;
+      case 'nano_repair':     s.nanoRegenSec = s.nanoRegenSec > 0 ? s.nanoRegenSec : 20; s.fuelBurnMult *= 1.08; break;
+      case 'rocket_skates':   s.slideLanding += 1;             s.slideLandingMult *= 2; break;
+
+      // Legendary (10 new)
+      case 'black_hole_engine': s.blackholeReserve += 1;       s.massSum += 0.12; break;
+      case 'golden_goose':     s.eggLevels += 1;               s.massSum += 0.06; break;
+      case 'cosmic_dice':      s.cosmicDiceStacks += 1;        s.randomDice += 1; break;
+      case 'dyson_sail':       s.sailRegen += 4;               s.areaSum += 0.20; break;
+      case 'pocket_moon':      s.pocketMoon += 1; break;
+      case 'valkyrie_autopilot':
+        s.abilityDefs = [...s.abilityDefs, 'valkyrie_autopilot'];
+        s.maxFuel -= 20;
+        break;
+      case 'star_forge':       s.starForgeStacks += 1;         s.luckyTier += 1; s.maxFuel -= 10; break;
+      case 'antigrav_paint':   s.antigravPaint += 1;           s.gravityMult *= 0.8; s.rotMult *= 0.9; break;
+      case 'mothership_favor': s.escortUfos += 1; break;
+      case 'big_crunch':       s.bigCrunchStacks += 1;         s.doubleProgress += 1; break;
     }
     // §4.2: every module stack contributes a small default drag area even
     // before the full mass-conversion of upgrade cons lands in Commit 4.
@@ -154,6 +248,10 @@ export function computeStats(picked: UpgradeId[], diff: Difficulty): ShipStats {
   // as everything else in this function.
   s.stardustMult = Math.max(0, s.stardustMult);
   s.midasMult = Math.max(0, s.midasMult);
+  // §7 (commit 4b) hooks: same numerical-guard-only treatment.
+  s.gustMult = Math.max(0, s.gustMult);
+  s.slideLandingMult = Math.max(1, s.slideLandingMult);
+  if (s.gravityFlipCharges > 0) s.gravityFlipDuration = Math.max(2, s.gravityFlipDuration);
   return s;
 }
 
@@ -173,4 +271,31 @@ export function clampGravityProduct(gLevel: number, gravityMult: number): number
 export function chronoTimeScale(chronoStacks: number): number {
   if (chronoStacks <= 0) return 1;
   return Math.pow(0.75, chronoStacks);
+}
+
+// §7 Cosmic Dice pool — pure, exported so it's directly testable (used by
+// main.ts's rollCosmicDice/applyCosmicDice at level load).
+export const COSMIC_DICE_POOL: (keyof ShipStats)[] = [
+  'thrustPower', 'maxFuel', 'rotMult', 'landingSpeedTol', 'windMult', 'fuelBurnMult',
+];
+
+// Picks two DISTINCT stats from the pool: one to double, one to halve.
+// fuelBurnMult x0.5 (the halved side) is a buff, not a nerf — that's just a
+// property of which stat got picked, no special-casing needed here.
+export function rollCosmicDice(rand: () => number = Math.random): { up: keyof ShipStats; down: keyof ShipStats } {
+  const pool = [...COSMIC_DICE_POOL];
+  const upIdx = Math.floor(rand() * pool.length);
+  const up = pool[upIdx];
+  pool.splice(upIdx, 1);
+  const down = pool[Math.floor(rand() * pool.length)];
+  return { up, down };
+}
+
+// §7 Star Forge: multiplies rarity weights for uncommon+ rarities by
+// 3^stacks when rolling upgrade offers (common is unaffected). The
+// weighted-random draw always divides by the sum of these adjusted
+// weights, so this IS the renormalization — no separate step needed.
+export function starForgeRarityWeight(rarity: Rarity, baseWeight: number, starForgeStacks: number): number {
+  if (rarity === 'common' || starForgeStacks <= 0) return baseWeight;
+  return baseWeight * Math.pow(3, starForgeStacks);
 }

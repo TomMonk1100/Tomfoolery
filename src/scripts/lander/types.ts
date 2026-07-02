@@ -8,7 +8,23 @@ export type UpgradeId =
   | 'gyro' | 'gravity_anchor' | 'scanner' | 'feather_gear' | 'reserve_chute'
   | 'storm_dampeners' | 'fuel_scoop' | 'precision_jets'
   | 'jalapeno_injectors' | 'boomerang_hull' | 'alien_diplomacy'
-  | 'chrono_crystal' | 'overdrive_core' | 'phoenix_feather' | 'star_core';
+  | 'chrono_crystal' | 'overdrive_core' | 'phoenix_feather' | 'star_core'
+  // --- lander-v10 commit 4b (§7): 50 new upgrades ---
+  // Common (10 new)
+  | 'lightweight_alloy' | 'wide_legs' | 'fuel_lines' | 'bumper_skids' | 'trim_flaps'
+  | 'solar_wings' | 'landing_lights' | 'sticky_pads' | 'nimble_fins' | 'drop_tanks'
+  // Uncommon (10 new)
+  | 'air_brakes' | 'kick_thrusters' | 'tractor_winch' | 'cloud_seeder' | 'vampire_coils'
+  | 'lucky_antenna' | 'stardust_condenser' | 'echo_altimeter' | 'gecko_struts' | 'bounce_bumpers'
+  // Rare (10 new)
+  | 'spaghetti_engine' | 'grappling_hook' | 'hover_module' | 'asteroid_miner' | 'ufo_hacker'
+  | 'bubble_wrap' | 'magnet_storm' | 'tailwind_turbine' | 'moon_cheese_drill' | 'swarm_drones'
+  // Epic (10 new)
+  | 'wormhole_pocket' | 'gravity_flip' | 'midas_hull' | 'quantum_duplicate' | 'storm_caller'
+  | 'time_bank' | 'terraformer' | 'singularity_anchor' | 'nano_repair' | 'rocket_skates'
+  // Legendary (10 new)
+  | 'black_hole_engine' | 'golden_goose' | 'cosmic_dice' | 'dyson_sail' | 'pocket_moon'
+  | 'valkyrie_autopilot' | 'star_forge' | 'antigrav_paint' | 'mothership_favor' | 'big_crunch';
 
 // --- Rarity tiers ------------------------------------------------------------
 // Weighted drop rates: commons carry a run, legendaries are an event. Cards
@@ -182,6 +198,24 @@ export interface ShipStats {
   nanoRegenSec: number;        // Nano-Repair Swarm — seconds-airborne interval for +1 shield charge
   blackholeReserve: number;    // Black Hole Engine — stack count (thrust free below 25% tank)
   antigravPaint: number;       // Antigrav Paint — stack count (gravity coupling reduction)
+
+  // --- lander-v10 commit 4b (§7): additional stat hooks for mechanics the
+  // original §6.6 list didn't enumerate a dedicated field for. Same
+  // "0/false is off" convention as above.
+  airBrakes: number;           // Air Brakes — stack count (hold L+R velocity damp %/s ×n)
+  gustMult: number;            // Cloud Seeder — multiplies level windGust amplitude (compounds down)
+  stickyPadStacks: number;     // Sticky Landing Pads — stack count (on-pad horizontal speed forgiveness ×n)
+  landingLightStacks: number;  // Landing Lights — stack count (below 150m pad arrow + touchdown marker)
+  dropTankStacks: number;      // Drop Tanks — stack count (jettison cosmetic fires once per level at half fuel)
+  ufoHackerStacks: number;     // UFO Hacker — stack count (first N UFOs/level become allies)
+  bubbleWrapCharges: number;   // Bubble Wrap Hull — charges/level (fatal impact -> huge slow bounce)
+  gravityFlipCharges: number;  // Gravity Flip Coil — charges/level (hold L+R 1s to reverse gravity)
+  gravityFlipDuration: number; // Gravity Flip Coil — reversal duration seconds (2 + 1×extra stacks)
+  slideLandingMult: number;    // Rocket Skates — landingSpeedTol multiplier applied only when angle < tol/2
+  cosmicDiceStacks: number;    // Cosmic Dice — stack count (extra rolls per level, each an independent pair)
+  bigCrunchStacks: number;     // Big Crunch Drive — stack count (levels advanced per landing = 1 + stacks)
+  starForgeStacks: number;     // Star Forge — stack count (rarity weight ×3^n toward uncommon+)
+  echoAltimeterStacks: number; // Echo Altimeter — stack count (forecast + landing-speed readout)
 }
 
 // --- §6.2 Active-ability slot -------------------------------------------------
