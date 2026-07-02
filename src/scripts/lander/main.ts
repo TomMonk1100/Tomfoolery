@@ -26,7 +26,7 @@
 // ---------------------------------------------------------------------------
 
 import { mulberry32 } from './rng';
-import { RARITY, DIFF_MODS, computeStats, clampGravityProduct } from './stats';
+import { RARITY, DIFF_MODS, computeStats, clampGravityProduct, chronoTimeScale } from './stats';
 import { UPGRADES, PAINTS, TRAILS, SKIES, ACHIEVEMENTS } from './upgrades';
 import { levelConfigFor, terrainYAt, generateTerrain, generateSky, generateCritters, generateUfos } from './levels';
 import { makeParticle } from './particles';
@@ -44,7 +44,7 @@ import { upgradeListHtml, shopItemHtml, trailSwatch, diffButtonsHtml } from './u
 import { loadJSON, bestFor as bestForStored, saveBest, fetchLeaderboard as fetchLeaderboardRemote, submitScore as submitScoreRemote } from './persistence';
 import type {
   UpgradeId, LevelConfig, Terrain, Star, Planet, Critter, Ufo, Projectile, Particle,
-  ShipStats, FaceMap, Mood, GameState, Difficulty, ScoreRow, Toast, UpgradeDef, Rarity,
+  ShipStats, FaceMap, Mood, GameState, Difficulty, ScoreRow, Toast, UpgradeDef, Rarity, RunStats,
 } from './types';
 
 // --- Main game -----------------------------------------------------------------
@@ -146,6 +146,10 @@ export function initLanderGame(root: HTMLElement) {
   let ufos: Ufo[] = [];
   let projectiles: Projectile[] = [];
   let asteroids: Asteroid[] = [];
+  // §5.1 Alien Diplomacy stack 2+: ally shots fired by friendly UFOs at
+  // asteroids (never at the ship). Kept separate from hostile `projectiles`
+  // so the existing ship-hit collision loop never has to special-case them.
+  let allyProjectiles: { x: number; y: number; vx: number; vy: number; alive: boolean; target: Asteroid }[] = [];
   let simTime = 0; // accumulated sim seconds (fixed-step ticks only) — drives asteroid orbits, moved out of the render path per §4.4
   let windPhase = 0;
   let shieldFlash = 0;
@@ -156,7 +160,7 @@ export function initLanderGame(root: HTMLElement) {
   let phoenixUsed = 0;      // phoenix feather, per run
   let phoenixFlashT = 0;    // golden revive flash
   let slowmoActive = false; // chrono crystal state, read by draw()
-  let runStats = { crashes: 0, landings: 0 };
+  let runStats: RunStats = { crashes: 0, landings: 0, skips: 0 };
 
   // Pilot selfie — session-only, in memory (never persisted to disk).
   let pilotPhoto: HTMLCanvasElement | null = null;
@@ -278,7 +282,7 @@ export function initLanderGame(root: HTMLElement) {
     levelIndex = 0;
     pickedUpgrades = [];
     stats = computeStats(pickedUpgrades, difficulty);
-    runStats = { crashes: 0, landings: 0 };
+    runStats = { crashes: 0, landings: 0, skips: 0 };
     phoenixUsed = 0;
     music.ensure();
     loadLevel(0);
@@ -304,6 +308,7 @@ export function initLanderGame(root: HTMLElement) {
     critters = generateCritters(cfg, terrain, width);
     ufos = generateUfos(cfg, width, height);
     projectiles = [];
+    allyProjectiles = [];
     asteroids = generateAsteroids(cfg, width, height, S);
     windPhase = Math.random() * 10;
     introT = 2.4;
@@ -435,11 +440,12 @@ export function initLanderGame(root: HTMLElement) {
   function step(dt: number) {
     if (state !== 'playing') return;
 
-    // Chrono Crystal: the world runs at 75% below 120m — but the fuel
+    // Chrono Crystal: the world runs at 0.75^n below 120m (§5.1 — stacks
+    // compound the slow-mo depth, not just its presence) — but the fuel
     // clock doesn't care (that's the tradeoff), so drains use raw dt.
     const altNow = terrain ? terrainYAt(terrain.points, ship.x) - ship.y : 999;
     slowmoActive = stats.slowmo && altNow < 120;
-    const pdt = slowmoActive ? dt * 0.75 : dt;
+    const pdt = slowmoActive ? dt * chronoTimeScale(stats.chronoStacks) : dt;
 
     simTime += pdt;
     windPhase += pdt;
@@ -609,6 +615,7 @@ export function initLanderGame(root: HTMLElement) {
       if (ship.fuel < 5) unlockAch('ach_fumes');
       if (pickedUpgrades.length >= 8) unlockAch('ach_hoarder');
       if (slowmoActive) unlockAch('ach_chrono');
+      if (completed >= 5 && pickedUpgrades.length === 0) unlockAch('ach_minimalist');
 
       ship.vx = 0; ship.vy = 0; ship.angle = 0;
       state = 'levelComplete';
@@ -661,6 +668,26 @@ export function initLanderGame(root: HTMLElement) {
           u.fireCooldown -= dt;
           if (u.fireCooldown <= 0) u.telegraph = 0.35;
         }
+      } else if (stats.ufosFriendly >= 2) {
+        // §5.1 stack 2+: Alien Embassy Plates escalate — friendly UFOs shoot
+        // asteroids for you instead of idling. Fires at the nearest alive
+        // asteroid; the projectile is visually identical but only ever
+        // targets asteroids (findAsteroidHit's ship-hit path never sees it
+        // once `alive` is cleared on asteroid contact below).
+        u.fireCooldown -= dt;
+        if (u.fireCooldown <= 0) {
+          const target = asteroids.filter((a) => a.alive)
+            .sort((a, b) => Math.hypot(u.x - a.x, u.y - a.y) - Math.hypot(u.x - b.x, u.y - b.y))[0];
+          if (target) {
+            const dx = target.x - u.x;
+            const dy = target.y - u.y;
+            const dist = Math.hypot(dx, dy) || 1;
+            const speed = 110 * stats.projSpeedMult;
+            allyProjectiles.push({ x: u.x, y: u.y, vx: (dx / dist) * speed, vy: (dy / dist) * speed, alive: true, target });
+            audio.ufoFire();
+          }
+          u.fireCooldown = 1.6 + Math.random() * 1.4;
+        }
       }
     }
 
@@ -687,6 +714,34 @@ export function initLanderGame(root: HTMLElement) {
       }
     }
     projectiles = projectiles.filter((p) => p.alive);
+
+    // §5.1 stack 2+ Alien Diplomacy: advance ally shots and pop their
+    // target asteroid on contact (small burst, +5 stardust — a lesser
+    // version of the manual asteroid-clear reward, cosmetic-only otherwise).
+    for (const ap of allyProjectiles) {
+      if (!ap.alive) continue;
+      ap.x += ap.vx * dt;
+      ap.y += ap.vy * dt;
+      if (ap.x < -20 || ap.x > width + 20 || ap.y < -20 || ap.y > height + 20) {
+        ap.alive = false;
+        continue;
+      }
+      if (ap.target.alive && Math.hypot(ap.x - ap.target.x, ap.y - ap.target.y) < ap.target.r) {
+        ap.alive = false;
+        ap.target.alive = false;
+        for (let i = 0; i < 10; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const speed = (30 + Math.random() * 80) * S;
+          particles.push(makeParticle(
+            ap.target.x, ap.target.y, Math.cos(a) * speed, Math.sin(a) * speed,
+            '#7C8F5C', 0.4 + Math.random() * 0.4, (1.5 + Math.random() * 2) * S
+          ));
+        }
+      } else if (!ap.target.alive) {
+        ap.alive = false;
+      }
+    }
+    allyProjectiles = allyProjectiles.filter((ap) => ap.alive);
   }
 
   // --- Overlays ---
@@ -697,22 +752,44 @@ export function initLanderGame(root: HTMLElement) {
         <h2 class="font-display text-2xl font-semibold mt-2">Pick an upgrade</h2>
         <p class="text-xs text-muted mt-1">Every boon has a cost. Rarer finds, bigger swings — gold ones are an event.</p>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5" data-upgrade-choices></div>
+        <button data-action="skip-upgrade" class="mt-4 text-xs font-mono text-muted hover:text-ink transition-colors cursor-pointer underline underline-offset-2">▶ skip — travel light · +15✨</button>
       </div>
     `);
     renderUpgradeChoices();
   }
 
-  // Weighted-by-rarity draw of 3 distinct upgrades. Owned upgrades roll at
-  // half weight so fresh options surface, but stacking stays possible.
+  // §5.3 Skip option: no pick, +15 stardust, advance immediately. Reachable
+  // by clicking the skip link or pressing Escape while the upgrade overlay
+  // is open (handled in the `keydown` listener below).
+  function skipUpgrade() {
+    if (state !== 'levelComplete') return;
+    runStats.skips += 1;
+    stardustAdd(15);
+    toasts.push({ text: '+15✨ · travel light', t: 2.2 });
+    audio.select();
+    loadLevel(levelIndex + 1);
+    state = 'playing';
+    setOverlay(null);
+  }
+
+  // Weighted-by-rarity draw of 3 upgrades. §5.1: owned upgrades roll at 0.75
+  // weight (was 0.5) so stacking is a genuinely viable strategy, not just a
+  // rare accident — fresh options still surface more often than dupes, but
+  // the gap is narrower. The same upgrade still can't appear twice in one
+  // offer (`!picks.includes(u)` below) — the "distinct 3" restriction that's
+  // removed is across LEVELS (a previously-owned upgrade is never excluded
+  // from the pool the way it might be in a "new upgrades only" design), not
+  // within a single offer.
+  const DUPLICATE_WEIGHT = 0.75;
   function rollUpgradeChoices(): UpgradeDef[] {
     const owned = new Set(pickedUpgrades);
     const picks: UpgradeDef[] = [];
     for (let k = 0; k < 3; k++) {
       const pool = UPGRADES.filter((u) => !picks.includes(u));
-      const total = pool.reduce((a, u) => a + RARITY[u.rarity].weight * (owned.has(u.id) ? 0.5 : 1), 0);
+      const total = pool.reduce((a, u) => a + RARITY[u.rarity].weight * (owned.has(u.id) ? DUPLICATE_WEIGHT : 1), 0);
       let roll = Math.random() * total;
       for (const u of pool) {
-        roll -= RARITY[u.rarity].weight * (owned.has(u.id) ? 0.5 : 1);
+        roll -= RARITY[u.rarity].weight * (owned.has(u.id) ? DUPLICATE_WEIGHT : 1);
         if (roll <= 0) { picks.push(u); break; }
       }
       if (picks.length <= k) picks.push(pool[pool.length - 1]);
@@ -1041,10 +1118,16 @@ export function initLanderGame(root: HTMLElement) {
     if (target.dataset.action === 'achievements') showAchievements();
     if (target.dataset.action === 'shop') showShop();
     if (target.dataset.action === 'submit-score') handleScoreSubmit();
+    if (target.dataset.action === 'skip-upgrade') skipUpgrade();
   });
 
   // --- Input ---
   function keydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && state === 'levelComplete') {
+      // §5.3: Escape triggers skip while the upgrade-choice overlay is open.
+      skipUpgrade();
+      return;
+    }
     if (e.repeat) return;
     if (['ArrowLeft', 'a', 'A'].includes(e.key)) input.left = true;
     if (['ArrowRight', 'd', 'D'].includes(e.key)) input.right = true;
@@ -1180,6 +1263,18 @@ export function initLanderGame(root: HTMLElement) {
 
     drawUfos(ctx, ufos, projectiles, stats);
 
+    // Ally shots (Alien Diplomacy stack 2+, §5.1) — green to read as friendly.
+    for (const ap of allyProjectiles) {
+      if (!ap.alive) continue;
+      ctx.beginPath();
+      ctx.arc(ap.x, ap.y, 2.8, 0, Math.PI * 2);
+      ctx.fillStyle = '#94B03D';
+      ctx.shadowColor = '#7C8F5C';
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
     // Particles
     for (const p of particles) {
       const alpha = Math.max(0, p.life / p.maxLife);
@@ -1266,10 +1361,24 @@ export function initLanderGame(root: HTMLElement) {
       ctx.restore();
     }
 
-    // Scanner guidance — above the fog so it punches through it
+    // Scanner guidance — above the fog so it punches through it. §5.1
+    // escalation: stack 1 = guidance line (as before); stack 2+ additionally
+    // projects a touchdown-forecast marker (where current vx will carry the
+    // ship by the time it reaches the pad's altitude); stack 3+ widens the
+    // beam glow around the guidance line.
     if (stats.scanner && state === 'playing') {
       const padCx = (terrain.pad.xStart + terrain.pad.xEnd) / 2;
       ctx.save();
+      if (stats.scanner >= 3) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(148,176,61,0.16)';
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(ship.x, ship.y);
+        ctx.lineTo(padCx, terrain.pad.y);
+        ctx.stroke();
+        ctx.restore();
+      }
       ctx.setLineDash([4, 7]);
       ctx.strokeStyle = 'rgba(148,176,61,0.3)';
       ctx.lineWidth = 1;
@@ -1286,6 +1395,27 @@ export function initLanderGame(root: HTMLElement) {
       ctx.lineTo(padCx + 6, terrain.pad.y - 15);
       ctx.stroke();
       ctx.restore();
+
+      if (stats.scanner >= 2) {
+        const dropDist = terrain.pad.y - ship.y;
+        const fallTime = ship.vy > 5 ? dropDist / ship.vy : 1.2;
+        const forecastX = Math.max(10, Math.min(width - 10, ship.x + ship.vx * Math.max(0, fallTime)));
+        const forecastY = terrainYAt(terrain.points, forecastX);
+        ctx.save();
+        ctx.globalAlpha = 0.75;
+        ctx.strokeStyle = '#7BA7C7';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(forecastX, forecastY - 3, 5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(forecastX - 4, forecastY - 3);
+        ctx.lineTo(forecastX + 4, forecastY - 3);
+        ctx.moveTo(forecastX, forecastY - 7);
+        ctx.lineTo(forecastX, forecastY + 1);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
 
     // Wind indicator

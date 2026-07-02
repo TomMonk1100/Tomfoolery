@@ -22,10 +22,23 @@ export { DIFF_MODS };
 // replaced with numerical-stability FLOORS. They no longer clamp stacking
 // down to some "max useful" value — they only guarantee the sim stays
 // finite and the ship stays theoretically controllable in the limit.
-// Infinite-stacking formulas themselves (removing the "one pick per
-// upgrade matters most" shape, letting duplicates compound without these
-// interfering) are Commit 3's job — this commit only swaps caps for floors
-// and leaves the per-upgrade formulas below untouched.
+//
+// lander-v10 commit 3 (§5.1): infinite stacking. `picked` already contains
+// one entry per pick (duplicates included), so this loop already applied
+// each multiplicative/additive/charge effect once per stack — that part of
+// the "compound forever" requirement was structurally free. What Commit 3
+// actually changes:
+//   - Multiplicative/additive/charge stats: unchanged formulas (they already
+//     compound correctly per-stack via the loop), confirmed by monotonicity
+//     tests in __tests__/stats.test.ts.
+//   - Charge-based upgrades that previously ignored stacking (Shield,
+//     Boomerang, Reserve Chute already used `+= 1` per stack — unchanged;
+//     Phoenix already stacked per plan) — no change needed, verified below.
+//   - Boolean upgrades now ALSO track a stack count (scanner, ufosFriendly,
+//     chrono, star_core) so render/gameplay code can escalate at stack
+//     thresholds (§5.1: Scanner 2+/3+, Alien Diplomacy 2+, Chrono 0.75^n,
+//     Star Core repeats its whole +12% roll per stack — already did, since
+//     the switch-case runs once per occurrence in `picked`).
 //
 // thrustPower base raised 145 -> 158 per §4.2 to compensate for the new
 // mass/drag model's effect on level-1 feel (heavier stacks respond slower
@@ -40,19 +53,22 @@ export function computeStats(picked: UpgradeId[], diff: Difficulty): ShipStats {
     landingAngleTol: 0.28 * tol,
     shieldCharges: 0,
     gravityMult: 1,
-    scanner: false,
+    scanner: 0,
     reserveCharges: 0,
     fuelBurnMult: 1,
     rotMult: 1,
     windMult: 1,
     fuelRegen: 0,
     spicyFlame: false,
+    spicyStacks: 0,
     bounceCharges: 0,
-    ufosFriendly: false,
+    ufosFriendly: 0,
     slowmo: false,
+    chronoStacks: 0,
     projSpeedMult: 1,
     phoenixCharges: 0,
     starCore: false,
+    starCoreStacks: 0,
     massSum: 0,
     areaSum: 0,
   };
@@ -64,22 +80,22 @@ export function computeStats(picked: UpgradeId[], diff: Difficulty): ShipStats {
       case 'shield':          s.shieldCharges += 1;           s.gravityMult *= 1.06; break;
       case 'gyro':            s.landingAngleTol += 0.16;      s.fuelBurnMult *= 1.08; break;
       case 'gravity_anchor':  s.gravityMult *= 0.85;          s.rotMult *= 0.88; break;
-      case 'scanner':         s.scanner = true;               s.maxFuel -= 10; break;
+      case 'scanner':         s.scanner += 1;                 s.maxFuel -= 10; break;
       case 'feather_gear':    s.landingSpeedTol *= 1.3;       s.windMult *= 1.2; break;
       case 'reserve_chute':   s.reserveCharges += 1;          s.gravityMult *= 1.04; break;
       case 'storm_dampeners': s.windMult *= 0.5;              s.thrustPower *= 0.92; break;
       case 'fuel_scoop':      s.fuelRegen += 3;               s.maxFuel -= 15; break;
       case 'precision_jets':  s.rotMult *= 1.4;               s.fuelBurnMult *= 1.06; break;
-      case 'jalapeno_injectors': s.thrustPower *= 1.3;        s.fuelBurnMult *= 1.12; s.spicyFlame = true; break;
+      case 'jalapeno_injectors': s.thrustPower *= 1.3;        s.fuelBurnMult *= 1.12; s.spicyFlame = true; s.spicyStacks += 1; break;
       case 'boomerang_hull':  s.bounceCharges += 1; break;
-      case 'alien_diplomacy': s.ufosFriendly = true;          s.gravityMult *= 1.05; break;
-      case 'chrono_crystal':  s.slowmo = true; break;
+      case 'alien_diplomacy': s.ufosFriendly += 1;            s.gravityMult *= 1.05; break;
+      case 'chrono_crystal':  s.slowmo = true;                s.chronoStacks += 1; break;
       case 'overdrive_core':  s.thrustPower *= 1.55; s.rotMult *= 1.2; s.fuelBurnMult *= 1.22; break;
       case 'phoenix_feather': s.phoenixCharges += 1;          s.maxFuel -= 10; break;
       case 'star_core':
         s.thrustPower *= 1.12; s.maxFuel = Math.round(s.maxFuel * 1.12);
         s.landingSpeedTol *= 1.12; s.landingAngleTol *= 1.12; s.rotMult *= 1.12;
-        s.gravityMult *= 0.92; s.projSpeedMult *= 1.2; s.starCore = true;
+        s.gravityMult *= 0.92; s.projSpeedMult *= 1.2; s.starCore = true; s.starCoreStacks += 1;
         break;
     }
     // §4.2: every module stack contributes a small default drag area even
@@ -107,4 +123,14 @@ export function computeStats(picked: UpgradeId[], diff: Difficulty): ShipStats {
 export function clampGravityProduct(gLevel: number, gravityMult: number): number {
   const product = gLevel * gravityMult;
   return Math.max(1, product) / Math.max(1e-6, gLevel);
+}
+
+// §5.1: Chrono Crystal compounds — n stacks slow the world to 0.75^n below
+// 120m (each additional crystal makes the bullet-time deeper, not just
+// wider). No floor here beyond the physics accumulator's own DT/MAX_FRAME_TIME
+// sanity — 0.75^n asymptotically approaches 0 but never reaches it or goes
+// negative, so the sim stays finite at any stack count.
+export function chronoTimeScale(chronoStacks: number): number {
+  if (chronoStacks <= 0) return 1;
+  return Math.pow(0.75, chronoStacks);
 }

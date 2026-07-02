@@ -87,6 +87,13 @@ export interface Particle {
 }
 
 // --- Ship stats derived from picked upgrades ------------------------------------
+//
+// lander-v10 commit 3 (§5.1): booleans that used to mean "owned" now carry a
+// STACK COUNT instead (0 = not owned, n = picked n times), so every module's
+// per-stack escalation (§5.1 bullet list) has a number to key off. Truthiness
+// checks (`if (stats.scanner)`) still work unchanged since 0 is falsy and any
+// positive count is truthy — call sites that only cared about "owned or not"
+// needed zero changes; call sites that escalate at stack 2+/3+ read the count.
 export interface ShipStats {
   maxFuel: number;
   thrustPower: number;
@@ -95,22 +102,32 @@ export interface ShipStats {
   landingAngleTol: number;
   shieldCharges: number;
   gravityMult: number;
-  scanner: boolean;
+  scanner: number;         // stacks: 1 = guidance line, 2+ = touchdown forecast, 3+ = beam glow
   reserveCharges: number;
   fuelBurnMult: number;
   rotMult: number;
   windMult: number;
   fuelRegen: number;
-  spicyFlame: boolean;     // jalapeño injectors — green-hot exhaust
+  spicyFlame: boolean;     // jalapeño injectors — green-hot exhaust (greener per stack via spicyStacks)
+  spicyStacks: number;     // jalapeño injectors stack count — flame color ramps with it
   bounceCharges: number;   // boomerang hull — terrain bounces per level
-  ufosFriendly: boolean;   // alien diplomacy — UFOs hold fire
+  ufosFriendly: number;    // alien diplomacy stacks: 1 = UFOs hold fire, 2+ = UFOs shoot asteroids for you
   slowmo: boolean;         // chrono crystal — bullet-time near the ground
+  chronoStacks: number;    // chrono crystal stack count — time mult compounds 0.75^n
   projSpeedMult: number;   // star core drawback — faster UFO shots
   phoenixCharges: number;  // phoenix feather — revives per run
   starCore: boolean;       // star core — golden aura visual
+  starCoreStacks: number;  // star core stack count — aura radius grows with it
   // --- physics §4.2 mass & drag model ---
   massSum: number;         // Σ(def.mass × stacks) — fed into physics.effectiveMass()
   areaSum: number;         // Σ(def.dragArea × stacks) — fed into physics.effectiveArea()
+}
+
+// --- Per-run tallies (not persisted mid-run; achievements/toasts read these) --
+export interface RunStats {
+  crashes: number;
+  landings: number;
+  skips: number; // §5.3 — level-complete screens skipped ("travel light")
 }
 
 // --- Pilot face mapping -----------------------------------------------------------

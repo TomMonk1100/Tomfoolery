@@ -71,4 +71,6 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'ach_boing',    icon: '🪃', name: 'Boing',               desc: 'Bounce off the terrain and live' },
   { id: 'ach_selfie',   icon: '🤳', name: 'Face of the Program', desc: 'Take a pilot selfie' },
   { id: 'ach_chrono',   icon: '⌛', name: 'Time Lord',           desc: 'Land while time is slowed' },
+  // lander-v10 commit 3 (§5.3): skip option achievement.
+  { id: 'ach_minimalist', icon: '🪶', name: 'Featherweight',     desc: 'Clear level 5 with zero upgrades installed' },
 ];

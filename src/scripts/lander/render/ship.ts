@@ -1,4 +1,22 @@
 import type { FaceMap, Mood, PaintDef, ShipStats, UpgradeId } from '../types';
+import { RARITY } from '../stats';
+import { UPGRADES } from '../upgrades';
+
+// §5.2: rarity color lookup for module count pips, keyed by upgrade id.
+// Built once (module tables are static) rather than per-frame.
+const RARITY_COLOR_BY_ID: Partial<Record<UpgradeId, string>> = {};
+for (const u of UPGRADES) RARITY_COLOR_BY_ID[u.id] = RARITY[u.rarity].color;
+function defaultRarityColorOf(id: UpgradeId): string {
+  return RARITY_COLOR_BY_ID[id] ?? '#B9A480';
+}
+
+// §5.2: counts occurrences of each upgrade id in the picked list — this IS
+// the stack count `n` that drives moduleScale(n) and the >=3 pip.
+export function countStacks(pickedUpgrades: UpgradeId[]): Map<UpgradeId, number> {
+  const counts = new Map<UpgradeId, number>();
+  for (const id of pickedUpgrades) counts.set(id, (counts.get(id) ?? 0) + 1);
+  return counts;
+}
 
 // --- Pilot face mapping -----------------------------------------------------------
 // Normalized (0..1) positions of facial features within the selfie canvas.
@@ -127,228 +145,349 @@ export function drawDefaultPilot(c: CanvasRenderingContext2D, cockCY: number, co
   }
 }
 
+// §5.2: linear, unbounded per-stack growth. n=1 -> 1.0x (no visible change
+// from the legacy single-pick art), each additional stack +30%. Intentionally
+// uncapped — "ludicrous late-run ships that dwarf the hull" is desired
+// behavior per plan §5.2/§10 item 2, not a bug to guard against.
+export function moduleScale(n: number): number {
+  return 1 + 0.3 * Math.max(0, n - 1);
+}
+
+// Draws `drawFn` (module art in ship-local coordinates) scaled by
+// moduleScale(n) anchored at (anchorX, anchorY) — the module's attachment
+// point on the hull — so growth extends outward from that point rather than
+// from the ship's origin. A module whose attachment sits, say, at the flank
+// (anchorX far from 0) will visibly grow away from the cockpit, never over
+// it (§10 item 2). At n>=3 a small "xn" count pip is drawn next to the
+// anchor in the upgrade's rarity color.
+function drawModule(
+  c: CanvasRenderingContext2D, n: number, anchorX: number, anchorY: number,
+  rarityColor: string, drawFn: () => void
+) {
+  if (n <= 0) return;
+  const k = moduleScale(n);
+  c.save();
+  c.translate(anchorX, anchorY);
+  c.scale(k, k);
+  c.translate(-anchorX, -anchorY);
+  drawFn();
+  c.restore();
+  if (n >= 3) {
+    c.save();
+    c.font = '2.6px "JetBrains Mono", monospace';
+    c.textAlign = 'left';
+    c.textBaseline = 'middle';
+    const px = anchorX + (anchorX >= 0 ? 1 : -1) * (2.2 + 1.4 * (k - 1)) - (anchorX < 0 ? 3.2 : 0);
+    const py = anchorY;
+    c.fillStyle = 'rgba(23,16,9,0.75)';
+    c.fillRect(px - 0.4, py - 1.6, 3.6, 3.2);
+    c.fillStyle = rarityColor;
+    c.fillText(`×${n}`, px, py);
+    c.restore();
+  }
+}
+
 // Visible hardware for each owned upgrade — the ship literally builds
 // out as the run goes on. All drawn in ship-local units (pre-scaled).
-export function drawShipModules(c: CanvasRenderingContext2D, pickedUpgrades: UpgradeId[], stats: ShipStats) {
+// §5.2: `stackCounts` gives the pick count per owned upgrade id (n) so each
+// module can be scaled via moduleScale(n) and pipped at n>=3. `rarityColor`
+// maps an upgrade id to its rarity's display color (for the pip).
+export function drawShipModules(
+  c: CanvasRenderingContext2D,
+  pickedUpgrades: UpgradeId[],
+  stats: ShipStats,
+  stackCounts?: Map<UpgradeId, number>,
+  rarityColorOf: (id: UpgradeId) => string = defaultRarityColorOf
+) {
   const owned = new Set(pickedUpgrades);
   const t = performance.now() / 1000;
+  const counts = stackCounts ?? countStacks(pickedUpgrades);
+  const n = (id: UpgradeId) => counts.get(id) ?? (owned.has(id) ? 1 : 0);
 
   if (owned.has('fuel_tank')) {
-    // Saddle tanks on both flanks
+    const stacks = n('fuel_tank');
+    const color = rarityColorOf('fuel_tank');
+    // Saddle tanks on both flanks — each anchored to its own flank so
+    // growth pushes outward, away from the hull centerline/cockpit.
     for (const side of [-1, 1]) {
-      c.fillStyle = '#D9C6A3';
-      c.strokeStyle = '#8a6a3c';
-      c.lineWidth = 0.6;
-      c.beginPath();
-      c.ellipse(side * 8.9, 2.6, 1.5, 3.4, side * 0.12, 0, Math.PI * 2);
-      c.fill();
-      c.stroke();
+      drawModule(c, stacks, side * 8.9, 2.6, color, () => {
+        c.fillStyle = '#D9C6A3';
+        c.strokeStyle = '#8a6a3c';
+        c.lineWidth = 0.6;
+        c.beginPath();
+        c.ellipse(side * 8.9, 2.6, 1.5, 3.4, side * 0.12, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+      });
     }
   }
   if (owned.has('boost_thrusters')) {
-    // Twin auxiliary nozzles beside the main engine
-    c.fillStyle = '#221808';
+    const stacks = n('boost_thrusters');
+    const color = rarityColorOf('boost_thrusters');
+    // Twin auxiliary nozzles beside the main engine — anchored at the
+    // engine skirt (below the hull), so growth pushes further down/out.
     for (const side of [-1, 1]) {
-      c.beginPath();
-      c.moveTo(side * 3.4, 7);
-      c.lineTo(side * 5.4, 9.6);
-      c.lineTo(side * 2.4, 8.6);
-      c.closePath();
-      c.fill();
+      drawModule(c, stacks, side * 3.9, 8.4, color, () => {
+        c.fillStyle = '#221808';
+        c.beginPath();
+        c.moveTo(side * 3.4, 7);
+        c.lineTo(side * 5.4, 9.6);
+        c.lineTo(side * 2.4, 8.6);
+        c.closePath();
+        c.fill();
+      });
     }
   }
   if (owned.has('magnetic_pad')) {
-    // Horseshoe magnet under the belly
-    c.strokeStyle = '#C97B3D';
-    c.lineWidth = 1.2;
-    c.beginPath();
-    c.arc(0, 9.4, 2.2, Math.PI, 0);
-    c.stroke();
-    c.strokeStyle = '#F4EBDA';
-    c.beginPath(); c.moveTo(-2.2, 9.4); c.lineTo(-2.2, 10.6); c.stroke();
-    c.beginPath(); c.moveTo(2.2, 9.4); c.lineTo(2.2, 10.6); c.stroke();
+    drawModule(c, n('magnetic_pad'), 0, 10, rarityColorOf('magnetic_pad'), () => {
+      // Horseshoe magnet under the belly
+      c.strokeStyle = '#C97B3D';
+      c.lineWidth = 1.2;
+      c.beginPath();
+      c.arc(0, 9.4, 2.2, Math.PI, 0);
+      c.stroke();
+      c.strokeStyle = '#F4EBDA';
+      c.beginPath(); c.moveTo(-2.2, 9.4); c.lineTo(-2.2, 10.6); c.stroke();
+      c.beginPath(); c.moveTo(2.2, 9.4); c.lineTo(2.2, 10.6); c.stroke();
+    });
   }
   if (owned.has('gyro')) {
-    // Slowly spinning stabilizer ring around the midsection
-    c.save();
-    c.strokeStyle = 'rgba(148, 176, 61, 0.55)';
-    c.lineWidth = 0.9;
-    c.setLineDash([3, 4]);
-    c.lineDashOffset = -t * 9;
-    c.beginPath();
-    c.ellipse(0, 0.5, 10.8, 3.4, 0, 0, Math.PI * 2);
-    c.stroke();
-    c.restore();
+    drawModule(c, n('gyro'), 0, 0.5, rarityColorOf('gyro'), () => {
+      // Slowly spinning stabilizer ring around the midsection
+      c.save();
+      c.strokeStyle = 'rgba(148, 176, 61, 0.55)';
+      c.lineWidth = 0.9;
+      c.setLineDash([3, 4]);
+      c.lineDashOffset = -t * 9;
+      c.beginPath();
+      c.ellipse(0, 0.5, 10.8, 3.4, 0, 0, Math.PI * 2);
+      c.stroke();
+      c.restore();
+    });
   }
   if (owned.has('gravity_anchor')) {
-    // Tiny anchor slung under the hull
-    c.strokeStyle = '#B9A480';
-    c.lineWidth = 0.9;
-    c.beginPath(); c.moveTo(0, 8.6); c.lineTo(0, 12); c.stroke();
-    c.beginPath(); c.arc(0, 11.6, 1.6, Math.PI * 0.15, Math.PI * 0.85); c.stroke();
-    c.beginPath(); c.arc(0, 9, 0.55, 0, Math.PI * 2); c.stroke();
+    drawModule(c, n('gravity_anchor'), 0, 11, rarityColorOf('gravity_anchor'), () => {
+      // Tiny anchor slung under the hull
+      c.strokeStyle = '#B9A480';
+      c.lineWidth = 0.9;
+      c.beginPath(); c.moveTo(0, 8.6); c.lineTo(0, 12); c.stroke();
+      c.beginPath(); c.arc(0, 11.6, 1.6, Math.PI * 0.15, Math.PI * 0.85); c.stroke();
+      c.beginPath(); c.arc(0, 9, 0.55, 0, Math.PI * 2); c.stroke();
+    });
   }
   if (owned.has('scanner')) {
-    // Shoulder dish, tilted skyward
-    c.save();
-    c.translate(6.8, -9.4);
-    c.rotate(-0.5);
-    c.strokeStyle = '#B9A480';
-    c.lineWidth = 0.8;
-    c.beginPath(); c.moveTo(0, 2.4); c.lineTo(0, 0.6); c.stroke();
-    c.fillStyle = '#D9C6A3';
-    c.beginPath(); c.ellipse(0, 0, 2.2, 0.9, 0, 0, Math.PI); c.fill();
-    c.fillStyle = '#94B03D';
-    c.beginPath(); c.arc(0, -0.6, 0.5, 0, Math.PI * 2); c.fill();
-    c.restore();
+    drawModule(c, n('scanner'), 6.8, -9.4, rarityColorOf('scanner'), () => {
+      // Shoulder dish, tilted skyward
+      c.save();
+      c.translate(6.8, -9.4);
+      c.rotate(-0.5);
+      c.strokeStyle = '#B9A480';
+      c.lineWidth = 0.8;
+      c.beginPath(); c.moveTo(0, 2.4); c.lineTo(0, 0.6); c.stroke();
+      c.fillStyle = '#D9C6A3';
+      c.beginPath(); c.ellipse(0, 0, 2.2, 0.9, 0, 0, Math.PI); c.fill();
+      c.fillStyle = '#94B03D';
+      c.beginPath(); c.arc(0, -0.6, 0.5, 0, Math.PI * 2); c.fill();
+      c.restore();
+    });
   }
   if (owned.has('feather_gear')) {
+    const stacks = n('feather_gear');
+    const color = rarityColorOf('feather_gear');
     // Feather tufts on the landing struts
-    c.strokeStyle = 'rgba(244, 235, 218, 0.85)';
-    c.lineWidth = 0.7;
     for (const side of [-1, 1]) {
-      for (let i = 0; i < 3; i++) {
-        c.beginPath();
-        c.moveTo(side * (7.6 + i * 0.8), 9.4);
-        c.quadraticCurveTo(side * (8.4 + i * 0.8), 8, side * (8 + i * 0.8), 6.6 + i * 0.4);
-        c.stroke();
-      }
+      drawModule(c, stacks, side * 8, 8, color, () => {
+        c.strokeStyle = 'rgba(244, 235, 218, 0.85)';
+        c.lineWidth = 0.7;
+        for (let i = 0; i < 3; i++) {
+          c.beginPath();
+          c.moveTo(side * (7.6 + i * 0.8), 9.4);
+          c.quadraticCurveTo(side * (8.4 + i * 0.8), 8, side * (8 + i * 0.8), 6.6 + i * 0.4);
+          c.stroke();
+        }
+      });
     }
   }
   if (owned.has('reserve_chute')) {
-    // Chute pack strapped to the left flank
-    c.fillStyle = '#C97B3D';
-    c.strokeStyle = '#8a4a20';
-    c.lineWidth = 0.6;
-    c.beginPath();
-    c.ellipse(-8.7, -2.6, 1.6, 2.5, -0.15, 0, Math.PI * 2);
-    c.fill(); c.stroke();
-    c.strokeStyle = 'rgba(244,235,218,0.6)';
-    c.beginPath(); c.moveTo(-9.8, -3.6); c.lineTo(-7.6, -1.4); c.stroke();
+    drawModule(c, n('reserve_chute'), -8.7, -2.6, rarityColorOf('reserve_chute'), () => {
+      // Chute pack strapped to the left flank
+      c.fillStyle = '#C97B3D';
+      c.strokeStyle = '#8a4a20';
+      c.lineWidth = 0.6;
+      c.beginPath();
+      c.ellipse(-8.7, -2.6, 1.6, 2.5, -0.15, 0, Math.PI * 2);
+      c.fill(); c.stroke();
+      c.strokeStyle = 'rgba(244,235,218,0.6)';
+      c.beginPath(); c.moveTo(-9.8, -3.6); c.lineTo(-7.6, -1.4); c.stroke();
+    });
   }
   if (owned.has('storm_dampeners')) {
+    const stacks = n('storm_dampeners');
+    const color = rarityColorOf('storm_dampeners');
     // Vent slats on both flanks
-    c.strokeStyle = '#7C8F5C';
-    c.lineWidth = 0.8;
     for (const side of [-1, 1]) {
-      for (let i = 0; i < 3; i++) {
-        c.beginPath();
-        c.moveTo(side * 7.6, -0.4 + i * 1.5);
-        c.lineTo(side * 9.2, 0.2 + i * 1.5);
-        c.stroke();
-      }
+      drawModule(c, stacks, side * 8.4, 0.5, color, () => {
+        c.strokeStyle = '#7C8F5C';
+        c.lineWidth = 0.8;
+        for (let i = 0; i < 3; i++) {
+          c.beginPath();
+          c.moveTo(side * 7.6, -0.4 + i * 1.5);
+          c.lineTo(side * 9.2, 0.2 + i * 1.5);
+          c.stroke();
+        }
+      });
     }
   }
   if (owned.has('fuel_scoop')) {
-    // Intake ring on the nose
-    c.strokeStyle = '#B9A480';
-    c.lineWidth = 1;
-    c.beginPath();
-    c.ellipse(0, -14.6, 2.6, 1, 0, 0, Math.PI * 2);
-    c.stroke();
+    drawModule(c, n('fuel_scoop'), 0, -14.6, rarityColorOf('fuel_scoop'), () => {
+      // Intake ring on the nose
+      c.strokeStyle = '#B9A480';
+      c.lineWidth = 1;
+      c.beginPath();
+      c.ellipse(0, -14.6, 2.6, 1, 0, 0, Math.PI * 2);
+      c.stroke();
+    });
   }
   if (owned.has('precision_jets')) {
+    const stacks = n('precision_jets');
+    const color = rarityColorOf('precision_jets');
     // RCS thruster pods at four corners
-    c.fillStyle = '#F4EBDA';
     for (const [px, py] of [[-6.6, -8.5], [6.6, -8.5], [-7.4, 3.6], [7.4, 3.6]] as [number, number][]) {
-      c.beginPath(); c.arc(px, py, 0.7, 0, Math.PI * 2); c.fill();
+      drawModule(c, stacks, px, py, color, () => {
+        c.fillStyle = '#F4EBDA';
+        c.beginPath(); c.arc(px, py, 0.7, 0, Math.PI * 2); c.fill();
+      });
     }
   }
   if (owned.has('jalapeno_injectors')) {
-    // A proud little jalapeño painted on the hull
-    c.save();
-    c.translate(4.9, 2.4);
-    c.rotate(0.5);
-    c.fillStyle = '#94B03D';
-    c.beginPath();
-    c.ellipse(0, 0, 0.9, 2, 0, 0, Math.PI * 2);
-    c.fill();
-    c.strokeStyle = '#5C7642';
-    c.lineWidth = 0.5;
-    c.beginPath(); c.moveTo(0, -2); c.lineTo(0.5, -2.9); c.stroke();
-    c.restore();
+    drawModule(c, n('jalapeno_injectors'), 4.9, 2.4, rarityColorOf('jalapeno_injectors'), () => {
+      // A proud little jalapeño painted on the hull
+      c.save();
+      c.translate(4.9, 2.4);
+      c.rotate(0.5);
+      c.fillStyle = '#94B03D';
+      c.beginPath();
+      c.ellipse(0, 0, 0.9, 2, 0, 0, Math.PI * 2);
+      c.fill();
+      c.strokeStyle = '#5C7642';
+      c.lineWidth = 0.5;
+      c.beginPath(); c.moveTo(0, -2); c.lineTo(0.5, -2.9); c.stroke();
+      c.restore();
+    });
   }
   if (owned.has('boomerang_hull')) {
-    // Boomerang chevron across the lower hull
-    c.strokeStyle = '#D9A441';
-    c.lineWidth = 1.1;
-    c.beginPath();
-    c.moveTo(-5.4, 4);
-    c.lineTo(0, 6.4);
-    c.lineTo(5.4, 4);
-    c.stroke();
+    drawModule(c, n('boomerang_hull'), 0, 5, rarityColorOf('boomerang_hull'), () => {
+      // Boomerang chevron across the lower hull
+      c.strokeStyle = '#D9A441';
+      c.lineWidth = 1.1;
+      c.beginPath();
+      c.moveTo(-5.4, 4);
+      c.lineTo(0, 6.4);
+      c.lineTo(5.4, 4);
+      c.stroke();
+    });
   }
   if (owned.has('alien_diplomacy')) {
-    // Embassy antenna with a softly pulsing green orb
-    c.strokeStyle = '#B9A480';
-    c.lineWidth = 0.7;
-    c.beginPath(); c.moveTo(-4.6, -11.4); c.lineTo(-7.2, -16.4); c.stroke();
-    const pulse = 0.7 + Math.sin(t * 3) * 0.3;
-    c.fillStyle = `rgba(148, 176, 61, ${pulse})`;
-    c.beginPath(); c.arc(-7.2, -16.9, 1, 0, Math.PI * 2); c.fill();
+    drawModule(c, n('alien_diplomacy'), -7.2, -16.4, rarityColorOf('alien_diplomacy'), () => {
+      // Embassy antenna with a softly pulsing green orb
+      c.strokeStyle = '#B9A480';
+      c.lineWidth = 0.7;
+      c.beginPath(); c.moveTo(-4.6, -11.4); c.lineTo(-7.2, -16.4); c.stroke();
+      const pulse = 0.7 + Math.sin(t * 3) * 0.3;
+      c.fillStyle = `rgba(148, 176, 61, ${pulse})`;
+      c.beginPath(); c.arc(-7.2, -16.9, 1, 0, Math.PI * 2); c.fill();
+    });
   }
   if (owned.has('chrono_crystal')) {
-    // A pale crystal orbiting the ship
+    // A pale crystal orbiting the ship. Orbit radius (and each crystal
+    // symbol's own scale) grows per stack — anchored at the ship origin
+    // since it orbits rather than attaches to a fixed hull point.
+    const stacks = n('chrono_crystal');
     const oa = t * 1.4;
-    const ox = Math.cos(oa) * 14.5;
-    const oy = Math.sin(oa) * 14.5 - 2;
+    const orbitR = 14.5 + 2 * (stacks - 1);
+    const ox = Math.cos(oa) * orbitR;
+    const oy = Math.sin(oa) * orbitR - 2;
+    const k = moduleScale(stacks);
     c.save();
     c.translate(ox, oy);
     c.rotate(oa);
+    c.scale(k, k);
     c.fillStyle = 'rgba(123, 167, 199, 0.9)';
     c.beginPath();
     c.moveTo(0, -2); c.lineTo(1.2, 0); c.lineTo(0, 2); c.lineTo(-1.2, 0);
     c.closePath();
     c.fill();
     c.restore();
+    if (stacks >= 3) {
+      c.save();
+      c.font = '2.6px "JetBrains Mono", monospace';
+      c.textAlign = 'left';
+      c.textBaseline = 'middle';
+      c.fillStyle = 'rgba(23,16,9,0.75)';
+      c.fillRect(ox + 1.8, oy - 1.6, 3.6, 3.2);
+      c.fillStyle = rarityColorOf('chrono_crystal');
+      c.fillText(`×${stacks}`, ox + 2, oy);
+      c.restore();
+    }
   }
   if (owned.has('overdrive_core')) {
-    // Hot core glowing through a lower-hull porthole
-    const glow = 0.55 + Math.sin(t * 5) * 0.25;
-    c.fillStyle = `rgba(201, 90, 40, ${glow})`;
-    c.beginPath(); c.arc(0, 3.4, 1.5, 0, Math.PI * 2); c.fill();
-    c.strokeStyle = '#221808';
-    c.lineWidth = 0.6;
-    c.beginPath(); c.arc(0, 3.4, 1.5, 0, Math.PI * 2); c.stroke();
+    drawModule(c, n('overdrive_core'), 0, 3.4, rarityColorOf('overdrive_core'), () => {
+      // Hot core glowing through a lower-hull porthole
+      const glow = 0.55 + Math.sin(t * 5) * 0.25;
+      c.fillStyle = `rgba(201, 90, 40, ${glow})`;
+      c.beginPath(); c.arc(0, 3.4, 1.5, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = '#221808';
+      c.lineWidth = 0.6;
+      c.beginPath(); c.arc(0, 3.4, 1.5, 0, Math.PI * 2); c.stroke();
+    });
   }
   if (owned.has('phoenix_feather')) {
-    // Gold feather decal
-    c.save();
-    c.translate(-4.9, 2.2);
-    c.rotate(-0.55);
-    c.strokeStyle = '#FFC94A';
-    c.lineWidth = 0.7;
-    c.beginPath(); c.moveTo(0, 2); c.quadraticCurveTo(1.4, -0.5, 0.3, -2.4); c.stroke();
-    for (let i = 0; i < 3; i++) {
-      c.beginPath();
-      c.moveTo(0.45 - i * 0.1, -1.6 + i * 1.1);
-      c.lineTo(-0.9, -1 + i * 1.1);
-      c.stroke();
-    }
-    c.restore();
+    drawModule(c, n('phoenix_feather'), -4.9, 2.2, rarityColorOf('phoenix_feather'), () => {
+      // Gold feather decal
+      c.save();
+      c.translate(-4.9, 2.2);
+      c.rotate(-0.55);
+      c.strokeStyle = '#FFC94A';
+      c.lineWidth = 0.7;
+      c.beginPath(); c.moveTo(0, 2); c.quadraticCurveTo(1.4, -0.5, 0.3, -2.4); c.stroke();
+      for (let i = 0; i < 3; i++) {
+        c.beginPath();
+        c.moveTo(0.45 - i * 0.1, -1.6 + i * 1.1);
+        c.lineTo(-0.9, -1 + i * 1.1);
+        c.stroke();
+      }
+      c.restore();
+    });
   }
   if (owned.has('star_core')) {
-    // Four-point star twinkling at the nose
-    c.save();
-    c.translate(0, -16.6);
-    c.rotate(t * 0.8);
-    c.fillStyle = '#FFC94A';
-    c.beginPath();
-    for (let i = 0; i < 8; i++) {
-      const r = i % 2 === 0 ? 1.9 : 0.65;
-      const a = (i / 8) * Math.PI * 2;
-      c.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-    }
-    c.closePath();
-    c.fill();
-    c.restore();
+    // Four-point star twinkling at the nose — grows per stack, anchored at
+    // the nose tip so it extends further forward/outward, not into the
+    // cockpit which sits below it.
+    drawModule(c, n('star_core'), 0, -16.6, rarityColorOf('star_core'), () => {
+      c.save();
+      c.translate(0, -16.6);
+      c.rotate(t * 0.8);
+      c.fillStyle = '#FFC94A';
+      c.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const r = i % 2 === 0 ? 1.9 : 0.65;
+        const a = (i / 8) * Math.PI * 2;
+        c.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+      }
+      c.closePath();
+      c.fill();
+      c.restore();
+    });
   }
   if (stats.shieldCharges > 0) {
-    // Idle shield shimmer (distinct from the impact flash)
+    // Idle shield shimmer (distinct from the impact flash) — §7 table:
+    // "shimmer ring (radius grows per stack)". shieldCharges already IS the
+    // stack count (computeStats does `+= 1` per pick), so it doubles as n.
+    const shieldStacks = stats.shieldCharges;
     c.strokeStyle = 'rgba(148, 176, 61, 0.22)';
     c.lineWidth = 1;
     c.beginPath();
-    c.arc(0, -1, 16.4, 0, Math.PI * 2);
+    c.arc(0, -1, 16.4 + 1.4 * (shieldStacks - 1), 0, Math.PI * 2);
     c.stroke();
   }
 }
@@ -382,23 +521,29 @@ export function drawShip(p: DrawShipParams) {
     c.stroke();
   }
 
-  // Star Core aura — a soft golden halo behind everything
+  // Star Core aura — a soft golden halo behind everything. §7 table: "nose
+  // star + golden aura (aura radius per stack)" — radius grows linearly
+  // with starCoreStacks, same +30%-per-stack cadence as moduleScale.
   if (stats.starCore) {
-    const aura = c.createRadialGradient(0, -2, 4, 0, -2, 26);
+    const auraR = 26 * moduleScale(stats.starCoreStacks);
+    const aura = c.createRadialGradient(0, -2, 4, 0, -2, auraR);
     aura.addColorStop(0, 'rgba(255, 201, 74, 0.22)');
     aura.addColorStop(1, 'rgba(255, 201, 74, 0)');
     c.fillStyle = aura;
     c.beginPath();
-    c.arc(0, -2, 26, 0, Math.PI * 2);
+    c.arc(0, -2, auraR, 0, Math.PI * 2);
     c.fill();
   }
 
   // Thrust flame FIRST (behind the hull): layered + glow.
-  // Jalapeño Injectors turn the exhaust spicy-green.
+  // Jalapeño Injectors turn the exhaust spicy-green — §7 table: "greener per
+  // stack", so the green channel ramps up (capped visually at 255) with
+  // spicyStacks rather than being a flat on/off color.
   if (ship.thrusting) {
     const flicker = 6 + Math.random() * 7;
     const spicy = stats.spicyFlame;
-    const glowColor = spicy ? '148, 176, 61' : '217, 164, 65';
+    const greenAmt = Math.min(255, 176 + stats.spicyStacks * 14);
+    const glowColor = spicy ? `148, ${greenAmt}, 61` : '217, 164, 65';
     const glow = c.createRadialGradient(0, 10, 1, 0, 12, 16 + flicker);
     glow.addColorStop(0, `rgba(${glowColor}, 0.5)`);
     glow.addColorStop(1, `rgba(${glowColor}, 0)`);
@@ -410,7 +555,7 @@ export function drawShip(p: DrawShipParams) {
     c.moveTo(-5, 7.5);
     c.quadraticCurveTo(0, 10 + flicker * 1.6, 5, 7.5);
     c.closePath();
-    c.fillStyle = spicy ? 'rgba(124, 143, 92, 0.75)' : 'rgba(201, 123, 61, 0.65)';
+    c.fillStyle = spicy ? `rgba(124, ${greenAmt}, 92, 0.75)` : 'rgba(201, 123, 61, 0.65)';
     c.fill();
     c.beginPath();
     c.moveTo(-2.6, 7.5);
