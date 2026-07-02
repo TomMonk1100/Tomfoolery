@@ -252,7 +252,7 @@ export interface FaceMap { eyeL: { x: number; y: number }; eyeR: { x: number; y:
 export type Mood = 'neutral' | 'surprised' | 'happy';
 
 // --- Main game -----------------------------------------------------------------
-export type GameState = 'start' | 'playing' | 'levelComplete' | 'crashed';
+export type GameState = 'start' | 'playing' | 'levelComplete' | 'crashed' | 'paused';
 
 // --- Global leaderboard client (Netlify Function + Blobs at /api/scores).
 export interface ScoreRow { name: string; level: number; difficulty: Difficulty; }

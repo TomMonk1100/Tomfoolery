@@ -74,6 +74,7 @@ import Layout from '../layouts/Layout.astro';
         <p>←/→ or A/D rotate · ↑ / W / Space thrust</p>
         <div class="flex items-center gap-5">
           <label class="flex items-center gap-2 cursor-pointer">
+            <button type="button" data-pause aria-label="Pause" title="Pause (Esc/P)" class="cursor-pointer hover:opacity-80 transition-opacity">⏸</button>
             <button data-mute-sfx type="button" aria-label="Toggle sound effects" class="cursor-pointer hover:opacity-80 transition-opacity">🔊</button>
             <input data-vol-sfx type="range" min="0" max="100" value="90" class="lander-vol" aria-label="Sound effects volume" />
           </label>

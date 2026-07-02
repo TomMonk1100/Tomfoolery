@@ -96,6 +96,7 @@ export function initLanderGame(root: HTMLElement) {
   // --- Separate SFX / music toggles + volume sliders ---
   const sfxBtn = root.querySelector('[data-mute-sfx]') as HTMLElement | null;
   const musicBtn = root.querySelector('[data-mute-music]') as HTMLElement | null;
+  const pauseBtn = root.querySelector('[data-pause]') as HTMLElement | null;
   const sfxSlider = root.querySelector('[data-vol-sfx]') as HTMLInputElement | null;
   const musicSlider = root.querySelector('[data-vol-music]') as HTMLInputElement | null;
   let sfxOn = true;
@@ -143,6 +144,7 @@ export function initLanderGame(root: HTMLElement) {
     try { localStorage.setItem('lander-music', musicOn ? '1' : '0'); } catch (e) {}
     applySound();
   });
+  pauseBtn?.addEventListener('click', () => { if (state === 'playing') pauseGame(); else if (state === 'paused') resumeGame(); });
 
   // --- Run state ---
   let state: GameState = 'start';
@@ -310,6 +312,7 @@ export function initLanderGame(root: HTMLElement) {
   const CAM_MAX_ZOOM = 1.6;
   let camZoom = 1, camX = 0, camY = 0, camLastT = 0;
   function updateCamera(t: number) {
+    if (state === 'paused') { camLastT = t; return; }
     const dt = Math.min(0.05, Math.max(0, t - (camLastT || t)));
     camLastT = t;
     let target = 1;
@@ -405,6 +408,34 @@ export function initLanderGame(root: HTMLElement) {
       overlayContent.innerHTML = html;
     }
   }
+
+  function pauseGame() {
+    if (state !== 'playing') return;
+    state = 'paused';
+    audio.stopThrust();
+    music.duck(false);
+    setOverlay(`
+      <div class="text-center">
+        <p class="badge badge-signal">paused</p>
+        <h2 class="font-display text-3xl font-semibold mt-2">Take a breath</h2>
+        <button data-action="resume" class="tile mt-5 px-8 py-3 inline-block cursor-pointer font-mono badge-signal">resume</button>
+        <div class="flex items-center justify-center gap-4 mt-4 text-xs font-mono">
+          <button data-action="restart" class="text-muted hover:text-ink transition-colors cursor-pointer underline underline-offset-2">restart run</button>
+          <button data-action="menu" class="text-muted hover:text-ink transition-colors cursor-pointer underline underline-offset-2">back to menu</button>
+        </div>
+      </div>`);
+  }
+  function resumeGame() {
+    if (state !== 'paused') return;
+    state = 'playing';
+    setOverlay(null);
+    lastT = performance.now();
+    accumulator = 0;
+    canvas.focus({ preventScroll: true });
+  }
+  // Note: lastT/accumulator are declared below these functions in file order
+  // (near the RAF loop) — hoisting via `let` at current position is fine
+  // since calls only happen after init; do not reorder declarations.
 
   function startRun() {
     // Focus the canvas so keyboard input goes to the game, not the page.
@@ -751,6 +782,7 @@ export function initLanderGame(root: HTMLElement) {
   // banner are pure visual timers and run once per rendered frame (frameDt),
   // outside the fixed-timestep physics accumulator. See §4.1.
   function updateFrameTimers(frameDt: number) {
+    if (state === 'paused') return;
     if (shakeT > 0) shakeT -= frameDt;
     if (phoenixFlashT > 0) phoenixFlashT -= frameDt;
     if (toasts.length) {
@@ -2004,6 +2036,7 @@ export function initLanderGame(root: HTMLElement) {
       return;
     }
     if (target.dataset.shop) { handleShopAction(target.dataset.shop); return; }
+    if (target.dataset.action === 'resume') resumeGame();
     if (target.dataset.action === 'restart') startRun();
     if (target.dataset.action === 'menu') showStartScreen();
     if (target.dataset.action === 'open-selfie') openSelfieCapture();
@@ -2044,6 +2077,10 @@ export function initLanderGame(root: HTMLElement) {
     if (e.key === 'Escape' && state === 'levelComplete') {
       // §5.3: Escape triggers skip while the upgrade-choice overlay is open.
       skipUpgrade();
+      return;
+    }
+    if ((e.key === 'Escape' || e.key === 'p' || e.key === 'P') && (state === 'playing' || state === 'paused')) {
+      if (state === 'playing') pauseGame(); else resumeGame();
       return;
     }
     if (e.repeat) return;
@@ -2181,7 +2218,7 @@ export function initLanderGame(root: HTMLElement) {
     ctx.globalAlpha = 1;
 
     // Ship
-    if (state === 'playing' || state === 'levelComplete') {
+    if (state === 'playing' || state === 'levelComplete' || state === 'paused') {
       drawShip({
         ctx, ship, S, mood: currentMood(), shieldFlash, stats, pickedUpgrades,
         paint: equippedPaint(), pilotPhoto, faceMap,
@@ -2508,6 +2545,7 @@ export function initLanderGame(root: HTMLElement) {
       loopPaused = true;
       audio.stopThrust();
       music.duck(false);
+      pauseGame();
     } else {
       loopPaused = false;
       lastT = performance.now();
