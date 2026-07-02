@@ -1,7 +1,7 @@
 import { mulberry32 } from './rng';
 import { DIFF_MODS } from './stats';
 import type {
-  Critter, Difficulty, LevelConfig, Pad, Planet, Star, Terrain, TerrainPoint, TerrainStyle, Ufo,
+  Canister, Critter, Difficulty, LevelConfig, Pad, Planet, Star, Terrain, TerrainPoint, TerrainStyle, Ufo,
 } from './types';
 
 // --- Endless level generator -------------------------------------------------
@@ -171,6 +171,37 @@ export function generateTerrain(cfg: LevelConfig, width: number, height: number)
   points[0] = { x: 0, y: points[0].y };
   points[points.length - 1] = { x: width, y: points[points.length - 1].y };
 
+  // §Commit 6: optional secondary high-risk/high-reward "bonus" pad,
+  // off-center from the main pad. All rng draws use the existing `rand`
+  // stream, appended after its current last use — safe per I7 (a new
+  // consumer inserted only after everything that already reads from it).
+  let bonusPad: { xStart: number; xEnd: number; y: number } | undefined;
+  if (!cfg.movingPad && cfg.terrain !== 'canyon' && rand() < 0.35) {
+    const bhw = Math.max(17, cfg.padWidth * 0.275);
+    for (let i = 0; i < 12; i++) {
+      const bx = width * (0.08 + rand() * 0.84);
+      if (Math.abs(bx - padCenter) > width * 0.28 && bx - bhw - 30 > 0 && bx + bhw + 30 < width) {
+        const by = terrainYAt(points, bx);
+        const bFrom = bx - bhw - 8;
+        const bTo = bx + bhw + 8;
+        const bBlend = 30;
+        for (const p of points) {
+          if (p.x >= bFrom && p.x <= bTo) {
+            p.y = by;
+          } else if (p.x > bFrom - bBlend && p.x < bFrom) {
+            const t = (bFrom - p.x) / bBlend;
+            p.y = by + (p.y - by) * t;
+          } else if (p.x < bTo + bBlend && p.x > bTo) {
+            const t = (p.x - bTo) / bBlend;
+            p.y = by + (p.y - by) * t;
+          }
+        }
+        bonusPad = { xStart: bx - bhw, xEnd: bx + bhw, y: by };
+        break;
+      }
+    }
+  }
+
   // Distant background ridge — pure decoration, sits behind the playfield.
   const ridge: TerrainPoint[] = [];
   const rr = mulberry32(cfg.seed * 401 + 3);
@@ -189,7 +220,32 @@ export function generateTerrain(cfg: LevelConfig, width: number, height: number)
     range,
   };
 
-  return { points, ridge, pad, width, height };
+  return { points, ridge, pad, width, height, bonusPad };
+}
+
+// §Commit 6: fuel canisters — level idx < 3 has none (early levels stay
+// simple). Own rng stream so this can be regenerated/tuned independently
+// without perturbing any other level-generation sequence (I7).
+export function generateCanisters(cfg: LevelConfig, terrain: Terrain, width: number, idx: number): Canister[] {
+  const rand = mulberry32(cfg.seed * 277 + 13);
+  if (idx < 3) return [];
+  const count = Math.floor(rand() * 4); // 0–3
+  const canisters: Canister[] = [];
+  for (let i = 0; i < count; i++) {
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const x = width * (0.08 + rand() * 0.84);
+      if (x > terrain.pad.baseX - (terrain.pad.range + 70) && x < terrain.pad.baseX + (terrain.pad.range + 70)) continue;
+      if (cfg.terrain === 'canyon') {
+        const t = x / width;
+        if (t < 0.34 || t > 0.66) continue;
+      }
+      let y = terrainYAt(terrain.points, x) - (60 + rand() * 160);
+      if (y < 40) y = 40;
+      canisters.push({ x, y, phase: rand() * Math.PI * 2, alive: true });
+      break;
+    }
+  }
+  return canisters;
 }
 
 const PLANET_HUES: [string, string][] = [

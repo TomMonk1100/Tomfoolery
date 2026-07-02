@@ -78,7 +78,15 @@ export type Difficulty = 'cadet' | 'pilot' | 'ace';
 
 export interface TerrainPoint { x: number; y: number; }
 export interface Pad { xStart: number; xEnd: number; y: number; vx: number; baseX: number; range: number; }
-export interface Terrain { points: TerrainPoint[]; ridge: TerrainPoint[]; pad: Pad; width: number; height: number; }
+export interface Terrain {
+  points: TerrainPoint[]; ridge: TerrainPoint[]; pad: Pad; width: number; height: number;
+  // §Commit 6: an optional secondary high-risk/high-reward pad, off-center
+  // from the main pad. Absent when generation didn't roll one for this level.
+  bonusPad?: { xStart: number; xEnd: number; y: number };
+}
+
+// --- §Commit 6: Fuel canisters — pickups scattered above the terrain -------
+export interface Canister { x: number; y: number; phase: number; alive: boolean; }
 
 // --- Background décor: stars + a seeded planet -------------------------------
 export interface Star { x: number; y: number; r: number; phase: number; bright: number; }

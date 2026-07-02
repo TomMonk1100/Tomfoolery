@@ -1,4 +1,4 @@
-import type { Critter, Drone, LevelConfig, Projectile, ShipStats, Terrain, Ufo } from '../types';
+import type { Canister, Critter, Drone, LevelConfig, Projectile, ShipStats, Terrain, Ufo } from '../types';
 import type { Asteroid } from '../entities';
 import { droneWorldPos } from '../entities';
 import { drawNoodle, drawNoodlePiles } from '../noodles';
@@ -172,6 +172,67 @@ export function drawDrones(ctx: CanvasRenderingContext2D, drones: Drone[], shipX
 // render/world.ts for the pad/asteroid/ufo/drone/noodle rendering surface.
 export { drawNoodle, drawNoodlePiles };
 export type { Noodle };
+
+// §Commit 6: fuel canister pickups — gently bobbing, a soft glow behind a
+// small capsule body/cap.
+export function drawCanisters(ctx: CanvasRenderingContext2D, canisters: Canister[], t: number) {
+  const c = ctx;
+  for (const can of canisters) {
+    if (!can.alive) continue;
+    const bobY = can.y + Math.sin(t * 2 + can.phase) * 3;
+    c.save();
+    c.translate(can.x, bobY);
+    const glow = c.createRadialGradient(0, 0, 0, 0, 0, 16);
+    glow.addColorStop(0, 'rgba(217,164,65,0.25)');
+    glow.addColorStop(1, 'rgba(217,164,65,0)');
+    c.fillStyle = glow;
+    c.beginPath();
+    c.arc(0, 0, 16, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = '#D9A441';
+    c.beginPath();
+    if (typeof (c as any).roundRect === 'function') {
+      (c as any).roundRect(-5, -7, 10, 14, 2);
+    } else {
+      (c as any).rect(-5, -7, 10, 14);
+    }
+    c.fill();
+    c.fillStyle = '#F4EBDA';
+    c.fillRect(-3, -9, 6, 3);
+    c.restore();
+  }
+}
+
+// §Commit 6: the optional secondary "bonus" pad — a thin deck line with
+// blinking end beacons and a small ×3✨ label, no-op when the level didn't
+// generate one.
+export function drawBonusPad(ctx: CanvasRenderingContext2D, terrain: Terrain, t: number) {
+  if (!terrain.bonusPad) return;
+  const c = ctx;
+  const bp = terrain.bonusPad;
+  c.save();
+  c.strokeStyle = '#FFC94A';
+  c.lineWidth = 1.5;
+  c.beginPath();
+  c.moveTo(bp.xStart, bp.y - 3);
+  c.lineTo(bp.xEnd, bp.y - 3);
+  c.stroke();
+  const blink = Math.floor(t * 2) % 2 === 0;
+  if (blink) {
+    for (const bx of [bp.xStart + 3, bp.xEnd - 3]) {
+      c.beginPath();
+      c.arc(bx, bp.y - 6, 2.2, 0, Math.PI * 2);
+      c.fillStyle = '#FFC94A';
+      c.fill();
+    }
+  }
+  c.globalAlpha = 0.7;
+  c.font = '12px "JetBrains Mono", monospace';
+  c.textAlign = 'center';
+  c.fillStyle = '#FFC94A';
+  c.fillText('×3✨', (bp.xStart + bp.xEnd) / 2, bp.y - 12);
+  c.restore();
+}
 
 export function drawPad(ctx: CanvasRenderingContext2D, terrain: Terrain, cfg: LevelConfig, stats: ShipStats, t: number) {
   const c = ctx;

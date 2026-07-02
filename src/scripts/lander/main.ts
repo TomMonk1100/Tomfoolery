@@ -28,7 +28,7 @@
 import { mulberry32 } from './rng';
 import { RARITY, DIFF_MODS, computeStats, clampGravityProduct, chronoTimeScale, rollCosmicDice as rollCosmicDiceStat, starForgeRarityWeight } from './stats';
 import { UPGRADES, PAINTS, TRAILS, SKIES, ACHIEVEMENTS } from './upgrades';
-import { levelConfigFor, terrainYAt, generateTerrain, generateSky, generateCritters, generateUfos } from './levels';
+import { levelConfigFor, terrainYAt, generateTerrain, generateSky, generateCritters, generateUfos, generateCanisters } from './levels';
 import { ParticlePool } from './particles';
 import {
   generateAsteroids, updateAsteroids, findAsteroidHit, type Asteroid,
@@ -41,7 +41,7 @@ import {
 import { AudioEngine } from './audio/sfx';
 import { MusicEngine } from './audio/music';
 import { DEFAULT_FACE, analyzeFace, drawShip, checkGhostSave } from './render/ship';
-import { drawCritters, drawUfos, drawPad, drawAsteroids, drawDrones, drawNoodle, drawNoodlePiles } from './render/world';
+import { drawCritters, drawUfos, drawPad, drawAsteroids, drawDrones, drawNoodle, drawNoodlePiles, drawCanisters, drawBonusPad } from './render/world';
 import { updateHud as updateHudEl, drawAbilityPips } from './render/hud';
 import { upgradeListHtml, shopItemHtml, trailSwatch, diffButtonsHtml } from './ui/overlays';
 import { loadJSON, bestFor as bestForStored, saveBest, fetchLeaderboard as fetchLeaderboardRemote, submitScore as submitScoreRemote, writeSchemaTag } from './persistence';
@@ -54,7 +54,7 @@ import { DegradationGuard } from './perf';
 import type {
   UpgradeId, LevelConfig, Terrain, Star, Planet, Critter, Ufo, Projectile, Particle,
   ShipStats, FaceMap, Mood, GameState, Difficulty, ScoreRow, Toast, UpgradeDef, Rarity, RunStats,
-  Drone, Noodle, AbilityDef,
+  Drone, Noodle, AbilityDef, Canister,
 } from './types';
 
 // --- Main game -----------------------------------------------------------------
@@ -172,6 +172,8 @@ export function initLanderGame(root: HTMLElement) {
   let ufos: Ufo[] = [];
   let projectiles: Projectile[] = [];
   let asteroids: Asteroid[] = [];
+  // §Commit 6: fuel canister pickups for this level — refuel + small stardust.
+  let canisters: Canister[] = [];
   // §5.1 Alien Diplomacy stack 2+: ally shots fired by friendly UFOs at
   // asteroids (never at the ship). Kept separate from hostile `projectiles`
   // so the existing ship-hit collision loop never has to special-case them.
@@ -494,6 +496,7 @@ export function initLanderGame(root: HTMLElement) {
     projectiles = [];
     allyProjectiles = [];
     asteroids = generateAsteroids(cfg, width, height, S);
+    canisters = generateCanisters(cfg, terrain, width, idx);
     windPhase = Math.random() * 10;
     // Snap the camera back to the wide view so every level starts zoomed
     // out with the whole terrain (and the pad) visible.
@@ -1027,6 +1030,19 @@ export function initLanderGame(root: HTMLElement) {
       ship.y = y1;
     }
 
+    // §Commit 6: fuel canister pickups — swept ship-motion segment vs. each
+    // alive canister's position.
+    for (const c of canisters) {
+      if (!c.alive) continue;
+      if (sweptSegmentCircleHit(x0, y0, ship.x, ship.y, c.x, c.y, 12 * S)) {
+        c.alive = false;
+        ship.fuel = Math.min(stats.maxFuel, ship.fuel + 20);
+        stardustAdd(5);
+        toasts.push({ text: '⛽ +20 fuel · +5✨', t: 1.6 });
+        audio.select();
+      }
+    }
+
     // Moving pad — ping-pongs between baseX ± range along its pre-flattened
     // corridor (baseX is a fixed origin; see generateTerrain).
     if (cfg.movingPad) {
@@ -1223,6 +1239,13 @@ export function initLanderGame(root: HTMLElement) {
     const angle = Math.abs(normalizeAngle(ship.angle));
     const onPad = ship.x > terrain.pad.xStart - stats.padBonus / 2 &&
                   ship.x < terrain.pad.xEnd + stats.padBonus / 2;
+    // §Commit 6: the optional high-risk/high-reward bonus pad counts as a
+    // valid landing surface everywhere onPad currently gates the safe-
+    // landing logic; onBonus is also tracked separately so a safe landing
+    // there can pay out its own 3x bonus below.
+    const bp = terrain.bonusPad;
+    const onBonus = !!bp && ship.x > bp.xStart - stats.padBonus / 2 && ship.x < bp.xEnd + stats.padBonus / 2;
+    const onAnyPad = onPad || onBonus;
 
     // §7 Valkyrie Autopilot: guaranteed landing — clamp touchdown velocity
     // to tolerance so it's never a gamble (§7 implementation notes).
@@ -1241,13 +1264,13 @@ export function initLanderGame(root: HTMLElement) {
     // speed tol ×2 (via slideLandingMult) when angle < tol/2 (tighter angle
     // requirement than a normal safe landing).
     let effSpeedTol = stats.landingSpeedTol;
-    if (onPad && stats.stickyPadStacks > 0) effSpeedTol *= Math.pow(1.2, stats.stickyPadStacks);
+    if (onAnyPad && stats.stickyPadStacks > 0) effSpeedTol *= Math.pow(1.2, stats.stickyPadStacks);
     let sliding = false;
-    if (onPad && stats.slideLanding > 0 && angle < stats.landingAngleTol / 2 && speed < effSpeedTol * stats.slideLandingMult) {
+    if (onAnyPad && stats.slideLanding > 0 && angle < stats.landingAngleTol / 2 && speed < effSpeedTol * stats.slideLandingMult) {
       sliding = true;
       effSpeedTol = effSpeedTol * stats.slideLandingMult;
     }
-    const safe = onPad && speed < effSpeedTol && angle < stats.landingAngleTol;
+    const safe = onAnyPad && speed < effSpeedTol && angle < stats.landingAngleTol;
 
     ship.y = groundY - 9 * S;
 
@@ -1275,6 +1298,8 @@ export function initLanderGame(root: HTMLElement) {
       // §7 Golden Goose: +50✨ per landing, ×n stacks (one payout per
       // landing event, not per level advanced).
       if (stats.eggLevels > 0) payout += 50 * stats.eggLevels;
+      if (cfg.surge) payout = Math.round(payout * 1.5);
+      if (onBonus && !onPad) payout = Math.round(payout * 3);
       // §7 Stardust Condenser / Midas Hull: multiply the whole payout.
       payout = Math.round(payout * stats.stardustMult * stats.midasMult);
       stardustAdd(payout);
@@ -2167,6 +2192,8 @@ export function initLanderGame(root: HTMLElement) {
 
     drawCritters(ctx, critters, t);
     drawPad(ctx, terrain, cfg, stats, t);
+    drawCanisters(ctx, canisters, t);
+    drawBonusPad(ctx, terrain, t);
 
     // Asteroids — pure blit; position/collision computed in the physics
     // step via entities.ts (§4.4, no gameplay mutation in the render path).
