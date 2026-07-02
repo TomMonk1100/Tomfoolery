@@ -2331,7 +2331,8 @@ export function initLanderGame(root: HTMLElement) {
     if (state === 'playing' || state === 'levelComplete' || state === 'paused') {
       drawShip({
         ctx, ship, S, mood: currentMood(), shieldFlash, stats, pickedUpgrades,
-        paint: equippedPaint(), pilotPhoto, faceMap,
+        paint: equippedPaint(), pilotPhoto, faceMap, thrustT: shipThrustT,
+        degraded: perfGuard.degraded,
       });
     }
 
@@ -2559,6 +2560,49 @@ export function initLanderGame(root: HTMLElement) {
     // DOM fuel bar sits (bottom HUD strip), only when abilities are owned.
     if (stats.abilityDefs.length > 0) {
       drawAbilityPips(ctx, abilityDefStates, 10, height - 34);
+    // v12 Commit 4: ground light pool + contact shadow, world-space, drawn
+    // after everything else on the ground but before the ship itself — the
+    // engine visibly lights the ground on descent, and the shadow is the
+    // single biggest depth cue in the game (also doubles as a landing aid).
+    const shipThrustT = Math.min(1, thrustHeldT / 0.25);
+    if (terrain && (state === 'playing' || state === 'levelComplete' || state === 'paused')) {
+      const groundYNow = terrainYAt(terrain.points, ship.x);
+      const altNow2 = groundYNow - ship.y;
+
+      if (ship.thrusting && altNow2 < 120) {
+        const spicy = stats.spicyFlame;
+        const greenAmt = Math.min(255, 176 + stats.spicyStacks * 14);
+        const flameColor = spicy ? `148, ${greenAmt}, 61` : '217, 164, 65';
+        const poolAlpha = 0.3 * (1 - altNow2 / 120) * shipThrustT;
+        if (poolAlpha > 0.003) {
+          // §Commit 7: routed through addGlow for the degradation fallback.
+          addGlow(ctx, perfGuard.degraded, () => {
+            const rx = 46 + altNow2 * 0.15, ry = 12;
+            ctx.translate(ship.x, groundYNow);
+            ctx.scale(rx / ry, 1);
+            const poolGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, ry);
+            poolGrad.addColorStop(0, `rgba(${flameColor}, ${poolAlpha})`);
+            poolGrad.addColorStop(1, `rgba(${flameColor}, 0)`);
+            ctx.fillStyle = poolGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, ry, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+      }
+
+      if (altNow2 < 280) {
+        const shadowAlpha = 0.30 * (1 - altNow2 / 280);
+        if (shadowAlpha > 0.003) {
+          const hw = 26 * S * (0.35 + 0.65 * (1 - altNow2 / 280));
+          ctx.beginPath();
+          ctx.ellipse(ship.x, groundYNow - 1, hw, hw * 0.22, 0, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(10, 6, 2, ${shadowAlpha})`;
+          ctx.fill();
+        }
+      }
+    }
+
     }
 
     // Chrono Crystal bullet-time: cool-toned vignette + indicator (screen)

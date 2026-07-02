@@ -1,6 +1,8 @@
 import type { FaceMap, Mood, PaintDef, ShipStats, UpgradeId } from '../types';
 import { RARITY } from '../stats';
 import { UPGRADES } from '../upgrades';
+import { addGlow } from './fx';
+import { shade, LIGHT } from './palette';
 
 // §5.2: rarity color lookup for module count pips, keyed by upgrade id.
 // Built once (module tables are static) rather than per-frame.
@@ -1151,24 +1153,40 @@ export function drawShip(p: DrawShipParams) {
     const spicy = stats.spicyFlame;
     const greenAmt = Math.min(255, 176 + stats.spicyStacks * 14);
     const glowColor = spicy ? `148, ${greenAmt}, 61` : '217, 164, 65';
-    const glow = c.createRadialGradient(0, 10, 1, 0, 12, 16 + flicker);
-    glow.addColorStop(0, `rgba(${glowColor}, 0.5)`);
-    glow.addColorStop(1, `rgba(${glowColor}, 0)`);
-    c.fillStyle = glow;
-    c.beginPath();
-    c.arc(0, 12, 16 + flicker, 0, Math.PI * 2);
-    c.fill();
+
+    // Additive glow — actual bloom. §Commit 7: routed through addGlow so it
+    // falls back to a cheap source-over fill under the degradation guard.
+    const glowR = Math.max(0.5, (18 + flicker) * thrustT);
+    addGlow(c, p.degraded ?? false, () => {
+      const glow = c.createRadialGradient(0, 10, 1, 0, 12, glowR);
+      glow.addColorStop(0, `rgba(${glowColor}, 0.5)`);
+      glow.addColorStop(1, `rgba(${glowColor}, 0)`);
+      c.fillStyle = glow;
+      c.beginPath();
+      c.arc(0, 12, glowR, 0, Math.PI * 2);
+      c.fill();
+    });
+
+    const outerLen = (16 + flicker * 6) * thrustT;
+
+    // Outer flame — half-width 5.
     c.beginPath();
     c.moveTo(-5, 7.5);
-    c.quadraticCurveTo(0, 10 + flicker * 1.6, 5, 7.5);
+    c.quadraticCurveTo(0, 7.5 + outerLen, 5, 7.5);
     c.closePath();
-    c.fillStyle = spicy ? `rgba(124, ${greenAmt}, 92, 0.75)` : 'rgba(201, 123, 61, 0.65)';
+    c.fillStyle = spicy ? `rgba(148, ${greenAmt}, 61, 0.35)` : 'rgba(217, 164, 65, 0.35)';
     c.fill();
     c.beginPath();
-    c.moveTo(-2.6, 7.5);
-    c.quadraticCurveTo(0, 9 + flicker, 2.6, 7.5);
+    c.moveTo(-3.6, 7.5);
+    c.quadraticCurveTo(0, 7.5 + outerLen * 0.72, 3.6, 7.5);
     c.closePath();
-    c.fillStyle = spicy ? 'rgba(224, 245, 200, 0.95)' : 'rgba(244, 235, 218, 0.95)';
+    c.fillStyle = spicy ? `rgba(124, ${greenAmt}, 92, 0.7)` : 'rgba(201, 123, 61, 0.7)';
+    c.fill();
+    c.beginPath();
+    c.moveTo(-2, 7.5);
+    c.quadraticCurveTo(0, 7.5 + outerLen * 0.4, 2, 7.5);
+    c.closePath();
+    c.fillStyle = spicy ? 'rgba(224, 245, 200, 0.9)' : 'rgba(244, 235, 218, 0.9)';
     c.fill();
   }
 
@@ -1238,6 +1256,15 @@ export function drawShip(p: DrawShipParams) {
   } else {
     const glassGrad = c.createRadialGradient(-1.4, cockCY - 1.6, 0.5, 0, cockCY, cockR * 1.3);
     glassGrad.addColorStop(0, '#E4F1EA');
+  // v12 Commit 4: 0..1 ramp of how long thrust has been held (main.ts's
+  // thrustHeldT / 0.25, clamped) — the flame grows in instead of popping to
+  // full size. Optional + defaults to 1 (old always-full-size behavior) so
+  // any caller that hasn't been updated yet still compiles and renders.
+  thrustT?: number;
+  // v12 Commit 7: gates the flame glow's additive compositing via addGlow.
+  // Optional + defaults to false (glow behaves as before) for callers that
+  // haven't been updated.
+  degraded?: boolean;
     glassGrad.addColorStop(1, '#5B7A85');
     c.fillStyle = glassGrad;
     c.fillRect(-cockR, cockCY - cockR, cockR * 2, cockR * 2);
@@ -1253,7 +1280,7 @@ export function drawShip(p: DrawShipParams) {
   c.stroke();
   c.beginPath();
   c.ellipse(-1.8, cockCY - cockR * 0.55, cockR * 0.5, cockR * 0.2, -0.4, 0, Math.PI * 2);
-  c.strokeStyle = 'rgba(244, 235, 218, 0.35)';
+  c.strokeStyle = 'rgba(244, 235, 218, 0.5)';
   c.lineWidth = 0.8;
   c.stroke();
 
@@ -1271,7 +1298,13 @@ export function drawShip(p: DrawShipParams) {
 //
 // Renders the ship at 35% alpha, mirrored across the pad center X — purely
 // visual on its own. Commit 4b's Quantum Duplicate upgrade will call
+  //
+  // v12 Commit 4: three nested tapered flame shapes (outer/mid/core) instead
+  // of two, all scaled by `thrustT` so held thrust ramps the flame in over
+  // 0.25s instead of popping to full size; the glow gradient now draws with
+  // additive ('lighter') compositing for real bloom instead of flat alpha.
 // drawGhostShip once per frame near the mirrored position and hook
+    const thrustT = Math.max(0, Math.min(1, p.thrustT ?? 1));
 // checkGhostSave into the crash-handling path (main.ts::destroyShip).
 // ---------------------------------------------------------------------------
 
@@ -1283,12 +1316,16 @@ export function mirrorAcrossPad(x: number, padCenterX: number): number {
 
 export function drawGhostShip(p: DrawShipParams & { padCenterX: number }) {
   const { padCenterX, ship, ...rest } = p;
+
+    // Mid flame — 0.72x size.
   const c = p.ctx;
   const ghostX = mirrorAcrossPad(ship.x, padCenterX);
   c.save();
   c.globalAlpha = 0.35;
   drawShip({ ...rest, ctx: c, ship: { ...ship, x: ghostX } });
   c.restore();
+
+    // Core flame — 0.4x size.
 }
 
 // §6.5 hook: "Quantum Duplicate death-save roll" — a boolean/probability
@@ -1300,3 +1337,28 @@ export function checkGhostSave(stats: ShipStats): boolean {
   if (!stats.ghostSave || stats.ghostSave <= 0) return false;
   return false;
 }
+  // v12 Commit 4: hull rim light — a soft highlight along the upper-left
+  // contour, consistent with the global LIGHT direction (upper-left sun).
+  // Clipped to the hull shape so it never draws outside it.
+  c.save();
+  c.beginPath();
+  c.moveTo(0, -14);
+  c.bezierCurveTo(6.5, -14, 9, -7, 8, 0);
+  c.lineTo(6.5, 8);
+  c.lineTo(0, 5.5);
+  c.lineTo(-6.5, 8);
+  c.lineTo(-8, 0);
+  c.bezierCurveTo(-9, -7, -6.5, -14, 0, -14);
+  c.closePath();
+  c.clip();
+  c.beginPath();
+  c.moveTo(-6.5, 8);
+  c.lineTo(-8, 0);
+  c.bezierCurveTo(-9, -7, -6.5, -14, 0, -14);
+  c.strokeStyle = 'rgba(244, 235, 218, 0.35)';
+  c.lineWidth = 1.2;
+  c.stroke();
+  c.restore();
+
+  // v12 Commit 4: cockpit glass specular arc, brightened to alpha 0.5 —
+  // upper-left of the canopy, consistent with the global LIGHT direction.
