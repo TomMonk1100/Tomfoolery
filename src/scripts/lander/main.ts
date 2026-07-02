@@ -44,7 +44,7 @@ import { DEFAULT_FACE, analyzeFace, drawShip, checkGhostSave } from './render/sh
 import { drawCritters, drawUfos, drawPad, drawAsteroids, drawDrones, drawNoodle, drawNoodlePiles } from './render/world';
 import { updateHud as updateHudEl, drawAbilityPips } from './render/hud';
 import { upgradeListHtml, shopItemHtml, trailSwatch, diffButtonsHtml } from './ui/overlays';
-import { loadJSON, bestFor as bestForStored, saveBest, fetchLeaderboard as fetchLeaderboardRemote, submitScore as submitScoreRemote } from './persistence';
+import { loadJSON, bestFor as bestForStored, saveBest, fetchLeaderboard as fetchLeaderboardRemote, submitScore as submitScoreRemote, writeSchemaTag } from './persistence';
 import { resolveReadyAbility, tickAbilityCooldowns, consumeAbilityCharge } from './abilities';
 import {
   createNoodlePile, checkNoodleSquish, applyNoodleSquish, NOODLE_SQUISH_VY, NoodlePool, decayNoodlePile,
@@ -66,6 +66,9 @@ export function initLanderGame(root: HTMLElement) {
   // alpha blending on the canvas itself is pure overhead the browser can skip.
   const ctx = canvas.getContext('2d', { alpha: false });
   if (!ctx) return () => {};
+
+  // §3: mark this save as having loaded under the v10 schema at least once.
+  writeSchemaTag();
 
   const hud = {
     fuel: root.querySelector('[data-hud="fuel"]') as HTMLElement,
@@ -1748,10 +1751,12 @@ export function initLanderGame(root: HTMLElement) {
         <p class="badge badge-signal">moon lander · endless roguelite</p>
         <h2 class="font-display text-3xl font-semibold mt-2">How deep can you go?</h2>
         <p class="text-muted mt-3 text-sm">
-          ←/→ or A/D to rotate · ↑ / W / Space to thrust. Land slow and level on
-          the pad. Endless levels, each harder than the last. Upgrades roll in
-          five rarities — every one has a real tradeoff, and the gold ones are
-          worth the wait.
+          ←/→ or A/D to rotate · ↑ / W / Space to thrust · ↓ / S for your active
+          ability. Land slow and level on the pad. Endless levels, each harder
+          than the last. 69 upgrades across five rarities, every one with a
+          real tradeoff — and every one stacks forever, so a duplicate pick is
+          never wasted. Don't like what's offered? Skip it for a stardust
+          bonus and travel light.
         </p>
         ${diffButtonsHtml(difficulty, bestFor)}
         ${thumbHtml}

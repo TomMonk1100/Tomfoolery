@@ -17,6 +17,16 @@ export function saveBest(d: Difficulty, v: number) {
   try { localStorage.setItem(`lander-best-${d}`, String(v)); } catch (e) {}
 }
 
+// §3: schema tag written on first load of the v10 build. Purely a version
+// marker for future migrations to key off of (nothing currently reads it
+// back) — every existing key keeps its exact v9 name/format per invariant
+// I2, so there's nothing to migrate today. New keys this build introduces
+// use new names only, so a v9 save loads into v10 exactly as it did before,
+// just gains this one new key.
+export function writeSchemaTag() {
+  try { localStorage.setItem('lander-schema', '10'); } catch (e) {}
+}
+
 // --- Global leaderboard client (Netlify Function + Blobs at /api/scores).
 // Fully optional: if the endpoint isn't there, everything degrades to
 // local bests and the leaderboard screen says so.
