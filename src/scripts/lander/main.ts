@@ -299,6 +299,41 @@ export function initLanderGame(root: HTMLElement) {
   let width = 0, height = 0, dpr = 1;
   let S = 1.6; // ship render/collision scale
 
+  // --- Dynamic camera zoom -------------------------------------------------
+  // Each level starts at zoom 1 (the full-terrain wide view — the world is
+  // exactly one canvas, so 1.0 IS "zoomed out"). As the ship closes on the
+  // landing pad the camera lerps smoothly toward CAM_MAX_ZOOM, keeping the
+  // ship slightly above the viewport center and clamping the view to the
+  // world bounds so the prerendered layers always fill the screen. Render-
+  // only: physics, input, and the DOM HUD are untouched.
+  const CAM_MAX_ZOOM = 1.6;
+  let camZoom = 1, camX = 0, camY = 0, camLastT = 0;
+  function updateCamera(t: number) {
+    const dt = Math.min(0.05, Math.max(0, t - (camLastT || t)));
+    camLastT = t;
+    let target = 1;
+    if ((state === 'playing' || state === 'levelComplete') && terrain) {
+      const padCx = (terrain.pad.xStart + terrain.pad.xEnd) / 2;
+      const dist = Math.hypot(ship.x - padCx, ship.y - terrain.pad.y);
+      // Begin tightening within ~40% of the level height from the pad,
+      // reaching full zoom by ~16%.
+      const far = height * 0.42, near = height * 0.16;
+      const p = Math.max(0, Math.min(1, (far - dist) / (far - near)));
+      const eased = p * p * (3 - 2 * p); // smoothstep — no snapping
+      target = 1 + eased * (CAM_MAX_ZOOM - 1);
+    }
+    camZoom += (target - camZoom) * Math.min(1, dt * 2.5);
+    if (Math.abs(camZoom - 1) < 0.002) camZoom = 1;
+    const vw = width / camZoom, vh = height / camZoom;
+    // Ship slightly above center (focus sits a touch below the ship);
+    // clamped so we never show past the world edges — at zoom 1 this
+    // collapses to the identity transform.
+    let fx = ship.x, fy = ship.y + vh * 0.07;
+    fx = Math.max(vw / 2, Math.min(width - vw / 2, fx));
+    fy = Math.max(vh / 2, Math.min(height - vh / 2, fy));
+    camX = fx; camY = fy;
+  }
+
   // §8.1 static layer cache — rebuilt on loadLevel/resize; terrain layer
   // rebuilds are additionally throttled per-tick via layerCache.tryRebuildTerrain().
   const layerCache = new LayerCache();
@@ -364,6 +399,10 @@ export function initLanderGame(root: HTMLElement) {
   }
 
   function startRun() {
+    // Focus the canvas so keyboard input goes to the game, not the page.
+    canvas.tabIndex = -1;
+    canvas.style.outline = 'none';
+    canvas.focus({ preventScroll: true });
     levelIndex = 0;
     pickedUpgrades = [];
     stats = computeStats(pickedUpgrades, difficulty);
@@ -416,6 +455,9 @@ export function initLanderGame(root: HTMLElement) {
     allyProjectiles = [];
     asteroids = generateAsteroids(cfg, width, height, S);
     windPhase = Math.random() * 10;
+    // Snap the camera back to the wide view so every level starts zoomed
+    // out with the whole terrain (and the pad) visible.
+    camZoom = 1; camX = width / 2; camY = height / 2;
     introT = 2.4;
     celebrateT = 0;
     bouncesUsed = 0;
@@ -1484,17 +1526,108 @@ export function initLanderGame(root: HTMLElement) {
   }
 
   // --- Overlays ---
+
+  // --- Upgrade picker ------------------------------------------------------
+  // Redesigned card screen: large illustrated cards (inline SVG emblems, no
+  // external images), bold names, one plain-English line per upgrade
+  // (u.desc), hover lift + rarity glow, a "Pick one" heading and a visible
+  // countdown. When the countdown runs out the run auto-skips ("travel
+  // light") so the game never stalls.
+  const UPGRADE_PICK_SECONDS = 20;
+  let upgradeTimerId = 0;
+  function clearUpgradeTimer() {
+    if (upgradeTimerId) { window.clearInterval(upgradeTimerId); upgradeTimerId = 0; }
+  }
+  function ensureUpgradeCardStyles() {
+    if (document.getElementById('upg-card-style')) return;
+    const st = document.createElement('style');
+    st.id = 'upg-card-style';
+    st.textContent = `
+      .upg-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;
+        padding:20px 14px 16px;border:1.5px solid var(--uc);border-radius:16px;text-align:center;
+        cursor:pointer;width:100%;
+        background:linear-gradient(160deg,var(--uc-tint) 0%,rgba(255,255,255,0) 46%),linear-gradient(180deg,#FDF8ED,#F1E6CF);
+        box-shadow:0 2px 10px -6px rgba(34,26,18,.25),0 0 var(--uc-glow) var(--uc-glowc);
+        transition:transform .16s ease,box-shadow .16s ease;}
+      .upg-card:hover,.upg-card:focus-visible{transform:translateY(-6px) scale(1.03);
+        box-shadow:0 14px 32px -10px rgba(34,26,18,.35),0 0 calc(var(--uc-glow) + 12px) var(--uc-glowc);}
+      .upg-card:active{transform:translateY(-2px) scale(1.01);}
+      .upg-card .upg-emblem{filter:drop-shadow(0 3px 6px rgba(34,26,18,.18));transition:transform .16s ease;}
+      .upg-card:hover .upg-emblem{transform:scale(1.07);}
+      .upg-name{font-weight:700;font-size:1.02rem;line-height:1.2;color:var(--color-ink);}
+      .upg-desc{font-size:.8rem;line-height:1.35;color:#5D5140;}
+      .upg-rarity{margin-top:auto;font-family:"JetBrains Mono",monospace;font-size:.62rem;
+        letter-spacing:.14em;text-transform:uppercase;color:var(--uc);}
+      .upg-timerbar{height:6px;border-radius:3px;background:var(--color-line);overflow:hidden;}
+      .upg-timerbar>div{height:100%;border-radius:3px;transition:width .1s linear;
+        background:linear-gradient(90deg,var(--color-accent-mid),var(--color-accent));}
+    `;
+    document.head.appendChild(st);
+  }
+
+  // Inline SVG emblem: hex badge on a tinted ring in the rarity color, the
+  // upgrade glyph centered, radiating spokes for epic+ tiers.
+  function upgradeEmblemSvg(u: UpgradeDef): string {
+    const c = RARITY[u.rarity].color;
+    const rank = RARITY_RANK.indexOf(u.rarity);
+    const cx = 42, cy = 42;
+    const hex = Array.from({ length: 6 }, (_, i) => {
+      const a = (Math.PI / 3) * i - Math.PI / 2;
+      return `${(cx + Math.cos(a) * 29).toFixed(1)},${(cy + Math.sin(a) * 29).toFixed(1)}`;
+    }).join(' ');
+    const rays = rank >= 3
+      ? Array.from({ length: 8 }, (_, i) => {
+          const a = (Math.PI / 4) * i + Math.PI / 8;
+          const x1 = cx + Math.cos(a) * 33, y1 = cy + Math.sin(a) * 33;
+          const x2 = cx + Math.cos(a) * 40, y2 = cy + Math.sin(a) * 40;
+          return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${c}" stroke-width="${rank >= 4 ? 3 : 2.2}" stroke-linecap="round" opacity="0.85"/>`;
+        }).join('')
+      : '';
+    return `<svg class="upg-emblem" width="84" height="84" viewBox="0 0 84 84" aria-hidden="true">
+      <circle cx="${cx}" cy="${cy}" r="31" fill="${c}16" stroke="${c}55" stroke-width="1.5"/>
+      <polygon points="${hex}" fill="#FFFDF6" stroke="${c}" stroke-width="2"/>
+      ${rays}
+      <text x="${cx}" y="${cy + 1}" text-anchor="middle" dominant-baseline="central" font-size="30">${u.icon}</text>
+    </svg>`;
+  }
+
   function showLevelComplete() {
+    ensureUpgradeCardStyles();
     setOverlay(`
       <div class="text-center">
         <p class="badge badge-signal">landed — level ${levelIndex + 1} clear</p>
-        <h2 class="font-display text-2xl font-semibold mt-2">Pick an upgrade</h2>
+        <h2 class="font-display text-3xl font-semibold mt-2">Pick one</h2>
         <p class="text-xs text-muted mt-1">Every boon has a cost. Rarer finds, bigger swings — gold ones are an event.</p>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5" data-upgrade-choices style="grid-auto-rows:1fr;"></div>
+        <div class="flex items-center justify-center gap-3 mt-3 max-w-sm mx-auto">
+          <div class="upg-timerbar flex-1"><div data-upg-bar style="width:100%"></div></div>
+          <span class="font-mono text-sm tabular-nums" data-upg-secs>${UPGRADE_PICK_SECONDS}</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5" data-upgrade-choices style="grid-auto-rows:1fr;"></div>
         <button data-action="skip-upgrade" class="mt-4 text-xs font-mono text-muted hover:text-ink transition-colors cursor-pointer underline underline-offset-2">▶ skip — travel light · +15✨</button>
       </div>
     `);
     renderUpgradeChoices();
+    startUpgradeCountdown();
+  }
+
+  function startUpgradeCountdown() {
+    clearUpgradeTimer();
+    const deadline = performance.now() + UPGRADE_PICK_SECONDS * 1000;
+    const bar = overlayContent.querySelector('[data-upg-bar]') as HTMLElement | null;
+    const secs = overlayContent.querySelector('[data-upg-secs]') as HTMLElement | null;
+    upgradeTimerId = window.setInterval(() => {
+      if (state !== 'levelComplete') { clearUpgradeTimer(); return; }
+      const left = Math.max(0, deadline - performance.now());
+      if (bar) bar.style.width = `${(left / (UPGRADE_PICK_SECONDS * 1000)) * 100}%`;
+      if (secs) {
+        secs.textContent = String(Math.ceil(left / 1000));
+        secs.style.color = left < 5000 ? 'var(--color-accent)' : '';
+      }
+      if (left <= 0) {
+        clearUpgradeTimer();
+        skipUpgrade(); // time's up — travel light, keep the run moving
+      }
+    }, 100);
   }
 
   // §5.3 Skip option: no pick, +15 stardust, advance immediately. Reachable
@@ -1502,6 +1635,7 @@ export function initLanderGame(root: HTMLElement) {
   // is open (handled in the `keydown` listener below).
   function skipUpgrade() {
     if (state !== 'levelComplete') return;
+    clearUpgradeTimer();
     runStats.skips += 1;
     stardustAdd(15);
     toasts.push({ text: '+15✨ · travel light', t: 2.2 });
@@ -1557,17 +1691,15 @@ export function initLanderGame(root: HTMLElement) {
     container.innerHTML = choices.map((u) => {
       const r = RARITY[u.rarity];
       const rank = RARITY_RANK.indexOf(u.rarity);
-      const glow = rank >= 2 ? `box-shadow: 0 0 ${rank >= 4 ? 28 : rank >= 3 ? 20 : 13}px ${r.color}${rank >= 4 ? '77' : '44'};` : '';
+      const glowPx = rank >= 4 ? 30 : rank >= 3 ? 22 : rank >= 2 ? 14 : 0;
       const label = rank >= 4 ? `✦ ${r.label} ✦` : r.label;
       return `
-      <button class="tile text-left cursor-pointer" data-pick="${u.id}" style="border-color:${r.color}; ${glow}">
-        <div class="flex items-center justify-between">
-          <span class="text-2xl">${u.icon}</span>
-          <span class="text-[10px] font-mono uppercase tracking-wider" style="color:${r.color}">${label}</span>
-        </div>
-        <div class="font-display font-semibold mt-2">${u.name}</div>
-        <div class="text-xs mt-2" style="color:#94B03D">▲ ${u.pro}</div>
-        <div class="text-xs mt-1" style="color:#C97B3D">▼ ${u.con}</div>
+      <button class="upg-card" data-pick="${u.id}"
+        style="--uc:${r.color};--uc-tint:${r.color}26;--uc-glow:${glowPx}px;--uc-glowc:${glowPx ? `${r.color}${rank >= 4 ? '66' : '44'}` : 'transparent'};">
+        ${upgradeEmblemSvg(u)}
+        <div class="upg-name">${u.name}</div>
+        <div class="upg-desc">${u.desc}</div>
+        <div class="upg-rarity">${label}</div>
       </button>
     `;
     }).join('');
@@ -1578,6 +1710,7 @@ export function initLanderGame(root: HTMLElement) {
 
     container.querySelectorAll('[data-pick]').forEach((btn) => {
       btn.addEventListener('click', () => {
+        clearUpgradeTimer();
         const id = (btn as HTMLElement).dataset.pick as UpgradeId;
         pickedUpgrades.push(id);
         stats = computeStats(pickedUpgrades, difficulty);
@@ -1891,6 +2024,14 @@ export function initLanderGame(root: HTMLElement) {
   }
 
   function keydown(e: KeyboardEvent) {
+    // While actually flying, game keys must never scroll the page. This
+    // runs before the e.repeat gate below because held-key repeat events
+    // scroll too. Deliberately scoped to state === 'playing' only — on the
+    // title screen, crash screen, and upgrade picker the player may need
+    // to scroll normally.
+    if (state === 'playing' && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].includes(e.key)) {
+      e.preventDefault();
+    }
     if (e.key === 'Escape' && state === 'levelComplete') {
       // §5.3: Escape triggers skip while the upgrade-choice overlay is open.
       skipUpgrade();
@@ -1949,6 +2090,15 @@ export function initLanderGame(root: HTMLElement) {
     }
 
     if (!terrain) { ctx.restore(); return; }
+
+    // Dynamic camera: everything world-anchored (terrain, entities, ship,
+    // fog, guidance overlays) renders inside this transform; screen-space
+    // HUD elements (pips, vignettes, banners, toasts) render after it pops.
+    updateCamera(t);
+    ctx.save();
+    ctx.translate(width / 2, height / 2);
+    ctx.scale(camZoom, camZoom);
+    ctx.translate(-camX, -camY);
 
     // §8.1: sky gradient + planet + ridge, star field, and terrain
     // fill/stroke/texture were previously rebuilt from scratch every single
@@ -2029,13 +2179,6 @@ export function initLanderGame(root: HTMLElement) {
       });
     }
 
-    // §6.2 Active-ability cooldown pips — drawn on canvas just above where
-    // the DOM fuel bar sits (bottom HUD strip), only when abilities are
-    // owned. No-op today (abilityDefs is always [] until Commit 4b).
-    if (stats.abilityDefs.length > 0) {
-      drawAbilityPips(ctx, abilityDefStates, 10, height - 34);
-    }
-
     // Fog overlay — v9 fairness rework. The old fog was a near-black wall
     // with a small hole ("unviewable"). Now: a lighter veil, a much bigger
     // visibility bubble, the terrain silhouette stays faintly readable
@@ -2079,23 +2222,9 @@ export function initLanderGame(root: HTMLElement) {
       }
     }
 
-    // Chrono Crystal bullet-time: cool-toned vignette + indicator
-    if (slowmoActive) {
-      ctx.save();
-      const vg = ctx.createRadialGradient(width / 2, height / 2, height * 0.35, width / 2, height / 2, height * 0.85);
-      vg.addColorStop(0, 'rgba(123, 167, 199, 0)');
-      vg.addColorStop(1, 'rgba(123, 167, 199, 0.16)');
-      ctx.fillStyle = vg;
-      ctx.fillRect(0, 0, width, height);
-      ctx.font = `${Math.max(11, Math.round(width / 68))}px "JetBrains Mono", monospace`;
-      ctx.textAlign = 'right';
-      ctx.fillStyle = 'rgba(123, 167, 199, 0.9)';
-      ctx.fillText('⌛ chrono', width - 12, height - 12);
-      ctx.restore();
-    }
-
-    // §7 Valkyrie Autopilot: control lockout indicator + cyan trajectory
-    // line to the pad while the PD controller is flying the ship.
+    // §7 Valkyrie Autopilot: cyan trajectory line to the pad while the PD
+    // controller is flying the ship (world-space; the OSD text is drawn in
+    // screen space after the camera pops).
     if (valkyrieActive && terrain) {
       ctx.save();
       const padCx = (terrain.pad.xStart + terrain.pad.xEnd) / 2;
@@ -2107,10 +2236,6 @@ export function initLanderGame(root: HTMLElement) {
       ctx.lineTo(padCx, terrain.pad.y);
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.font = `${Math.max(11, Math.round(width / 68))}px "JetBrains Mono", monospace`;
-      ctx.textAlign = 'center';
-      ctx.fillStyle = 'rgba(94, 214, 214, 0.9)';
-      ctx.fillText('🤖 autopilot engaged', width / 2, 40);
       ctx.restore();
     }
 
@@ -2225,6 +2350,40 @@ export function initLanderGame(root: HTMLElement) {
         ctx.stroke();
         ctx.restore();
       }
+    }
+
+    // --- end of world-space rendering: pop the dynamic-camera transform ---
+    ctx.restore();
+
+    // §6.2 Active-ability cooldown pips — screen-space, just above where the
+    // DOM fuel bar sits (bottom HUD strip), only when abilities are owned.
+    if (stats.abilityDefs.length > 0) {
+      drawAbilityPips(ctx, abilityDefStates, 10, height - 34);
+    }
+
+    // Chrono Crystal bullet-time: cool-toned vignette + indicator (screen)
+    if (slowmoActive) {
+      ctx.save();
+      const vg = ctx.createRadialGradient(width / 2, height / 2, height * 0.35, width / 2, height / 2, height * 0.85);
+      vg.addColorStop(0, 'rgba(123, 167, 199, 0)');
+      vg.addColorStop(1, 'rgba(123, 167, 199, 0.16)');
+      ctx.fillStyle = vg;
+      ctx.fillRect(0, 0, width, height);
+      ctx.font = `${Math.max(11, Math.round(width / 68))}px "JetBrains Mono", monospace`;
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(123, 167, 199, 0.9)';
+      ctx.fillText('⌛ chrono', width - 12, height - 12);
+      ctx.restore();
+    }
+
+    // §7 Valkyrie Autopilot OSD text (screen-space)
+    if (valkyrieActive) {
+      ctx.save();
+      ctx.font = `${Math.max(11, Math.round(width / 68))}px "JetBrains Mono", monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(94, 214, 214, 0.9)';
+      ctx.fillText('🤖 autopilot engaged', width / 2, 40);
+      ctx.restore();
     }
 
     // Wind indicator
@@ -2359,6 +2518,7 @@ export function initLanderGame(root: HTMLElement) {
   raf = requestAnimationFrame(loop);
 
   return function cleanup() {
+    clearUpgradeTimer();
     cancelAnimationFrame(raf);
     window.removeEventListener('resize', resize);
     window.removeEventListener('orientationchange', onOrientation);

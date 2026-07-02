@@ -36,6 +36,7 @@ export interface UpgradeDef {
   name: string;
   pro: string;   // the benefit — always worth more than the cost
   con: string;   // the tradeoff — real, but never crippling
+  desc: string;  // one-line plain-English summary for upgrade cards — no jargon
   icon: string;
   rarity: Rarity;
 }
