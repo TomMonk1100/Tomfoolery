@@ -202,7 +202,7 @@ export function initLanderGame(root: HTMLElement) {
   let phoenixUsed = 0;      // phoenix feather, per run
   let phoenixFlashT = 0;    // golden revive flash
   let slowmoActive = false; // chrono crystal state, read by draw()
-  let runStats: RunStats = { crashes: 0, landings: 0, skips: 0 };
+  let runStats: RunStats = { crashes: 0, landings: 0, skips: 0, stardustEarned: 0, startedAt: 0 };
 
   // --- lander-v10 commit 4b (§7): new-mechanic per-level/per-run state -----
   let lrHoldT = 0;                 // seconds L+R have been held together (gravity flip charge gesture)
@@ -242,6 +242,10 @@ export function initLanderGame(root: HTMLElement) {
   function stardustAdd(n: number) {
     stardust = Math.max(0, stardust + n);
     try { localStorage.setItem('lander-stardust', String(stardust)); } catch (e) {}
+    // §Commit 7: track total stardust earned this run for the crash-screen
+    // summary — one simple rule (any positive add outside the start screen
+    // counts) rather than per-call-site bookkeeping (§5 resolution 5).
+    if (n > 0 && state !== 'start') runStats.stardustEarned += n;
   }
 
   let cosmetics = loadJSON('lander-cosmetics', {
@@ -448,7 +452,7 @@ export function initLanderGame(root: HTMLElement) {
     levelIndex = 0;
     pickedUpgrades = [];
     stats = computeStats(pickedUpgrades, difficulty);
-    runStats = { crashes: 0, landings: 0, skips: 0 };
+    runStats = { crashes: 0, landings: 0, skips: 0, stardustEarned: 0, startedAt: performance.now() };
     phoenixUsed = 0;
     valkyrieUsed = 0; // §7: Valkyrie Autopilot charges are per-run, not per-level
     music.ensure();
@@ -1798,11 +1802,15 @@ export function initLanderGame(root: HTMLElement) {
   function showCrashScreen() {
     const best = bestFor(difficulty);
     const reached = levelIndex + 1;
+    const el = Math.max(0, performance.now() - runStats.startedAt);
+    const mm = Math.floor(el / 60000);
+    const ss = String(Math.floor(el / 1000) % 60).padStart(2, '0');
     setOverlay(`
       <div class="text-center">
         <p class="badge" style="color:#C97B3D">run over</p>
         <h2 class="font-display text-3xl font-semibold mt-2">Crashed on ${cfg.name}</h2>
         <p class="text-muted mt-3">Reached level ${reached} as ${DIFF_MODS[difficulty].label} · Landings: ${runStats.landings} · Best: level ${best}</p>
+        <p class="text-xs text-muted mt-1">✨ ${runStats.stardustEarned} earned · ${mm}:${ss} flight time · ${runStats.skips} skips</p>
         ${upgradeListHtml(pickedUpgrades)}
         <div class="flex items-center justify-center gap-2 mt-5 flex-wrap">
           <input data-lb-name maxlength="12" placeholder="pilot name" value="${pilotName.replace(/"/g, '')}"
@@ -1840,18 +1848,62 @@ export function initLanderGame(root: HTMLElement) {
     }
   }
 
+  // §Commit 7: client-side-only leaderboard difficulty filter — payloads
+  // to/from /api/scores are unchanged (I3), this only affects which rows
+  // of the already-fetched result set are displayed.
+  let lbFilter: 'all' | Difficulty = 'all';
+
+  function renderLbRows(rows: ScoreRow[]) {
+    const list = overlayContent.querySelector('[data-lb-list]') as HTMLElement | null;
+    if (!list) return;
+    const filtered = lbFilter === 'all' ? rows : rows.filter((r) => r.difficulty === lbFilter);
+    if (filtered.length === 0) {
+      list.innerHTML = `<p class="text-muted text-center text-xs">No ${lbFilter} scores yet.</p>`;
+      return;
+    }
+    const medals = ['🥇', '🥈', '🥉'];
+    const shown = filtered.slice(0, 25);
+    list.innerHTML = shown.map((r, i) => `
+      <div class="flex items-center justify-between gap-3 py-1.5 ${i < shown.length - 1 ? 'border-b border-line' : ''}">
+        <span class="text-muted w-8">${medals[i] ?? `${i + 1}.`}</span>
+        <span class="flex-1 text-ink truncate">${String(r.name).replace(/[<>&]/g, '')}</span>
+        <span class="text-muted text-xs">${DIFF_MODS[r.difficulty as Difficulty]?.icon ?? ''}</span>
+        <span class="badge-signal">lvl ${r.level}</span>
+      </div>
+    `).join('');
+  }
+
   // --- Global leaderboard screen ---
   async function showLeaderboard() {
+    const filterBtnClass = (active: boolean) =>
+      `cursor-pointer ${active ? 'text-ink underline underline-offset-2' : 'text-muted hover:text-ink transition-colors'}`;
     setOverlay(`
       <div class="text-center max-w-md mx-auto">
         <p class="badge badge-signal">🌍 global leaderboard</p>
         <h2 class="font-display text-2xl font-semibold mt-2">Deepest descents, worldwide</h2>
+        <div class="flex items-center justify-center gap-3 mt-3 text-xs font-mono" data-lb-filters>
+          ${(['all', 'cadet', 'pilot', 'ace'] as const).map((f) => `
+            <button data-lb-filter="${f}" class="${filterBtnClass(f === lbFilter)}">${f === 'all' ? 'all' : DIFF_MODS[f].label.toLowerCase()}</button>
+          `).join('')}
+        </div>
         <div class="mt-4 text-left font-mono text-sm" data-lb-list>
           <p class="text-muted text-center text-xs">contacting mission control…</p>
         </div>
         <button data-action="menu" class="tile mt-5 px-6 py-2 inline-block cursor-pointer font-mono text-sm">back</button>
       </div>
     `);
+    // Wired directly (not via the overlay's data-action delegate, which only
+    // handles data-action|data-diff|data-shop — kept that way per plan).
+    const filterRow = overlayContent.querySelector('[data-lb-filters]') as HTMLElement | null;
+    filterRow?.querySelectorAll('[data-lb-filter]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        lbFilter = (btn as HTMLElement).dataset.lbFilter as 'all' | Difficulty;
+        filterRow.querySelectorAll('[data-lb-filter]').forEach((b) => {
+          b.className = filterBtnClass((b as HTMLElement).dataset.lbFilter === lbFilter);
+        });
+        if (lbCache) renderLbRows(lbCache);
+      });
+    });
     const list = overlayContent.querySelector('[data-lb-list]') as HTMLElement | null;
     const rows = lbCache ?? await fetchLeaderboard();
     if (!list) return;
@@ -1863,15 +1915,7 @@ export function initLanderGame(root: HTMLElement) {
       }</p>`;
       return;
     }
-    const medals = ['🥇', '🥈', '🥉'];
-    list.innerHTML = rows.slice(0, 25).map((r, i) => `
-      <div class="flex items-center justify-between gap-3 py-1.5 ${i < rows.length - 1 ? 'border-b border-line' : ''}">
-        <span class="text-muted w-8">${medals[i] ?? `${i + 1}.`}</span>
-        <span class="flex-1 text-ink truncate">${String(r.name).replace(/[<>&]/g, '')}</span>
-        <span class="text-muted text-xs">${DIFF_MODS[r.difficulty as Difficulty]?.icon ?? ''}</span>
-        <span class="badge-signal">lvl ${r.level}</span>
-      </div>
-    `).join('');
+    renderLbRows(rows);
   }
 
   // --- Achievements screen ---

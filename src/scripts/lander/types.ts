@@ -250,6 +250,8 @@ export interface RunStats {
   crashes: number;
   landings: number;
   skips: number; // §5.3 — level-complete screens skipped ("travel light")
+  stardustEarned: number; // §Commit 7 — total stardust earned so far this run
+  startedAt: number;      // §Commit 7 — performance.now() when the run started
 }
 
 // --- Pilot face mapping -----------------------------------------------------------
