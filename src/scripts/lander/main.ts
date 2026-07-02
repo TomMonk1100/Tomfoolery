@@ -226,6 +226,7 @@ export function initLanderGame(root: HTMLElement) {
   let kickPendingLeft = false;       // one-shot flags consumed by step() — set on a detected double-tap
   let kickPendingRight = false;
   let valkyrieThrustOn = false;      // set by runValkyrieAutopilot() each tick — whether the PD controller wants thrust
+  let crashTimerId = 0;              // tracked so the crash-screen setTimeout can be cleared on restart/cleanup (Commit 1b)
 
   // Pilot selfie — session-only, in memory (never persisted to disk).
   let pilotPhoto: HTMLCanvasElement | null = null;
@@ -357,6 +358,7 @@ export function initLanderGame(root: HTMLElement) {
     let h = Math.round(w * aspect);
     const maxH = Math.round(window.innerHeight * (portrait ? 0.66 : 0.72));
     if (h > maxH && maxH > 160) h = maxH;
+    const oldW = width, oldH = height;
     width = w;
     height = h;
     // Big ship — the pilot's face is a feature, so it gets real pixels.
@@ -372,6 +374,12 @@ export function initLanderGame(root: HTMLElement) {
       terrain = generateTerrain(cfg, width, height);
       sky = generateSky(cfg, width, height);
       rebuildLayers();
+      if ((state === 'playing' || state === 'levelComplete') && oldW > 0 && oldH > 0) {
+        ship.x = ship.x / oldW * width;
+        ship.y = ship.y / oldH * height;
+        const gy = terrainYAt(terrain.points, ship.x);
+        if (ship.y > gy - 12 * S) ship.y = gy - 40;
+      }
     }
   }
 
@@ -403,6 +411,7 @@ export function initLanderGame(root: HTMLElement) {
     canvas.tabIndex = -1;
     canvas.style.outline = 'none';
     canvas.focus({ preventScroll: true });
+    window.clearTimeout(crashTimerId);
     levelIndex = 0;
     pickedUpgrades = [];
     stats = computeStats(pickedUpgrades, difficulty);
@@ -616,7 +625,6 @@ export function initLanderGame(root: HTMLElement) {
 
     const errVy = targetVy - ship.vy;
     valkyrieThrustOn = errVy < -kd * 4 || ship.vy > targetVy;
-    landedWithAutopilot = true;
   }
 
   function currentWind(c: LevelConfig, t: number) {
@@ -1175,7 +1183,7 @@ export function initLanderGame(root: HTMLElement) {
     explode();
     audio.crash();
     state = 'crashed';
-    setTimeout(showCrashScreen, 600);
+    crashTimerId = window.setTimeout(showCrashScreen, 600);
   }
 
   function handleTouchdown(groundY: number) {
@@ -1192,6 +1200,7 @@ export function initLanderGame(root: HTMLElement) {
       ship.angle = 0;
       speed = Math.hypot(ship.vx, ship.vy);
       valkyrieActive = false;
+      landedWithAutopilot = true;
     }
 
     // §7 Sticky Landing Pads: horizontal speed forgiven ×1.2^stacks while on
@@ -2519,6 +2528,7 @@ export function initLanderGame(root: HTMLElement) {
 
   return function cleanup() {
     clearUpgradeTimer();
+    window.clearTimeout(crashTimerId);
     cancelAnimationFrame(raf);
     window.removeEventListener('resize', resize);
     window.removeEventListener('orientationchange', onOrientation);
