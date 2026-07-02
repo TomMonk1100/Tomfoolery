@@ -1,0 +1,105 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Outside from '../components/Outside.astro';
+
+const tiles = [
+  {
+    href: '/coffee',
+    title: 'Coffee',
+    tag: 'brew log',
+    blurb: 'Current beans, gear shelf, and whatever is dripping right now.',
+  },
+  {
+    href: '/pokemon',
+    title: 'Pokémon TCG',
+    tag: 'collection',
+    blurb: 'The collection, filterable by set and grade.',
+  },
+  {
+    href: '/photos',
+    title: 'Photos',
+    tag: 'galleries',
+    blurb: 'Trip and theme galleries.',
+  },
+  {
+    href: '/retreats',
+    title: 'Retreats',
+    tag: 'trips',
+    blurb: 'Outdoor trips I organize, with a map.',
+  },
+  {
+    href: '/art',
+    title: 'Art',
+    tag: 'creative',
+    blurb: 'Latte art, hand-drawn sketches, and AI-art experiments.',
+  },
+  {
+    href: '/now',
+    title: 'Now',
+    tag: 'live',
+    blurb: 'Status, updated often.',
+  },
+  {
+    href: '/about',
+    title: 'About',
+    tag: 'the human stuff',
+    blurb: 'What I do, who I am.',
+  },
+  {
+    href: '/game',
+    title: 'Moon Lander',
+    tag: 'play',
+    blurb: 'An endless roguelite lander — every level harder, every upgrade a tradeoff.',
+    featured: true,
+  },
+];
+---
+
+<Layout>
+  <section class="mb-10 relative overflow-hidden">
+    <!-- Contained hero embers: three small motes, hero only. No canvas,
+         no JS, no full-viewport layer. Staggered durations + negative
+         delays keep them out of sync. -->
+    <span class="ember-mote" aria-hidden="true" style="top: 18%; right: 10%; width: 6px; height: 6px; background: var(--color-accent); animation-duration: 9s; animation-delay: -2s;"></span>
+    <span class="ember-mote" aria-hidden="true" style="top: 62%; right: 26%; width: 4px; height: 4px; background: var(--color-accent-2); animation-duration: 12s; animation-delay: -7s;"></span>
+    <span class="ember-mote" aria-hidden="true" style="top: 32%; right: 42%; width: 3px; height: 3px; background: var(--color-signal); animation-duration: 15s; animation-delay: -11s;"></span>
+
+    <div class="relative">
+      <!-- Explicit {' '} separators: the build's HTML minification strips
+           plain whitespace between the spans, which rendered as
+           "Hey,I'mTom." — expression-based spaces survive it. -->
+      <h1 class="font-display text-4xl md:text-6xl font-semibold tracking-tight overflow-hidden py-1">
+        <span class="kinetic-word" style="--i:0">Hey,</span>{' '}<span class="kinetic-word" style="--i:1">I'm</span>{' '}<span class="kinetic-word gradient-text flicker-hover" style="--i:2">Tom</span><span class="kinetic-word" style="--i:3">.</span>
+      </h1>
+      <p class="mt-4 max-w-xl text-muted text-lg" data-kinetic>
+        Welcome in. Coffee's usually on, there's always a collection growing in the corner, and I'm probably planning the next trip into the woods.
+      </p>
+    </div>
+  </section>
+
+  <!-- Outside widget lives OUTSIDE the tile grid on purpose: its content
+       height varies (location button, wrapping status text, geolocation
+       state), and it's promoted to its own highlighted surface directly
+       under the hero. -->
+  <div class="mb-4">
+    <Outside />
+  </div>
+
+  <!-- Uniform grid: no col-span overrides. The featured Moon Lander tile
+       carries the gradient fill as the single focal point. -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    {tiles.map((tile, i) => (
+      <a
+        href={tile.href}
+        class={`tile reveal flex flex-col justify-between min-h-[180px]${tile.featured ? ' tile-featured' : ''}`}
+        style={`transition-delay: ${Math.min(i * 60, 300)}ms`}
+      >
+        <span class="badge">{tile.tag}</span>
+        <div>
+          <h2 class="font-display text-xl font-semibold">{tile.title}</h2>
+          <p class={`mt-1 text-sm ${tile.featured ? 'tile-blurb' : 'text-muted'}`}>{tile.blurb}</p>
+        </div>
+      </a>
+    ))}
+  </div>
+</Layout>

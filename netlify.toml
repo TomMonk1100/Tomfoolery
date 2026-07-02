@@ -1,0 +1,6 @@
+# Included at the root of every manual (drag-and-drop) deploy so Netlify
+# picks up the pre-bundled serverless function that powers the Moon Lander
+# global leaderboard (/api/scores).
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "none"

@@ -1,0 +1,129 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Moon Lander — Tomfoolery" description="An endless roguelite Moon Lander — procedurally harder levels, upgrades with real tradeoffs.">
+  <div class="reveal is-visible">
+    <span class="badge">play</span>
+    <h1 class="font-display text-3xl md:text-4xl font-semibold mt-2">Moon Lander</h1>
+    <p class="text-muted mt-2 text-sm">
+      Land gently on the pad. Endless levels, each harder than the last — pick an
+      upgrade after every landing, but every boon has a cost. Three difficulty
+      modes. Built with canvas + Web Audio, no libraries.
+    </p>
+
+    <div id="lander-root" class="mt-6 relative">
+      <div class="game-bleed">
+        <div class="tile !p-0 overflow-hidden relative">
+          <canvas class="block w-full"></canvas>
+
+          <!-- HUD -->
+          <div class="absolute top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 flex items-start justify-between gap-2 font-mono text-xs pointer-events-none">
+            <div class="flex items-center gap-1.5 sm:gap-2 pointer-events-auto flex-wrap">
+              <div class="bg-canvas/70 px-2 py-1 border border-line">
+                <span class="text-muted">LVL </span><span data-hud="level" class="text-ink">1</span>
+              </div>
+              <div class="bg-canvas/70 px-2 py-1 border border-line">
+                <span class="text-muted">BEST </span><span data-hud="best" class="text-ink">—</span>
+              </div>
+              <div class="bg-canvas/70 px-2 py-1 border border-line">
+                <span class="text-muted">✨ </span><span data-hud="stardust" class="text-ink">0</span>
+              </div>
+            </div>
+            <div class="flex gap-1.5 sm:gap-3">
+              <div class="bg-canvas/70 px-2 py-1 border border-line">
+                <span class="text-muted">ALT </span><span data-hud="altitude" class="text-ink">—</span>
+              </div>
+              <div class="bg-canvas/70 px-2 py-1 border border-line">
+                <span class="text-muted">SPD </span><span data-hud="speed" class="text-ink">0</span>
+              </div>
+            </div>
+          </div>
+          <div class="absolute bottom-2 left-2 right-2 sm:bottom-3 sm:left-3 sm:right-3 flex items-center gap-2 font-mono text-xs pointer-events-none">
+            <span class="text-muted">FUEL</span>
+            <div class="flex-1 h-2 bg-canvas/70 border border-line">
+              <div data-hud="fuel-bar" class="h-full bg-signal" style="width:100%"></div>
+            </div>
+            <span data-hud="fuel" class="text-ink w-10 text-right">100</span>
+          </div>
+
+          <!-- Overlay (start / upgrade / crash / shop screens).
+               NOTE: content centers via m-auto on the child, NOT
+               items-center on the flex parent — flex-centering clips the
+               top of any content taller than the canvas and makes it
+               unreachable by scroll (that's what truncated the shop). -->
+          <div data-overlay class="absolute inset-0 bg-canvas/92 backdrop-blur-sm flex p-4 sm:p-6 overflow-y-auto">
+            <div data-overlay-content class="w-full m-auto"></div>
+          </div>
+        </div>
+
+        <!-- Touch controls (mobile) — big targets, thrust widest -->
+        <div class="touch-controls justify-between items-stretch gap-2 mt-2 select-none">
+          <button data-touch="left" class="tile flex-1 py-6 text-center font-display text-2xl cursor-pointer" aria-label="Rotate left">⟲</button>
+          <button data-touch="thrust" class="tile flex-[1.5] py-6 text-center font-display text-2xl cursor-pointer badge-signal" aria-label="Thrust">▲</button>
+          <button data-touch="right" class="tile flex-1 py-6 text-center font-display text-2xl cursor-pointer" aria-label="Rotate right">⟳</button>
+        </div>
+      </div>
+
+      <!-- Sound settings: independent mute + volume per channel -->
+      <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 mt-3 font-mono text-xs text-muted">
+        <p>←/→ or A/D rotate · ↑ / W / Space thrust</p>
+        <div class="flex items-center gap-5">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <button data-mute-sfx type="button" aria-label="Toggle sound effects" class="cursor-pointer hover:opacity-80 transition-opacity">🔊</button>
+            <input data-vol-sfx type="range" min="0" max="100" value="90" class="lander-vol" aria-label="Sound effects volume" />
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <button data-mute-music type="button" aria-label="Toggle music" class="cursor-pointer hover:opacity-80 transition-opacity">🎵</button>
+            <input data-vol-music type="range" min="0" max="100" value="75" class="lander-vol" aria-label="Music volume" />
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  /* On phones, break the game out of the page gutters so the canvas gets
+     every available pixel — the tile's side borders/rounding go with it. */
+  @media (max-width: 720px) {
+    .game-bleed {
+      margin-left: -1.5rem;
+      margin-right: -1.5rem;
+    }
+    .game-bleed > .tile {
+      border-left: none;
+      border-right: none;
+      border-radius: 0;
+    }
+    .game-bleed .touch-controls {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+    }
+  }
+
+  .lander-vol {
+    width: 110px;
+    accent-color: var(--color-accent);
+    cursor: pointer;
+  }
+</style>
+
+<script>
+  import { initLanderGame } from '../scripts/lander-game';
+
+  let cleanup: (() => void) | null = null;
+
+  function boot() {
+    const root = document.getElementById('lander-root');
+    if (!root) return;
+    cleanup?.();
+    cleanup = initLanderGame(root);
+  }
+
+  document.addEventListener('astro:page-load', boot);
+  document.addEventListener('astro:before-swap', () => {
+    cleanup?.();
+    cleanup = null;
+  });
+</script>

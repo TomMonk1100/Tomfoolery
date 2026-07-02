@@ -1,0 +1,270 @@
+@import "tailwindcss";
+
+/* ---- Hearthwood Light tokens (REDESIGN-HANDOFF v5) -> Tailwind v4 @theme ----
+   Single light theme. The old dark palette + [data-theme] toggle system was
+   removed with this redesign: the approved direction flips the site to one
+   light, warm-paper identity with deepened accents for contrast. */
+@theme {
+  --color-canvas: #FAF6EE;    /* warm paper, not stark white */
+  --color-surface: #FFFFFF;   /* card surface */
+  --color-surface-2: #F4ECDD; /* hover / highlighted surface */
+  --color-ink: #221A12;       /* warm near-black text */
+  --color-muted: #8A7B65;     /* secondary text */
+  --color-line: #E7DCC8;      /* borders */
+  --color-accent: #C2673A;    /* terracotta, deepened for light bg */
+  --color-accent-mid: #B8862E;/* gold, deepened for light bg */
+  --color-accent-2: #5F7A45;  /* moss, deepened */
+  --color-signal: #7C9A2E;    /* olive, live/active states only */
+
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Hybrid radius scale: cards (tiles, Outside panel, featured tile) use
+     the soft 10px --radius-xl; small elements (badges, buttons) keep the
+     sharp 0–4px scale. */
+  --radius-sm: 0px;
+  --radius-md: 2px;
+  --radius-lg: 4px;
+  --radius-xl: 10px;
+}
+
+/* RGB triplets for rgba() compositing (tile hover shadow, sun-arc golden
+   segments). Outside @theme on purpose — these feed hand-written rules,
+   they shouldn't generate utility classes. */
+:root {
+  --color-accent-rgb: 194, 103, 58;
+  --color-accent-mid-rgb: 184, 134, 46;
+  --color-accent-2-rgb: 95, 122, 69;
+  --color-signal-rgb: 124, 154, 46;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    line-height: 1.65;
+    position: relative;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer components {
+  /* Static gradient fills — no animated angle (repaint-per-frame flicker
+     source, and the redesign keeps gradients as calm, fixed fills). */
+  .gradient-text {
+    background-image: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-mid) 50%, var(--color-accent-2) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
+  .gradient-bg {
+    background-image: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-mid) 50%, var(--color-accent-2) 100%);
+  }
+
+  /* Tile — plain CSS hover (lift + accent border glow), no cursor tracking. */
+  .tile {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    position: relative;
+    isolation: isolate;
+    transition: transform 300ms cubic-bezier(0.34, 1.2, 0.64, 1),
+                background-color 250ms ease,
+                box-shadow 250ms ease;
+  }
+
+  /* Gradient border glow on hover */
+  .tile::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-mid) 50%, var(--color-accent-2) 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 250ms ease;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .tile:hover {
+    transform: translateY(-3px);
+    background-color: var(--color-surface-2);
+    box-shadow: 0 8px 30px -12px rgba(var(--color-accent-rgb), 0.35);
+  }
+
+  .tile:hover::before {
+    opacity: 1;
+  }
+
+  /* Featured tile (Moon Lander) — the single gradient-filled focal point
+     of the uniform grid. White text/tag on the terracotta→gold→moss fill. */
+  .tile-featured {
+    background-image: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-mid) 50%, var(--color-accent-2) 100%);
+    border-color: transparent;
+    color: #FFFFFF;
+  }
+  .tile-featured h2 {
+    color: #FFFFFF;
+  }
+  .tile-featured .badge {
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .tile-featured .tile-blurb {
+    color: rgba(255, 255, 255, 0.88);
+  }
+  .tile-featured:hover {
+    box-shadow: 0 10px 34px -12px rgba(var(--color-accent-rgb), 0.5);
+  }
+
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+    color: var(--color-muted);
+    text-transform: uppercase;
+  }
+
+  .badge-signal {
+    color: var(--color-signal);
+  }
+
+  /* Glass nav — light glass, content scrolls underneath */
+  .glass-nav {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background-color: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(10px) saturate(140%);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  /* Scroll-reveal: clean rise + settle */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px) scale(0.97);
+    transition: opacity 700ms cubic-bezier(0.16, 1, 0.3, 1),
+                transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  /* Kinetic type: individual word spans staggered in by JS setting --i */
+  .kinetic-word {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(0.5em);
+    transition: opacity 550ms cubic-bezier(0.16, 1, 0.3, 1),
+                transform 550ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: calc(var(--i, 0) * 45ms);
+  }
+  .kinetic-word.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Candlelight flicker — wordmark "Tom" only, on hover only */
+  .flicker-hover:hover {
+    animation: candleFlicker 1.8s linear infinite;
+  }
+
+  /* Hero ember motes — the three small, contained moments that replace the
+     full-page canvas particle layer. Position/size/color/duration set
+     inline where they're used; staggered negative delays keep them
+     out of sync. */
+  .ember-mote {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0.35;
+    animation: emberFloat 12s ease-in-out infinite;
+  }
+
+  .live-pulse {
+    animation: livePulse 2.4s ease-in-out infinite;
+  }
+
+  /* Outside widget — highlighted surface, promoted out of the tile grid */
+  .outside-panel {
+    background-color: var(--color-surface-2);
+    border: 1px solid var(--color-line);
+    border-left: 4px solid var(--color-accent);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    box-shadow: 0 2px 14px -8px rgba(34, 26, 18, 0.14);
+  }
+
+  /* Touch controls for the lander game — hidden on wide/desktop viewports,
+     shown on narrow/touch ones. */
+  .touch-controls {
+    display: none;
+  }
+  @media (max-width: 720px), (pointer: coarse) {
+    .touch-controls {
+      display: flex;
+    }
+  }
+}
+
+@keyframes emberFloat {
+  0%, 100% { transform: translate(0, 0); opacity: 0.35; }
+  50% { transform: translate(6px, -14px); opacity: 0.7; }
+}
+
+@keyframes candleFlicker {
+  0%, 100% { opacity: 1; }
+  7% { opacity: 0.84; }
+  11% { opacity: 0.98; }
+  19% { opacity: 0.9; }
+  31% { opacity: 1; }
+  44% { opacity: 0.86; }
+  56% { opacity: 0.97; }
+  68% { opacity: 0.91; }
+  82% { opacity: 1; }
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Astro View Transitions: clean cross-fade + gentle rise, no filters. */
+@keyframes tomsite-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes tomsite-fade-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-6px); }
+}
+::view-transition-old(main-content) {
+  animation: 260ms cubic-bezier(0.4, 0, 1, 1) both tomsite-fade-out;
+}
+::view-transition-new(main-content) {
+  animation: 380ms cubic-bezier(0, 0, 0.2, 1) both tomsite-fade-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

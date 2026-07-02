@@ -1,0 +1,56 @@
+---
+// Generic detail page for any collection entry — /coffee/:slug,
+// /pokemon/:slug, /photos/:slug, /retreats/:slug, /art/:slug. One template
+// instead of five near-duplicates; renders whichever metadata fields a
+// given entry actually has.
+import Layout from '../../layouts/Layout.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const COLLECTIONS = ['coffee', 'pokemon', 'photos', 'retreats', 'art'] as const;
+  const paths = [];
+  for (const name of COLLECTIONS) {
+    const entries = await getCollection(name);
+    for (const entry of entries) {
+      paths.push({
+        params: { collection: name, slug: entry.id },
+        props: { entry, collection: name },
+      });
+    }
+  }
+  return paths;
+}
+
+const { entry, collection } = Astro.props;
+const { Content } = await render(entry);
+const d = entry.data as Record<string, any>;
+
+function fmt(date: Date) {
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
+---
+
+<Layout title={`${d.title} — Tomfoolery`} description={d.title}>
+  <a href={`/${collection}`} class="badge hover:text-ink transition-colors">← {collection}</a>
+  <h1 class="font-display text-3xl md:text-4xl font-semibold mt-3 max-w-2xl">{d.title}</h1>
+
+  <p class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted font-mono">
+    {d.date && <span>{fmt(new Date(d.date))}</span>}
+    {d.dateAcquired && <span>{fmt(new Date(d.dateAcquired))}</span>}
+    {d.location && <span>{d.location}</span>}
+    {d.roaster && <span>{d.roaster}{d.origin ? ` · ${d.origin}` : ''}</span>}
+    {d.set && <span>{d.set}</span>}
+    {d.category && <span>{d.category}</span>}
+    {d.grade && <span class="badge-signal">{d.grade}</span>}
+    {d.status && <span class="badge-signal">{d.status}</span>}
+    {d.rating && <span class="text-signal">{'●'.repeat(d.rating)}{'○'.repeat(5 - d.rating)}</span>}
+  </p>
+
+  {d.image && (
+    <img src={d.image} alt={d.title} class="mt-6 w-full max-w-xl border border-line" loading="lazy" />
+  )}
+
+  <div class="prose-body mt-6 max-w-xl text-ink leading-relaxed [&_p]:mt-3 [&_p:first-child]:mt-0">
+    <Content />
+  </div>
+</Layout>
