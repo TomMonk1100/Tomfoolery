@@ -30,21 +30,30 @@ import { RARITY, DIFF_MODS, computeStats, clampGravityProduct, chronoTimeScale }
 import { UPGRADES, PAINTS, TRAILS, SKIES, ACHIEVEMENTS } from './upgrades';
 import { levelConfigFor, terrainYAt, generateTerrain, generateSky, generateCritters, generateUfos } from './levels';
 import { makeParticle } from './particles';
-import { generateAsteroids, updateAsteroids, findAsteroidHit, type Asteroid } from './entities';
+import {
+  generateAsteroids, updateAsteroids, findAsteroidHit, type Asteroid,
+  buildDronePool, updateDrones, terraform, shouldRebuild, REBUILD_INTERVAL_S,
+} from './entities';
 import {
   DT, MAX_FRAME_TIME, effectiveMass, effectiveArea, gravityAccel, thrustAccel, windAccel,
   sweptGroundContact, sweptSegmentCircleHit, clampRotationDelta,
 } from './physics';
 import { AudioEngine } from './audio/sfx';
 import { MusicEngine } from './audio/music';
-import { DEFAULT_FACE, analyzeFace, drawShip } from './render/ship';
-import { drawCritters, drawUfos, drawPad, drawAsteroids } from './render/world';
-import { updateHud as updateHudEl } from './render/hud';
+import { DEFAULT_FACE, analyzeFace, drawShip, checkGhostSave } from './render/ship';
+import { drawCritters, drawUfos, drawPad, drawAsteroids, drawDrones, drawNoodle, drawNoodlePiles } from './render/world';
+import { updateHud as updateHudEl, drawAbilityPips } from './render/hud';
 import { upgradeListHtml, shopItemHtml, trailSwatch, diffButtonsHtml } from './ui/overlays';
 import { loadJSON, bestFor as bestForStored, saveBest, fetchLeaderboard as fetchLeaderboardRemote, submitScore as submitScoreRemote } from './persistence';
+import { resolveReadyAbility, tickAbilityCooldowns, consumeAbilityCharge } from './abilities';
+import {
+  createNoodlePile, updateNoodles, compactNoodles, decayNoodlePile,
+  checkNoodleSquish, applyNoodleSquish, makeNoodle, NOODLE_SQUISH_VY,
+} from './noodles';
 import type {
   UpgradeId, LevelConfig, Terrain, Star, Planet, Critter, Ufo, Projectile, Particle,
   ShipStats, FaceMap, Mood, GameState, Difficulty, ScoreRow, Toast, UpgradeDef, Rarity, RunStats,
+  Drone, Noodle, AbilityDef,
 } from './types';
 
 // --- Main game -----------------------------------------------------------------
@@ -68,6 +77,11 @@ export function initLanderGame(root: HTMLElement) {
   const touchLeft = root.querySelector('[data-touch="left"]') as HTMLElement;
   const touchRight = root.querySelector('[data-touch="right"]') as HTMLElement;
   const touchThrust = root.querySelector('[data-touch="thrust"]') as HTMLElement;
+  // §6.2 active-ability slot: 4th touch button, hidden by default (CSS class
+  // toggled on when the player owns >=1 active-ability upgrade — see
+  // updateAbilityButtonVisibility()). No upgrade owns one yet in this
+  // commit, so the button stays hidden through Commit 4a.
+  const touchAbility = root.querySelector('[data-touch="ability"]') as HTMLElement | null;
 
   const audio = new AudioEngine();
   const music = new MusicEngine();
@@ -150,6 +164,22 @@ export function initLanderGame(root: HTMLElement) {
   // asteroids (never at the ship). Kept separate from hostile `projectiles`
   // so the existing ship-hit collision loop never has to special-case them.
   let allyProjectiles: { x: number; y: number; vx: number; vy: number; alive: boolean; target: Asteroid }[] = [];
+
+  // --- lander-v10 commit 4a: new-systems scaffolding state (§6) ---
+  // §6.1 Noodle piles: a Float32Array parallel to terrain.points, rebuilt on
+  // loadLevel. `noodles` are the falling strand particles pre-absorption.
+  let noodlePile: Float32Array = new Float32Array(0);
+  let noodles: Noodle[] = [];
+  let thrusterParticleTick = 0; // counts thruster-particle emissions for the "every 3rd is a noodle" rule
+  // §6.3 Drones — pooled per stats.droneCharges (0 today, no upgrade sets it).
+  let drones: Drone[] = [];
+  // §6.4 Terraform dirty-flag throttle (real static-layer cache is Commit 5's
+  // job; this is the throttled-rebuild pattern it will plug into).
+  let terrainDirty = false;
+  let lastTerrainRebuildTime = 0;
+  // §6.2 Active-ability slot: live cooldown/charge state per owned ability,
+  // rebuilt from stats.abilityDefs whenever it changes (see syncAbilityDefStates).
+  let abilityDefStates: AbilityDef[] = [];
   let simTime = 0; // accumulated sim seconds (fixed-step ticks only) — drives asteroid orbits, moved out of the render path per §4.4
   let windPhase = 0;
   let shieldFlash = 0;
@@ -314,7 +344,47 @@ export function initLanderGame(root: HTMLElement) {
     introT = 2.4;
     celebrateT = 0;
     bouncesUsed = 0;
+    // §6.1 Noodle piles reset per level (a pile from a prior level's terrain
+    // wouldn't map to this level's new terrain sample points anyway).
+    noodlePile = createNoodlePile(terrain.points.length);
+    noodles = [];
+    // §6.3 Drone pool rebuilt from the current droneCharges stat (0 today).
+    drones = buildDronePool(stats.droneCharges);
+    terrainDirty = false;
+    lastTerrainRebuildTime = simTime;
+    syncAbilityDefStates();
     music.setTension(Math.min(1, idx / 14));
+  }
+
+  // §6.2: rebuilds abilityDefStates from stats.abilityDefs (owned ability
+  // ids) each level load — resets charges/cooldowns per level, matching the
+  // plan's "all ability charges reset per level except per-run ones" note
+  // (per-run exceptions are a Commit 4b concern; nothing here is per-run
+  // yet since no ability upgrade exists). Also toggles the 4th touch
+  // button's visibility.
+  function syncAbilityDefStates() {
+    abilityDefStates = stats.abilityDefs.map((id) => ({
+      id, charges: 1, maxCharges: 1, cooldown: 0, maxCooldown: 8,
+    }));
+    updateAbilityButtonVisibility();
+  }
+
+  function updateAbilityButtonVisibility() {
+    if (!touchAbility) return;
+    touchAbility.classList.toggle('hidden', stats.abilityDefs.length === 0);
+  }
+
+  // §6.2: fires the highest-priority ready ability (first match in
+  // ABILITY_PRIORITY order). No-op if none are owned/ready — today that's
+  // always the case since abilityDefs is always [].
+  function fireAbility() {
+    const def = resolveReadyAbility(abilityDefStates);
+    if (!def) return;
+    consumeAbilityCharge(def);
+    audio.select();
+    // Commit 4b wires each ability's actual effect (Valkyrie autopilot,
+    // Wormhole teleport, Time Bank slow-mo, Singularity freeze, Grappling
+    // Hook winch) in here, keyed on def.id. No effect fires yet.
   }
 
   function currentWind(c: LevelConfig, t: number) {
@@ -335,6 +405,24 @@ export function initLanderGame(root: HTMLElement) {
         colors[Math.floor(Math.random() * colors.length)],
         0.35 + Math.random() * 0.3,
         (1.5 + Math.random() * 2) * S
+      ));
+    }
+  }
+
+  // §6.1: emits `stacks` noodle strands from the engine, mirroring
+  // emitThrusterParticles' spawn geometry. Accepts a stack-count multiplier
+  // per the plan (×n emission) even though no upgrade sets noodleStacks yet.
+  function emitNoodles(stacks: number) {
+    const count = Math.max(1, Math.round(stacks));
+    for (let i = 0; i < count; i++) {
+      const spread = (Math.random() - 0.5) * 0.6;
+      const speed = (50 + Math.random() * 40) * S;
+      const a = ship.angle + Math.PI + spread;
+      noodles.push(makeNoodle(
+        ship.x - Math.sin(ship.angle) * 12 * S,
+        ship.y + Math.cos(ship.angle) * 12 * S,
+        Math.sin(a) * speed + ship.vx * 0.3,
+        -Math.cos(a) * speed + ship.vy * 0.3
       ));
     }
   }
@@ -474,6 +562,14 @@ export function initLanderGame(root: HTMLElement) {
       ship.vy -= Math.cos(ship.angle) * a * pdt;
       ship.fuel = Math.max(0, ship.fuel - 22 * stats.fuelBurnMult * dt);
       emitThrusterParticles();
+      // §6.1 Spaghetti Engine: every 3rd thruster particle is a noodle
+      // instead, when the upgrade is owned (noodleStacks > 0). Emission rate
+      // scales ×n with stack count via the extra spawn count below — no
+      // upgrade sets noodleStacks yet, so this is inert until Commit 4b.
+      if (stats.noodleStacks > 0 && thrusterParticleTick % 3 === 0) {
+        emitNoodles(stats.noodleStacks);
+      }
+      thrusterParticleTick += 1;
       audio.startThrust();
       music.duck(true);
     } else {
@@ -519,6 +615,34 @@ export function initLanderGame(root: HTMLElement) {
 
     simulateParticles(pdt);
     if (shieldFlash > 0) shieldFlash -= dt;
+
+    // §6.1 Noodle piles: advance falling strands (deposit on terrain
+    // contact), decay existing piles, and drop dead strands. Cheap no-ops
+    // when noodlePile is empty / no noodles are airborne (the common case
+    // until Commit 4b wires up the Spaghetti Engine).
+    if (noodlePile.length > 0 || noodles.length > 0) {
+      updateNoodles(noodles, noodlePile, terrain.points, terrainYAt, pdt, stats.noodleStacks);
+      noodles = compactNoodles(noodles);
+      decayNoodlePile(noodlePile, pdt);
+    }
+
+    // §6.3 Drones: advance orbit angles. Pool is empty (droneCharges=0)
+    // until an upgrade sets it — updateDrones on an empty array is a no-op.
+    if (drones.length > 0) updateDrones(drones, pdt);
+
+    // §6.2 Ability cooldowns tick on raw dt (cooldowns aren't slowed by
+    // Chrono Crystal), matching the fuel-drain convention elsewhere in step().
+    if (abilityDefStates.length > 0) tickAbilityCooldowns(abilityDefStates, dt);
+
+    // §6.4 Terraform: throttled-dirty-flag rebuild guard. Nothing marks
+    // terrainDirty yet in this commit (no terraform() call site exists
+    // until the Terraformer upgrade lands in 4b), so this never fires —
+    // it's here so Commit 5's real static-layer cache has the throttle
+    // logic already in place to plug into.
+    if (shouldRebuild(terrainDirty, simTime, lastTerrainRebuildTime)) {
+      lastTerrainRebuildTime = simTime;
+      terrainDirty = false;
+    }
 
     // Ground proximity dust while thrusting
     const groundY = terrainYAt(terrain.points, ship.x);
@@ -637,7 +761,28 @@ export function initLanderGame(root: HTMLElement) {
       ship.vy = -Math.abs(ship.vy) * 0.35;
       ship.vx *= 0.4;
       shakeT = 0.25;
+    } else if (noodlePile.length > 0 && checkNoodleSquish(noodlePile, terrain.points, ship.x).squish) {
+      // §6.1 Spaghetti Engine touchdown rule: a fatal terrain impact lands
+      // on a tall-enough noodle pile instead of crashing. Works anywhere on
+      // terrain (not just the pad) and does NOT complete the level — only a
+      // safe pad landing (the `safe` branch above) does that.
+      const result = checkNoodleSquish(noodlePile, terrain.points, ship.x);
+      applyNoodleSquish(noodlePile, result);
+      ship.vx = 0;
+      ship.vy = NOODLE_SQUISH_VY;
+      shakeT = 0.15;
+      emitDust(groundY);
+      audio.splat();
+      unlockAch('ach_pasta');
     } else {
+      // §6.5 Quantum Duplicate death-save hook: checked as the last line of
+      // defense before a genuine crash. Returns false always today (no
+      // upgrade sets stats.ghostSave yet) — Commit 4b makes this meaningful.
+      if (checkGhostSave(stats)) {
+        ship.vx = 0; ship.vy = -40;
+        shakeT = 0.2;
+        return;
+      }
       destroyShip();
     }
   }
@@ -1132,6 +1277,10 @@ export function initLanderGame(root: HTMLElement) {
     if (['ArrowLeft', 'a', 'A'].includes(e.key)) input.left = true;
     if (['ArrowRight', 'd', 'D'].includes(e.key)) input.right = true;
     if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) { input.thrust = true; e.preventDefault(); }
+    // §6.2 active-ability slot: ArrowDown/S fires the highest-priority ready
+    // ability. A no-op today (abilityDefStates is always []) until Commit 4b
+    // wires up the first ability upgrade.
+    if (['ArrowDown', 's', 'S'].includes(e.key) && state === 'playing') { fireAbility(); e.preventDefault(); }
   }
   function keyup(e: KeyboardEvent) {
     if (['ArrowLeft', 'a', 'A'].includes(e.key)) input.left = false;
@@ -1152,6 +1301,13 @@ export function initLanderGame(root: HTMLElement) {
   bindTouch(touchLeft, () => (input.left = true), () => (input.left = false));
   bindTouch(touchRight, () => (input.right = true), () => (input.right = false));
   bindTouch(touchThrust, () => (input.thrust = true), () => (input.thrust = false));
+  // §6.2: 4th touch button fires the ability on press (not hold — matches
+  // "one press fires ... one ability per press"). Hidden by default via CSS
+  // class, shown only when abilityDefStates is non-empty (updateAbilityButtonVisibility).
+  if (touchAbility) {
+    touchAbility.addEventListener('touchstart', (e) => { e.preventDefault(); if (state === 'playing') fireAbility(); }, { passive: false });
+    touchAbility.addEventListener('mousedown', () => { if (state === 'playing') fireAbility(); });
+  }
 
   // --- Rendering ---
   function currentMood(): Mood {
@@ -1254,6 +1410,10 @@ export function initLanderGame(root: HTMLElement) {
       ctx.stroke();
     }
 
+    // §6.1 Noodle piles — soft rounded blob layer directly over the terrain,
+    // drawn before critters/pad so they visually sit "in" the ground.
+    if (noodlePile.length > 0) drawNoodlePiles(ctx, noodlePile, terrain.points);
+
     drawCritters(ctx, critters, t);
     drawPad(ctx, terrain, cfg, stats, t);
 
@@ -1262,6 +1422,15 @@ export function initLanderGame(root: HTMLElement) {
     drawAsteroids(ctx, asteroids);
 
     drawUfos(ctx, ufos, projectiles, stats);
+
+    // §6.3 Drones — placeholder generic look; no-op while the pool is empty.
+    if (drones.length > 0) drawDrones(ctx, drones, ship.x, ship.y);
+
+    // §6.1 Airborne noodle strands (pre-absorption into the pile).
+    for (const noo of noodles) {
+      if (!noo.alive) continue;
+      drawNoodle(ctx, noo, S);
+    }
 
     // Ally shots (Alien Diplomacy stack 2+, §5.1) — green to read as friendly.
     for (const ap of allyProjectiles) {
@@ -1292,6 +1461,13 @@ export function initLanderGame(root: HTMLElement) {
         ctx, ship, S, mood: currentMood(), shieldFlash, stats, pickedUpgrades,
         paint: equippedPaint(), pilotPhoto, faceMap,
       });
+    }
+
+    // §6.2 Active-ability cooldown pips — drawn on canvas just above where
+    // the DOM fuel bar sits (bottom HUD strip), only when abilities are
+    // owned. No-op today (abilityDefs is always [] until Commit 4b).
+    if (stats.abilityDefs.length > 0) {
+      drawAbilityPips(ctx, abilityDefStates, 10, height - 34);
     }
 
     // Fog overlay — v9 fairness rework. The old fog was a near-black wall

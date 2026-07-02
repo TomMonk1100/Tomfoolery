@@ -73,4 +73,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'ach_chrono',   icon: '⌛', name: 'Time Lord',           desc: 'Land while time is slowed' },
   // lander-v10 commit 3 (§5.3): skip option achievement.
   { id: 'ach_minimalist', icon: '🪶', name: 'Featherweight',     desc: 'Clear level 5 with zero upgrades installed' },
+  // lander-v10 commit 4a (§6.1/§7): noodle-pile squish-landing achievement.
+  // Reachable in this commit whenever noodlePile has height (currently only
+  // possible if a future upgrade sets noodleStacks — added now since the
+  // touchdown code path that unlocks it lives in this commit).
+  { id: 'ach_pasta', icon: '🍝', name: 'Soft Landing',          desc: 'Survive a fatal impact via a noodle pile squish' },
 ];

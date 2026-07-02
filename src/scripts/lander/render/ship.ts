@@ -658,3 +658,38 @@ export function drawShip(p: DrawShipParams) {
 
   c.restore();
 }
+
+// ---------------------------------------------------------------------------
+// lander-v10 commit 4a (§6.5): Ghost ship.
+//
+// Renders the ship at 35% alpha, mirrored across the pad center X — purely
+// visual on its own. Commit 4b's Quantum Duplicate upgrade will call
+// drawGhostShip once per frame near the mirrored position and hook
+// checkGhostSave into the crash-handling path (main.ts::destroyShip).
+// ---------------------------------------------------------------------------
+
+// Mirrors an x coordinate across the pad center — the ghost renders as if
+// the ship's run were reflected across the pad, per §6.5.
+export function mirrorAcrossPad(x: number, padCenterX: number): number {
+  return padCenterX + (padCenterX - x);
+}
+
+export function drawGhostShip(p: DrawShipParams & { padCenterX: number }) {
+  const { padCenterX, ship, ...rest } = p;
+  const c = p.ctx;
+  const ghostX = mirrorAcrossPad(ship.x, padCenterX);
+  c.save();
+  c.globalAlpha = 0.35;
+  drawShip({ ...rest, ctx: c, ship: { ...ship, x: ghostX } });
+  c.restore();
+}
+
+// §6.5 hook: "Quantum Duplicate death-save roll" — a boolean/probability
+// check callable from the crash-handling code path in main.ts. Returns
+// false always for now (no upgrade sets stats.ghostSave yet); Commit 4b
+// makes it meaningful by rolling 50% per stack of ghostSave and consuming
+// one on success.
+export function checkGhostSave(stats: ShipStats): boolean {
+  if (!stats.ghostSave || stats.ghostSave <= 0) return false;
+  return false;
+}

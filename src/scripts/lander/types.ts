@@ -86,6 +86,28 @@ export interface Particle {
   gravity: number;
 }
 
+// --- §6.1 Noodle piles (Spaghetti Engine) ------------------------------------
+// A "noodle" is a distinct falling particle (3-segment wavy strand) that
+// deposits into a height-map (noodlePile.ts) on terrain contact instead of
+// just despawning like a normal particle.
+export interface Noodle {
+  x: number; y: number; vx: number; vy: number;
+  life: number; maxLife: number;
+  seed: number; // per-noodle wobble phase for the wavy-strand draw
+  alive: boolean;
+}
+
+// --- §6.3 Drones/companions ---------------------------------------------------
+export type DroneBehavior = 'intercept' | 'shoot';
+export interface Drone {
+  index: number;         // orbit slot — radius = 26 + 8*index
+  angle: number;         // current orbit angle (radians)
+  speed: number;         // angular speed, rad/s
+  behavior: DroneBehavior;
+  charges: number;       // intercept: blocks remaining this level; shoot: ignored (fires freely)
+  alive: boolean;
+}
+
 // --- Ship stats derived from picked upgrades ------------------------------------
 //
 // lander-v10 commit 3 (§5.1): booleans that used to mean "owned" now carry a
@@ -121,6 +143,61 @@ export interface ShipStats {
   // --- physics §4.2 mass & drag model ---
   massSum: number;         // Σ(def.mass × stacks) — fed into physics.effectiveMass()
   areaSum: number;         // Σ(def.dragArea × stacks) — fed into physics.effectiveArea()
+
+  // --- lander-v10 commit 4a (§6.6): stat modifier hooks for systems built in
+  // this commit but not yet wired to any upgrade (that's Commit 4b). All
+  // default to a semantically "off" value (0 / false / [] / 1 as noted below)
+  // so existing gameplay is byte-for-byte unaffected until upgrades populate
+  // them. Booleans are numbers (stack counts) wherever the plan's §6
+  // mechanics escalate per stack, matching the pattern already established
+  // above (scanner, ufosFriendly, chronoStacks, starCoreStacks, spicyStacks).
+  noodleStacks: number;        // §6.1 Spaghetti Engine — noodle emission ×n, pile cap +10px×n
+  extraChoices: number;        // Lucky Antenna — +1 upgrade choice per offer, per stack
+  stardustMult: number;        // Stardust Condenser / Midas Hull — multiplies stardust payouts
+  grazeFuel: number;           // Vampire Coils — fuel gained per projectile graze
+  slopeLandCharges: number;    // Gecko Struts — safe-landing-on-slope charges per level
+  hoverModule: number;         // Hover Module — stack count (descent auto-limit near ground)
+  asteroidMiner: number;       // Asteroid Miner — stack count (asteroid contact shatters for fuel/stardust)
+  magnetDeflect: number;       // Deflector Coils — stack count (projectile repulsion strength ×n)
+  tailwindTurbine: number;     // Tailwind Turbine — stack count (fuel/s per wind speed ×n)
+  cheeseDrillCharges: number;  // Moon Cheese Drill — drill charges per level
+  droneCharges: number;        // §6.3 Swarm Drones — orbiting companion count / intercept charges
+  abilityDefs: AbilityId[];    // §6.2 active-ability slot — owned ability ids, in acquisition order
+  padPull: number;             // Pad Tractor Winch — pull accel (px/s^2) toward pad center, ×n
+  autoBrake: number;           // Reserve Chute — auto-brake charges per level (already reserveCharges; kept generic per §6.6 list)
+  kickThrusters: number;       // Kick Thrusters — stack count (sideways impulse strength ×n)
+  luckyTier: number;           // Star Forge — rarity weight multiplier tier (compounds ×3^n)
+  forecastMarker: number;      // Echo Altimeter / Scanner 2+ — touchdown forecast marker stack
+  eggLevels: number;           // Golden Goose — stack count (stardust per landing ×n)
+  randomDice: number;          // Cosmic Dice — stack count (extra dice rolls per level)
+  sailRegen: number;           // Dyson Sail — always-on fuel regen rate
+  pocketMoon: number;          // Pocket Moon — stack count (orbiting moonlet radius/count)
+  escortUfos: number;          // Mothership's Favor — friendly escort UFO count
+  doubleProgress: number;      // Big Crunch Drive — stack count (levels advanced per landing, base 1)
+  slideLanding: number;        // Rocket Skates — stack count (slide-to-stop tolerance mult)
+  reverseGravityCharges: number; // Gravity Flip Coil — charges per level
+  midasMult: number;           // Midas Hull — stardust payout multiplier (compounds)
+  ghostSave: number;           // §6.5 Quantum Duplicate — death-save roll count (independent rolls per stack)
+  stormTowardPad: boolean;     // Storm Caller — wind always blows toward the pad
+  nanoRegenSec: number;        // Nano-Repair Swarm — seconds-airborne interval for +1 shield charge
+  blackholeReserve: number;    // Black Hole Engine — stack count (thrust free below 25% tank)
+  antigravPaint: number;       // Antigrav Paint — stack count (gravity coupling reduction)
+}
+
+// --- §6.2 Active-ability slot -------------------------------------------------
+// Priority-ordered list of ability ids the resolver checks in order, firing
+// the first one that is "ready" (has charge). No upgrade sets abilityDefs
+// yet (Commit 4b wires Valkyrie Autopilot etc. in) — this is the generic
+// mechanism the later upgrades hook into.
+export type AbilityId =
+  | 'valkyrie_autopilot' | 'wormhole_pocket' | 'time_bank' | 'singularity_anchor' | 'grappling_hook';
+
+export interface AbilityDef {
+  id: AbilityId;
+  charges: number;      // current ready charges (0 = not ready)
+  maxCharges: number;   // for cooldown-pip rendering
+  cooldown: number;     // seconds remaining until next charge regens (0 = full)
+  maxCooldown: number;  // full cooldown duration, for pip fill fraction
 }
 
 // --- Per-run tallies (not persisted mid-run; achievements/toasts read these) --

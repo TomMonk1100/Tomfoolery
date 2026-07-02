@@ -1,5 +1,8 @@
-import type { Critter, LevelConfig, Projectile, ShipStats, Terrain, Ufo } from '../types';
+import type { Critter, Drone, LevelConfig, Projectile, ShipStats, Terrain, Ufo } from '../types';
 import type { Asteroid } from '../entities';
+import { droneWorldPos } from '../entities';
+import { drawNoodle, drawNoodlePiles } from '../noodles';
+import type { Noodle } from '../types';
 
 // Pure render — no gameplay mutation (§4.4). Asteroid position/collision are
 // computed in entities.ts::updateAsteroids/findAsteroidHit during the fixed
@@ -139,6 +142,36 @@ export function drawUfos(ctx: CanvasRenderingContext2D, ufos: Ufo[], projectiles
     c.shadowBlur = 0;
   }
 }
+
+// §6.3 drones/companions — placeholder generic look (bee-striped/circle);
+// actual per-upgrade visuals arrive in Commit 4b once real upgrades own them.
+export function drawDrones(ctx: CanvasRenderingContext2D, drones: Drone[], shipX: number, shipY: number) {
+  const c = ctx;
+  for (const d of drones) {
+    if (!d.alive) continue;
+    const { x, y } = droneWorldPos(shipX, shipY, d);
+    c.save();
+    c.translate(x, y);
+    c.beginPath();
+    c.arc(0, 0, 3.2, 0, Math.PI * 2);
+    c.fillStyle = d.behavior === 'shoot' ? '#C97B3D' : '#94B03D';
+    c.fill();
+    c.strokeStyle = '#221808';
+    c.lineWidth = 0.7;
+    c.stroke();
+    // bee-striped placeholder look
+    c.strokeStyle = '#221808';
+    c.lineWidth = 0.5;
+    c.beginPath(); c.moveTo(-2, -1); c.lineTo(2, -1); c.stroke();
+    c.beginPath(); c.moveTo(-2.4, 0.5); c.lineTo(2.4, 0.5); c.stroke();
+    c.restore();
+  }
+}
+
+// §6.1 re-exported so main.ts/render callers only need to import from
+// render/world.ts for the pad/asteroid/ufo/drone/noodle rendering surface.
+export { drawNoodle, drawNoodlePiles };
+export type { Noodle };
 
 export function drawPad(ctx: CanvasRenderingContext2D, terrain: Terrain, cfg: LevelConfig, stats: ShipStats, t: number) {
   const c = ctx;

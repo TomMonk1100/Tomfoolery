@@ -178,6 +178,13 @@ export class AudioEngine {
     this.tone(80, 0.2, 'triangle', 0, 0.08, 160);
   }
 
+  // §6.1 Noodle piles (Spaghetti Engine) — a wet "splat" one-shot played when
+  // a fatal terrain impact is absorbed into a soft squish landing instead.
+  splat() {
+    this.noiseBurst(0.22, 900, 140, 0.14);
+    this.tone(180, 0.14, 'sine', 0.02, 0.06, 90);
+  }
+
   phoenix() {
     this.noiseBurst(0.7, 500, 3400, 0.12);
     [440, 554.37, 659.25, 880].forEach((f, i) => this.tone(f, 0.4, 'sine', 0.1 + i * 0.09, 0.09));

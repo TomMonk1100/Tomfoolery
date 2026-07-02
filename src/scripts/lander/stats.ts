@@ -71,6 +71,41 @@ export function computeStats(picked: UpgradeId[], diff: Difficulty): ShipStats {
     starCoreStacks: 0,
     massSum: 0,
     areaSum: 0,
+    // --- lander-v10 commit 4a (§6.6): new systems' stat hooks. All start at
+    // their semantic "off" default — no upgrade in this commit sets any of
+    // them; Commit 4b's 50 new upgrades populate them via the same
+    // picked-upgrades switch loop below.
+    noodleStacks: 0,
+    extraChoices: 0,
+    stardustMult: 1,
+    grazeFuel: 0,
+    slopeLandCharges: 0,
+    hoverModule: 0,
+    asteroidMiner: 0,
+    magnetDeflect: 0,
+    tailwindTurbine: 0,
+    cheeseDrillCharges: 0,
+    droneCharges: 0,
+    abilityDefs: [],
+    padPull: 0,
+    autoBrake: 0,
+    kickThrusters: 0,
+    luckyTier: 0,
+    forecastMarker: 0,
+    eggLevels: 0,
+    randomDice: 0,
+    sailRegen: 0,
+    pocketMoon: 0,
+    escortUfos: 0,
+    doubleProgress: 0,
+    slideLanding: 0,
+    reverseGravityCharges: 0,
+    midasMult: 1,
+    ghostSave: 0,
+    stormTowardPad: false,
+    nanoRegenSec: 0,
+    blackholeReserve: 0,
+    antigravPaint: 0,
   };
   for (const id of picked) {
     switch (id) {
@@ -114,6 +149,11 @@ export function computeStats(picked: UpgradeId[], diff: Difficulty): ShipStats {
   s.landingAngleTol = Math.max(0, s.landingAngleTol);
   s.massSum = Math.max(-0.8, s.massSum); // keeps effectiveMass() (1 + massSum) >= 0.2 floor headroom
   s.areaSum = Math.max(0, s.areaSum);
+  // §6.6 hooks: no upgrade sets these yet, but floor them anyway so Commit 4b
+  // upgrades inherit the same "numerical guard, not gameplay cap" treatment
+  // as everything else in this function.
+  s.stardustMult = Math.max(0, s.stardustMult);
+  s.midasMult = Math.max(0, s.midasMult);
   return s;
 }
 

@@ -1,5 +1,5 @@
 import { terrainYAt } from '../levels';
-import type { LevelConfig, ShipStats, Terrain } from '../types';
+import type { AbilityDef, LevelConfig, ShipStats, Terrain } from '../types';
 
 export interface HudEls {
   fuel: HTMLElement;
@@ -34,4 +34,37 @@ export function updateHud(p: UpdateHudParams) {
   hud.level.textContent = `${levelIndex + 1} — ${cfg?.name ?? ''}`;
   if (hud.best) hud.best.textContent = `${bestFor() || '—'}`;
   if (hud.stardust) hud.stardust.textContent = `${stardust}`;
+}
+
+// ---------------------------------------------------------------------------
+// lander-v10 commit 4a (§6.2): active-ability cooldown pips.
+//
+// Small pips drawn above the fuel bar, one per owned ability def, filled
+// proportionally to (maxCooldown - cooldown) / maxCooldown (i.e. full when
+// charges are ready). Only drawn when stats.abilityDefs.length > 0 — a
+// no-op today since no upgrade populates abilityDefs yet, but the draw path
+// is ready for Commit 4b.
+// ---------------------------------------------------------------------------
+export function drawAbilityPips(
+  ctx: CanvasRenderingContext2D, abilityDefs: AbilityDef[], x: number, y: number
+) {
+  if (!abilityDefs || abilityDefs.length === 0) return;
+  const c = ctx;
+  const pipW = 14;
+  const pipH = 4;
+  const gap = 3;
+  c.save();
+  abilityDefs.forEach((def, i) => {
+    const px = x + i * (pipW + gap);
+    const ready = def.charges > 0;
+    c.fillStyle = 'rgba(34, 24, 8, 0.6)';
+    c.fillRect(px, y, pipW, pipH);
+    const frac = def.maxCooldown > 0 ? Math.max(0, Math.min(1, (def.maxCooldown - def.cooldown) / def.maxCooldown)) : 1;
+    c.fillStyle = ready ? '#94B03D' : '#7BA7C7';
+    c.fillRect(px, y, pipW * frac, pipH);
+    c.strokeStyle = '#221808';
+    c.lineWidth = 0.6;
+    c.strokeRect(px, y, pipW, pipH);
+  });
+  c.restore();
 }

@@ -57,11 +57,15 @@ import Layout from '../layouts/Layout.astro';
           </div>
         </div>
 
-        <!-- Touch controls (mobile) — big targets, thrust widest -->
+        <!-- Touch controls (mobile) — big targets, thrust widest.
+             The 4th "ability" button (§6.2) is hidden by default via the
+             `hidden` class; main.ts toggles it when the player owns >=1
+             active-ability upgrade (none exist yet in this commit). -->
         <div class="touch-controls justify-between items-stretch gap-2 mt-2 select-none">
           <button data-touch="left" class="tile flex-1 py-6 text-center font-display text-2xl cursor-pointer" aria-label="Rotate left">⟲</button>
           <button data-touch="thrust" class="tile flex-[1.5] py-6 text-center font-display text-2xl cursor-pointer badge-signal" aria-label="Thrust">▲</button>
           <button data-touch="right" class="tile flex-1 py-6 text-center font-display text-2xl cursor-pointer" aria-label="Rotate right">⟳</button>
+          <button data-touch="ability" class="tile hidden flex-1 py-6 text-center font-display text-2xl cursor-pointer" aria-label="Use ability">◈</button>
         </div>
       </div>
 
