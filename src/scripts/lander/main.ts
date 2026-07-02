@@ -29,10 +29,10 @@ import { mulberry32 } from './rng';
 import { RARITY, DIFF_MODS, computeStats, clampGravityProduct, chronoTimeScale, rollCosmicDice as rollCosmicDiceStat, starForgeRarityWeight } from './stats';
 import { UPGRADES, PAINTS, TRAILS, SKIES, ACHIEVEMENTS } from './upgrades';
 import { levelConfigFor, terrainYAt, generateTerrain, generateSky, generateCritters, generateUfos } from './levels';
-import { makeParticle } from './particles';
+import { ParticlePool } from './particles';
 import {
   generateAsteroids, updateAsteroids, findAsteroidHit, type Asteroid,
-  buildDronePool, updateDrones, terraform, shouldRebuild, REBUILD_INTERVAL_S,
+  buildDronePool, updateDrones, terraform,
 } from './entities';
 import {
   DT, MAX_FRAME_TIME, effectiveMass, effectiveArea, gravityAccel, thrustAccel, windAccel,
@@ -47,9 +47,10 @@ import { upgradeListHtml, shopItemHtml, trailSwatch, diffButtonsHtml } from './u
 import { loadJSON, bestFor as bestForStored, saveBest, fetchLeaderboard as fetchLeaderboardRemote, submitScore as submitScoreRemote } from './persistence';
 import { resolveReadyAbility, tickAbilityCooldowns, consumeAbilityCharge } from './abilities';
 import {
-  createNoodlePile, updateNoodles, compactNoodles, decayNoodlePile,
-  checkNoodleSquish, applyNoodleSquish, makeNoodle, NOODLE_SQUISH_VY,
+  createNoodlePile, checkNoodleSquish, applyNoodleSquish, NOODLE_SQUISH_VY, NoodlePool, decayNoodlePile,
 } from './noodles';
+import { LayerCache, blitLayers } from './render/layers';
+import { DegradationGuard } from './perf';
 import type {
   UpgradeId, LevelConfig, Terrain, Star, Planet, Critter, Ufo, Projectile, Particle,
   ShipStats, FaceMap, Mood, GameState, Difficulty, ScoreRow, Toast, UpgradeDef, Rarity, RunStats,
@@ -60,7 +61,10 @@ import type {
 
 export function initLanderGame(root: HTMLElement) {
   const canvas = root.querySelector('canvas') as HTMLCanvasElement;
-  const ctx = canvas.getContext('2d');
+  // §8.4: opaque backing store — the game canvas never composites over page
+  // content (it always fully repaints via the sky/terrain layers below), so
+  // alpha blending on the canvas itself is pure overhead the browser can skip.
+  const ctx = canvas.getContext('2d', { alpha: false });
   if (!ctx) return () => {};
 
   const hud = {
@@ -155,7 +159,10 @@ export function initLanderGame(root: HTMLElement) {
   let stats = computeStats([], difficulty);
   let terrain: Terrain;
   let sky: { stars: Star[]; planet: Planet };
-  let particles: Particle[] = [];
+  // §8.2: preallocated ring-buffer particle pool (1,200 slots) — replaces
+  // the old plain-array `particles: Particle[]` that grew via .push() and
+  // was reaped every tick via a fresh `.filter()` allocation.
+  const particlePool = new ParticlePool();
   let critters: Critter[] = [];
   let ufos: Ufo[] = [];
   let projectiles: Projectile[] = [];
@@ -167,16 +174,14 @@ export function initLanderGame(root: HTMLElement) {
 
   // --- lander-v10 commit 4a: new-systems scaffolding state (§6) ---
   // §6.1 Noodle piles: a Float32Array parallel to terrain.points, rebuilt on
-  // loadLevel. `noodles` are the falling strand particles pre-absorption.
+  // loadLevel. §8.2: noodle strands (pre-absorption) now live in the same
+  // fixed-capacity ring-buffer pool pattern as particlePool, rather than an
+  // unbounded array grown via .push()/reaped via .filter().
   let noodlePile: Float32Array = new Float32Array(0);
-  let noodles: Noodle[] = [];
+  const noodlePool = new NoodlePool();
   let thrusterParticleTick = 0; // counts thruster-particle emissions for the "every 3rd is a noodle" rule
   // §6.3 Drones — pooled per stats.droneCharges (0 today, no upgrade sets it).
   let drones: Drone[] = [];
-  // §6.4 Terraform dirty-flag throttle (real static-layer cache is Commit 5's
-  // job; this is the throttled-rebuild pattern it will plug into).
-  let terrainDirty = false;
-  let lastTerrainRebuildTime = 0;
   // §6.2 Active-ability slot: live cooldown/charge state per owned ability,
   // rebuilt from stats.abilityDefs whenever it changes (see syncAbilityDefStates).
   let abilityDefStates: AbilityDef[] = [];
@@ -291,6 +296,13 @@ export function initLanderGame(root: HTMLElement) {
   let width = 0, height = 0, dpr = 1;
   let S = 1.6; // ship render/collision scale
 
+  // §8.1 static layer cache — rebuilt on loadLevel/resize; terrain layer
+  // rebuilds are additionally throttled per-tick via layerCache.tryRebuildTerrain().
+  const layerCache = new LayerCache();
+  // §8.5 degradation guard — EMA of frame time; halves particle emission and
+  // disables star twinkle under sustained load, restores when it recovers.
+  const perfGuard = new DegradationGuard();
+
   const ship = {
     x: 0, y: 0, vx: 0, vy: 0, angle: 0, fuel: 100, thrusting: false,
     reserveUsed: false,
@@ -321,7 +333,20 @@ export function initLanderGame(root: HTMLElement) {
     if (terrain) {
       terrain = generateTerrain(cfg, width, height);
       sky = generateSky(cfg, width, height);
+      rebuildLayers();
     }
+  }
+
+  // §8.1: (re)prerenders all three static layers (sky/planet/ridge, star
+  // field, terrain) from the current cfg/terrain/sky/width/height. Called on
+  // resize() and loadLevel() — both already regenerate terrain/sky from
+  // scratch, so the cache would be stale otherwise. Not called per-frame.
+  function rebuildLayers() {
+    if (!terrain || !sky || width <= 0 || height <= 0) return;
+    layerCache.build({
+      width, height, cfg, terrain,
+      stars: sky.stars, planet: sky.planet, skyTheme: equippedSky(),
+    });
   }
 
   function setOverlay(html: string | null) {
@@ -362,7 +387,7 @@ export function initLanderGame(root: HTMLElement) {
     ship.angle = 0;
     ship.fuel = stats.maxFuel;
     ship.reserveUsed = false;
-    particles = [];
+    particlePool.clear();
     critters = generateCritters(cfg, terrain, width);
     ufos = generateUfos(cfg, width, height);
     hackedUfos.clear();
@@ -394,11 +419,11 @@ export function initLanderGame(root: HTMLElement) {
     // §6.1 Noodle piles reset per level (a pile from a prior level's terrain
     // wouldn't map to this level's new terrain sample points anyway).
     noodlePile = createNoodlePile(terrain.points.length);
-    noodles = [];
+    noodlePool.clear();
     // §6.3 Drone pool rebuilt from the current droneCharges stat (0 today).
     drones = buildDronePool(stats.droneCharges);
-    terrainDirty = false;
-    lastTerrainRebuildTime = simTime;
+    // §8.1: fresh terrain/sky this level — rebuild all three static layers.
+    rebuildLayers();
     // --- lander-v10 commit 4b (§7): per-level mechanic state resets --------
     lrHoldT = 0;
     gravityFlipActiveT = 0;
@@ -560,13 +585,21 @@ export function initLanderGame(root: HTMLElement) {
     return base + Math.sin(t * 0.6) * c.windGust * stats.gustMult;
   }
 
+  // §8.5: emission counts below are the "normal" rates; halved (rounded, min
+  // 1) when the degradation guard has tripped. `emitCount(n)` centralizes
+  // that so every emitter applies the same rule.
+  function emitCount(n: number): number {
+    return perfGuard.degraded ? Math.max(1, Math.round(n / 2)) : n;
+  }
+
   function emitThrusterParticles() {
     const colors = stats.spicyFlame ? ['#94B03D', '#D9E8B8'] : trailColors();
-    for (let i = 0; i < 3; i++) {
+    const count = emitCount(3);
+    for (let i = 0; i < count; i++) {
       const spread = (Math.random() - 0.5) * 0.6;
       const speed = (70 + Math.random() * 50) * S;
       const a = ship.angle + Math.PI + spread;
-      particles.push(makeParticle(
+      particlePool.alloc(
         ship.x - Math.sin(ship.angle) * 12 * S,
         ship.y + Math.cos(ship.angle) * 12 * S,
         Math.sin(a) * speed + ship.vx * 0.3,
@@ -574,32 +607,35 @@ export function initLanderGame(root: HTMLElement) {
         colors[Math.floor(Math.random() * colors.length)],
         0.35 + Math.random() * 0.3,
         (1.5 + Math.random() * 2) * S
-      ));
+      );
     }
   }
 
   // §6.1: emits `stacks` noodle strands from the engine, mirroring
   // emitThrusterParticles' spawn geometry. Accepts a stack-count multiplier
-  // per the plan (×n emission) even though no upgrade sets noodleStacks yet.
+  // per the plan (×n emission). §8.2: routed through the pooled NoodlePool
+  // instead of `noodles.push(makeNoodle(...))`. §8.5: also halved under
+  // sustained frame-time pressure, same as regular thruster particles.
   function emitNoodles(stacks: number) {
-    const count = Math.max(1, Math.round(stacks));
+    const count = emitCount(Math.max(1, Math.round(stacks)));
     for (let i = 0; i < count; i++) {
       const spread = (Math.random() - 0.5) * 0.6;
       const speed = (50 + Math.random() * 40) * S;
       const a = ship.angle + Math.PI + spread;
-      noodles.push(makeNoodle(
+      noodlePool.alloc(
         ship.x - Math.sin(ship.angle) * 12 * S,
         ship.y + Math.cos(ship.angle) * 12 * S,
         Math.sin(a) * speed + ship.vx * 0.3,
         -Math.cos(a) * speed + ship.vy * 0.3
-      ));
+      );
     }
   }
 
   function emitDust(groundY: number) {
-    for (let i = 0; i < 2; i++) {
+    const count = emitCount(2);
+    for (let i = 0; i < count; i++) {
       const dir = Math.random() > 0.5 ? 1 : -1;
-      particles.push(makeParticle(
+      particlePool.alloc(
         ship.x + (Math.random() - 0.5) * 20 * S,
         groundY - 2,
         dir * (30 + Math.random() * 60),
@@ -608,38 +644,40 @@ export function initLanderGame(root: HTMLElement) {
         0.5 + Math.random() * 0.5,
         (2 + Math.random() * 3) * S,
         14
-      ));
+      );
     }
   }
 
   function explode() {
-    for (let i = 0; i < 50; i++) {
+    const count = emitCount(50);
+    for (let i = 0; i < count; i++) {
       const a = Math.random() * Math.PI * 2;
       const speed = (40 + Math.random() * 160) * S;
-      particles.push(makeParticle(
+      particlePool.alloc(
         ship.x, ship.y, Math.cos(a) * speed, Math.sin(a) * speed,
         Math.random() > 0.5 ? '#C97B3D' : (Math.random() > 0.5 ? '#94B03D' : '#F4EBDA'),
         0.5 + Math.random() * 0.7,
         (2 + Math.random() * 3) * S,
         60
-      ));
+      );
     }
     shakeT = 0.55;
   }
 
   function confetti() {
     const colors = ['#94B03D', '#D9A441', '#C97B3D', '#F4EBDA', '#7C8F5C'];
-    for (let i = 0; i < 26; i++) {
+    const count = emitCount(26);
+    for (let i = 0; i < count; i++) {
       const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.4;
       const speed = (60 + Math.random() * 120) * S;
-      particles.push(makeParticle(
+      particlePool.alloc(
         ship.x, ship.y - 8 * S,
         Math.cos(a) * speed, Math.sin(a) * speed,
         colors[Math.floor(Math.random() * colors.length)],
         0.8 + Math.random() * 0.6,
         (1.5 + Math.random() * 2.2) * S,
         110
-      ));
+      );
     }
   }
 
@@ -650,14 +688,9 @@ export function initLanderGame(root: HTMLElement) {
     return x;
   }
 
+  // §8.2: advances the pool in place — zero allocations, zero Array.filter.
   function simulateParticles(dt: number) {
-    particles = particles.filter((p) => p.life > 0);
-    for (const p of particles) {
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vy += p.gravity * dt;
-      p.life -= dt;
-    }
+    particlePool.simulate(dt);
   }
 
   // --- Frame-rate-driven cosmetic timers -------------------------------------
@@ -942,33 +975,44 @@ export function initLanderGame(root: HTMLElement) {
       // cosmetic: dropping the tanks removes their mass contribution.
       stats.massSum = Math.max(-0.8, stats.massSum - 0.04 * stats.dropTankStacks);
       for (const side of [-1, 1]) {
-        particles.push(makeParticle(
+        particlePool.alloc(
           ship.x + side * 9 * S, ship.y + 4 * S,
           side * 20 + ship.vx * 0.4, ship.vy * 0.2 - 10,
           '#8a6a3c', 1.6, 2.6 * S, 140
-        ));
+        );
       }
     }
 
     // §7 Terraformer: below 40m, smooths terrain beneath the ship (radius
-    // +40% per stack). Throttled via the existing §6.4 dirty-flag guard.
+    // +40% per stack). terraform() mutates terrain.points in place, which
+    // invalidates layerCache's cached terrain canvas (§8.1) — mark it dirty;
+    // the actual repaint is throttled to at most once per REBUILD_INTERVAL_S
+    // (0.5s) below, so a ship hovering in place doesn't thrash the cache
+    // even though terraform() itself runs every physics tick it's active.
     if (pickedUpgrades.includes('terraformer') && terrain) {
       const alt = terrainYAt(terrain.points, ship.x) - ship.y;
       if (alt < 40) {
         const tfStacks = pickedUpgrades.filter((u) => u === 'terraformer').length;
         const radius = 50 * Math.pow(1.4, tfStacks - 1);
         terraform(terrain.points, ship.x, radius, 0.35 * dt);
-        terrainDirty = true;
+        layerCache.markTerrainDirty();
       }
     }
 
     // §6.1 Noodle piles: advance falling strands (deposit on terrain
     // contact), decay existing piles, and drop dead strands. Cheap no-ops
-    // when noodlePile is empty / no noodles are airborne (the common case
-    // until Commit 4b wires up the Spaghetti Engine).
-    if (noodlePile.length > 0 || noodles.length > 0) {
-      updateNoodles(noodles, noodlePile, terrain.points, terrainYAt, pdt, stats.noodleStacks);
-      noodles = compactNoodles(noodles);
+    // when noodlePile is empty / no noodles are airborne.
+    //
+    // Note on §8.1 caching: unlike terraform(), pile height changes do NOT
+    // mark layerCache's terrain canvas dirty. Piles decay a little every
+    // single tick they're non-empty, so baking them into the cached canvas
+    // would force a rebuild almost every frame — exactly the per-frame churn
+    // §8.1 exists to eliminate. Instead drawNoodlePiles() renders the height
+    // map as a cheap live overlay directly over the blitted terrain each
+    // frame (bounded by segment count, not a full canvas repaint), which is
+    // both correct (always current) and fast.
+    if (noodlePile.length > 0 || noodlePool.slots.some((s) => s.alive)) {
+      noodlePool.simulate(noodlePile, terrain.points, terrainYAt, pdt, stats.noodleStacks);
       decayNoodlePile(noodlePile, pdt);
     }
 
@@ -980,15 +1024,13 @@ export function initLanderGame(root: HTMLElement) {
     // Chrono Crystal), matching the fuel-drain convention elsewhere in step().
     if (abilityDefStates.length > 0) tickAbilityCooldowns(abilityDefStates, dt);
 
-    // §6.4 Terraform: throttled-dirty-flag rebuild guard. Nothing marks
-    // terrainDirty yet in this commit (no terraform() call site exists
-    // until the Terraformer upgrade lands in 4b), so this never fires —
-    // it's here so Commit 5's real static-layer cache has the throttle
-    // logic already in place to plug into.
-    if (shouldRebuild(terrainDirty, simTime, lastTerrainRebuildTime)) {
-      lastTerrainRebuildTime = simTime;
-      terrainDirty = false;
-    }
+    // §6.4/§8.1: terraform() (above) may have marked layerCache's terrain
+    // canvas dirty this tick. Repaint it now if dirty AND the throttle
+    // window (REBUILD_INTERVAL_S = 0.5s) has elapsed since the last
+    // repaint — layerCache.tryRebuildTerrain owns both the dirty-flag check
+    // and the throttle internally (built on the same shouldRebuild() guard
+    // entities.ts exports).
+    layerCache.tryRebuildTerrain(simTime);
 
     // Ground proximity dust while thrusting
     const groundY = terrainYAt(terrain.points, ship.x);
@@ -1426,10 +1468,10 @@ export function initLanderGame(root: HTMLElement) {
         for (let i = 0; i < 10; i++) {
           const a = Math.random() * Math.PI * 2;
           const speed = (30 + Math.random() * 80) * S;
-          particles.push(makeParticle(
+          particlePool.alloc(
             ap.target.x, ap.target.y, Math.cos(a) * speed, Math.sin(a) * speed,
             '#7C8F5C', 0.4 + Math.random() * 0.4, (1.5 + Math.random() * 2) * S
-          ));
+          );
         }
       } else if (!ap.target.alive) {
         ap.alive = false;
@@ -1901,89 +1943,18 @@ export function initLanderGame(root: HTMLElement) {
       ctx.translate((Math.random() - 0.5) * 9 * shakeT, (Math.random() - 0.5) * 9 * shakeT);
     }
 
-    // Sky — colors come from the equipped sky theme (Hangar Shop cosmetic)
-    const skyTheme = equippedSky();
-    const sky_ = ctx.createLinearGradient(0, 0, 0, height);
-    sky_.addColorStop(0, skyTheme.top);
-    sky_.addColorStop(0.6, skyTheme.mid);
-    sky_.addColorStop(1, skyTheme.bot);
-    ctx.fillStyle = sky_;
-    ctx.fillRect(-10, -10, width + 20, height + 20);
-
     if (!terrain) { ctx.restore(); return; }
 
-    // Stars (twinkle)
-    for (const s of sky.stars) {
-      const tw = 0.6 + Math.sin(t * 1.5 + s.phase) * 0.4;
-      ctx.globalAlpha = s.bright * tw;
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = skyTheme.star;
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-
-    // Planet — sky themes can override the seeded palette
-    const pl = sky.planet;
-    const plHue = skyTheme.planet ?? pl.hue;
-    const plGrad = ctx.createRadialGradient(pl.x - pl.r * 0.35, pl.y - pl.r * 0.35, pl.r * 0.15, pl.x, pl.y, pl.r);
-    plGrad.addColorStop(0, plHue[0]);
-    plGrad.addColorStop(1, plHue[1]);
-    ctx.beginPath();
-    ctx.arc(pl.x, pl.y, pl.r, 0, Math.PI * 2);
-    ctx.fillStyle = plGrad;
-    ctx.fill();
-    if (pl.ring) {
-      ctx.save();
-      ctx.translate(pl.x, pl.y);
-      ctx.rotate(-0.35);
-      ctx.beginPath();
-      ctx.ellipse(0, 0, pl.r * 1.6, pl.r * 0.38, 0, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(185, 164, 128, 0.4)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // Background ridge silhouette
-    ctx.beginPath();
-    ctx.moveTo(0, height);
-    terrain.ridge.forEach((p) => ctx.lineTo(p.x, p.y));
-    ctx.lineTo(width, height);
-    ctx.closePath();
-    ctx.fillStyle = '#20170c';
-    ctx.fill();
-
-    // Terrain
-    ctx.beginPath();
-    ctx.moveTo(0, height);
-    terrain.points.forEach((p) => ctx.lineTo(p.x, p.y));
-    ctx.lineTo(width, height);
-    ctx.closePath();
-    const groundGrad = ctx.createLinearGradient(0, height * 0.5, 0, height);
-    groundGrad.addColorStop(0, '#3B2C16');
-    groundGrad.addColorStop(1, '#221808');
-    ctx.fillStyle = groundGrad;
-    ctx.fill();
-    ctx.strokeStyle = '#4a3620';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    terrain.points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
-    ctx.stroke();
-
-    // Surface texture: sparse short strokes following the ground
-    ctx.strokeStyle = 'rgba(74, 54, 32, 0.5)';
-    ctx.lineWidth = 1;
-    const texRand = mulberry32(cfg.seed * 77 + 1);
-    for (let i = 0; i < 26; i++) {
-      const x = texRand() * width;
-      const y = terrainYAt(terrain.points, x) + 6 + texRand() * 26;
-      if (y > height - 4) continue;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x + 4 + texRand() * 8, y + (texRand() - 0.5) * 3);
-      ctx.stroke();
-    }
+    // §8.1: sky gradient + planet + ridge, star field, and terrain
+    // fill/stroke/texture were previously rebuilt from scratch every single
+    // frame (a full gradient + up to ~150-star loop + terrain polyline
+    // re-stroke + 26 texture strokes, none of which changes frame-to-frame
+    // except star twinkle phase). They're now prerendered once per
+    // loadLevel/resize into layerCache's offscreen canvases and just
+    // blitted here. Twinkle is fully disabled (single flat blit, no
+    // alternating-alpha sine work) when the §8.5 degradation guard is
+    // tripped.
+    blitLayers(ctx, layerCache, t, !perfGuard.degraded);
 
     // §6.1 Noodle piles — soft rounded blob layer directly over the terrain,
     // drawn before critters/pad so they visually sit "in" the ground.
@@ -2002,7 +1973,7 @@ export function initLanderGame(root: HTMLElement) {
     if (drones.length > 0) drawDrones(ctx, drones, ship.x, ship.y);
 
     // §6.1 Airborne noodle strands (pre-absorption into the pile).
-    for (const noo of noodles) {
+    for (const noo of noodlePool.slots) {
       if (!noo.alive) continue;
       drawNoodle(ctx, noo, S);
     }
@@ -2019,13 +1990,28 @@ export function initLanderGame(root: HTMLElement) {
       ctx.shadowBlur = 0;
     }
 
-    // Particles
-    for (const p of particles) {
+    // §8.3 Particles. True draw-call batching (accumulating same-color
+    // particles into one path + one fill()) doesn't apply cleanly here: each
+    // particle fades independently via its own life/maxLife ratio driving
+    // globalAlpha, so even two particles that share a base color essentially
+    // never share the same alpha on a given frame — a single batched fill()
+    // can't vary alpha per sub-path. What IS free to skip is the redundant
+    // `fillStyle` write when this particle's color happens to match the
+    // previous one in pool order (a common case: a whole emission burst,
+    // e.g. one explode()/confetti() call, shares one palette and lands in
+    // adjacent pool slots) — that's the one real, zero-risk piece of
+    // "group by color" available under the current per-particle-alpha model.
+    let lastParticleColor = '';
+    for (const p of particlePool.slots) {
+      if (!p.alive) continue;
       const alpha = Math.max(0, p.life / p.maxLife);
       ctx.globalAlpha = alpha;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fillStyle = p.color;
+      if (p.color !== lastParticleColor) {
+        ctx.fillStyle = p.color;
+        lastParticleColor = p.color;
+      }
       ctx.fill();
     }
     ctx.globalAlpha = 1;
@@ -2316,7 +2302,15 @@ export function initLanderGame(root: HTMLElement) {
 
   function loop(t: number) {
     if (loopPaused) { raf = requestAnimationFrame(loop); return; }
-    let frameDt = (t - lastT) / 1000;
+    const rawFrameMs = Math.max(0, t - lastT);
+    // §8.5: the degradation guard needs the UN-clamped frame time — the
+    // MAX_FRAME_TIME clamp below exists to stop the physics accumulator
+    // from "catching up" in a huge burst after a tab-switch stall, but that
+    // same stall is exactly the kind of jank the guard should notice and
+    // react to, so it's sampled before clamping.
+    perfGuard.sample(rawFrameMs);
+
+    let frameDt = rawFrameMs / 1000;
     lastT = t;
     if (frameDt < 0) frameDt = 0;
     if (frameDt > MAX_FRAME_TIME) frameDt = MAX_FRAME_TIME;

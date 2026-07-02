@@ -59,6 +59,106 @@ export function makeNoodle(x: number, y: number, vx: number, vy: number, life = 
   return { x, y, vx, vy, life, maxLife: life, seed: Math.random() * Math.PI * 2, alive: true };
 }
 
+// ---------------------------------------------------------------------------
+// lander-v10 commit 5 (§8.2): pooled noodle strands.
+//
+// Noodles used to live in their own unbounded `noodles: Noodle[]` array in
+// main.ts, grown via `.push(makeNoodle(...))` and reaped every tick via
+// `compactNoodles` (an `Array.filter`, i.e. a fresh allocation every call).
+// Per §8.2 ("must also serve noodle-strand particles from noodles.ts —
+// route them through the same pool"), NoodlePool below is the exact same
+// fixed-capacity ring-buffer/oldest-eviction pattern as particles.ts's
+// ParticlePool, just sized much smaller (noodles are a rare, throttled
+// emission — every 3rd thruster particle, at most — never anywhere near
+// 1,200 concurrent). The free-standing `updateNoodles`/`compactNoodles`
+// pure-array functions above are kept as-is (existing tests exercise them
+// directly against plain arrays), and the pool's own simulate() reuses the
+// exact same per-noodle physics so behavior is identical either way.
+// ---------------------------------------------------------------------------
+
+export const MAX_NOODLES = 180;
+
+interface NoodleSlot extends Noodle {
+  bornAt: number;
+}
+
+export class NoodlePool {
+  readonly slots: NoodleSlot[];
+  private nextFree = 0;
+  private tick = 0;
+
+  constructor(capacity: number = MAX_NOODLES) {
+    this.slots = new Array(capacity);
+    for (let i = 0; i < capacity; i++) {
+      this.slots[i] = { x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 0, seed: 0, alive: false, bornAt: 0 };
+    }
+  }
+
+  get capacity(): number {
+    return this.slots.length;
+  }
+
+  alloc(x: number, y: number, vx: number, vy: number, life = 1.1): NoodleSlot {
+    const n = this.slots.length;
+    let idx = -1;
+    for (let i = 0; i < n; i++) {
+      const s = this.slots[(this.nextFree + i) % n];
+      if (!s.alive) { idx = (this.nextFree + i) % n; break; }
+    }
+    if (idx === -1) {
+      let oldest = 0;
+      let oldestBorn = Infinity;
+      for (let i = 0; i < n; i++) {
+        if (this.slots[i].bornAt < oldestBorn) { oldestBorn = this.slots[i].bornAt; oldest = i; }
+      }
+      idx = oldest;
+    }
+    this.nextFree = (idx + 1) % n;
+    const s = this.slots[idx];
+    s.x = x; s.y = y; s.vx = vx; s.vy = vy;
+    s.life = life; s.maxLife = life; s.seed = Math.random() * Math.PI * 2;
+    s.alive = true;
+    s.bornAt = this.tick++;
+    return s;
+  }
+
+  // Same fall/deposit/decay rules as updateNoodles(), applied in place over
+  // the fixed-length slot array — zero allocations, no filter.
+  simulate(
+    pile: Float32Array,
+    points: TerrainPoint[],
+    terrainYAt: (points: TerrainPoint[], x: number) => number,
+    dt: number,
+    stacks: number,
+    gravity = 220
+  ): void {
+    const cap = noodleCapFor(stacks);
+    const n = this.slots.length;
+    for (let i = 0; i < n; i++) {
+      const noo = this.slots[i];
+      if (!noo.alive) continue;
+      noo.vy += gravity * dt;
+      noo.x += noo.vx * dt;
+      noo.y += noo.vy * dt;
+      noo.life -= dt;
+      const groundY = terrainYAt(points, noo.x);
+      if (noo.y >= groundY || noo.life <= 0) {
+        if (noo.y >= groundY) {
+          const idx = segmentIndexAt(points, noo.x);
+          if (idx >= 0 && idx < pile.length) {
+            pile[idx] = Math.min(cap, Math.max(0, pile[idx] + NOODLE_DEPOSIT_PER_HIT));
+          }
+        }
+        noo.alive = false;
+      }
+    }
+  }
+
+  clear(): void {
+    for (let i = 0; i < this.slots.length; i++) this.slots[i].alive = false;
+  }
+}
+
 // Advances noodle physics (falls under gravity like a particle) and, when a
 // noodle reaches the terrain, deposits it into the pile and kills it (it
 // never renders as a loose particle again once absorbed).

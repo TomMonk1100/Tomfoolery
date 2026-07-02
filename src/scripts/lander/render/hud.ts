@@ -22,18 +22,39 @@ export interface UpdateHudParams {
   stardust: number;
 }
 
+// §8.7 DOM discipline: only touch the DOM when the value being displayed
+// actually changed. `textContent = sameString` is not a no-op in the
+// browser — it still triggers style/layout invalidation on that node — so
+// at 120 physics ticks/sec (updateHud is called once per rendered frame,
+// but several of these values are steady for many consecutive frames:
+// level/best/stardust change only a few times per run) skipping the write
+// when nothing changed avoids a meaningful amount of pointless layout work.
+function setText(el: HTMLElement | undefined | null, next: string): void {
+  if (!el) return;
+  if (el.textContent !== next) el.textContent = next;
+}
+
+function setStyle<K extends keyof CSSStyleDeclaration>(
+  el: HTMLElement | undefined | null, prop: K, next: CSSStyleDeclaration[K]
+): void {
+  if (!el) return;
+  if (el.style[prop] !== next) el.style[prop] = next;
+}
+
 export function updateHud(p: UpdateHudParams) {
   const { hud, ship, stats, terrain, levelIndex, cfg, bestFor, stardust } = p;
   if (!hud.fuel) return;
-  hud.fuel.textContent = `${Math.round(ship.fuel)}`;
-  if (hud.fuelBar) hud.fuelBar.style.width = `${Math.max(0, Math.min(100, (ship.fuel / stats.maxFuel) * 100))}%`;
-  hud.altitude.textContent = terrain ? `${Math.max(0, Math.round(terrainYAt(terrain.points, ship.x) - ship.y))}m` : '—';
+  setText(hud.fuel, `${Math.round(ship.fuel)}`);
+  if (hud.fuelBar) {
+    setStyle(hud.fuelBar, 'width', `${Math.max(0, Math.min(100, (ship.fuel / stats.maxFuel) * 100))}%`);
+  }
+  setText(hud.altitude, terrain ? `${Math.max(0, Math.round(terrainYAt(terrain.points, ship.x) - ship.y))}m` : '—');
   const speed = Math.hypot(ship.vx, ship.vy);
-  hud.speed.textContent = `${Math.round(speed)}`;
-  hud.speed.style.color = speed < stats.landingSpeedTol ? '#94B03D' : '#C97B3D';
-  hud.level.textContent = `${levelIndex + 1} — ${cfg?.name ?? ''}`;
-  if (hud.best) hud.best.textContent = `${bestFor() || '—'}`;
-  if (hud.stardust) hud.stardust.textContent = `${stardust}`;
+  setText(hud.speed, `${Math.round(speed)}`);
+  setStyle(hud.speed, 'color', speed < stats.landingSpeedTol ? '#94B03D' : '#C97B3D');
+  setText(hud.level, `${levelIndex + 1} — ${cfg?.name ?? ''}`);
+  if (hud.best) setText(hud.best, `${bestFor() || '—'}`);
+  if (hud.stardust) setText(hud.stardust, `${stardust}`);
 }
 
 // ---------------------------------------------------------------------------

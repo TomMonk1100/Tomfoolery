@@ -18,6 +18,30 @@ export function countStacks(pickedUpgrades: UpgradeId[]): Map<UpgradeId, number>
   return counts;
 }
 
+// §8.3: reuse the Star Core aura's gradient object instead of calling
+// createRadialGradient() every single frame the aura is visible. Gradient
+// coordinates below are drawn inside the ship's already-scaled/rotated
+// local space (drawShip does c.scale(S, S) before this runs), so the
+// gradient's shape depends only on `auraR` (which only changes when the
+// Star Core stack count changes — i.e. at most once per pick, not per
+// frame), never on S directly. `CanvasGradient` objects are safe to reuse
+// across frames on the same 2D context (there is exactly one game canvas
+// context for the life of a session), so caching keyed on auraR is exact
+// — no staleness risk, unlike the thrust flame's glow gradient just below
+// it, which deliberately recomputes every frame because its radius is
+// driven by a random flicker value (that IS the animation; caching it
+// would freeze the flame and remove the flicker effect entirely, which
+// the plan's §8 performance work is not meant to trade away).
+let cachedAuraGradient: { r: number; grad: CanvasGradient } | null = null;
+function getAuraGradient(c: CanvasRenderingContext2D, auraR: number): CanvasGradient {
+  if (cachedAuraGradient && cachedAuraGradient.r === auraR) return cachedAuraGradient.grad;
+  const aura = c.createRadialGradient(0, -2, 4, 0, -2, auraR);
+  aura.addColorStop(0, 'rgba(255, 201, 74, 0.22)');
+  aura.addColorStop(1, 'rgba(255, 201, 74, 0)');
+  cachedAuraGradient = { r: auraR, grad: aura };
+  return aura;
+}
+
 // --- Pilot face mapping -----------------------------------------------------------
 // Normalized (0..1) positions of facial features within the selfie canvas.
 // Filled by the FaceDetector API when the browser supports it; otherwise
@@ -1112,10 +1136,7 @@ export function drawShip(p: DrawShipParams) {
   // with starCoreStacks, same +30%-per-stack cadence as moduleScale.
   if (stats.starCore) {
     const auraR = 26 * moduleScale(stats.starCoreStacks);
-    const aura = c.createRadialGradient(0, -2, 4, 0, -2, auraR);
-    aura.addColorStop(0, 'rgba(255, 201, 74, 0.22)');
-    aura.addColorStop(1, 'rgba(255, 201, 74, 0)');
-    c.fillStyle = aura;
+    c.fillStyle = getAuraGradient(c, auraR);
     c.beginPath();
     c.arc(0, -2, auraR, 0, Math.PI * 2);
     c.fill();
