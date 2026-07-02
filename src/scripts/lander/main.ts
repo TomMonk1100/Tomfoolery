@@ -2225,6 +2225,30 @@ export function initLanderGame(root: HTMLElement) {
       });
     }
 
+    // §Commit 3: baseline landing readability — a small readiness tick under
+    // the ship near the ground, independent of any upgrade (Echo Altimeter
+    // still adds the numeric px/s readout + touchdown forecast on top).
+    if (state === 'playing' && terrain && terrainYAt(terrain.points, ship.x) - ship.y < 140) {
+      const spd = Math.hypot(ship.vx, ship.vy);
+      const speedOk = spd < stats.landingSpeedTol;
+      const angleOk = Math.abs(normalizeAngle(ship.angle)) < stats.landingAngleTol;
+      const col = speedOk && angleOk ? '#94B03D' : speedOk || angleOk ? '#D9A441' : '#C97B3D';
+      ctx.save();
+      ctx.globalAlpha = 0.75;
+      ctx.fillStyle = col;
+      const barW = 14, barH = 3, barR = 1.5;
+      const bx = ship.x - barW / 2, by = ship.y + 15 * S;
+      ctx.beginPath();
+      if (typeof (ctx as any).roundRect === 'function') {
+        (ctx as any).roundRect(bx, by, barW, barH, barR);
+      } else {
+        (ctx as any).rect(bx, by, barW, barH);
+      }
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
     // Fog overlay — v9 fairness rework. The old fog was a near-black wall
     // with a small hole ("unviewable"). Now: a lighter veil, a much bigger
     // visibility bubble, the terrain silhouette stays faintly readable

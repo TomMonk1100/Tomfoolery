@@ -51,7 +51,9 @@ export function updateHud(p: UpdateHudParams) {
   setText(hud.altitude, terrain ? `${Math.max(0, Math.round(terrainYAt(terrain.points, ship.x) - ship.y))}m` : '—');
   const speed = Math.hypot(ship.vx, ship.vy);
   setText(hud.speed, `${Math.round(speed)}`);
-  setStyle(hud.speed, 'color', speed < stats.landingSpeedTol ? '#94B03D' : '#C97B3D');
+  setStyle(hud.speed, 'color',
+    speed < stats.landingSpeedTol * 0.8 ? '#94B03D' :
+    speed < stats.landingSpeedTol ? '#D9A441' : '#C97B3D');
   setText(hud.level, `${levelIndex + 1} — ${cfg?.name ?? ''}`);
   if (hud.best) setText(hud.best, `${bestFor() || '—'}`);
   if (hud.stardust) setText(hud.stardust, `${stardust}`);
