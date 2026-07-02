@@ -388,6 +388,21 @@ export function initLanderGame(root: HTMLElement) {
   // --- Responsive sizing: fill the container, go taller on portrait phones ---
   function resize() {
     const rect = canvas.parentElement!.getBoundingClientRect();
+  // v12 Commit 4: how long thrust has been continuously held (seconds),
+  // reset to 0 the instant it releases — drives the flame's 0.25s ramp-in
+  // (drawShip's thrustT) instead of it popping to full size every tap.
+  let thrustHeldT = 0;
+
+  // v12 Commit 7: ambient life. Shooting stars are screen-space, scheduled
+  // against simTime, advanced in updateFrameTimers (frame-time domain —
+  // cosmetic, like shakeT). Wind streaks are a fixed pool of 5 reusable
+  // slots (no ParticlePool needed at this size), world-space, lazily
+  // initialized to random positions/phases on first use.
+  let nextShootingStarT = 8 + Math.random() * 14;
+  let shootingStar: { x: number; y: number; vx: number; vy: number; life: number } | null = null;
+  const WIND_STREAK_COUNT = 5;
+  let windStreaks: { x: number; y: number; len: number }[] | null = null;
+
     const portrait = window.innerHeight > window.innerWidth * 1.1;
     let w = Math.min(rect.width, 1200);
     const aspect = portrait ? 1.15 : 0.62;
@@ -949,6 +964,48 @@ export function initLanderGame(root: HTMLElement) {
       return;
     }
     if (introT > 0) introT -= frameDt;
+
+    // v12 Commit 7: shooting stars — own motion/life advance here (frame-
+    // time domain, same as shakeT/phoenixFlashT above), spawn scheduled
+    // against simTime (set by step()'s fixed-timestep tick). Never spawns
+    // while the degradation guard is tripped.
+    if (shootingStar) {
+      shootingStar.life -= frameDt;
+      shootingStar.x += shootingStar.vx * frameDt;
+      shootingStar.y += shootingStar.vy * frameDt;
+      if (shootingStar.life <= 0) shootingStar = null;
+    }
+    if (!perfGuard.degraded && simTime >= nextShootingStarT) {
+      const dir = Math.random() < 0.5 ? -1 : 1;
+      shootingStar = {
+        x: Math.random() * width,
+        y: height * Math.random() * 0.33,
+        vx: dir * 420,
+        vy: 160,
+        life: 0.7,
+      };
+      nextShootingStarT = simTime + 8 + Math.random() * 14;
+    }
+
+    // v12 Commit 7: wind streak advancement — a fixed 5-slot pool (lazily
+    // seeded to random positions on first use), reused every frame rather
+    // than pooled. Positions wrap at the canvas edges.
+    if (terrain) {
+      const windNow = currentWind(cfg, windPhase);
+      if (Math.abs(windNow) > 12 && !perfGuard.degraded) {
+        if (!windStreaks) {
+          windStreaks = [];
+          for (let i = 0; i < WIND_STREAK_COUNT; i++) {
+            windStreaks.push({ x: Math.random() * width, y: height * Math.random() * 0.6, len: 30 + Math.random() * 30 });
+          }
+        }
+        for (const s of windStreaks) {
+          s.x += windNow * 6 * frameDt;
+          if (s.x > width + s.len) s.x = -s.len;
+          if (s.x < -s.len) s.x = width + s.len;
+        }
+      }
+    }
   }
 
   // --- Fixed-timestep physics tick (§4.1–§4.4) --------------------------------
@@ -2825,6 +2882,46 @@ export function initLanderGame(root: HTMLElement) {
   // --- Main loop: fixed 120Hz physics accumulator (§4.1) ---------------------
   // Frame time is clamped to MAX_FRAME_TIME (0.05s) so a tab-switch stall
   // doesn't fire off hundreds of catch-up physics ticks at once. The
+    // v12 Commit 7: shooting star — screen-space ambient life, above the
+    // world/parallax layers but below the vignette (drawn last, below).
+    // §Commit 7 gate list: disabled entirely (not just un-spawned) while
+    // the degradation guard is tripped.
+    if (shootingStar && !perfGuard.degraded) {
+      const alpha = Math.max(0, Math.min(1, shootingStar.life / 0.7));
+      const speed = Math.hypot(shootingStar.vx, shootingStar.vy);
+      const len = speed * 0.06;
+      const ux = shootingStar.vx / (speed || 1), uy = shootingStar.vy / (speed || 1);
+      addGlow(ctx, false, () => {
+        ctx.strokeStyle = `rgba(244, 235, 218, ${alpha.toFixed(3)})`;
+        ctx.lineWidth = 1.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(shootingStar!.x, shootingStar!.y);
+        ctx.lineTo(shootingStar!.x - ux * len, shootingStar!.y - uy * len);
+        ctx.stroke();
+      });
+    }
+
+    // v12 Commit 7: wind streaks — ambient wind-direction cue, screen-space,
+    // faint drifting lines communicating wind direction (complements the
+    // HUD arrows). Disabled while degraded.
+    if (windStreaks && terrain && !perfGuard.degraded) {
+      const windNow = currentWind(cfg, windPhase);
+      if (Math.abs(windNow) > 12) {
+        ctx.save();
+        ctx.strokeStyle = '#B9A480';
+        ctx.globalAlpha = 0.10;
+        ctx.lineWidth = 1;
+        for (const s of windStreaks) {
+          ctx.beginPath();
+          ctx.moveTo(s.x, s.y);
+          ctx.lineTo(s.x + (windNow > 0 ? s.len : -s.len), s.y);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+
   // accumulator itself is what the Chrono Crystal slow-mo scales (world time
   // scale 0.75 is applied inside step() via `pdt`, per tick) — see step().
   // After draining the accumulator, render the latest state once; there is
