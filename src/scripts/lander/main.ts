@@ -29,7 +29,7 @@ import { mulberry32 } from './rng';
 import { RARITY, DIFF_MODS, computeStats, clampGravityProduct, chronoTimeScale, rollCosmicDice as rollCosmicDiceStat, starForgeRarityWeight } from './stats';
 import { UPGRADES, PAINTS, TRAILS, SKIES, ACHIEVEMENTS } from './upgrades';
 import { levelConfigFor, terrainYAt, generateTerrain, generateSky, generateCritters, generateUfos, generateCanisters } from './levels';
-import { ParticlePool } from './particles';
+import { ParticlePool, PARTICLE_SMOKE, PARTICLE_SPARK, PARTICLE_CHUNK } from './particles';
 import {
   generateAsteroids, updateAsteroids, findAsteroidHit, type Asteroid,
   buildDronePool, updateDrones, terraform,
@@ -197,6 +197,10 @@ export function initLanderGame(root: HTMLElement) {
   let windPhase = 0;
   let shieldFlash = 0;
   let shakeT = 0;
+  // v12 Commit 5: hit-stop — freezes physics/frame-timer advancement for a
+  // few frames at the moment of impact (set in destroyShip()/handleTouchdown,
+  // consumed in loop()). The cheapest, highest-value juice in the plan.
+  let hitStopT = 0;
   let introT = 0;
   let celebrateT = 0;
   let bouncesUsed = 0;      // boomerang hull, per level
@@ -759,6 +763,24 @@ export function initLanderGame(root: HTMLElement) {
       const a = ship.angle + Math.PI + spread;
       noodlePool.alloc(
         ship.x - Math.sin(ship.angle) * 12 * S,
+
+    // v12 Commit 5: every 4th thruster-particle emission also leaves a
+    // faint dissipating smoke plume trailing the flame.
+    if (thrusterParticleTick % 4 === 0) {
+      particlePool.alloc(
+        ship.x - Math.sin(ship.angle) * 12 * S,
+        ship.y + Math.cos(ship.angle) * 12 * S,
+        ship.vx * 0.2,
+        ship.vy * 0.2 + 10,
+        'rgba(80,66,42,0.4)',
+        0.8,
+        (2 + Math.random()) * S,
+        0,
+        // §Commit 7 gate 4: smoke `grow` halves under degradation (smoke
+        // overdraw is the expensive part of the particle vocabulary).
+        { kind: PARTICLE_SMOKE, grow: perfGuard.degraded ? 5 : 10 }
+      );
+    }
         ship.y + Math.cos(ship.angle) * 12 * S,
         Math.sin(a) * speed + ship.vx * 0.3,
         -Math.cos(a) * speed + ship.vy * 0.3
@@ -783,8 +805,14 @@ export function initLanderGame(root: HTMLElement) {
     }
   }
 
-  function explode() {
-    const count = emitCount(50);
+  // v12 Commit 5: recomposed from one uniform 50-dot burst into a real
+  // particle vocabulary — a white impact flash, rotating debris chunks,
+  // additive sparks, buoyant smoke, plus the original dot spread. Total
+  // emission (1+12+18+14+20=65) stays close to the v11 budget (50).
+  // v12 Commit 5: a satisfying ground "poof" under the landing confetti —
+  // 16 dust dots kicked outward both directions along the ground.
+  function emitLandingDustRing(groundY: number) {
+    const count = emitCount(16);
     for (let i = 0; i < count; i++) {
       const a = Math.random() * Math.PI * 2;
       const speed = (40 + Math.random() * 160) * S;
@@ -801,6 +829,72 @@ export function initLanderGame(root: HTMLElement) {
 
   function confetti() {
     const colors = ['#94B03D', '#D9A441', '#C97B3D', '#F4EBDA', '#7C8F5C'];
+      const dir = i % 2 === 0 ? 1 : -1;
+      const speed = 40 + Math.random() * 70; // 40..110
+      particlePool.alloc(
+        ship.x + (Math.random() - 0.5) * 10 * S,
+        groundY - 2,
+        dir * speed,
+        -(5 + Math.random() * 15), // vy -5..-20
+        Math.random() > 0.5 ? 'rgba(185,164,128,0.5)' : 'rgba(122,100,70,0.5)',
+        0.5 + Math.random() * 0.4,
+        (2 + Math.random() * 2) * S,
+        14
+      );
+    }
+  }
+
+  function explode() {
+    const flashCount = emitCount(1);
+    for (let i = 0; i < flashCount; i++) {
+      particlePool.alloc(ship.x, ship.y, 0, 0, '#FFF6E0', 0.09, 26 * S);
+    }
+
+    const chunkCount = emitCount(12);
+    for (let i = 0; i < chunkCount; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const speed = (40 + Math.random() * 160) * S;
+      particlePool.alloc(
+        ship.x, ship.y, Math.cos(a) * speed, Math.sin(a) * speed,
+        Math.random() > 0.5 ? '#5a4326' : '#3B2C16',
+        0.9 + Math.random() * 0.5,
+        (2 + Math.random() * 3) * S,
+        60,
+        { kind: PARTICLE_CHUNK, vrot: (Math.random() - 0.5) * 12 }
+      );
+    }
+
+    const sparkCount = emitCount(18);
+    for (let i = 0; i < sparkCount; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const speed = (40 + Math.random() * 160) * 1.4 * S;
+      particlePool.alloc(
+        ship.x, ship.y, Math.cos(a) * speed, Math.sin(a) * speed,
+        '#FFC94A',
+        0.5 + Math.random() * 0.7,
+        (2 + Math.random() * 3) * S,
+        60,
+        { kind: PARTICLE_SPARK }
+      );
+    }
+
+    const smokeCount = emitCount(14);
+    for (let i = 0; i < smokeCount; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const speed = (20 + Math.random() * 60) * S;
+      particlePool.alloc(
+        ship.x, ship.y, Math.cos(a) * speed, Math.sin(a) * speed,
+        `rgba(60,48,30,${(0.35 + Math.random() * 0.3).toFixed(2)})`,
+        1.2 + Math.random() * 0.6,
+        (2 + Math.random() * 3) * S,
+        60,
+        // §Commit 7 gate 4: smoke `grow` halves under degradation.
+        { kind: PARTICLE_SMOKE, grow: perfGuard.degraded ? 9 : 18 }
+      );
+    }
+
+    const dotCount = emitCount(20);
+    for (let i = 0; i < dotCount; i++) {
     const count = emitCount(26);
     for (let i = 0; i < count; i++) {
       const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.4;
@@ -811,6 +905,7 @@ export function initLanderGame(root: HTMLElement) {
         colors[Math.floor(Math.random() * colors.length)],
         0.8 + Math.random() * 0.6,
         (1.5 + Math.random() * 2.2) * S,
+
         110
       );
     }
@@ -2316,7 +2411,38 @@ export function initLanderGame(root: HTMLElement) {
     for (const p of particlePool.slots) {
       if (!p.alive) continue;
       const alpha = Math.max(0, p.life / p.maxLife);
-      ctx.globalAlpha = alpha;
+      if (p.kind === PARTICLE_SPARK) {
+        // §Commit 7: routed through addGlow so the degradation guard can
+        // fall back to a cheap source-over stroke instead of additive.
+        ctx.globalAlpha = alpha;
+        addGlow(ctx, perfGuard.degraded, () => {
+          ctx.strokeStyle = p.color;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p.x - p.vx * 0.02, p.y - p.vy * 0.02);
+          ctx.stroke();
+        });
+        lastParticleColor = '';
+        continue;
+      }
+      if (p.kind === PARTICLE_CHUNK) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.beginPath();
+        ctx.moveTo(0, -p.size);
+        ctx.lineTo(p.size, p.size);
+        ctx.lineTo(-p.size, p.size);
+        ctx.closePath();
+        ctx.fillStyle = p.color;
+        ctx.fill();
+        ctx.restore();
+        lastParticleColor = '';
+        continue;
+      }
+      ctx.globalAlpha = p.kind === PARTICLE_SMOKE ? alpha * 0.45 : alpha;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       if (p.color !== lastParticleColor) {
@@ -2410,6 +2536,14 @@ export function initLanderGame(root: HTMLElement) {
       ctx.save();
       const padCx = (terrain.pad.xStart + terrain.pad.xEnd) / 2;
       ctx.setLineDash([6, 5]);
+    // v12 Commit 5: branch on `kind` — dot/smoke still batch through the
+    // shared arc + color-cache path below (smoke just draws softer/fading
+    // in at 0.45x alpha since it also grows); spark and chunk get their own
+    // draw calls (a line segment under additive compositing, and a rotated
+    // triangle) since neither can reuse the arc/fillStyle-cache shape.
+    // Spark counts are always <25/frame (explode() emits 18 max), so a
+    // per-spark save/restore composite toggle is cheap — no need to batch
+    // them into a separate pass.
       ctx.strokeStyle = 'rgba(94, 214, 214, 0.75)';
       ctx.lineWidth = 1.6;
       ctx.beginPath();
@@ -2780,3 +2914,16 @@ export function initLanderGame(root: HTMLElement) {
 
     // v12 Commit 1: vignette — LAST draw call, screen-space, one drawImage.
     if (vignetteCanvas) ctx.drawImage(vignetteCanvas, 0, 0);
+    // v12 Commit 5: hit-stop — freeze physics + frame timers for a few
+    // frames at the moment of impact (set in destroyShip()/handleTouchdown).
+    // lastT already advanced above, so resuming afterward doesn't produce
+    // an accumulator catch-up burst; perfGuard already sampled the real
+    // frame time above, so a frozen (cheap) frame can't false-trip it.
+    if (hitStopT > 0) {
+      hitStopT -= rawFrameMs / 1000;
+      draw();
+      updateHud();
+      raf = requestAnimationFrame(loop);
+      return;
+    }
+
