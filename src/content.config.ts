@@ -55,4 +55,12 @@ const art = defineCollection({
   }),
 });
 
-export const collections = { coffee, pokemon, photos, retreats, art };
+const pastBlog = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/pastBlog' }),
+  schema: z.object({
+    title: z.string(),
+    date: z.coerce.date(),
+  }),
+});
+
+export const collections = { coffee, pokemon, photos, retreats, art, pastBlog };

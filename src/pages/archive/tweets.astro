@@ -1,0 +1,168 @@
+---
+// Tweet timeline — /archive/tweets. Loads year-chunked JSON client-side,
+// with year tabs and in-year search. Supports ?year=YYYY#tID deep links
+// from the unified archive search.
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Old Tweets — Tom of the Past" description="14,684 tweets from 2008–2018, preserved for the record.">
+  <a href="/archive" class="badge hover:text-ink transition-colors">← the vault</a>
+  <h1 class="font-display text-3xl md:text-4xl font-semibold mt-3">Old Tweets</h1>
+  <p class="mt-2 text-muted max-w-xl">
+    14,684 original tweets, 2008–2018. What Twitter was like when it was mostly
+    complaining about being awake at 1am.
+  </p>
+
+  <div id="year-tabs" class="mt-6 flex flex-wrap gap-2 font-mono text-sm"></div>
+
+  <input
+    id="tweet-search"
+    type="search"
+    placeholder="search this year…"
+    autocomplete="off"
+    class="mt-4 w-full max-w-md bg-surface border border-line px-3 py-2 font-mono text-sm focus:outline-none focus:border-accent"
+  />
+  <div id="tweet-status" class="mt-2 font-mono text-xs text-muted"></div>
+
+  <ol id="tweet-list" class="mt-6 space-y-4 max-w-xl"></ol>
+  <button id="load-more" class="hidden mt-6 badge hover:text-ink transition-colors cursor-pointer">show more ↓</button>
+
+  <script>
+    type Tweet = { id: string; ts: string; text: string; urls?: string[] };
+
+    const PAGE = 200;
+    const cache: Record<string, Tweet[]> = {};
+    let currentYear = '';
+    let filtered: Tweet[] = [];
+    let rendered = 0;
+
+    function esc(s: string) {
+      return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+    }
+
+    function linkify(text: string, urls?: string[]) {
+      let out = esc(text);
+      let i = 0;
+      out = out.replace(/https?:\/\/t\.co\/\w+/g, (m) => {
+        const target = urls && urls[i] ? urls[i] : m;
+        i++;
+        return `<a href="${esc(target)}" class="text-accent underline decoration-dotted" rel="nofollow noopener">${esc(target.replace(/^https?:\/\/(www\.)?/, '').slice(0, 40))}</a>`;
+      });
+      return out;
+    }
+
+    function fmtTs(ts: string) {
+      const d = new Date(ts.replace(' ', 'T') + ':00Z');
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+    }
+
+    function renderMore() {
+      const list = document.getElementById('tweet-list')!;
+      const more = document.getElementById('load-more')!;
+      const chunk = filtered.slice(rendered, rendered + PAGE);
+      list.insertAdjacentHTML(
+        'beforeend',
+        chunk
+          .map(
+            (t) => `<li id="t${t.id}" class="tweet-card">
+              <p class="text-[0.95rem] leading-relaxed">${linkify(t.text, t.urls)}</p>
+              <p class="mt-1 font-mono text-xs text-muted">${fmtTs(t.ts)}</p>
+            </li>`
+          )
+          .join('')
+      );
+      rendered += chunk.length;
+      more.classList.toggle('hidden', rendered >= filtered.length);
+    }
+
+    function applyFilter() {
+      const q = (document.getElementById('tweet-search') as HTMLInputElement).value.trim().toLowerCase();
+      const all = cache[currentYear] ?? [];
+      filtered = q ? all.filter((t) => t.text.toLowerCase().includes(q)) : all;
+      rendered = 0;
+      document.getElementById('tweet-list')!.innerHTML = '';
+      document.getElementById('tweet-status')!.textContent =
+        `${filtered.length.toLocaleString()} tweet${filtered.length === 1 ? '' : 's'} in ${currentYear}${q ? ` matching “${q}”` : ''}`;
+      renderMore();
+    }
+
+    async function selectYear(year: string, anchor?: string) {
+      currentYear = year;
+      document.querySelectorAll('#year-tabs button').forEach((b) => {
+        b.classList.toggle('year-active', (b as HTMLElement).dataset.year === year);
+      });
+      if (!cache[year]) {
+        document.getElementById('tweet-status')!.textContent = `loading ${year}…`;
+        cache[year] = await (await fetch(`/archive/tweets-${year}.json`)).json();
+      }
+      applyFilter();
+      if (anchor) {
+        // Render pages until the anchor tweet exists, then scroll to it.
+        while (!document.getElementById(anchor) && rendered < filtered.length) renderMore();
+        const el = document.getElementById(anchor);
+        if (el) {
+          el.scrollIntoView({ block: 'center' });
+          el.classList.add('tweet-hit');
+        }
+      }
+    }
+
+    async function init() {
+      const tabs = document.getElementById('year-tabs');
+      if (!tabs || tabs.dataset.ready) return;
+      tabs.dataset.ready = 'true';
+
+      const meta = await (await fetch('/archive/tweets-meta.json')).json();
+      tabs.innerHTML = meta.years
+        .map(
+          (y: { year: string; count: number }) =>
+            `<button data-year="${y.year}" class="year-tab" title="${y.count} tweets">${y.year}</button>`
+        )
+        .join('');
+      tabs.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest('button');
+        if (btn?.dataset.year) selectYear(btn.dataset.year);
+      });
+
+      let searchTimer: number;
+      document.getElementById('tweet-search')!.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = window.setTimeout(applyFilter, 200);
+      });
+      document.getElementById('load-more')!.addEventListener('click', renderMore);
+
+      const params = new URLSearchParams(location.search);
+      const year = params.get('year') ?? meta.years[0].year;
+      const anchor = location.hash ? location.hash.slice(1) : undefined;
+      await selectYear(year, anchor);
+    }
+
+    document.addEventListener('astro:page-load', init);
+  </script>
+
+  <style>
+    .year-tab {
+      border: 1px solid var(--color-line);
+      background: var(--color-surface);
+      padding: 0.25rem 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .year-tab:hover { border-color: var(--color-accent); color: var(--color-accent); }
+    .year-active {
+      background: var(--color-ink);
+      color: var(--color-canvas);
+      border-color: var(--color-ink);
+    }
+    .tweet-card {
+      border: 1px solid var(--color-line);
+      background: var(--color-surface);
+      padding: 0.85rem 1rem;
+      box-shadow: 3px 3px 0 var(--color-surface-2);
+    }
+    .tweet-hit {
+      border-color: var(--color-accent);
+      box-shadow: 3px 3px 0 var(--color-accent);
+    }
+  </style>
+</Layout>

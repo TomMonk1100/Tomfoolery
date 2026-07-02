@@ -1,0 +1,165 @@
+---
+// Archive hub — "Tom of the Past". Blog posts (2015–2016) + tweets (2008–2018)
+// with a unified client-side search across both.
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('pastBlog')).sort(
+  (a, b) => a.data.date.valueOf() - b.data.date.valueOf()
+);
+
+function fmt(date: Date) {
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
+---
+
+<Layout title="Archive — Tomfoolery" description="Tom of the Past: old blog posts and tweets, 2008–2018.">
+  <div class="retro-wrap">
+    <p class="badge">from the vault</p>
+    <h1 class="font-display text-3xl md:text-4xl font-semibold mt-3">Tom of the Past</h1>
+    <p class="mt-2 text-muted max-w-xl">
+      An archive of who I used to be online: {posts.length} blog posts from 2015–2016 and
+      14,684 tweets from 2008–2018. Preserved as written — typos, feelings, robot vacuum updates and all.
+    </p>
+
+    <!-- Unified search -->
+    <div class="mt-8 retro-box p-4">
+      <label for="archive-search" class="font-mono text-xs text-muted uppercase tracking-wider">Search the vault</label>
+      <input
+        id="archive-search"
+        type="search"
+        placeholder="search tweets + blog posts…"
+        autocomplete="off"
+        class="mt-2 w-full bg-surface border border-line px-3 py-2 font-mono text-sm focus:outline-none focus:border-accent"
+      />
+      <div id="search-status" class="mt-2 font-mono text-xs text-muted"></div>
+      <ul id="search-results" class="mt-2 space-y-3"></ul>
+    </div>
+
+    <div class="mt-10 grid md:grid-cols-2 gap-8">
+      <!-- Tweets -->
+      <section>
+        <h2 class="font-display text-xl font-semibold">Tweets <span class="font-mono text-xs text-muted">2008–2018</span></h2>
+        <p class="mt-1 text-sm text-muted">14,684 original tweets (replies and retweets left in the past).</p>
+        <a href="/archive/tweets" class="tile block mt-4 p-5 retro-box">
+          <span class="font-mono text-sm text-accent">→ browse the timeline</span>
+        </a>
+      </section>
+
+      <!-- Blog -->
+      <section>
+        <h2 class="font-display text-xl font-semibold">Blog posts <span class="font-mono text-xs text-muted">2015–2016</span></h2>
+        <ul class="mt-4 space-y-2">
+          {posts.map((p) => (
+            <li class="flex items-baseline justify-between gap-3 border-b border-dotted border-line pb-1">
+              <a href={`/archive/blog/${p.id}`} class="hover:text-accent transition-colors">{p.data.title}</a>
+              <span class="font-mono text-xs text-muted whitespace-nowrap">{fmt(p.data.date)}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    type Tweet = { id: string; ts: string; text: string; urls?: string[] };
+    type BlogEntry = { slug: string; title: string; date: string; text: string };
+
+    let corpus: { tweets: (Tweet & { year: string })[]; blog: BlogEntry[] } | null = null;
+    let loading: Promise<void> | null = null;
+
+    async function loadCorpus() {
+      if (corpus) return;
+      if (!loading) {
+        loading = (async () => {
+          const meta = await (await fetch('/archive/tweets-meta.json')).json();
+          const years: { year: string }[] = meta.years;
+          const [blog, ...tweetSets] = await Promise.all([
+            fetch('/archive/blog-index.json').then((r) => r.json()),
+            ...years.map((y) => fetch(`/archive/tweets-${y.year}.json`).then((r) => r.json())),
+          ]);
+          const tweets = tweetSets.flatMap((set: Tweet[], i: number) =>
+            set.map((t) => ({ ...t, year: years[i].year }))
+          );
+          corpus = { tweets, blog };
+        })();
+      }
+      await loading;
+    }
+
+    function esc(s: string) {
+      return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+    }
+
+    function snippet(text: string, q: string, len = 160) {
+      const i = text.toLowerCase().indexOf(q);
+      const start = Math.max(0, i - 40);
+      const raw = (start > 0 ? '…' : '') + text.slice(start, start + len) + (start + len < text.length ? '…' : '');
+      return esc(raw).replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), (m) => `<mark>${m}</mark>`);
+    }
+
+    function setupSearch() {
+      const input = document.getElementById('archive-search') as HTMLInputElement | null;
+      const status = document.getElementById('search-status');
+      const list = document.getElementById('search-results');
+      if (!input || !status || !list || input.dataset.ready) return;
+      input.dataset.ready = 'true';
+
+      let timer: number;
+      input.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = window.setTimeout(async () => {
+          const q = input.value.trim().toLowerCase();
+          list.innerHTML = '';
+          if (q.length < 2) { status.textContent = ''; return; }
+          status.textContent = 'digging through the vault…';
+          await loadCorpus();
+          if (!corpus) { status.textContent = 'could not load archive data.'; return; }
+
+          const blogHits = corpus.blog.filter(
+            (b) => b.title.toLowerCase().includes(q) || b.text.toLowerCase().includes(q)
+          );
+          const tweetHits = corpus.tweets.filter((t) => t.text.toLowerCase().includes(q));
+          const shown: string[] = [];
+
+          for (const b of blogHits.slice(0, 10)) {
+            shown.push(
+              `<li class="border-b border-dotted border-line pb-2">
+                <span class="badge-signal font-mono text-xs">blog</span>
+                <a href="/archive/blog/${b.slug}" class="ml-2 font-semibold hover:text-accent">${esc(b.title)}</a>
+                <span class="ml-2 font-mono text-xs text-muted">${b.date}</span>
+                <p class="mt-1 text-sm text-muted">${snippet(b.text, q)}</p>
+              </li>`
+            );
+          }
+          for (const t of tweetHits.slice(0, 40)) {
+            shown.push(
+              `<li class="border-b border-dotted border-line pb-2">
+                <span class="badge font-mono text-xs">tweet</span>
+                <a href="/archive/tweets?year=${t.year}#t${t.id}" class="ml-2 font-mono text-xs text-muted hover:text-accent">${t.ts}</a>
+                <p class="mt-1 text-sm">${snippet(t.text, q)}</p>
+              </li>`
+            );
+          }
+          status.textContent = `${blogHits.length} blog post${blogHits.length === 1 ? '' : 's'}, ${tweetHits.length} tweet${tweetHits.length === 1 ? '' : 's'}${blogHits.length > 10 || tweetHits.length > 40 ? ' (showing first matches)' : ''}`;
+          list.innerHTML = shown.join('');
+        }, 250);
+      });
+    }
+
+    document.addEventListener('astro:page-load', setupSearch);
+  </script>
+
+  <style>
+    .retro-box {
+      border: 1px solid var(--color-line);
+      box-shadow: 4px 4px 0 var(--color-surface-2);
+      background: var(--color-surface);
+    }
+    mark {
+      background: var(--color-accent-mid);
+      color: var(--color-canvas);
+      padding: 0 2px;
+    }
+  </style>
+</Layout>

@@ -1,0 +1,18 @@
+---
+title: "Real Talk"
+date: 2015-01-31
+---
+
+I keep trying to decide how frank I should be. Am I willing to let my deepest thoughts be shared to the public? My roommate and close friend Seth got married early in 2014 witch left me alone in our apartment. The bills were manageable and they would be moving in below me. What i did not expect is how important it was for me to not be alone. When i moved to Fort Worth i had the fortune of moving in with Don and Lonzo. I kept to my self even in that situation but knew they were around, available? Then i moved in with Seth to mostly the same situation. So this was my first time truly alone in my life. In the simplest of terms: left on my own i give up.
+
+I call it depression but that’s only a small factor in it. Its the combination of self loathing, anxiety, depression and laziness that do it. For the first few months i could control it. I went to meetings and work only missing a few. As time went on it was like weight pushing on my shoulders. It was the small voice that says ‘no one cares. no one will miss you. why get up’ that grows every day. It was the over thinking about everything that caused the joy to be siphoned from my life. For example going to meeting was a 18 min drive. That’s all it took to cause me to miss countless meetings. That small drive made me feel like puking every Monday and Saturday.
+
+For those of you that are reading this that struggle with similar circumstances, i feel for you. The remnant that don’t understand i envy you. Take some time to try to think about what anxiety or depression is like. Know that the best thing you can do for a person with these issues is just to be around and quiet. The most calming thing to me is just knowing that someone is around. One of my dearest friends is Wes, he often is what i need but during one of my most recent panic attacks he said something strange. He found me on the floor between a bed and a wall sobbing my eyes out with my cousin Seth calmly and quietly sitting in the room with me. He kept telling me to get up, get up. After i ignored his requests he touched my arm and told me “i will leave but i need you to tell me you will be ok first.”
+
+My mind spirals. Ok? At that moment death was preferable to anything, as awful as that is to say. Would i be ok? I couldn’t even fathom being ok ever again for the rest of my life. What was ok? Was i going to just get up and a light would turn on and i would smile? Ok was the farthest thing from what i could be. I firmly said “Seth.” Its a sad bond we share, understanding each others panic attacks and dark thoughts. He got Wes to leave the room. Now in my calm normal state right now i can see how much concern and love Wes was showing me. He is truly a loving friend who i would do anything for. Sometimes though the best course is to just be with the person.
+
+So in the last two months of living on my own i rarely left my home other then to buy terrible food and binge eat. I would call in to work a bunch and when i was there i did little to no work. I stopped going to meetings thinking i was the worst person alive and shouldn’t show my face. The idea of killing my self became more and more appealing. Thankfully i could recognize my situations at times and see that i needed out. I am a 25 year old man and i needed help. I was drowning. I still have loving parents who did not even hesitate when i asked to move home and i will forever be even more in debt to them for that.
+
+So here i am. Home. Am i ok? I don’t know, but so far i feel as light as a feather.
+
+Hoping to keep writing. Check back for more.
