@@ -1,0 +1,515 @@
+import type { FaceMap, Mood, PaintDef, ShipStats, UpgradeId } from '../types';
+
+// --- Pilot face mapping -----------------------------------------------------------
+// Normalized (0..1) positions of facial features within the selfie canvas.
+// Filled by the FaceDetector API when the browser supports it; otherwise
+// standard portrait proportions (the capture UI asks you to center your
+// face, so these land close in practice).
+export const DEFAULT_FACE: FaceMap = { eyeL: { x: 0.36, y: 0.42 }, eyeR: { x: 0.64, y: 0.42 }, mouth: { x: 0.5, y: 0.72 } };
+
+export async function analyzeFace(photo: HTMLCanvasElement): Promise<FaceMap> {
+  try {
+    const FD = (window as any).FaceDetector;
+    if (FD) {
+      const detector = new FD({ maxDetectedFaces: 1, fastMode: false });
+      const faces = await detector.detect(photo);
+      const lm = faces?.[0]?.landmarks as { type: string; locations: { x: number; y: number }[] }[] | undefined;
+      if (lm && lm.length) {
+        const size = photo.width;
+        const eyes = lm.filter((l) => l.type === 'eye');
+        const mouth = lm.find((l) => l.type === 'mouth');
+        const avg = (locs: { x: number; y: number }[]) => ({
+          x: locs.reduce((a, p) => a + p.x, 0) / locs.length / size,
+          y: locs.reduce((a, p) => a + p.y, 0) / locs.length / size,
+        });
+        if (eyes.length >= 2 && mouth) {
+          const [a, b] = [avg(eyes[0].locations), avg(eyes[1].locations)];
+          return {
+            eyeL: a.x <= b.x ? a : b,
+            eyeR: a.x <= b.x ? b : a,
+            mouth: avg(mouth.locations),
+          };
+        }
+      }
+    }
+  } catch (e) {
+    // fall through to proportional default
+  }
+  return DEFAULT_FACE;
+}
+
+// Real-time expression edit on the selfie: eye/mouth regions are
+// resampled from the photo and redrawn transformed inside the cockpit.
+export function drawPhotoFace(
+  c: CanvasRenderingContext2D, x0: number, y0: number, w: number, h: number, mood: Mood,
+  pilotPhoto: HTMLCanvasElement, faceMap: FaceMap
+) {
+  const photo = pilotPhoto;
+  const ps = photo.width;
+  c.drawImage(photo, x0, y0, w, h);
+  if (mood === 'neutral') return;
+
+  const eyes = [faceMap.eyeL, faceMap.eyeR];
+  if (mood === 'surprised') {
+    // Bulge the eyes: redraw each eye region scaled up in place
+    const ew = 0.2;
+    for (const eye of eyes) {
+      const sx = (eye.x - ew / 2) * ps, sy = (eye.y - ew / 2) * ps, sw = ew * ps, sh = ew * ps;
+      const dw = ew * w * 1.55, dh = ew * h * 1.55;
+      c.drawImage(photo, sx, sy, sw, sh, x0 + eye.x * w - dw / 2, y0 + eye.y * h - dh / 2, dw, dh);
+    }
+    // Drop the jaw: mouth region stretched tall + dark open-mouth core
+    const mw = 0.3, mh = 0.16;
+    const msx = (faceMap.mouth.x - mw / 2) * ps, msy = (faceMap.mouth.y - mh / 2) * ps;
+    const dw = mw * w * 0.85, dh = mh * h * 2.1;
+    c.drawImage(photo, msx, msy, mw * ps, mh * ps,
+      x0 + faceMap.mouth.x * w - dw / 2, y0 + faceMap.mouth.y * h - dh * 0.32, dw, dh);
+    c.fillStyle = 'rgba(30, 14, 8, 0.85)';
+    c.beginPath();
+    c.ellipse(x0 + faceMap.mouth.x * w, y0 + faceMap.mouth.y * h + dh * 0.18, w * 0.065, h * 0.085, 0, 0, Math.PI * 2);
+    c.fill();
+  } else if (mood === 'happy') {
+    // Squinted smiling eyes: eye regions squashed vertically
+    const ew = 0.18;
+    for (const eye of eyes) {
+      const sx = (eye.x - ew / 2) * ps, sy = (eye.y - ew / 2) * ps, sw = ew * ps, sh = ew * ps;
+      const dw = ew * w * 1.15, dh = ew * h * 0.6;
+      c.drawImage(photo, sx, sy, sw, sh, x0 + eye.x * w - dw / 2, y0 + eye.y * h - dh / 2 + h * 0.012, dw, dh);
+    }
+    // Smile: mouth strip redrawn in three slices, corners lifted
+    const mw = 0.32, mh = 0.13;
+    const msx = (faceMap.mouth.x - mw / 2) * ps, msy = (faceMap.mouth.y - mh / 2) * ps;
+    const sliceW = (mw * ps) / 3;
+    const dSliceW = (mw * w * 1.12) / 3;
+    const lift = [-0.035, 0.008, -0.035];
+    for (let i = 0; i < 3; i++) {
+      c.drawImage(photo, msx + i * sliceW, msy, sliceW, mh * ps,
+        x0 + faceMap.mouth.x * w - (dSliceW * 3) / 2 + i * dSliceW,
+        y0 + (faceMap.mouth.y + lift[i]) * h - (mh * h) / 2,
+        dSliceW, mh * h);
+    }
+  }
+}
+
+// Cartoon face for the default (no-selfie) pilot — same moods.
+export function drawDefaultPilot(c: CanvasRenderingContext2D, cockCY: number, cockR: number, mood: Mood) {
+  // helmet
+  c.fillStyle = 'rgba(34, 24, 8, 0.85)';
+  c.beginPath();
+  c.arc(0, cockCY + 0.4, cockR * 0.62, 0, Math.PI * 2);
+  c.fill();
+  // face plate
+  c.fillStyle = '#E8D9BC';
+  c.beginPath();
+  c.arc(0, cockCY + 0.6, cockR * 0.46, 0, Math.PI * 2);
+  c.fill();
+  const ex = cockR * 0.2, ey = cockCY + 0.25;
+  c.fillStyle = '#221808';
+  if (mood === 'surprised') {
+    c.beginPath(); c.arc(-ex, ey, cockR * 0.12, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(ex, ey, cockR * 0.12, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.ellipse(0, cockCY + cockR * 0.28, cockR * 0.1, cockR * 0.15, 0, 0, Math.PI * 2); c.fill();
+  } else if (mood === 'happy') {
+    c.strokeStyle = '#221808';
+    c.lineWidth = cockR * 0.07;
+    c.beginPath(); c.arc(-ex, ey + 0.02 * cockR, cockR * 0.1, Math.PI * 1.15, Math.PI * 1.85); c.stroke();
+    c.beginPath(); c.arc(ex, ey + 0.02 * cockR, cockR * 0.1, Math.PI * 1.15, Math.PI * 1.85); c.stroke();
+    c.beginPath(); c.arc(0, cockCY + cockR * 0.18, cockR * 0.2, Math.PI * 0.15, Math.PI * 0.85); c.stroke();
+  } else {
+    c.beginPath(); c.arc(-ex, ey, cockR * 0.07, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(ex, ey, cockR * 0.07, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = '#221808';
+    c.lineWidth = cockR * 0.06;
+    c.beginPath();
+    c.moveTo(-cockR * 0.12, cockCY + cockR * 0.32);
+    c.lineTo(cockR * 0.12, cockCY + cockR * 0.32);
+    c.stroke();
+  }
+}
+
+// Visible hardware for each owned upgrade — the ship literally builds
+// out as the run goes on. All drawn in ship-local units (pre-scaled).
+export function drawShipModules(c: CanvasRenderingContext2D, pickedUpgrades: UpgradeId[], stats: ShipStats) {
+  const owned = new Set(pickedUpgrades);
+  const t = performance.now() / 1000;
+
+  if (owned.has('fuel_tank')) {
+    // Saddle tanks on both flanks
+    for (const side of [-1, 1]) {
+      c.fillStyle = '#D9C6A3';
+      c.strokeStyle = '#8a6a3c';
+      c.lineWidth = 0.6;
+      c.beginPath();
+      c.ellipse(side * 8.9, 2.6, 1.5, 3.4, side * 0.12, 0, Math.PI * 2);
+      c.fill();
+      c.stroke();
+    }
+  }
+  if (owned.has('boost_thrusters')) {
+    // Twin auxiliary nozzles beside the main engine
+    c.fillStyle = '#221808';
+    for (const side of [-1, 1]) {
+      c.beginPath();
+      c.moveTo(side * 3.4, 7);
+      c.lineTo(side * 5.4, 9.6);
+      c.lineTo(side * 2.4, 8.6);
+      c.closePath();
+      c.fill();
+    }
+  }
+  if (owned.has('magnetic_pad')) {
+    // Horseshoe magnet under the belly
+    c.strokeStyle = '#C97B3D';
+    c.lineWidth = 1.2;
+    c.beginPath();
+    c.arc(0, 9.4, 2.2, Math.PI, 0);
+    c.stroke();
+    c.strokeStyle = '#F4EBDA';
+    c.beginPath(); c.moveTo(-2.2, 9.4); c.lineTo(-2.2, 10.6); c.stroke();
+    c.beginPath(); c.moveTo(2.2, 9.4); c.lineTo(2.2, 10.6); c.stroke();
+  }
+  if (owned.has('gyro')) {
+    // Slowly spinning stabilizer ring around the midsection
+    c.save();
+    c.strokeStyle = 'rgba(148, 176, 61, 0.55)';
+    c.lineWidth = 0.9;
+    c.setLineDash([3, 4]);
+    c.lineDashOffset = -t * 9;
+    c.beginPath();
+    c.ellipse(0, 0.5, 10.8, 3.4, 0, 0, Math.PI * 2);
+    c.stroke();
+    c.restore();
+  }
+  if (owned.has('gravity_anchor')) {
+    // Tiny anchor slung under the hull
+    c.strokeStyle = '#B9A480';
+    c.lineWidth = 0.9;
+    c.beginPath(); c.moveTo(0, 8.6); c.lineTo(0, 12); c.stroke();
+    c.beginPath(); c.arc(0, 11.6, 1.6, Math.PI * 0.15, Math.PI * 0.85); c.stroke();
+    c.beginPath(); c.arc(0, 9, 0.55, 0, Math.PI * 2); c.stroke();
+  }
+  if (owned.has('scanner')) {
+    // Shoulder dish, tilted skyward
+    c.save();
+    c.translate(6.8, -9.4);
+    c.rotate(-0.5);
+    c.strokeStyle = '#B9A480';
+    c.lineWidth = 0.8;
+    c.beginPath(); c.moveTo(0, 2.4); c.lineTo(0, 0.6); c.stroke();
+    c.fillStyle = '#D9C6A3';
+    c.beginPath(); c.ellipse(0, 0, 2.2, 0.9, 0, 0, Math.PI); c.fill();
+    c.fillStyle = '#94B03D';
+    c.beginPath(); c.arc(0, -0.6, 0.5, 0, Math.PI * 2); c.fill();
+    c.restore();
+  }
+  if (owned.has('feather_gear')) {
+    // Feather tufts on the landing struts
+    c.strokeStyle = 'rgba(244, 235, 218, 0.85)';
+    c.lineWidth = 0.7;
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 3; i++) {
+        c.beginPath();
+        c.moveTo(side * (7.6 + i * 0.8), 9.4);
+        c.quadraticCurveTo(side * (8.4 + i * 0.8), 8, side * (8 + i * 0.8), 6.6 + i * 0.4);
+        c.stroke();
+      }
+    }
+  }
+  if (owned.has('reserve_chute')) {
+    // Chute pack strapped to the left flank
+    c.fillStyle = '#C97B3D';
+    c.strokeStyle = '#8a4a20';
+    c.lineWidth = 0.6;
+    c.beginPath();
+    c.ellipse(-8.7, -2.6, 1.6, 2.5, -0.15, 0, Math.PI * 2);
+    c.fill(); c.stroke();
+    c.strokeStyle = 'rgba(244,235,218,0.6)';
+    c.beginPath(); c.moveTo(-9.8, -3.6); c.lineTo(-7.6, -1.4); c.stroke();
+  }
+  if (owned.has('storm_dampeners')) {
+    // Vent slats on both flanks
+    c.strokeStyle = '#7C8F5C';
+    c.lineWidth = 0.8;
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 3; i++) {
+        c.beginPath();
+        c.moveTo(side * 7.6, -0.4 + i * 1.5);
+        c.lineTo(side * 9.2, 0.2 + i * 1.5);
+        c.stroke();
+      }
+    }
+  }
+  if (owned.has('fuel_scoop')) {
+    // Intake ring on the nose
+    c.strokeStyle = '#B9A480';
+    c.lineWidth = 1;
+    c.beginPath();
+    c.ellipse(0, -14.6, 2.6, 1, 0, 0, Math.PI * 2);
+    c.stroke();
+  }
+  if (owned.has('precision_jets')) {
+    // RCS thruster pods at four corners
+    c.fillStyle = '#F4EBDA';
+    for (const [px, py] of [[-6.6, -8.5], [6.6, -8.5], [-7.4, 3.6], [7.4, 3.6]] as [number, number][]) {
+      c.beginPath(); c.arc(px, py, 0.7, 0, Math.PI * 2); c.fill();
+    }
+  }
+  if (owned.has('jalapeno_injectors')) {
+    // A proud little jalapeño painted on the hull
+    c.save();
+    c.translate(4.9, 2.4);
+    c.rotate(0.5);
+    c.fillStyle = '#94B03D';
+    c.beginPath();
+    c.ellipse(0, 0, 0.9, 2, 0, 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = '#5C7642';
+    c.lineWidth = 0.5;
+    c.beginPath(); c.moveTo(0, -2); c.lineTo(0.5, -2.9); c.stroke();
+    c.restore();
+  }
+  if (owned.has('boomerang_hull')) {
+    // Boomerang chevron across the lower hull
+    c.strokeStyle = '#D9A441';
+    c.lineWidth = 1.1;
+    c.beginPath();
+    c.moveTo(-5.4, 4);
+    c.lineTo(0, 6.4);
+    c.lineTo(5.4, 4);
+    c.stroke();
+  }
+  if (owned.has('alien_diplomacy')) {
+    // Embassy antenna with a softly pulsing green orb
+    c.strokeStyle = '#B9A480';
+    c.lineWidth = 0.7;
+    c.beginPath(); c.moveTo(-4.6, -11.4); c.lineTo(-7.2, -16.4); c.stroke();
+    const pulse = 0.7 + Math.sin(t * 3) * 0.3;
+    c.fillStyle = `rgba(148, 176, 61, ${pulse})`;
+    c.beginPath(); c.arc(-7.2, -16.9, 1, 0, Math.PI * 2); c.fill();
+  }
+  if (owned.has('chrono_crystal')) {
+    // A pale crystal orbiting the ship
+    const oa = t * 1.4;
+    const ox = Math.cos(oa) * 14.5;
+    const oy = Math.sin(oa) * 14.5 - 2;
+    c.save();
+    c.translate(ox, oy);
+    c.rotate(oa);
+    c.fillStyle = 'rgba(123, 167, 199, 0.9)';
+    c.beginPath();
+    c.moveTo(0, -2); c.lineTo(1.2, 0); c.lineTo(0, 2); c.lineTo(-1.2, 0);
+    c.closePath();
+    c.fill();
+    c.restore();
+  }
+  if (owned.has('overdrive_core')) {
+    // Hot core glowing through a lower-hull porthole
+    const glow = 0.55 + Math.sin(t * 5) * 0.25;
+    c.fillStyle = `rgba(201, 90, 40, ${glow})`;
+    c.beginPath(); c.arc(0, 3.4, 1.5, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = '#221808';
+    c.lineWidth = 0.6;
+    c.beginPath(); c.arc(0, 3.4, 1.5, 0, Math.PI * 2); c.stroke();
+  }
+  if (owned.has('phoenix_feather')) {
+    // Gold feather decal
+    c.save();
+    c.translate(-4.9, 2.2);
+    c.rotate(-0.55);
+    c.strokeStyle = '#FFC94A';
+    c.lineWidth = 0.7;
+    c.beginPath(); c.moveTo(0, 2); c.quadraticCurveTo(1.4, -0.5, 0.3, -2.4); c.stroke();
+    for (let i = 0; i < 3; i++) {
+      c.beginPath();
+      c.moveTo(0.45 - i * 0.1, -1.6 + i * 1.1);
+      c.lineTo(-0.9, -1 + i * 1.1);
+      c.stroke();
+    }
+    c.restore();
+  }
+  if (owned.has('star_core')) {
+    // Four-point star twinkling at the nose
+    c.save();
+    c.translate(0, -16.6);
+    c.rotate(t * 0.8);
+    c.fillStyle = '#FFC94A';
+    c.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const r = i % 2 === 0 ? 1.9 : 0.65;
+      const a = (i / 8) * Math.PI * 2;
+      c.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    c.closePath();
+    c.fill();
+    c.restore();
+  }
+  if (stats.shieldCharges > 0) {
+    // Idle shield shimmer (distinct from the impact flash)
+    c.strokeStyle = 'rgba(148, 176, 61, 0.22)';
+    c.lineWidth = 1;
+    c.beginPath();
+    c.arc(0, -1, 16.4, 0, Math.PI * 2);
+    c.stroke();
+  }
+}
+
+export interface DrawShipParams {
+  ctx: CanvasRenderingContext2D;
+  ship: { x: number; y: number; angle: number; thrusting: boolean };
+  S: number;
+  mood: Mood;
+  shieldFlash: number;
+  stats: ShipStats;
+  pickedUpgrades: UpgradeId[];
+  paint: PaintDef;
+  pilotPhoto: HTMLCanvasElement | null;
+  faceMap: FaceMap;
+}
+
+export function drawShip(p: DrawShipParams) {
+  const { ship, S, mood, shieldFlash, stats, pickedUpgrades, paint, pilotPhoto, faceMap } = p;
+  const c = p.ctx;
+  c.save();
+  c.translate(ship.x, ship.y);
+  c.rotate(ship.angle);
+  c.scale(S, S);
+
+  if (shieldFlash > 0) {
+    c.beginPath();
+    c.arc(0, -1, 17, 0, Math.PI * 2);
+    c.strokeStyle = 'rgba(148, 176, 61, 0.8)';
+    c.lineWidth = 2;
+    c.stroke();
+  }
+
+  // Star Core aura — a soft golden halo behind everything
+  if (stats.starCore) {
+    const aura = c.createRadialGradient(0, -2, 4, 0, -2, 26);
+    aura.addColorStop(0, 'rgba(255, 201, 74, 0.22)');
+    aura.addColorStop(1, 'rgba(255, 201, 74, 0)');
+    c.fillStyle = aura;
+    c.beginPath();
+    c.arc(0, -2, 26, 0, Math.PI * 2);
+    c.fill();
+  }
+
+  // Thrust flame FIRST (behind the hull): layered + glow.
+  // Jalapeño Injectors turn the exhaust spicy-green.
+  if (ship.thrusting) {
+    const flicker = 6 + Math.random() * 7;
+    const spicy = stats.spicyFlame;
+    const glowColor = spicy ? '148, 176, 61' : '217, 164, 65';
+    const glow = c.createRadialGradient(0, 10, 1, 0, 12, 16 + flicker);
+    glow.addColorStop(0, `rgba(${glowColor}, 0.5)`);
+    glow.addColorStop(1, `rgba(${glowColor}, 0)`);
+    c.fillStyle = glow;
+    c.beginPath();
+    c.arc(0, 12, 16 + flicker, 0, Math.PI * 2);
+    c.fill();
+    c.beginPath();
+    c.moveTo(-5, 7.5);
+    c.quadraticCurveTo(0, 10 + flicker * 1.6, 5, 7.5);
+    c.closePath();
+    c.fillStyle = spicy ? 'rgba(124, 143, 92, 0.75)' : 'rgba(201, 123, 61, 0.65)';
+    c.fill();
+    c.beginPath();
+    c.moveTo(-2.6, 7.5);
+    c.quadraticCurveTo(0, 9 + flicker, 2.6, 7.5);
+    c.closePath();
+    c.fillStyle = spicy ? 'rgba(224, 245, 200, 0.95)' : 'rgba(244, 235, 218, 0.95)';
+    c.fill();
+  }
+
+  // Engine nozzle
+  c.beginPath();
+  c.ellipse(0, 7.5, 3.4, 2, 0, 0, Math.PI * 2);
+  c.fillStyle = '#221808';
+  c.fill();
+
+  // Landing legs
+  c.strokeStyle = '#8a6a3c';
+  c.lineWidth = 1.1;
+  c.beginPath(); c.moveTo(-5.5, 5); c.lineTo(-9, 10); c.moveTo(-10.6, 10); c.lineTo(-7.4, 10); c.stroke();
+  c.beginPath(); c.moveTo(5.5, 5); c.lineTo(9, 10); c.moveTo(7.4, 10); c.lineTo(10.6, 10); c.stroke();
+
+  // Side fins
+  c.fillStyle = '#7C8F5C';
+  c.strokeStyle = '#3B2C16';
+  c.lineWidth = 0.8;
+  c.beginPath();
+  c.moveTo(-6.5, 5.5); c.lineTo(-11, 9.5); c.lineTo(-4.5, 8);
+  c.closePath(); c.fill(); c.stroke();
+  c.beginPath();
+  c.moveTo(6.5, 5.5); c.lineTo(11, 9.5); c.lineTo(4.5, 8);
+  c.closePath(); c.fill(); c.stroke();
+
+  // Main hull — bulbous dome, big cockpit. Colors come from the
+  // equipped paint job (Hangar Shop cosmetic).
+  const hullGrad = c.createLinearGradient(0, -14, 0, 8);
+  hullGrad.addColorStop(0, paint.hullTop);
+  hullGrad.addColorStop(1, paint.hullBot);
+  c.beginPath();
+  c.moveTo(0, -14);
+  c.bezierCurveTo(6.5, -14, 9, -7, 8, 0);
+  c.lineTo(6.5, 8);
+  c.lineTo(0, 5.5);
+  c.lineTo(-6.5, 8);
+  c.lineTo(-8, 0);
+  c.bezierCurveTo(-9, -7, -6.5, -14, 0, -14);
+  c.closePath();
+  c.fillStyle = hullGrad;
+  c.fill();
+  c.strokeStyle = paint.stroke;
+  c.lineWidth = 1.4;
+  c.stroke();
+
+  // Panel lines
+  c.strokeStyle = 'rgba(59, 44, 22, 0.35)';
+  c.lineWidth = 0.5;
+  c.beginPath(); c.moveTo(-7.2, 1.5); c.lineTo(7.2, 1.5); c.stroke();
+  c.beginPath(); c.moveTo(-6.2, 4.4); c.lineTo(6.2, 4.4); c.stroke();
+
+  // Upgrade hardware — every owned upgrade is visible on the hull.
+  drawShipModules(c, pickedUpgrades, stats);
+
+  // Cockpit — enlarged again in v9: with ship scale up to 2.3x this is
+  // a ~30px porthole, so the pilot's expressions genuinely read.
+  const cockR = 6.6;
+  const cockCY = -4.6;
+  c.save();
+  c.beginPath();
+  c.ellipse(0, cockCY, cockR, cockR * 1.05, 0, 0, Math.PI * 2);
+  c.clip();
+
+  if (pilotPhoto) {
+    drawPhotoFace(c, -cockR, cockCY - cockR * 1.05, cockR * 2, cockR * 2.1, mood, pilotPhoto, faceMap);
+  } else {
+    const glassGrad = c.createRadialGradient(-1.4, cockCY - 1.6, 0.5, 0, cockCY, cockR * 1.3);
+    glassGrad.addColorStop(0, '#E4F1EA');
+    glassGrad.addColorStop(1, '#5B7A85');
+    c.fillStyle = glassGrad;
+    c.fillRect(-cockR, cockCY - cockR, cockR * 2, cockR * 2);
+    drawDefaultPilot(c, cockCY, cockR, mood);
+  }
+  c.restore();
+
+  // Cockpit rim + glass highlight
+  c.beginPath();
+  c.ellipse(0, cockCY, cockR, cockR * 1.05, 0, 0, Math.PI * 2);
+  c.strokeStyle = '#221808';
+  c.lineWidth = 0.9;
+  c.stroke();
+  c.beginPath();
+  c.ellipse(-1.8, cockCY - cockR * 0.55, cockR * 0.5, cockR * 0.2, -0.4, 0, Math.PI * 2);
+  c.strokeStyle = 'rgba(244, 235, 218, 0.35)';
+  c.lineWidth = 0.8;
+  c.stroke();
+
+  // Nose light
+  c.beginPath();
+  c.arc(0, -13.2, 1.1, 0, Math.PI * 2);
+  c.fillStyle = '#94B03D';
+  c.fill();
+
+  c.restore();
+}
