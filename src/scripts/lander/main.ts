@@ -16,20 +16,29 @@
 //    musical ambient score (chord swells + pentatonic plucks over the
 //    drone) with SEPARATE sfx / music toggles
 //
-// v10: mechanical split into src/scripts/lander/* modules. Behavior,
-// physics, timestep, and upgrade formulas are unchanged from v9 — this
-// commit only reorganizes the code (see lander-v10-refactor-plan.md).
+// v10: mechanical split into src/scripts/lander/* modules (commit 1).
+//
+// commit 2: fixed 120Hz-timestep physics engine (physics.ts) — accumulator
+// RAF loop, mass/drag model, swept terrain + projectile collision (no more
+// tunneling on fast falls), asteroid logic moved out of the render path
+// into entities.ts, and hard gameplay caps in computeStats replaced with
+// numerical-stability floors. See lander-v10-refactor-plan.md §4.
 // ---------------------------------------------------------------------------
 
 import { mulberry32 } from './rng';
-import { RARITY, DIFF_MODS, computeStats } from './stats';
+import { RARITY, DIFF_MODS, computeStats, clampGravityProduct } from './stats';
 import { UPGRADES, PAINTS, TRAILS, SKIES, ACHIEVEMENTS } from './upgrades';
 import { levelConfigFor, terrainYAt, generateTerrain, generateSky, generateCritters, generateUfos } from './levels';
 import { makeParticle } from './particles';
+import { generateAsteroids, updateAsteroids, findAsteroidHit, type Asteroid } from './entities';
+import {
+  DT, MAX_FRAME_TIME, effectiveMass, effectiveArea, gravityAccel, thrustAccel, windAccel,
+  sweptGroundContact, sweptSegmentCircleHit, clampRotationDelta,
+} from './physics';
 import { AudioEngine } from './audio/sfx';
 import { MusicEngine } from './audio/music';
 import { DEFAULT_FACE, analyzeFace, drawShip } from './render/ship';
-import { drawCritters, drawUfos, drawPad } from './render/world';
+import { drawCritters, drawUfos, drawPad, drawAsteroids } from './render/world';
 import { updateHud as updateHudEl } from './render/hud';
 import { upgradeListHtml, shopItemHtml, trailSwatch, diffButtonsHtml } from './ui/overlays';
 import { loadJSON, bestFor as bestForStored, saveBest, fetchLeaderboard as fetchLeaderboardRemote, submitScore as submitScoreRemote } from './persistence';
@@ -136,6 +145,8 @@ export function initLanderGame(root: HTMLElement) {
   let critters: Critter[] = [];
   let ufos: Ufo[] = [];
   let projectiles: Projectile[] = [];
+  let asteroids: Asteroid[] = [];
+  let simTime = 0; // accumulated sim seconds (fixed-step ticks only) — drives asteroid orbits, moved out of the render path per §4.4
   let windPhase = 0;
   let shieldFlash = 0;
   let shakeT = 0;
@@ -293,6 +304,7 @@ export function initLanderGame(root: HTMLElement) {
     critters = generateCritters(cfg, terrain, width);
     ufos = generateUfos(cfg, width, height);
     projectiles = [];
+    asteroids = generateAsteroids(cfg, width, height, S);
     windPhase = Math.random() * 10;
     introT = 2.4;
     celebrateT = 0;
@@ -386,28 +398,42 @@ export function initLanderGame(root: HTMLElement) {
     }
   }
 
-  function update(dt: number) {
-    if (shakeT > 0) shakeT -= dt;
-    if (phoenixFlashT > 0) phoenixFlashT -= dt;
+  // --- Frame-rate-driven cosmetic timers -------------------------------------
+  // Not physics: screen shake, toast fade, phoenix flash, and the level-intro
+  // banner are pure visual timers and run once per rendered frame (frameDt),
+  // outside the fixed-timestep physics accumulator. See §4.1.
+  function updateFrameTimers(frameDt: number) {
+    if (shakeT > 0) shakeT -= frameDt;
+    if (phoenixFlashT > 0) phoenixFlashT -= frameDt;
     if (toasts.length) {
-      for (const toast of toasts) toast.t -= dt;
+      for (const toast of toasts) toast.t -= frameDt;
       toasts = toasts.filter((x) => x.t > 0);
     }
-
-    // Post-landing celebration: happy pilot + confetti settle, then upgrades.
     if (state === 'levelComplete') {
-      simulateParticles(dt);
+      simulateParticles(frameDt);
       if (celebrateT > 0) {
-        celebrateT -= dt;
+        celebrateT -= frameDt;
         if (celebrateT <= 0) showLevelComplete();
       }
       return;
     }
     if (state !== 'playing') {
       slowmoActive = false;
-      simulateParticles(dt);
+      simulateParticles(frameDt);
       return;
     }
+    if (introT > 0) introT -= frameDt;
+  }
+
+  // --- Fixed-timestep physics tick (§4.1–§4.4) --------------------------------
+  // Called from the RAF loop's accumulator `while (acc >= DT) { step(DT); ... }`.
+  // `dt` is always the fixed physics tick (DT), scaled by the Chrono Crystal
+  // slow-mo world-time-scale (0.75) when active — see `pdt` below. Fuel drain
+  // and cooldowns intentionally use the UNSCALED `dt` (raw tick time), exactly
+  // as the legacy per-frame code used raw frame dt for those — that's the
+  // Chrono Crystal tradeoff (world slows, fuel clock doesn't).
+  function step(dt: number) {
+    if (state !== 'playing') return;
 
     // Chrono Crystal: the world runs at 75% below 120m — but the fuel
     // clock doesn't care (that's the tradeoff), so drains use raw dt.
@@ -415,23 +441,31 @@ export function initLanderGame(root: HTMLElement) {
     slowmoActive = stats.slowmo && altNow < 120;
     const pdt = slowmoActive ? dt * 0.75 : dt;
 
+    simTime += pdt;
     windPhase += pdt;
-    if (introT > 0) introT -= dt;
 
-    // Rotation — direct control, simple & predictable
+    // Rotation — direct control, simple & predictable. Per-tick delta is
+    // clamped to a numerical-stability floor (§4.5) — unreachable at normal
+    // rotMult values, only guards against degenerate stacking.
     const rotSpeed = 2.6 * stats.rotMult;
-    if (input.left) ship.angle -= rotSpeed * pdt;
-    if (input.right) ship.angle += rotSpeed * pdt;
+    if (input.left) ship.angle -= clampRotationDelta(rotSpeed * pdt);
+    if (input.right) ship.angle += clampRotationDelta(rotSpeed * pdt);
+
+    // --- §4.2 Mass & drag model -------------------------------------------
+    const mass = effectiveMass({ massSum: stats.massSum, areaSum: stats.areaSum });
+    const area = effectiveArea({ massSum: stats.massSum, areaSum: stats.areaSum });
+    const gravMultFloored = clampGravityProduct(cfg.gravity, stats.gravityMult);
 
     // Gravity + wind
-    ship.vy += cfg.gravity * stats.gravityMult * pdt;
-    ship.vx += currentWind(cfg, windPhase) * stats.windMult * pdt;
+    ship.vy += gravityAccel(cfg.gravity, gravMultFloored, mass) * pdt;
+    ship.vx += windAccel(currentWind(cfg, windPhase), stats.windMult, area, mass) * pdt;
 
     // Thrust
     ship.thrusting = input.thrust && ship.fuel > 0;
     if (ship.thrusting) {
-      ship.vx += Math.sin(ship.angle) * stats.thrustPower * pdt;
-      ship.vy -= Math.cos(ship.angle) * stats.thrustPower * pdt;
+      const a = thrustAccel(stats.thrustPower, mass);
+      ship.vx += Math.sin(ship.angle) * a * pdt;
+      ship.vy -= Math.cos(ship.angle) * a * pdt;
       ship.fuel = Math.max(0, ship.fuel - 22 * stats.fuelBurnMult * dt);
       emitThrusterParticles();
       audio.startThrust();
@@ -444,11 +478,25 @@ export function initLanderGame(root: HTMLElement) {
       music.duck(false);
     }
 
-    ship.x += ship.vx * pdt;
-    ship.y += ship.vy * pdt;
-    if (ship.x < 6 * S) { ship.x = 6 * S; ship.vx *= -0.4; }
-    if (ship.x > width - 6 * S) { ship.x = width - 6 * S; ship.vx *= -0.4; }
-    if (ship.y < 18 * S) { ship.y = 18 * S; ship.vy = Math.max(0, ship.vy); }
+    // --- §4.3 Swept integration + terrain collision -------------------------
+    const x0 = ship.x, y0 = ship.y, vx0 = ship.vx, vy0 = ship.vy;
+    let x1 = x0 + ship.vx * pdt;
+    let y1 = y0 + ship.vy * pdt;
+    if (x1 < 6 * S) { x1 = 6 * S; ship.vx *= -0.4; }
+    if (x1 > width - 6 * S) { x1 = width - 6 * S; ship.vx *= -0.4; }
+    if (y1 < 18 * S) { y1 = 18 * S; ship.vy = Math.max(0, ship.vy); }
+    const vx1 = ship.vx, vy1 = ship.vy;
+
+    const contact = sweptGroundContact(terrain, x0, y0, vx0, vy0, x1, y1, vx1, vy1, 9 * S);
+    if (contact.hit) {
+      ship.x = contact.x;
+      ship.y = contact.y;
+      ship.vx = contact.vx;
+      ship.vy = contact.vy;
+    } else {
+      ship.x = x1;
+      ship.y = y1;
+    }
 
     // Moving pad — ping-pongs between baseX ± range along its pre-flattened
     // corridor (baseX is a fixed origin; see generateTerrain).
@@ -470,9 +518,27 @@ export function initLanderGame(root: HTMLElement) {
     const groundY = terrainYAt(terrain.points, ship.x);
     if (ship.thrusting && groundY - ship.y < 80 * S) emitDust(groundY);
 
-    // Ground collision
-    if (ship.y + 9 * S >= groundY) {
+    // Ground collision (swept contact above already resolved tunneling;
+    // this still routes into the existing touchdown/crash logic).
+    if (contact.hit) {
       handleTouchdown(groundY);
+    }
+
+    // §4.4: asteroid motion + collision now live in entities.ts, driven by
+    // simTime (accumulated physics-tick time), not performance.now() — and
+    // are no longer computed/mutated inside draw().
+    updateAsteroids(asteroids, simTime);
+    if (state === 'playing') {
+      const hit = findAsteroidHit(asteroids, ship.x, ship.y, 8 * S);
+      if (hit) {
+        if (stats.shieldCharges > 0) {
+          stats.shieldCharges -= 1;
+          shieldFlash = 0.5;
+          ship.vx *= -0.5; ship.vy *= -0.5;
+        } else {
+          destroyShip();
+        }
+      }
     }
 
     updateUfos(pdt);
@@ -600,13 +666,17 @@ export function initLanderGame(root: HTMLElement) {
 
     for (const p of projectiles) {
       if (!p.alive) continue;
+      const px0 = p.x, py0 = p.y;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       if (p.x < -20 || p.x > width + 20 || p.y < -20 || p.y > height + 20) {
         p.alive = false;
         continue;
       }
-      if (state === 'playing' && Math.hypot(p.x - ship.x, p.y - ship.y) < 9 * S) {
+      // §4.3: swept segment-vs-circle test — Star Core stacks can push
+      // projectile speed high enough that a plain endpoint-distance check
+      // would tunnel through the ship between two ticks.
+      if (state === 'playing' && sweptSegmentCircleHit(px0, py0, p.x, p.y, ship.x, ship.y, 9 * S)) {
         p.alive = false;
         if (stats.shieldCharges > 0) {
           stats.shieldCharges -= 1;
@@ -1104,38 +1174,9 @@ export function initLanderGame(root: HTMLElement) {
     drawCritters(ctx, critters, t);
     drawPad(ctx, terrain, cfg, stats, t);
 
-    // Asteroids
-    if (cfg.asteroids > 0) {
-      const rand = mulberry32(cfg.seed * 71);
-      for (let i = 0; i < cfg.asteroids; i++) {
-        const baseX = rand() * width;
-        const baseY = height * (0.15 + rand() * 0.35);
-        const r = (10 + rand() * 12) * Math.min(1.25, S);
-        const ax = baseX + Math.sin(t * 0.4 + i) * 60;
-        const ay = baseY + Math.cos(t * 0.3 + i * 2) * 20;
-        ctx.beginPath();
-        ctx.arc(ax, ay, r, 0, Math.PI * 2);
-        ctx.fillStyle = '#5a4326';
-        ctx.fill();
-        ctx.strokeStyle = '#7C8F5C';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        // craters
-        ctx.fillStyle = 'rgba(34, 24, 8, 0.5)';
-        ctx.beginPath(); ctx.arc(ax - r * 0.3, ay - r * 0.2, r * 0.22, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(ax + r * 0.35, ay + r * 0.3, r * 0.15, 0, Math.PI * 2); ctx.fill();
-
-        if (state === 'playing' && Math.hypot(ship.x - ax, ship.y - ay) < r + 8 * S) {
-          if (stats.shieldCharges > 0) {
-            stats.shieldCharges -= 1;
-            shieldFlash = 0.5;
-            ship.vx *= -0.5; ship.vy *= -0.5;
-          } else {
-            destroyShip();
-          }
-        }
-      }
-    }
+    // Asteroids — pure blit; position/collision computed in the physics
+    // step via entities.ts (§4.4, no gameplay mutation in the render path).
+    drawAsteroids(ctx, asteroids);
 
     drawUfos(ctx, ufos, projectiles, stats);
 
@@ -1311,17 +1352,53 @@ export function initLanderGame(root: HTMLElement) {
     });
   }
 
-  // --- Main loop ---
+  // --- Main loop: fixed 120Hz physics accumulator (§4.1) ---------------------
+  // Frame time is clamped to MAX_FRAME_TIME (0.05s) so a tab-switch stall
+  // doesn't fire off hundreds of catch-up physics ticks at once. The
+  // accumulator itself is what the Chrono Crystal slow-mo scales (world time
+  // scale 0.75 is applied inside step() via `pdt`, per tick) — see step().
+  // After draining the accumulator, render the latest state once; there is
+  // no interpolation between physics ticks (120Hz sim vs <=144Hz display is
+  // imperceptible without it).
   let lastT = performance.now();
   let raf = 0;
+  let accumulator = 0;
+  let loopPaused = false;
+
   function loop(t: number) {
-    const dt = Math.min(0.033, (t - lastT) / 1000);
+    if (loopPaused) { raf = requestAnimationFrame(loop); return; }
+    let frameDt = (t - lastT) / 1000;
     lastT = t;
-    update(dt);
+    if (frameDt < 0) frameDt = 0;
+    if (frameDt > MAX_FRAME_TIME) frameDt = MAX_FRAME_TIME;
+
+    updateFrameTimers(frameDt);
+
+    accumulator += frameDt;
+    while (accumulator >= DT) {
+      step(DT);
+      accumulator -= DT;
+    }
+
     draw();
     updateHud();
     raf = requestAnimationFrame(loop);
   }
+
+  // Pause physics accumulation + stop thrust audio when the tab is hidden;
+  // resume cleanly (no catch-up burst — lastT/accumulator reset on resume).
+  function onVisibilityChange() {
+    if (document.hidden) {
+      loopPaused = true;
+      audio.stopThrust();
+      music.duck(false);
+    } else {
+      loopPaused = false;
+      lastT = performance.now();
+      accumulator = 0;
+    }
+  }
+  document.addEventListener('visibilitychange', onVisibilityChange);
 
   resize();
   window.addEventListener('resize', resize);
@@ -1339,6 +1416,7 @@ export function initLanderGame(root: HTMLElement) {
     window.removeEventListener('orientationchange', onOrientation);
     window.removeEventListener('keydown', keydown);
     window.removeEventListener('keyup', keyup);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
     audio.stopThrust();
     music.stop();
     stopCameraStream();

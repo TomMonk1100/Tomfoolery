@@ -1,4 +1,27 @@
 import type { Critter, LevelConfig, Projectile, ShipStats, Terrain, Ufo } from '../types';
+import type { Asteroid } from '../entities';
+
+// Pure render — no gameplay mutation (§4.4). Asteroid position/collision are
+// computed in entities.ts::updateAsteroids/findAsteroidHit during the fixed
+// physics step; this just blits the current state.
+export function drawAsteroids(ctx: CanvasRenderingContext2D, asteroids: Asteroid[]) {
+  const c = ctx;
+  for (const a of asteroids) {
+    if (!a.alive) continue;
+    const { x: ax, y: ay, r } = a;
+    c.beginPath();
+    c.arc(ax, ay, r, 0, Math.PI * 2);
+    c.fillStyle = '#5a4326';
+    c.fill();
+    c.strokeStyle = '#7C8F5C';
+    c.lineWidth = 1;
+    c.stroke();
+    // craters
+    c.fillStyle = 'rgba(34, 24, 8, 0.5)';
+    c.beginPath(); c.arc(ax - r * 0.3, ay - r * 0.2, r * 0.22, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(ax + r * 0.35, ay + r * 0.3, r * 0.15, 0, Math.PI * 2); c.fill();
+  }
+}
 
 export function drawCritters(ctx: CanvasRenderingContext2D, critters: Critter[], t: number) {
   const c = ctx;

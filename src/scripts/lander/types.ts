@@ -108,6 +108,9 @@ export interface ShipStats {
   projSpeedMult: number;   // star core drawback — faster UFO shots
   phoenixCharges: number;  // phoenix feather — revives per run
   starCore: boolean;       // star core — golden aura visual
+  // --- physics §4.2 mass & drag model ---
+  massSum: number;         // Σ(def.mass × stacks) — fed into physics.effectiveMass()
+  areaSum: number;         // Σ(def.dragArea × stacks) — fed into physics.effectiveArea()
 }
 
 // --- Pilot face mapping -----------------------------------------------------------

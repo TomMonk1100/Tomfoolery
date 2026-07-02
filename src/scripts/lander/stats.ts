@@ -17,11 +17,24 @@ const DIFF_MODS: Record<Difficulty, { grav: number; wind: number; pad: number; h
 export { DIFF_MODS };
 
 // --- Ship stats derived from picked upgrades ------------------------------------
+//
+// lander-v10 commit 2 (§4.5): the old hard gameplay caps below have been
+// replaced with numerical-stability FLOORS. They no longer clamp stacking
+// down to some "max useful" value — they only guarantee the sim stays
+// finite and the ship stays theoretically controllable in the limit.
+// Infinite-stacking formulas themselves (removing the "one pick per
+// upgrade matters most" shape, letting duplicates compound without these
+// interfering) are Commit 3's job — this commit only swaps caps for floors
+// and leaves the per-upgrade formulas below untouched.
+//
+// thrustPower base raised 145 -> 158 per §4.2 to compensate for the new
+// mass/drag model's effect on level-1 feel (heavier stacks respond slower
+// under the mass model, so the unloaded base thrust needed a nudge up).
 export function computeStats(picked: UpgradeId[], diff: Difficulty): ShipStats {
   const tol = DIFF_MODS[diff].tol;
   const s: ShipStats = {
     maxFuel: 100,
-    thrustPower: 145,
+    thrustPower: 158,
     padBonus: 0,
     landingSpeedTol: 60 * tol,
     landingAngleTol: 0.28 * tol,
@@ -40,6 +53,8 @@ export function computeStats(picked: UpgradeId[], diff: Difficulty): ShipStats {
     projSpeedMult: 1,
     phoenixCharges: 0,
     starCore: false,
+    massSum: 0,
+    areaSum: 0,
   };
   for (const id of picked) {
     switch (id) {
@@ -67,15 +82,29 @@ export function computeStats(picked: UpgradeId[], diff: Difficulty): ShipStats {
         s.gravityMult *= 0.92; s.projSpeedMult *= 1.2; s.starCore = true;
         break;
     }
+    // §4.2: every module stack contributes a small default drag area even
+    // before the full mass-conversion of upgrade cons lands in Commit 4.
+    s.areaSum += 0.02;
   }
-  // Safety clamps: stacked drawbacks can sting, but never brick the ship.
-  s.maxFuel = Math.max(50, s.maxFuel);
-  s.thrustPower = Math.max(105, s.thrustPower);
-  s.gravityMult = Math.min(1.35, Math.max(0.5, s.gravityMult));
-  s.rotMult = Math.min(2.2, Math.max(0.55, s.rotMult));
-  s.windMult = Math.max(0.15, s.windMult);
-  s.fuelBurnMult = Math.min(1.8, Math.max(0.6, s.fuelBurnMult));
-  s.landingSpeedTol = Math.min(115, s.landingSpeedTol);
-  s.landingAngleTol = Math.min(0.62, s.landingAngleTol);
+  // §4.5 Stability floors — numerical guards only, NOT gameplay caps.
+  // These only fire in degenerate stacking scenarios (hundreds of picks of
+  // the same drawback-heavy upgrade) to keep the simulation finite.
+  s.maxFuel = Math.max(20, s.maxFuel);
+  s.thrustPower = Math.max(60, s.thrustPower);
+  s.gravityMult = Math.max(0, s.gravityMult); // exact "product >= 1 px/s^2" floor applied in clampGravityProduct() below, against actual level gravity
+  s.fuelBurnMult = Math.max(0.05, s.fuelBurnMult);
+  s.windMult = Math.max(0, s.windMult);
+  s.landingSpeedTol = Math.max(0, s.landingSpeedTol);
+  s.landingAngleTol = Math.max(0, s.landingAngleTol);
+  s.massSum = Math.max(-0.8, s.massSum); // keeps effectiveMass() (1 + massSum) >= 0.2 floor headroom
+  s.areaSum = Math.max(0, s.areaSum);
   return s;
+}
+
+// §4.5: gravity product (level gravity * gravityMult) must never go to zero
+// or negative — called by main.ts with the actual level gravity so the
+// floor is exact regardless of how low a level's base gravity is.
+export function clampGravityProduct(gLevel: number, gravityMult: number): number {
+  const product = gLevel * gravityMult;
+  return Math.max(1, product) / Math.max(1e-6, gLevel);
 }
