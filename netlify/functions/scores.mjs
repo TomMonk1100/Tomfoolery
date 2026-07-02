@@ -1,6 +1,7 @@
 // Global leaderboard for the Moon Lander game.
 // Netlify Function (v2 API) + Netlify Blobs for persistence.
-// Deployed pre-bundled (esbuild) since the site ships via manual deploys.
+// Bundled by Netlify's esbuild at build time (see netlify.toml);
+// @netlify/blobs is declared in package.json dependencies.
 //
 // GET  /api/scores  -> top 25 [{name, level, difficulty, ts}]
 // POST /api/scores  -> {name, level, difficulty}

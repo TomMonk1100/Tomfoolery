@@ -5,9 +5,10 @@
   command = "npm run build"
   publish = "dist"
 
-# Included at the root of every manual (drag-and-drop) deploy so Netlify
-# picks up the pre-bundled serverless function that powers the Moon Lander
-# global leaderboard (/api/scores).
+# Moon Lander leaderboard function (/api/scores). Bundled by esbuild at
+# build time; @netlify/blobs comes from package.json dependencies.
+# (node_bundler = "none" broke the function once builds moved to git —
+# the unbundled import of @netlify/blobs crashed at runtime.)
 [functions]
   directory = "netlify/functions"
-  node_bundler = "none"
+  node_bundler = "esbuild"
