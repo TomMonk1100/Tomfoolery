@@ -1,3 +1,10 @@
+# Build config lives here (repo-versioned) so it can't drift from the
+# Netlify dashboard. Missing build command/publish dir caused the
+# 2026-07-02 sitewide 404.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
 # Included at the root of every manual (drag-and-drop) deploy so Netlify
 # picks up the pre-bundled serverless function that powers the Moon Lander
 # global leaderboard (/api/scores).
