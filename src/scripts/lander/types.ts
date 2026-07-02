@@ -67,6 +67,8 @@ export interface LevelConfig {
   padSpeed: number;       // px/s pad travel speed when movingPad
   ufos: number;           // count of patrolling UFO hazards
   seed: number;
+  surge: boolean;         // §Commit 5: true every 10th level (10, 20, 30…) — a harder spike level
+  projSpeed: number;      // §Commit 5: hostile/ally UFO projectile base speed for this level
 }
 
 // --- Difficulty modes -------------------------------------------------------

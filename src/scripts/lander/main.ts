@@ -1423,7 +1423,7 @@ export function initLanderGame(root: HTMLElement) {
             const dx = target.x - u.x;
             const dy = target.y - u.y;
             const dist = Math.hypot(dx, dy) || 1;
-            const speed = 130 * stats.projSpeedMult;
+            const speed = cfg.projSpeed * stats.projSpeedMult;
             const proj = { x: u.x, y: u.y, vx: (dx / dist) * speed, vy: (dy / dist) * speed, alive: true };
             (proj as any).huntsUfo = target;
             projectiles.push(proj as Projectile);
@@ -1442,7 +1442,7 @@ export function initLanderGame(root: HTMLElement) {
             const dx = ship.x - u.x;
             const dy = ship.y - u.y;
             const dist = Math.hypot(dx, dy) || 1;
-            const speed = 130 * stats.projSpeedMult;
+            const speed = cfg.projSpeed * stats.projSpeedMult;
             projectiles.push({ x: u.x, y: u.y, vx: (dx / dist) * speed, vy: (dy / dist) * speed, alive: true });
             audio.ufoFire();
             u.fireCooldown = 2.4 + Math.random() * 2.2;
@@ -1465,7 +1465,7 @@ export function initLanderGame(root: HTMLElement) {
             const dx = target.x - u.x;
             const dy = target.y - u.y;
             const dist = Math.hypot(dx, dy) || 1;
-            const speed = 110 * stats.projSpeedMult;
+            const speed = cfg.projSpeed * 0.85 * stats.projSpeedMult;
             allyProjectiles.push({ x: u.x, y: u.y, vx: (dx / dist) * speed, vy: (dy / dist) * speed, alive: true, target });
             audio.ufoFire();
           }
@@ -2487,6 +2487,7 @@ export function initLanderGame(root: HTMLElement) {
       ctx.font = `${Math.max(10, Math.round(width / 72))}px "JetBrains Mono", monospace`;
       ctx.fillStyle = '#B9A480';
       const tags: string[] = [];
+      if (cfg.surge) tags.unshift('⚠ surge · +50%✨');
       if (cfg.movingPad) tags.push('moving pad');
       if (cfg.fog) tags.push('fog');
       if (cfg.asteroids) tags.push('debris');

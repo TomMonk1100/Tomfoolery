@@ -21,13 +21,19 @@ export function levelConfigFor(idx: number, diff: Difficulty): LevelConfig {
   const m = DIFF_MODS[diff];
   const r = mulberry32(idx * 7919 + 101);
 
+  // §Commit 5 (v11): every 10th level (10, 20, 30…) is a "surge" — a
+  // harder spike level with guaranteed debris, extra UFOs, faster hostile
+  // fire, and a bigger stardust payout. Pure function of idx — consumes no
+  // rng calls, so it never perturbs the existing r() sequence below (I7).
+  const surge = (idx + 1) % 10 === 0 && idx > 0;
+
   const ramp = Math.min(1, idx / 14);              // main climb over ~15 levels
   const creep = Math.max(0, idx - 14) * 0.015;     // gentle endless creep after
 
-  const gravity = Math.min(150, (55 + idx * 4 + creep * 60) * m.grav);
+  const gravity = Math.min(170, (55 + idx * 4 + creep * 60) * m.grav);
 
-  const windBase = idx < 2 ? 0 : (6 + 18 * ramp + creep * 20) * (0.45 + r() * 0.65);
-  const wind = Math.min(30, windBase * m.wind);
+  const windBase = idx < 2 ? 0 : (6 + 18 * ramp + creep * 20) * (0.45 + r() * 0.65) + Math.max(0, idx - 20) * 0.25;
+  const wind = Math.min(40, windBase * m.wind);
   const windGust = wind * (0.5 + r() * 0.5);
 
   const styles: TerrainStyle[] =
