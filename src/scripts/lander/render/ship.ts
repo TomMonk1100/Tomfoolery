@@ -44,6 +44,21 @@ function getAuraGradient(c: CanvasRenderingContext2D, auraR: number): CanvasGrad
   return aura;
 }
 
+// v12 Commit 8: hull gradient becomes 3-stop, cached per paint id — same
+// caching rationale as getAuraGradient above (ship-local coords, gradient
+// shape depends only on the paint's two hex stops, which are immutable per
+// paint id).
+let cachedHullGradient: { id: string; grad: CanvasGradient } | null = null;
+function getHullGradient(c: CanvasRenderingContext2D, paint: PaintDef): CanvasGradient {
+  if (cachedHullGradient && cachedHullGradient.id === paint.id) return cachedHullGradient.grad;
+  const grad = c.createLinearGradient(0, -14, 0, 8);
+  grad.addColorStop(0, paint.hullTop);
+  grad.addColorStop(0.55, shade(paint.hullTop, -0.08));
+  grad.addColorStop(1, paint.hullBot);
+  cachedHullGradient = { id: paint.id, grad };
+  return grad;
+}
+
 // --- Pilot face mapping -----------------------------------------------------------
 // Normalized (0..1) positions of facial features within the selfie canvas.
 // Filled by the FaceDetector API when the browser supports it; otherwise
@@ -205,12 +220,86 @@ function drawModule(
     c.textBaseline = 'middle';
     const px = anchorX + (anchorX >= 0 ? 1 : -1) * (2.2 + 1.4 * (k - 1)) - (anchorX < 0 ? 3.2 : 0);
     const py = anchorY;
-    c.fillStyle = 'rgba(23,16,9,0.75)';
-    c.fillRect(px - 0.4, py - 1.6, 3.6, 3.2);
+    // v12 Commit 8: rounded chip (was a flat rect) — crisper read.
+    c.fillStyle = 'rgba(23,16,9,0.85)';
+    c.beginPath();
+    if (typeof (c as any).roundRect === 'function') {
+      (c as any).roundRect(px - 0.4, py - 1.6, 3.6, 3.2, 0.8);
+    } else {
+      (c as any).rect(px - 0.4, py - 1.6, 3.6, 3.2);
+    }
+    c.fill();
+    c.save();
+    c.globalAlpha = 0.9;
     c.fillStyle = rarityColor;
     c.fillText(`×${n}`, px, py);
     c.restore();
+    c.restore();
   }
+}
+
+// ---------------------------------------------------------------------------
+// v12 Commit 8 (§Commit 8): the material kit. Four helpers give every module
+// the same light language as the world (LIGHT from palette.ts) in 2–4
+// mechanical lines each, with NO per-frame gradient allocations (hard perf
+// rule — drawShipModules runs every frame inside the ship transform).
+//
+// The lit/shadow split is a single plane through the current local origin,
+// perpendicular to LIGHT — cheap (two large rect fills clipped to the
+// module's path, no per-module bounding-box math) and reads coherently
+// across the whole ship: modules mounted toward the light-facing flank read
+// brighter, modules on the shadow flank read darker. `path()` must be a
+// re-callable closure (its own beginPath/shape calls, no external state).
+// ---------------------------------------------------------------------------
+
+const LIGHT_ANG = Math.atan2(LIGHT.y, LIGHT.x);
+
+export function litFill(c: CanvasRenderingContext2D, path: () => void, base: string, facet = 0.22): void {
+  path();
+  c.fillStyle = base;
+  c.fill();
+  c.save();
+  path();
+  c.clip();
+  c.save();
+  c.rotate(LIGHT_ANG);
+  const R = 40;
+  c.fillStyle = `rgba(244,235,218,${facet})`;
+  c.fillRect(-R, -R, R, R * 2);
+  c.fillStyle = `rgba(20,12,4,${(facet * 0.8).toFixed(3)})`;
+  c.fillRect(0, -R, R, R * 2);
+  c.restore();
+  c.restore();
+}
+
+export function metalStroke(c: CanvasRenderingContext2D, path: () => void, base: string): void {
+  path();
+  c.strokeStyle = shade(base, -0.45);
+  c.lineWidth = 0.7;
+  c.stroke();
+}
+
+// Body at alpha 0.45 + a specular dot offset toward the light-facing side.
+// Callers translate to the shape's local center before invoking this (the
+// specular offset is relative to that local origin).
+export function glassFill(c: CanvasRenderingContext2D, path: () => void, tint: string): void {
+  path();
+  const prevAlpha = c.globalAlpha;
+  c.globalAlpha = prevAlpha * 0.45;
+  c.fillStyle = tint;
+  c.fill();
+  c.globalAlpha = prevAlpha;
+  c.beginPath();
+  c.ellipse(-LIGHT.x * 1.2, -LIGHT.y * 1.2, 0.6, 0.4, 0, 0, Math.PI * 2);
+  c.fillStyle = 'rgba(244,235,218,0.7)';
+  c.fill();
+}
+
+// Routes through §Commit 7's addGlow — additive when not degraded, a cheap
+// source-over fallback when it is. Used for running lights, crystal cores,
+// coil arcs, and the antenna beacon.
+export function emissive(c: CanvasRenderingContext2D, drawFn: () => void, degraded: boolean): void {
+  addGlow(c, degraded, drawFn);
 }
 
 // Visible hardware for each owned upgrade — the ship literally builds
@@ -223,7 +312,8 @@ export function drawShipModules(
   pickedUpgrades: UpgradeId[],
   stats: ShipStats,
   stackCounts?: Map<UpgradeId, number>,
-  rarityColorOf: (id: UpgradeId) => string = defaultRarityColorOf
+  rarityColorOf: (id: UpgradeId) => string = defaultRarityColorOf,
+  degraded: boolean = false
 ) {
   const owned = new Set(pickedUpgrades);
   const t = performance.now() / 1000;
@@ -237,13 +327,10 @@ export function drawShipModules(
     // growth pushes outward, away from the hull centerline/cockpit.
     for (const side of [-1, 1]) {
       drawModule(c, stacks, side * 8.9, 2.6, color, () => {
-        c.fillStyle = '#D9C6A3';
-        c.strokeStyle = '#8a6a3c';
-        c.lineWidth = 0.6;
-        c.beginPath();
-        c.ellipse(side * 8.9, 2.6, 1.5, 3.4, side * 0.12, 0, Math.PI * 2);
-        c.fill();
-        c.stroke();
+        // v12 Commit 8: metal body — litFill + metalStroke.
+        const path = () => { c.beginPath(); c.ellipse(side * 8.9, 2.6, 1.5, 3.4, side * 0.12, 0, Math.PI * 2); };
+        litFill(c, path, '#D9C6A3');
+        metalStroke(c, path, '#D9C6A3');
       });
     }
   }
@@ -303,17 +390,21 @@ export function drawShipModules(
   }
   if (owned.has('scanner')) {
     drawModule(c, n('scanner'), 6.8, -9.4, rarityColorOf('scanner'), () => {
-      // Shoulder dish, tilted skyward
+      // Shoulder dish, tilted skyward. v12 Commit 8: metal mount + dish
+      // (litFill/metalStroke), an emissive rim, and a slow sweep rotation.
       c.save();
       c.translate(6.8, -9.4);
-      c.rotate(-0.5);
+      c.rotate(-0.5 + Math.sin(t * 0.6) * 0.15);
       c.strokeStyle = '#B9A480';
       c.lineWidth = 0.8;
       c.beginPath(); c.moveTo(0, 2.4); c.lineTo(0, 0.6); c.stroke();
-      c.fillStyle = '#D9C6A3';
-      c.beginPath(); c.ellipse(0, 0, 2.2, 0.9, 0, 0, Math.PI); c.fill();
-      c.fillStyle = '#94B03D';
-      c.beginPath(); c.arc(0, -0.6, 0.5, 0, Math.PI * 2); c.fill();
+      const dishPath = () => { c.beginPath(); c.ellipse(0, 0, 2.2, 0.9, 0, 0, Math.PI); };
+      litFill(c, dishPath, '#D9C6A3');
+      metalStroke(c, dishPath, '#D9C6A3');
+      emissive(c, () => {
+        c.fillStyle = '#94B03D';
+        c.beginPath(); c.arc(0, -0.6, 0.5, 0, Math.PI * 2); c.fill();
+      }, degraded);
       c.restore();
     });
   }
@@ -438,11 +529,13 @@ export function drawShipModules(
     c.translate(ox, oy);
     c.rotate(oa);
     c.scale(k, k);
-    c.fillStyle = 'rgba(123, 167, 199, 0.9)';
-    c.beginPath();
-    c.moveTo(0, -2); c.lineTo(1.2, 0); c.lineTo(0, 2); c.lineTo(-1.2, 0);
-    c.closePath();
-    c.fill();
+    // v12 Commit 8: glass/crystal — glassFill body + an emissive core.
+    const crystalPath = () => { c.beginPath(); c.moveTo(0, -2); c.lineTo(1.2, 0); c.lineTo(0, 2); c.lineTo(-1.2, 0); c.closePath(); };
+    glassFill(c, crystalPath, 'rgba(123, 167, 199, 0.9)');
+    emissive(c, () => {
+      c.fillStyle = 'rgba(200,230,255,0.8)';
+      c.beginPath(); c.arc(0, 0, 0.5, 0, Math.PI * 2); c.fill();
+    }, degraded);
     c.restore();
     if (stacks >= 3) {
       c.save();
@@ -493,15 +586,18 @@ export function drawShipModules(
       c.save();
       c.translate(0, -16.6);
       c.rotate(t * 0.8);
-      c.fillStyle = '#FFC94A';
-      c.beginPath();
-      for (let i = 0; i < 8; i++) {
-        const r = i % 2 === 0 ? 1.9 : 0.65;
-        const a = (i / 8) * Math.PI * 2;
-        c.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-      }
-      c.closePath();
-      c.fill();
+      // v12 Commit 8: emissive core — routes through addGlow (Commit 7).
+      emissive(c, () => {
+        c.fillStyle = '#FFC94A';
+        c.beginPath();
+        for (let i = 0; i < 8; i++) {
+          const r = i % 2 === 0 ? 1.9 : 0.65;
+          const a = (i / 8) * Math.PI * 2;
+          c.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        }
+        c.closePath();
+        c.fill();
+      }, degraded);
       c.restore();
     });
   }
@@ -569,12 +665,14 @@ export function drawShipModules(
     const color = rarityColorOf('solar_wings');
     for (const side of [-1, 1]) {
       drawModule(c, stacks, side * 13, -1, color, () => {
-        // fold-out gold panels
-        c.fillStyle = 'rgba(255, 233, 176, 0.85)';
+        // v12 Commit 8: cloth/organic — softer facet (0.14) + shimmer alpha,
+        // metalStroke on the spar (the strut) only.
+        const shimmer = 0.85 * (0.85 + 0.15 * Math.sin(t * 2));
+        const path = () => { c.beginPath(); c.rect(side * 9, -4, side * 8, 6); };
+        litFill(c, path, `rgba(255, 233, 176, ${shimmer.toFixed(3)})`, 0.14);
         c.strokeStyle = '#D9A441';
         c.lineWidth = 0.5;
-        c.fillRect(side * 9, -4, side * 8, 6);
-        c.strokeRect(side * 9, -4, side * 8, 6);
+        c.beginPath(); c.moveTo(side * 9, -1); c.lineTo(side * 17, -1); c.stroke(); // spar
       });
     }
   }
@@ -583,13 +681,15 @@ export function drawShipModules(
     const color = rarityColorOf('landing_lights');
     for (const side of [-1, 1]) {
       drawModule(c, stacks, side * 6, 9, color, () => {
-        // twin lamps, light cones at low alt
-        c.fillStyle = '#F4EBDA';
-        c.beginPath(); c.arc(side * 6, 9, 0.8, 0, Math.PI * 2); c.fill();
-        c.fillStyle = 'rgba(244,235,218,0.18)';
-        c.beginPath();
-        c.moveTo(side * 6, 9); c.lineTo(side * 3, 15); c.lineTo(side * 9, 15);
-        c.closePath(); c.fill();
+        // v12 Commit 8: emissive lamp + cone.
+        emissive(c, () => {
+          c.fillStyle = '#F4EBDA';
+          c.beginPath(); c.arc(side * 6, 9, 0.8, 0, Math.PI * 2); c.fill();
+          c.fillStyle = 'rgba(244,235,218,0.18)';
+          c.beginPath();
+          c.moveTo(side * 6, 9); c.lineTo(side * 3, 15); c.lineTo(side * 9, 15);
+          c.closePath(); c.fill();
+        }, degraded);
       });
     }
   }
@@ -622,11 +722,10 @@ export function drawShipModules(
     const color = rarityColorOf('drop_tanks');
     for (const side of [-1, 1]) {
       drawModule(c, stacks, side * 10.5, 5, color, () => {
-        // outboard cylinders that detach
-        c.fillStyle = '#5a4326';
-        c.strokeStyle = '#3B2C16';
-        c.lineWidth = 0.6;
-        c.beginPath(); c.ellipse(side * 10.5, 5, 1.4, 4, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+        // v12 Commit 8: metal body — outboard cylinders that detach.
+        const path = () => { c.beginPath(); c.ellipse(side * 10.5, 5, 1.4, 4, 0, 0, Math.PI * 2); };
+        litFill(c, path, '#5a4326');
+        metalStroke(c, path, '#5a4326');
       });
     }
   }
@@ -656,12 +755,10 @@ export function drawShipModules(
   }
   if (owned.has('tractor_winch')) {
     drawModule(c, n('tractor_winch'), 0, 9.5, rarityColorOf('tractor_winch'), () => {
-      // belly winch spool
-      c.fillStyle = '#8a6a3c';
-      c.beginPath(); c.arc(0, 9.5, 1.6, 0, Math.PI * 2); c.fill();
-      c.strokeStyle = '#3B2C16';
-      c.lineWidth = 0.4;
-      c.beginPath(); c.arc(0, 9.5, 1.6, 0, Math.PI * 2); c.stroke();
+      // v12 Commit 8: metal drum — litFill + metalStroke.
+      const path = () => { c.beginPath(); c.arc(0, 9.5, 1.6, 0, Math.PI * 2); };
+      litFill(c, path, '#8a6a3c');
+      metalStroke(c, path, '#8a6a3c');
     });
   }
   if (owned.has('cloud_seeder')) {
@@ -673,25 +770,29 @@ export function drawShipModules(
   }
   if (owned.has('vampire_coils')) {
     drawModule(c, n('vampire_coils'), -6.8, -1, rarityColorOf('vampire_coils'), () => {
-      // red coil windings
-      c.save();
-      c.strokeStyle = '#C97B3D';
-      c.lineWidth = 0.7;
-      c.setLineDash([1.4, 1]);
-      c.beginPath(); c.ellipse(-6.8, -1, 1.5, 3.4, 0, 0, Math.PI * 2); c.stroke();
-      c.restore();
+      // v12 Commit 8: emissive coil arc, flickering.
+      const flicker = Math.max(0.2, 0.5 + Math.sin(t * 11) * 0.3 + Math.sin(t * 23) * 0.15);
+      emissive(c, () => {
+        c.save();
+        c.strokeStyle = `rgba(201, 123, 61, ${flicker.toFixed(3)})`;
+        c.lineWidth = 0.7;
+        c.setLineDash([1.4, 1]);
+        c.beginPath(); c.ellipse(-6.8, -1, 1.5, 3.4, 0, 0, Math.PI * 2); c.stroke();
+        c.restore();
+      }, degraded);
     });
   }
   if (owned.has('lucky_antenna')) {
     drawModule(c, n('lucky_antenna'), 5, -15.5, rarityColorOf('lucky_antenna'), () => {
-      // clover-tipped antenna
-      c.strokeStyle = '#B9A480';
-      c.lineWidth = 0.6;
-      c.beginPath(); c.moveTo(4, -12.5); c.lineTo(5, -15.5); c.stroke();
-      c.fillStyle = '#94B03D';
-      for (const [dx, dy] of [[-0.6, -16], [0.6, -16], [0, -16.9]] as [number, number][]) {
-        c.beginPath(); c.arc(5 + dx, dy, 0.55, 0, Math.PI * 2); c.fill();
-      }
+      // v12 Commit 8: metal mast + an emissive blinking clover tip.
+      metalStroke(c, () => { c.beginPath(); c.moveTo(4, -12.5); c.lineTo(5, -15.5); }, '#B9A480');
+      const blink = Math.sin(t * 4) > 0.3 ? 1 : 0.25;
+      emissive(c, () => {
+        c.fillStyle = `rgba(148,176,61,${blink})`;
+        for (const [dx, dy] of [[-0.6, -16], [0.6, -16], [0, -16.9]] as [number, number][]) {
+          c.beginPath(); c.arc(5 + dx, dy, 0.55, 0, Math.PI * 2); c.fill();
+        }
+      }, degraded);
     });
   }
   if (owned.has('stardust_condenser')) {
@@ -780,13 +881,17 @@ export function drawShipModules(
   }
   if (owned.has('ufo_hacker')) {
     drawModule(c, n('ufo_hacker'), 6, -12.4, rarityColorOf('ufo_hacker'), () => {
-      // dish with green code-rain glow
-      c.strokeStyle = '#94B03D';
-      c.lineWidth = 0.6;
-      c.beginPath(); c.ellipse(6, -12.4, 1.8, 0.8, 0.3, 0, Math.PI * 2); c.stroke();
+      // v12 Commit 8: metal dish + emissive code-rain glow, slow sweep.
+      c.save();
+      c.translate(6, -12.4);
+      c.rotate(0.3 + Math.sin(t * 0.7) * 0.2);
+      metalStroke(c, () => { c.beginPath(); c.ellipse(0, 0, 1.8, 0.8, 0, 0, Math.PI * 2); }, '#94B03D');
       const glow = 0.4 + Math.sin(t * 8) * 0.3;
-      c.fillStyle = `rgba(148, 176, 61, ${Math.max(0, glow)})`;
-      c.fillRect(5.2, -13.4, 1.6, 1.6);
+      emissive(c, () => {
+        c.fillStyle = `rgba(148, 176, 61, ${Math.max(0, glow)})`;
+        c.fillRect(-0.8, -1, 1.6, 1.6);
+      }, degraded);
+      c.restore();
     });
   }
   if (owned.has('bubble_wrap')) {
@@ -873,13 +978,19 @@ export function drawShipModules(
   }
   if (owned.has('midas_hull')) {
     drawModule(c, n('midas_hull'), 0, -3, rarityColorOf('midas_hull'), () => {
-      // hull turns progressively gold
+      // v12 Commit 8: glass/crystal — gilding accent via glassFill. glassFill
+      // bakes in a fixed 0.45x alpha multiplier, so the tint alpha is scaled
+      // up to compensate and keep the same progressive-gold-per-stack read.
       const stacks = n('midas_hull');
-      c.fillStyle = `rgba(255, 201, 74, ${Math.min(0.55, 0.15 * stacks)})`;
-      c.beginPath();
-      c.moveTo(0, -13); c.bezierCurveTo(5.5, -13, 7.5, -7, 6.8, 0);
-      c.lineTo(0, 4.5); c.lineTo(-6.8, 0); c.bezierCurveTo(-7.5, -7, -5.5, -13, 0, -13);
-      c.closePath(); c.fill();
+      const desiredAlpha = Math.min(0.55, 0.15 * stacks);
+      const tintAlpha = Math.min(1, desiredAlpha / 0.45);
+      const path = () => {
+        c.beginPath();
+        c.moveTo(0, -13); c.bezierCurveTo(5.5, -13, 7.5, -7, 6.8, 0);
+        c.lineTo(0, 4.5); c.lineTo(-6.8, 0); c.bezierCurveTo(-7.5, -7, -5.5, -13, 0, -13);
+        c.closePath();
+      };
+      glassFill(c, path, `rgba(255, 201, 74, ${tintAlpha.toFixed(3)})`);
     });
   }
   if (owned.has('quantum_duplicate')) {
@@ -1005,18 +1116,23 @@ export function drawShipModules(
   }
   if (owned.has('dyson_sail')) {
     drawModule(c, n('dyson_sail'), 0, -1, rarityColorOf('dyson_sail'), () => {
-      // huge translucent gold sail (visibly billows with wind)
+      // v12 Commit 8: cloth/organic — softer facet (0.14) + shimmer alpha.
+      // Huge translucent gold sail, visibly billows with wind.
       const billow = Math.sin(t * 1.8) * 2;
-      c.fillStyle = 'rgba(255, 233, 176, 0.28)';
+      const shimmer = 0.28 * (0.8 + 0.2 * Math.sin(t * 2.4));
+      const path = () => {
+        c.beginPath();
+        c.moveTo(-14, -10);
+        c.quadraticCurveTo(0 + billow, -4, 14, -10);
+        c.lineTo(14, 12);
+        c.quadraticCurveTo(0 + billow, 6, -14, 12);
+        c.closePath();
+      };
+      litFill(c, path, `rgba(255, 233, 176, ${shimmer.toFixed(3)})`, 0.14);
       c.strokeStyle = 'rgba(217, 164, 65, 0.6)';
       c.lineWidth = 0.6;
-      c.beginPath();
-      c.moveTo(-14, -10);
-      c.quadraticCurveTo(0 + billow, -4, 14, -10);
-      c.lineTo(14, 12);
-      c.quadraticCurveTo(0 + billow, 6, -14, 12);
-      c.closePath();
-      c.fill(); c.stroke();
+      path();
+      c.stroke();
     });
   }
   if (owned.has('pocket_moon')) {
@@ -1028,8 +1144,17 @@ export function drawShipModules(
       const r = 32 + 6 * (stacks - 1);
       const mx = Math.cos(t * 0.9) * r;
       const my = Math.sin(t * 0.9) * r;
+      const moonR = 3 + 0.4 * (stacks - 1);
       c.fillStyle = '#8a8a9a';
-      c.beginPath(); c.arc(mx, my, 3 + 0.4 * (stacks - 1), 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(mx, my, moonR, 0, Math.PI * 2); c.fill();
+      // v12 Commit 8 (animation pass): crescent shadow, matching the
+      // planet treatment from Commit 1 — lit from the same global LIGHT.
+      c.save();
+      c.beginPath(); c.arc(mx, my, moonR, 0, Math.PI * 2); c.clip();
+      c.beginPath(); c.arc(mx + LIGHT.x * moonR * 0.45, my + LIGHT.y * moonR * 0.45, moonR, 0, Math.PI * 2);
+      c.fillStyle = 'rgba(0,0,0,0.35)';
+      c.fill();
+      c.restore();
       c.fillStyle = 'rgba(59,44,22,0.4)';
       c.beginPath(); c.arc(mx - 0.8, my - 0.6, 0.9, 0, Math.PI * 2); c.fill();
     });
@@ -1196,11 +1321,24 @@ export function drawShip(p: DrawShipParams) {
   c.fillStyle = '#221808';
   c.fill();
 
-  // Landing legs
-  c.strokeStyle = '#8a6a3c';
-  c.lineWidth = 1.1;
-  c.beginPath(); c.moveTo(-5.5, 5); c.lineTo(-9, 10); c.moveTo(-10.6, 10); c.lineTo(-7.4, 10); c.stroke();
-  c.beginPath(); c.moveTo(5.5, 5); c.lineTo(9, 10); c.moveTo(7.4, 10); c.lineTo(10.6, 10); c.stroke();
+  // v12 Commit 8: landing legs — two-tone struts (litFill triangles instead
+  // of bare strokes) with foot pads and a knee-joint highlight dot.
+  for (const side of [-1, 1]) {
+    const kneeX = side * 5.5, kneeY = 5, footX = side * 9, footY = 10;
+    const strutPath = () => {
+      c.beginPath();
+      c.moveTo(kneeX, kneeY);
+      c.lineTo(footX, footY);
+      c.lineTo(footX - side * 0.9, footY - 0.5);
+      c.closePath();
+    };
+    litFill(c, strutPath, '#8a6a3c', 0.18);
+    c.strokeStyle = '#8a6a3c';
+    c.lineWidth = 1.1;
+    c.beginPath(); c.moveTo(footX - side * 1.6, footY); c.lineTo(footX + side * 1.6, footY); c.stroke();
+    c.fillStyle = 'rgba(244,235,218,0.5)';
+    c.beginPath(); c.arc(kneeX, kneeY, 0.4, 0, Math.PI * 2); c.fill();
+  }
 
   // Side fins
   c.fillStyle = '#7C8F5C';
@@ -1214,10 +1352,19 @@ export function drawShip(p: DrawShipParams) {
   c.closePath(); c.fill(); c.stroke();
 
   // Main hull — bulbous dome, big cockpit. Colors come from the
+  // v12 Commit 8: inner emissive ring while thrusting.
+  if (ship.thrusting) {
+    emissive(c, () => {
+      c.strokeStyle = 'rgba(217,164,65,0.6)';
+      c.lineWidth = 0.6;
+      c.beginPath();
+      c.ellipse(0, 7.5, 2, 1.1, 0, 0, Math.PI * 2);
+      c.stroke();
+    }, p.degraded ?? false);
+  }
   // equipped paint job (Hangar Shop cosmetic).
-  const hullGrad = c.createLinearGradient(0, -14, 0, 8);
-  hullGrad.addColorStop(0, paint.hullTop);
-  hullGrad.addColorStop(1, paint.hullBot);
+  // v12 Commit 8: 3-stop gradient, cached per paint id (getHullGradient).
+  const hullGrad = getHullGradient(c, paint);
   c.beginPath();
   c.moveTo(0, -14);
   c.bezierCurveTo(6.5, -14, 9, -7, 8, 0);
@@ -1240,7 +1387,7 @@ export function drawShip(p: DrawShipParams) {
   c.beginPath(); c.moveTo(-6.2, 4.4); c.lineTo(6.2, 4.4); c.stroke();
 
   // Upgrade hardware — every owned upgrade is visible on the hull.
-  drawShipModules(c, pickedUpgrades, stats);
+  drawShipModules(c, pickedUpgrades, stats, undefined, undefined, p.degraded ?? false);
 
   // Cockpit — enlarged again in v9: with ship scale up to 2.3x this is
   // a ~30px porthole, so the pilot's expressions genuinely read.
@@ -1280,6 +1427,14 @@ export function drawShip(p: DrawShipParams) {
   c.stroke();
   c.beginPath();
   c.ellipse(-1.8, cockCY - cockR * 0.55, cockR * 0.5, cockR * 0.2, -0.4, 0, Math.PI * 2);
+  // v12 Commit 8: rivet dots along the panel lines.
+  c.fillStyle = 'rgba(20,12,4,0.4)';
+  for (const px of [-7.2, -3.6, 0, 3.6, 7.2]) {
+    c.beginPath(); c.arc(px, 1.5, 0.25, 0, Math.PI * 2); c.fill();
+  }
+  for (const px of [-6.2, -3.1, 0, 3.1, 6.2]) {
+    c.beginPath(); c.arc(px, 4.4, 0.25, 0, Math.PI * 2); c.fill();
+  }
   c.strokeStyle = 'rgba(244, 235, 218, 0.5)';
   c.lineWidth = 0.8;
   c.stroke();
