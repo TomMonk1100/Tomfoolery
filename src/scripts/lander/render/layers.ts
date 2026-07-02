@@ -91,12 +91,12 @@ export class LayerCache {
     const { width, height, terrain, planet, skyTheme, levelIndex } = input;
     const c = makeOffscreen(width, height);
     const ctx = c.getContext('2d', { alpha: false })!;
-    const grad = ctx.createLinearGradient(0, 0, 0, height);
-    grad.addColorStop(0, skyTheme.top);
 
     // v12 Commit 1: 5-stop gradient instead of 3 — gives the sky a subtle
     // banded read (a shaded upper dome, a brighter equator band) instead of
     // a flat linear wash.
+    const grad = ctx.createLinearGradient(0, 0, 0, height);
+    grad.addColorStop(0, skyTheme.top);
     grad.addColorStop(0.35, shade(skyTheme.top, -0.1));
     grad.addColorStop(0.62, skyTheme.mid);
     grad.addColorStop(0.8, shade(skyTheme.mid, 0.12));
@@ -104,8 +104,6 @@ export class LayerCache {
     ctx.fillStyle = grad;
     ctx.fillRect(-10, -10, width + 20, height + 20);
 
-    const plHue = skyTheme.planet ?? planet.hue;
-    const plGrad = ctx.createRadialGradient(
     // Horizon glow band — warm dusk light pooling above the ridge line.
     // Additive so it reads as a soft glow rather than a hard color patch.
     const glowFrom = height * 0.55, glowTo = height * 0.78;
@@ -121,6 +119,8 @@ export class LayerCache {
     ctx.fillRect(0, glowFrom, width, glowTo - glowFrom);
     ctx.restore();
 
+    const plHue = skyTheme.planet ?? planet.hue;
+    const plGrad = ctx.createRadialGradient(
       planet.x - planet.r * 0.35, planet.y - planet.r * 0.35, planet.r * 0.15, planet.x, planet.y, planet.r
     );
     plGrad.addColorStop(0, plHue[0]);
@@ -129,8 +129,6 @@ export class LayerCache {
     ctx.arc(planet.x, planet.y, planet.r, 0, Math.PI * 2);
     ctx.fillStyle = plGrad;
     ctx.fill();
-    if (planet.ring) {
-      ctx.save();
     // Crescent shadow — lit from the same sun as everything else (LIGHT).
     ctx.save();
     ctx.beginPath();
@@ -141,6 +139,8 @@ export class LayerCache {
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
     ctx.fill();
     ctx.restore();
+    if (planet.ring) {
+      ctx.save();
       ctx.translate(planet.x, planet.y);
       ctx.rotate(-0.35);
       ctx.beginPath();
@@ -464,6 +464,14 @@ export class LayerCache {
 
 export function blitSky(ctx: CanvasRenderingContext2D, cache: LayerCache): void {
   if (cache.skyCanvas) ctx.drawImage(cache.skyCanvas, 0, 0);
+}
+
+// `twinkle` false => degradation guard has disabled twinkle (§8.5): draw
+// the full star layer once at flat alpha instead of two phase-offset
+// blits. `t` is seconds (performance.now()/1000) driving the two
+// independent sine phases (offset by PI so the subsets visibly
+// counter-twinkle rather than moving in lockstep).
+export function blitStars(ctx: CanvasRenderingContext2D, cache: LayerCache, t: number, twinkle: boolean): void {
   if (twinkle) {
     const alphaA = 0.6 + Math.sin(t * 1.5) * 0.4;
     const alphaB = 0.6 + Math.sin(t * 1.5 + Math.PI) * 0.4;
@@ -477,16 +485,6 @@ export function blitSky(ctx: CanvasRenderingContext2D, cache: LayerCache): void 
     if (cache.starCanvasA) ctx.drawImage(cache.starCanvasA, 0, 0);
     if (cache.starCanvasB) ctx.drawImage(cache.starCanvasB, 0, 0);
   }
-  if (cache.terrainCanvas) ctx.drawImage(cache.terrainCanvas, 0, 0);
-}
-}
-
-// `twinkle` false => degradation guard has disabled twinkle (§8.5): draw
-// the full star layer once at flat alpha instead of two phase-offset
-// blits. `t` is seconds (performance.now()/1000) driving the two
-// independent sine phases (offset by PI so the subsets visibly
-// counter-twinkle rather than moving in lockstep).
-export function blitStars(ctx: CanvasRenderingContext2D, cache: LayerCache, t: number, twinkle: boolean): void {
 }
 
 export function blitRidge(ctx: CanvasRenderingContext2D, cache: LayerCache, which: 'far' | 'near'): void {
@@ -495,3 +493,5 @@ export function blitRidge(ctx: CanvasRenderingContext2D, cache: LayerCache, whic
 }
 
 export function blitTerrain(ctx: CanvasRenderingContext2D, cache: LayerCache): void {
+  if (cache.terrainCanvas) ctx.drawImage(cache.terrainCanvas, 0, 0);
+}

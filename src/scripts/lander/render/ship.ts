@@ -1240,6 +1240,15 @@ export interface DrawShipParams {
   paint: PaintDef;
   pilotPhoto: HTMLCanvasElement | null;
   faceMap: FaceMap;
+  // v12 Commit 4: 0..1 ramp of how long thrust has been held (main.ts's
+  // thrustHeldT / 0.25, clamped) — the flame grows in instead of popping to
+  // full size. Optional + defaults to 1 (old always-full-size behavior) so
+  // any caller that hasn't been updated yet still compiles and renders.
+  thrustT?: number;
+  // v12 Commit 7: gates the flame glow's additive compositing via addGlow.
+  // Optional + defaults to false (glow behaves as before) for callers that
+  // haven't been updated.
+  degraded?: boolean;
 }
 
 export function drawShip(p: DrawShipParams) {
@@ -1273,7 +1282,13 @@ export function drawShip(p: DrawShipParams) {
   // Jalapeño Injectors turn the exhaust spicy-green — §7 table: "greener per
   // stack", so the green channel ramps up (capped visually at 255) with
   // spicyStacks rather than being a flat on/off color.
+  //
+  // v12 Commit 4: three nested tapered flame shapes (outer/mid/core) instead
+  // of two, all scaled by `thrustT` so held thrust ramps the flame in over
+  // 0.25s instead of popping to full size; the glow gradient now draws with
+  // additive ('lighter') compositing for real bloom instead of flat alpha.
   if (ship.thrusting) {
+    const thrustT = Math.max(0, Math.min(1, p.thrustT ?? 1));
     const flicker = 6 + Math.random() * 7;
     const spicy = stats.spicyFlame;
     const greenAmt = Math.min(255, 176 + stats.spicyStacks * 14);
@@ -1301,12 +1316,16 @@ export function drawShip(p: DrawShipParams) {
     c.closePath();
     c.fillStyle = spicy ? `rgba(148, ${greenAmt}, 61, 0.35)` : 'rgba(217, 164, 65, 0.35)';
     c.fill();
+
+    // Mid flame — 0.72x size.
     c.beginPath();
     c.moveTo(-3.6, 7.5);
     c.quadraticCurveTo(0, 7.5 + outerLen * 0.72, 3.6, 7.5);
     c.closePath();
     c.fillStyle = spicy ? `rgba(124, ${greenAmt}, 92, 0.7)` : 'rgba(201, 123, 61, 0.7)';
     c.fill();
+
+    // Core flame — 0.4x size.
     c.beginPath();
     c.moveTo(-2, 7.5);
     c.quadraticCurveTo(0, 7.5 + outerLen * 0.4, 2, 7.5);
@@ -1320,6 +1339,16 @@ export function drawShip(p: DrawShipParams) {
   c.ellipse(0, 7.5, 3.4, 2, 0, 0, Math.PI * 2);
   c.fillStyle = '#221808';
   c.fill();
+  // v12 Commit 8: inner emissive ring while thrusting.
+  if (ship.thrusting) {
+    emissive(c, () => {
+      c.strokeStyle = 'rgba(217,164,65,0.6)';
+      c.lineWidth = 0.6;
+      c.beginPath();
+      c.ellipse(0, 7.5, 2, 1.1, 0, 0, Math.PI * 2);
+      c.stroke();
+    }, p.degraded ?? false);
+  }
 
   // v12 Commit 8: landing legs — two-tone struts (litFill triangles instead
   // of bare strokes) with foot pads and a knee-joint highlight dot.
@@ -1352,16 +1381,6 @@ export function drawShip(p: DrawShipParams) {
   c.closePath(); c.fill(); c.stroke();
 
   // Main hull — bulbous dome, big cockpit. Colors come from the
-  // v12 Commit 8: inner emissive ring while thrusting.
-  if (ship.thrusting) {
-    emissive(c, () => {
-      c.strokeStyle = 'rgba(217,164,65,0.6)';
-      c.lineWidth = 0.6;
-      c.beginPath();
-      c.ellipse(0, 7.5, 2, 1.1, 0, 0, Math.PI * 2);
-      c.stroke();
-    }, p.degraded ?? false);
-  }
   // equipped paint job (Hangar Shop cosmetic).
   // v12 Commit 8: 3-stop gradient, cached per paint id (getHullGradient).
   const hullGrad = getHullGradient(c, paint);
@@ -1380,118 +1399,6 @@ export function drawShip(p: DrawShipParams) {
   c.lineWidth = 1.4;
   c.stroke();
 
-  // Panel lines
-  c.strokeStyle = 'rgba(59, 44, 22, 0.35)';
-  c.lineWidth = 0.5;
-  c.beginPath(); c.moveTo(-7.2, 1.5); c.lineTo(7.2, 1.5); c.stroke();
-  c.beginPath(); c.moveTo(-6.2, 4.4); c.lineTo(6.2, 4.4); c.stroke();
-
-  // Upgrade hardware — every owned upgrade is visible on the hull.
-  drawShipModules(c, pickedUpgrades, stats, undefined, undefined, p.degraded ?? false);
-
-  // Cockpit — enlarged again in v9: with ship scale up to 2.3x this is
-  // a ~30px porthole, so the pilot's expressions genuinely read.
-  const cockR = 6.6;
-  const cockCY = -4.6;
-  c.save();
-  c.beginPath();
-  c.ellipse(0, cockCY, cockR, cockR * 1.05, 0, 0, Math.PI * 2);
-  c.clip();
-
-  if (pilotPhoto) {
-    drawPhotoFace(c, -cockR, cockCY - cockR * 1.05, cockR * 2, cockR * 2.1, mood, pilotPhoto, faceMap);
-  } else {
-    const glassGrad = c.createRadialGradient(-1.4, cockCY - 1.6, 0.5, 0, cockCY, cockR * 1.3);
-    glassGrad.addColorStop(0, '#E4F1EA');
-  // v12 Commit 4: 0..1 ramp of how long thrust has been held (main.ts's
-  // thrustHeldT / 0.25, clamped) — the flame grows in instead of popping to
-  // full size. Optional + defaults to 1 (old always-full-size behavior) so
-  // any caller that hasn't been updated yet still compiles and renders.
-  thrustT?: number;
-  // v12 Commit 7: gates the flame glow's additive compositing via addGlow.
-  // Optional + defaults to false (glow behaves as before) for callers that
-  // haven't been updated.
-  degraded?: boolean;
-    glassGrad.addColorStop(1, '#5B7A85');
-    c.fillStyle = glassGrad;
-    c.fillRect(-cockR, cockCY - cockR, cockR * 2, cockR * 2);
-    drawDefaultPilot(c, cockCY, cockR, mood);
-  }
-  c.restore();
-
-  // Cockpit rim + glass highlight
-  c.beginPath();
-  c.ellipse(0, cockCY, cockR, cockR * 1.05, 0, 0, Math.PI * 2);
-  c.strokeStyle = '#221808';
-  c.lineWidth = 0.9;
-  c.stroke();
-  c.beginPath();
-  c.ellipse(-1.8, cockCY - cockR * 0.55, cockR * 0.5, cockR * 0.2, -0.4, 0, Math.PI * 2);
-  // v12 Commit 8: rivet dots along the panel lines.
-  c.fillStyle = 'rgba(20,12,4,0.4)';
-  for (const px of [-7.2, -3.6, 0, 3.6, 7.2]) {
-    c.beginPath(); c.arc(px, 1.5, 0.25, 0, Math.PI * 2); c.fill();
-  }
-  for (const px of [-6.2, -3.1, 0, 3.1, 6.2]) {
-    c.beginPath(); c.arc(px, 4.4, 0.25, 0, Math.PI * 2); c.fill();
-  }
-  c.strokeStyle = 'rgba(244, 235, 218, 0.5)';
-  c.lineWidth = 0.8;
-  c.stroke();
-
-  // Nose light
-  c.beginPath();
-  c.arc(0, -13.2, 1.1, 0, Math.PI * 2);
-  c.fillStyle = '#94B03D';
-  c.fill();
-
-  c.restore();
-}
-
-// ---------------------------------------------------------------------------
-// lander-v10 commit 4a (§6.5): Ghost ship.
-//
-// Renders the ship at 35% alpha, mirrored across the pad center X — purely
-// visual on its own. Commit 4b's Quantum Duplicate upgrade will call
-  //
-  // v12 Commit 4: three nested tapered flame shapes (outer/mid/core) instead
-  // of two, all scaled by `thrustT` so held thrust ramps the flame in over
-  // 0.25s instead of popping to full size; the glow gradient now draws with
-  // additive ('lighter') compositing for real bloom instead of flat alpha.
-// drawGhostShip once per frame near the mirrored position and hook
-    const thrustT = Math.max(0, Math.min(1, p.thrustT ?? 1));
-// checkGhostSave into the crash-handling path (main.ts::destroyShip).
-// ---------------------------------------------------------------------------
-
-// Mirrors an x coordinate across the pad center — the ghost renders as if
-// the ship's run were reflected across the pad, per §6.5.
-export function mirrorAcrossPad(x: number, padCenterX: number): number {
-  return padCenterX + (padCenterX - x);
-}
-
-export function drawGhostShip(p: DrawShipParams & { padCenterX: number }) {
-  const { padCenterX, ship, ...rest } = p;
-
-    // Mid flame — 0.72x size.
-  const c = p.ctx;
-  const ghostX = mirrorAcrossPad(ship.x, padCenterX);
-  c.save();
-  c.globalAlpha = 0.35;
-  drawShip({ ...rest, ctx: c, ship: { ...ship, x: ghostX } });
-  c.restore();
-
-    // Core flame — 0.4x size.
-}
-
-// §6.5 hook: "Quantum Duplicate death-save roll" — a boolean/probability
-// check callable from the crash-handling code path in main.ts. Returns
-// false always for now (no upgrade sets stats.ghostSave yet); Commit 4b
-// makes it meaningful by rolling 50% per stack of ghostSave and consuming
-// one on success.
-export function checkGhostSave(stats: ShipStats): boolean {
-  if (!stats.ghostSave || stats.ghostSave <= 0) return false;
-  return false;
-}
   // v12 Commit 4: hull rim light — a soft highlight along the upper-left
   // contour, consistent with the global LIGHT direction (upper-left sun).
   // Clipped to the hull shape so it never draws outside it.
@@ -1515,5 +1422,98 @@ export function checkGhostSave(stats: ShipStats): boolean {
   c.stroke();
   c.restore();
 
+  // Panel lines
+  c.strokeStyle = 'rgba(59, 44, 22, 0.35)';
+  c.lineWidth = 0.5;
+  c.beginPath(); c.moveTo(-7.2, 1.5); c.lineTo(7.2, 1.5); c.stroke();
+  c.beginPath(); c.moveTo(-6.2, 4.4); c.lineTo(6.2, 4.4); c.stroke();
+  // v12 Commit 8: rivet dots along the panel lines.
+  c.fillStyle = 'rgba(20,12,4,0.4)';
+  for (const px of [-7.2, -3.6, 0, 3.6, 7.2]) {
+    c.beginPath(); c.arc(px, 1.5, 0.25, 0, Math.PI * 2); c.fill();
+  }
+  for (const px of [-6.2, -3.1, 0, 3.1, 6.2]) {
+    c.beginPath(); c.arc(px, 4.4, 0.25, 0, Math.PI * 2); c.fill();
+  }
+
+  // Upgrade hardware — every owned upgrade is visible on the hull.
+  drawShipModules(c, pickedUpgrades, stats, undefined, undefined, p.degraded ?? false);
+
+  // Cockpit — enlarged again in v9: with ship scale up to 2.3x this is
+  // a ~30px porthole, so the pilot's expressions genuinely read.
+  const cockR = 6.6;
+  const cockCY = -4.6;
+  c.save();
+  c.beginPath();
+  c.ellipse(0, cockCY, cockR, cockR * 1.05, 0, 0, Math.PI * 2);
+  c.clip();
+
+  if (pilotPhoto) {
+    drawPhotoFace(c, -cockR, cockCY - cockR * 1.05, cockR * 2, cockR * 2.1, mood, pilotPhoto, faceMap);
+  } else {
+    const glassGrad = c.createRadialGradient(-1.4, cockCY - 1.6, 0.5, 0, cockCY, cockR * 1.3);
+    glassGrad.addColorStop(0, '#E4F1EA');
+    glassGrad.addColorStop(1, '#5B7A85');
+    c.fillStyle = glassGrad;
+    c.fillRect(-cockR, cockCY - cockR, cockR * 2, cockR * 2);
+    drawDefaultPilot(c, cockCY, cockR, mood);
+  }
+  c.restore();
+
+  // Cockpit rim + glass highlight
+  c.beginPath();
+  c.ellipse(0, cockCY, cockR, cockR * 1.05, 0, 0, Math.PI * 2);
+  c.strokeStyle = '#221808';
+  c.lineWidth = 0.9;
+  c.stroke();
   // v12 Commit 4: cockpit glass specular arc, brightened to alpha 0.5 —
   // upper-left of the canopy, consistent with the global LIGHT direction.
+  c.beginPath();
+  c.ellipse(-1.8, cockCY - cockR * 0.55, cockR * 0.5, cockR * 0.2, -0.4, 0, Math.PI * 2);
+  c.strokeStyle = 'rgba(244, 235, 218, 0.5)';
+  c.lineWidth = 0.8;
+  c.stroke();
+
+  // Nose light
+  c.beginPath();
+  c.arc(0, -13.2, 1.1, 0, Math.PI * 2);
+  c.fillStyle = '#94B03D';
+  c.fill();
+
+  c.restore();
+}
+
+// ---------------------------------------------------------------------------
+// lander-v10 commit 4a (§6.5): Ghost ship.
+//
+// Renders the ship at 35% alpha, mirrored across the pad center X — purely
+// visual on its own. Commit 4b's Quantum Duplicate upgrade will call
+// drawGhostShip once per frame near the mirrored position and hook
+// checkGhostSave into the crash-handling path (main.ts::destroyShip).
+// ---------------------------------------------------------------------------
+
+// Mirrors an x coordinate across the pad center — the ghost renders as if
+// the ship's run were reflected across the pad, per §6.5.
+export function mirrorAcrossPad(x: number, padCenterX: number): number {
+  return padCenterX + (padCenterX - x);
+}
+
+export function drawGhostShip(p: DrawShipParams & { padCenterX: number }) {
+  const { padCenterX, ship, ...rest } = p;
+  const c = p.ctx;
+  const ghostX = mirrorAcrossPad(ship.x, padCenterX);
+  c.save();
+  c.globalAlpha = 0.35;
+  drawShip({ ...rest, ctx: c, ship: { ...ship, x: ghostX } });
+  c.restore();
+}
+
+// §6.5 hook: "Quantum Duplicate death-save roll" — a boolean/probability
+// check callable from the crash-handling code path in main.ts. Returns
+// false always for now (no upgrade sets stats.ghostSave yet); Commit 4b
+// makes it meaningful by rolling 50% per stack of ghostSave and consuming
+// one on success.
+export function checkGhostSave(stats: ShipStats): boolean {
+  if (!stats.ghostSave || stats.ghostSave <= 0) return false;
+  return false;
+}

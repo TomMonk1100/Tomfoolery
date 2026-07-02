@@ -349,10 +349,6 @@ export function initLanderGame(root: HTMLElement) {
     camX = fx; camY = fy;
   }
 
-  // §8.1 static layer cache — rebuilt on loadLevel/resize; terrain layer
-  // rebuilds are additionally throttled per-tick via layerCache.tryRebuildTerrain().
-  const layerCache = new LayerCache();
-  // §8.5 degradation guard — EMA of frame time; halves particle emission and
   // v12 Commit 2: parallax helper — applies a camera transform scaled by
   // `factor` (0 = screen-fixed/infinite distance, 1 = the normal full
   // camera transform) around the same center as the real camera. At
@@ -375,6 +371,13 @@ export function initLanderGame(root: HTMLElement) {
     ctx.restore();
   }
 
+  // §8.1 static layer cache — rebuilt on loadLevel/resize; terrain layer
+  // rebuilds are additionally throttled per-tick via layerCache.tryRebuildTerrain().
+  const layerCache = new LayerCache();
+  // v12 Commit 1: prerendered vignette — one radial gradient built in
+  // resize(), blitted as a single drawImage() at the end of every draw().
+  let vignetteCanvas: HTMLCanvasElement | null = null;
+  // §8.5 degradation guard — EMA of frame time; halves particle emission and
   // disables star twinkle under sustained load, restores when it recovers.
   const perfGuard = new DegradationGuard();
 
@@ -385,9 +388,6 @@ export function initLanderGame(root: HTMLElement) {
 
   const input = { left: false, right: false, thrust: false };
 
-  // --- Responsive sizing: fill the container, go taller on portrait phones ---
-  function resize() {
-    const rect = canvas.parentElement!.getBoundingClientRect();
   // v12 Commit 4: how long thrust has been continuously held (seconds),
   // reset to 0 the instant it releases — drives the flame's 0.25s ramp-in
   // (drawShip's thrustT) instead of it popping to full size every tap.
@@ -403,6 +403,9 @@ export function initLanderGame(root: HTMLElement) {
   const WIND_STREAK_COUNT = 5;
   let windStreaks: { x: number; y: number; len: number }[] | null = null;
 
+  // --- Responsive sizing: fill the container, go taller on portrait phones ---
+  function resize() {
+    const rect = canvas.parentElement!.getBoundingClientRect();
     const portrait = window.innerHeight > window.innerWidth * 1.1;
     let w = Math.min(rect.width, 1200);
     const aspect = portrait ? 1.15 : 0.62;
@@ -416,9 +419,6 @@ export function initLanderGame(root: HTMLElement) {
     // Scaled to the canvas: ~1.6x on phones up to ~2.3x on desktop.
     S = Math.max(1.6, Math.min(2.3, width / 420));
     dpr = Math.min(window.devicePixelRatio || 1, 2);
-  // v12 Commit 1: prerendered vignette — one radial gradient built in
-  // resize(), blitted as a single drawImage() at the end of every draw().
-  let vignetteCanvas: HTMLCanvasElement | null = null;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     canvas.style.width = `${width}px`;
@@ -435,6 +435,23 @@ export function initLanderGame(root: HTMLElement) {
         if (ship.y > gy - 12 * S) ship.y = gy - 40;
       }
     }
+    // v12 Commit 1: rebuild the vignette whenever canvas dims change —
+    // radial gradient, centered, transparent to rgba(15,10,4,0.22) from
+    // 0.62*max(w,h) out to the corner. One-time cost; blitted every frame.
+    if (width > 0 && height > 0) {
+      const vc = document.createElement('canvas');
+      vc.width = width; vc.height = height;
+      const vctx = vc.getContext('2d')!;
+      const cx = width / 2, cy = height / 2;
+      const innerR = 0.62 * Math.max(width, height);
+      const outerR = Math.hypot(cx, cy);
+      const vgrad = vctx.createRadialGradient(cx, cy, innerR, cx, cy, Math.max(innerR + 1, outerR));
+      vgrad.addColorStop(0, 'rgba(15,10,4,0)');
+      vgrad.addColorStop(1, 'rgba(15,10,4,0.22)');
+      vctx.fillStyle = vgrad;
+      vctx.fillRect(0, 0, width, height);
+      vignetteCanvas = vc;
+    }
   }
 
   // §8.1: (re)prerenders all three static layers (sky/planet/ridge, star
@@ -446,6 +463,7 @@ export function initLanderGame(root: HTMLElement) {
     layerCache.build({
       width, height, cfg, terrain,
       stars: sky.stars, planet: sky.planet, skyTheme: equippedSky(),
+      levelIndex,
     });
   }
 
@@ -477,23 +495,6 @@ export function initLanderGame(root: HTMLElement) {
       </div>`);
   }
   function resumeGame() {
-    // v12 Commit 1: rebuild the vignette whenever canvas dims change —
-    // radial gradient, centered, transparent to rgba(15,10,4,0.22) from
-    // 0.62*max(w,h) out to the corner. One-time cost; blitted every frame.
-    if (width > 0 && height > 0) {
-      const vc = document.createElement('canvas');
-      vc.width = width; vc.height = height;
-      const vctx = vc.getContext('2d')!;
-      const cx = width / 2, cy = height / 2;
-      const innerR = 0.62 * Math.max(width, height);
-      const outerR = Math.hypot(cx, cy);
-      const vgrad = vctx.createRadialGradient(cx, cy, innerR, cx, cy, Math.max(innerR + 1, outerR));
-      vgrad.addColorStop(0, 'rgba(15,10,4,0)');
-      vgrad.addColorStop(1, 'rgba(15,10,4,0.22)');
-      vctx.fillStyle = vgrad;
-      vctx.fillRect(0, 0, width, height);
-      vignetteCanvas = vc;
-    }
     if (state !== 'paused') return;
     state = 'playing';
     setOverlay(null);
@@ -505,7 +506,6 @@ export function initLanderGame(root: HTMLElement) {
   // (near the RAF loop) — hoisting via `let` at current position is fine
   // since calls only happen after init; do not reorder declarations.
 
-      levelIndex,
   function startRun() {
     // Focus the canvas so keyboard input goes to the game, not the page.
     canvas.tabIndex = -1;
@@ -763,21 +763,6 @@ export function initLanderGame(root: HTMLElement) {
         (1.5 + Math.random() * 2) * S
       );
     }
-  }
-
-  // §6.1: emits `stacks` noodle strands from the engine, mirroring
-  // emitThrusterParticles' spawn geometry. Accepts a stack-count multiplier
-  // per the plan (×n emission). §8.2: routed through the pooled NoodlePool
-  // instead of `noodles.push(makeNoodle(...))`. §8.5: also halved under
-  // sustained frame-time pressure, same as regular thruster particles.
-  function emitNoodles(stacks: number) {
-    const count = emitCount(Math.max(1, Math.round(stacks)));
-    for (let i = 0; i < count; i++) {
-      const spread = (Math.random() - 0.5) * 0.6;
-      const speed = (50 + Math.random() * 40) * S;
-      const a = ship.angle + Math.PI + spread;
-      noodlePool.alloc(
-        ship.x - Math.sin(ship.angle) * 12 * S,
 
     // v12 Commit 5: every 4th thruster-particle emission also leaves a
     // faint dissipating smoke plume trailing the flame.
@@ -796,6 +781,21 @@ export function initLanderGame(root: HTMLElement) {
         { kind: PARTICLE_SMOKE, grow: perfGuard.degraded ? 5 : 10 }
       );
     }
+  }
+
+  // §6.1: emits `stacks` noodle strands from the engine, mirroring
+  // emitThrusterParticles' spawn geometry. Accepts a stack-count multiplier
+  // per the plan (×n emission). §8.2: routed through the pooled NoodlePool
+  // instead of `noodles.push(makeNoodle(...))`. §8.5: also halved under
+  // sustained frame-time pressure, same as regular thruster particles.
+  function emitNoodles(stacks: number) {
+    const count = emitCount(Math.max(1, Math.round(stacks)));
+    for (let i = 0; i < count; i++) {
+      const spread = (Math.random() - 0.5) * 0.6;
+      const speed = (50 + Math.random() * 40) * S;
+      const a = ship.angle + Math.PI + spread;
+      noodlePool.alloc(
+        ship.x - Math.sin(ship.angle) * 12 * S,
         ship.y + Math.cos(ship.angle) * 12 * S,
         Math.sin(a) * speed + ship.vx * 0.3,
         -Math.cos(a) * speed + ship.vy * 0.3
@@ -829,21 +829,6 @@ export function initLanderGame(root: HTMLElement) {
   function emitLandingDustRing(groundY: number) {
     const count = emitCount(16);
     for (let i = 0; i < count; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const speed = (40 + Math.random() * 160) * S;
-      particlePool.alloc(
-        ship.x, ship.y, Math.cos(a) * speed, Math.sin(a) * speed,
-        Math.random() > 0.5 ? '#C97B3D' : (Math.random() > 0.5 ? '#94B03D' : '#F4EBDA'),
-        0.5 + Math.random() * 0.7,
-        (2 + Math.random() * 3) * S,
-        60
-      );
-    }
-    shakeT = 0.55;
-  }
-
-  function confetti() {
-    const colors = ['#94B03D', '#D9A441', '#C97B3D', '#F4EBDA', '#7C8F5C'];
       const dir = i % 2 === 0 ? 1 : -1;
       const speed = 40 + Math.random() * 70; // 40..110
       particlePool.alloc(
@@ -910,6 +895,22 @@ export function initLanderGame(root: HTMLElement) {
 
     const dotCount = emitCount(20);
     for (let i = 0; i < dotCount; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const speed = (40 + Math.random() * 160) * S;
+      particlePool.alloc(
+        ship.x, ship.y, Math.cos(a) * speed, Math.sin(a) * speed,
+        Math.random() > 0.5 ? '#C97B3D' : (Math.random() > 0.5 ? '#94B03D' : '#F4EBDA'),
+        0.5 + Math.random() * 0.7,
+        (2 + Math.random() * 3) * S,
+        60
+      );
+    }
+
+    shakeT = 0.55;
+  }
+
+  function confetti() {
+    const colors = ['#94B03D', '#D9A441', '#C97B3D', '#F4EBDA', '#7C8F5C'];
     const count = emitCount(26);
     for (let i = 0; i < count; i++) {
       const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.4;
@@ -920,7 +921,6 @@ export function initLanderGame(root: HTMLElement) {
         colors[Math.floor(Math.random() * colors.length)],
         0.8 + Math.random() * 0.6,
         (1.5 + Math.random() * 2.2) * S,
-
         110
       );
     }
@@ -2439,6 +2439,26 @@ export function initLanderGame(root: HTMLElement) {
     // fog, guidance overlays) renders inside this transform; screen-space
     // HUD elements (pips, vignettes, banners, toasts) render after it pops.
     updateCamera(t);
+
+    // §8.1/v12 Commit 2: sky gradient + planet + horizon glow were
+    // previously rebuilt from scratch every frame; now prerendered once per
+    // loadLevel/resize into layerCache's offscreen canvas and just blitted
+    // here. Sky sits at "infinite" distance — blitted BEFORE the camera
+    // zoom/pan transform (still inside the shake-translate, so screen shake
+    // still reads) so it never pans or zooms with the ship.
+    blitSky(ctx, layerCache);
+
+    // v12 Commit 2: parallax depth planes, each feeling a fraction of the
+    // camera's zoom/pan via withParallax's factor (0 = screen-fixed,
+    // 1 = full camera motion). Stars barely drift (0.12), the far ridge a
+    // bit more (0.3), the near ridge noticeably more (0.55) — terrain and
+    // everything else below still gets the full 1.0 transform, unchanged.
+    // Twinkle (and, per §Commit 7, the parallax itself) is disabled when
+    // the degradation guard is tripped.
+    withParallax(0.12, () => blitStars(ctx!, layerCache, t, !perfGuard.degraded));
+    withParallax(0.3, () => blitRidge(ctx!, layerCache, 'far'));
+    withParallax(0.55, () => blitRidge(ctx!, layerCache, 'near'));
+
     ctx.save();
     ctx.translate(width / 2, height / 2);
     ctx.scale(camZoom, camZoom);
@@ -2485,6 +2505,14 @@ export function initLanderGame(root: HTMLElement) {
     // e.g. one explode()/confetti() call, shares one palette and lands in
     // adjacent pool slots) — that's the one real, zero-risk piece of
     // "group by color" available under the current per-particle-alpha model.
+    // v12 Commit 5: branch on `kind` — dot/smoke still batch through the
+    // shared arc + color-cache path below (smoke just draws softer/fading
+    // in at 0.45x alpha since it also grows); spark and chunk get their own
+    // draw calls (a line segment under additive compositing, and a rotated
+    // triangle) since neither can reuse the arc/fillStyle-cache shape.
+    // Spark counts are always <25/frame (explode() emits 18 max), so a
+    // per-spark save/restore composite toggle is cheap — no need to batch
+    // them into a separate pass.
     let lastParticleColor = '';
     for (const p of particlePool.slots) {
       if (!p.alive) continue;
@@ -2530,6 +2558,49 @@ export function initLanderGame(root: HTMLElement) {
       ctx.fill();
     }
     ctx.globalAlpha = 1;
+
+    // v12 Commit 4: ground light pool + contact shadow, world-space, drawn
+    // after everything else on the ground but before the ship itself — the
+    // engine visibly lights the ground on descent, and the shadow is the
+    // single biggest depth cue in the game (also doubles as a landing aid).
+    const shipThrustT = Math.min(1, thrustHeldT / 0.25);
+    if (terrain && (state === 'playing' || state === 'levelComplete' || state === 'paused')) {
+      const groundYNow = terrainYAt(terrain.points, ship.x);
+      const altNow2 = groundYNow - ship.y;
+
+      if (ship.thrusting && altNow2 < 120) {
+        const spicy = stats.spicyFlame;
+        const greenAmt = Math.min(255, 176 + stats.spicyStacks * 14);
+        const flameColor = spicy ? `148, ${greenAmt}, 61` : '217, 164, 65';
+        const poolAlpha = 0.3 * (1 - altNow2 / 120) * shipThrustT;
+        if (poolAlpha > 0.003) {
+          // §Commit 7: routed through addGlow for the degradation fallback.
+          addGlow(ctx, perfGuard.degraded, () => {
+            const rx = 46 + altNow2 * 0.15, ry = 12;
+            ctx.translate(ship.x, groundYNow);
+            ctx.scale(rx / ry, 1);
+            const poolGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, ry);
+            poolGrad.addColorStop(0, `rgba(${flameColor}, ${poolAlpha})`);
+            poolGrad.addColorStop(1, `rgba(${flameColor}, 0)`);
+            ctx.fillStyle = poolGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, ry, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+      }
+
+      if (altNow2 < 280) {
+        const shadowAlpha = 0.30 * (1 - altNow2 / 280);
+        if (shadowAlpha > 0.003) {
+          const hw = 26 * S * (0.35 + 0.65 * (1 - altNow2 / 280));
+          ctx.beginPath();
+          ctx.ellipse(ship.x, groundYNow - 1, hw, hw * 0.22, 0, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(10, 6, 2, ${shadowAlpha})`;
+          ctx.fill();
+        }
+      }
+    }
 
     // Ship
     if (state === 'playing' || state === 'levelComplete' || state === 'paused') {
@@ -2614,14 +2685,6 @@ export function initLanderGame(root: HTMLElement) {
       ctx.save();
       const padCx = (terrain.pad.xStart + terrain.pad.xEnd) / 2;
       ctx.setLineDash([6, 5]);
-    // v12 Commit 5: branch on `kind` — dot/smoke still batch through the
-    // shared arc + color-cache path below (smoke just draws softer/fading
-    // in at 0.45x alpha since it also grows); spark and chunk get their own
-    // draw calls (a line segment under additive compositing, and a rotated
-    // triangle) since neither can reuse the arc/fillStyle-cache shape.
-    // Spark counts are always <25/frame (explode() emits 18 max), so a
-    // per-spark save/restore composite toggle is cheap — no need to batch
-    // them into a separate pass.
       ctx.strokeStyle = 'rgba(94, 214, 214, 0.75)';
       ctx.lineWidth = 1.6;
       ctx.beginPath();
@@ -2643,26 +2706,6 @@ export function initLanderGame(root: HTMLElement) {
 
     // Scanner guidance — above the fog so it punches through it. §5.1
     // escalation: stack 1 = guidance line (as before); stack 2+ additionally
-
-    // §8.1/v12 Commit 2: sky gradient + planet + horizon glow were
-    // previously rebuilt from scratch every frame; now prerendered once per
-    // loadLevel/resize into layerCache's offscreen canvas and just blitted
-    // here. Sky sits at "infinite" distance — blitted BEFORE the camera
-    // zoom/pan transform (still inside the shake-translate, so screen shake
-    // still reads) so it never pans or zooms with the ship.
-    blitSky(ctx, layerCache);
-
-    // v12 Commit 2: parallax depth planes, each feeling a fraction of the
-    // camera's zoom/pan via withParallax's factor (0 = screen-fixed,
-    // 1 = full camera motion). Stars barely drift (0.12), the far ridge a
-    // bit more (0.3), the near ridge noticeably more (0.55) — terrain and
-    // everything else below still gets the full 1.0 transform, unchanged.
-    // Twinkle (and, per §Commit 7, the parallax itself) is disabled when
-    // the degradation guard is tripped.
-    withParallax(0.12, () => blitStars(ctx!, layerCache, t, !perfGuard.degraded));
-    withParallax(0.3, () => blitRidge(ctx!, layerCache, 'far'));
-    withParallax(0.55, () => blitRidge(ctx!, layerCache, 'near'));
-
     // projects a touchdown-forecast marker (where current vx will carry the
     // ship by the time it reaches the pad's altitude); stack 3+ widens the
     // beam glow around the guidance line.
@@ -2772,49 +2815,6 @@ export function initLanderGame(root: HTMLElement) {
     // DOM fuel bar sits (bottom HUD strip), only when abilities are owned.
     if (stats.abilityDefs.length > 0) {
       drawAbilityPips(ctx, abilityDefStates, 10, height - 34);
-    // v12 Commit 4: ground light pool + contact shadow, world-space, drawn
-    // after everything else on the ground but before the ship itself — the
-    // engine visibly lights the ground on descent, and the shadow is the
-    // single biggest depth cue in the game (also doubles as a landing aid).
-    const shipThrustT = Math.min(1, thrustHeldT / 0.25);
-    if (terrain && (state === 'playing' || state === 'levelComplete' || state === 'paused')) {
-      const groundYNow = terrainYAt(terrain.points, ship.x);
-      const altNow2 = groundYNow - ship.y;
-
-      if (ship.thrusting && altNow2 < 120) {
-        const spicy = stats.spicyFlame;
-        const greenAmt = Math.min(255, 176 + stats.spicyStacks * 14);
-        const flameColor = spicy ? `148, ${greenAmt}, 61` : '217, 164, 65';
-        const poolAlpha = 0.3 * (1 - altNow2 / 120) * shipThrustT;
-        if (poolAlpha > 0.003) {
-          // §Commit 7: routed through addGlow for the degradation fallback.
-          addGlow(ctx, perfGuard.degraded, () => {
-            const rx = 46 + altNow2 * 0.15, ry = 12;
-            ctx.translate(ship.x, groundYNow);
-            ctx.scale(rx / ry, 1);
-            const poolGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, ry);
-            poolGrad.addColorStop(0, `rgba(${flameColor}, ${poolAlpha})`);
-            poolGrad.addColorStop(1, `rgba(${flameColor}, 0)`);
-            ctx.fillStyle = poolGrad;
-            ctx.beginPath();
-            ctx.arc(0, 0, ry, 0, Math.PI * 2);
-            ctx.fill();
-          });
-        }
-      }
-
-      if (altNow2 < 280) {
-        const shadowAlpha = 0.30 * (1 - altNow2 / 280);
-        if (shadowAlpha > 0.003) {
-          const hw = 26 * S * (0.35 + 0.65 * (1 - altNow2 / 280));
-          ctx.beginPath();
-          ctx.ellipse(ship.x, groundYNow - 1, hw, hw * 0.22, 0, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(10, 6, 2, ${shadowAlpha})`;
-          ctx.fill();
-        }
-      }
-    }
-
     }
 
     // Chrono Crystal bullet-time: cool-toned vignette + indicator (screen)
@@ -2882,35 +2882,6 @@ export function initLanderGame(root: HTMLElement) {
 
     ctx.restore();
 
-    // Toast queue (achievements, stardust payouts) — drawn unshaken, top center
-    toasts.slice(0, 4).forEach((toast, i) => {
-      const alpha = Math.min(1, toast.t / 0.5) * Math.min(1, (4.4 - toast.t) * 2.4);
-      ctx.save();
-      ctx.globalAlpha = Math.max(0, Math.min(1, alpha)) * 0.95;
-      ctx.font = `${Math.max(12, Math.round(width / 60))}px "JetBrains Mono", monospace`;
-      ctx.textAlign = 'center';
-      const tw = ctx.measureText(toast.text).width;
-      const ty = 38 + i * (Math.max(12, Math.round(width / 60)) + 16);
-      ctx.fillStyle = 'rgba(23, 16, 9, 0.85)';
-      ctx.fillRect(width / 2 - tw / 2 - 12, ty - 15, tw + 24, 24);
-      ctx.strokeStyle = 'rgba(217, 164, 65, 0.5)';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(width / 2 - tw / 2 - 12, ty - 15, tw + 24, 24);
-      ctx.fillStyle = '#F4EBDA';
-      ctx.fillText(toast.text, width / 2, ty + 2);
-      ctx.restore();
-    });
-  }
-
-  function updateHud() {
-    updateHudEl({
-      hud, ship, stats, terrain, levelIndex, cfg, bestFor: () => bestFor(difficulty), stardust,
-    });
-  }
-
-  // --- Main loop: fixed 120Hz physics accumulator (§4.1) ---------------------
-  // Frame time is clamped to MAX_FRAME_TIME (0.05s) so a tab-switch stall
-  // doesn't fire off hundreds of catch-up physics ticks at once. The
     // v12 Commit 7: shooting star — screen-space ambient life, above the
     // world/parallax layers but below the vignette (drawn last, below).
     // §Commit 7 gate list: disabled entirely (not just un-spawned) while
@@ -2951,6 +2922,38 @@ export function initLanderGame(root: HTMLElement) {
       }
     }
 
+    // Toast queue (achievements, stardust payouts) — drawn unshaken, top center
+    toasts.slice(0, 4).forEach((toast, i) => {
+      const alpha = Math.min(1, toast.t / 0.5) * Math.min(1, (4.4 - toast.t) * 2.4);
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, Math.min(1, alpha)) * 0.95;
+      ctx.font = `${Math.max(12, Math.round(width / 60))}px "JetBrains Mono", monospace`;
+      ctx.textAlign = 'center';
+      const tw = ctx.measureText(toast.text).width;
+      const ty = 38 + i * (Math.max(12, Math.round(width / 60)) + 16);
+      ctx.fillStyle = 'rgba(23, 16, 9, 0.85)';
+      ctx.fillRect(width / 2 - tw / 2 - 12, ty - 15, tw + 24, 24);
+      ctx.strokeStyle = 'rgba(217, 164, 65, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(width / 2 - tw / 2 - 12, ty - 15, tw + 24, 24);
+      ctx.fillStyle = '#F4EBDA';
+      ctx.fillText(toast.text, width / 2, ty + 2);
+      ctx.restore();
+    });
+
+    // v12 Commit 1: vignette — LAST draw call, screen-space, one drawImage.
+    if (vignetteCanvas) ctx.drawImage(vignetteCanvas, 0, 0);
+  }
+
+  function updateHud() {
+    updateHudEl({
+      hud, ship, stats, terrain, levelIndex, cfg, bestFor: () => bestFor(difficulty), stardust,
+    });
+  }
+
+  // --- Main loop: fixed 120Hz physics accumulator (§4.1) ---------------------
+  // Frame time is clamped to MAX_FRAME_TIME (0.05s) so a tab-switch stall
+  // doesn't fire off hundreds of catch-up physics ticks at once. The
   // accumulator itself is what the Chrono Crystal slow-mo scales (world time
   // scale 0.75 is applied inside step() via `pdt`, per tick) — see step().
   // After draining the accumulator, render the latest state once; there is
@@ -2975,6 +2978,19 @@ export function initLanderGame(root: HTMLElement) {
     lastT = t;
     if (frameDt < 0) frameDt = 0;
     if (frameDt > MAX_FRAME_TIME) frameDt = MAX_FRAME_TIME;
+
+    // v12 Commit 5: hit-stop — freeze physics + frame timers for a few
+    // frames at the moment of impact (set in destroyShip()/handleTouchdown).
+    // lastT already advanced above, so resuming afterward doesn't produce
+    // an accumulator catch-up burst; perfGuard already sampled the real
+    // frame time above, so a frozen (cheap) frame can't false-trip it.
+    if (hitStopT > 0) {
+      hitStopT -= rawFrameMs / 1000;
+      draw();
+      updateHud();
+      raf = requestAnimationFrame(loop);
+      return;
+    }
 
     updateFrameTimers(frameDt);
 
@@ -3029,19 +3045,3 @@ export function initLanderGame(root: HTMLElement) {
     stopCameraStream();
   };
 }
-
-    // v12 Commit 1: vignette — LAST draw call, screen-space, one drawImage.
-    if (vignetteCanvas) ctx.drawImage(vignetteCanvas, 0, 0);
-    // v12 Commit 5: hit-stop — freeze physics + frame timers for a few
-    // frames at the moment of impact (set in destroyShip()/handleTouchdown).
-    // lastT already advanced above, so resuming afterward doesn't produce
-    // an accumulator catch-up burst; perfGuard already sampled the real
-    // frame time above, so a frozen (cheap) frame can't false-trip it.
-    if (hitStopT > 0) {
-      hitStopT -= rawFrameMs / 1000;
-      draw();
-      updateHud();
-      raf = requestAnimationFrame(loop);
-      return;
-    }
-
