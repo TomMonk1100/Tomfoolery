@@ -374,6 +374,9 @@ export function initLanderGame(root: HTMLElement) {
     // Scaled to the canvas: ~1.6x on phones up to ~2.3x on desktop.
     S = Math.max(1.6, Math.min(2.3, width / 420));
     dpr = Math.min(window.devicePixelRatio || 1, 2);
+  // v12 Commit 1: prerendered vignette — one radial gradient built in
+  // resize(), blitted as a single drawImage() at the end of every draw().
+  let vignetteCanvas: HTMLCanvasElement | null = null;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     canvas.style.width = `${width}px`;
@@ -432,6 +435,23 @@ export function initLanderGame(root: HTMLElement) {
       </div>`);
   }
   function resumeGame() {
+    // v12 Commit 1: rebuild the vignette whenever canvas dims change —
+    // radial gradient, centered, transparent to rgba(15,10,4,0.22) from
+    // 0.62*max(w,h) out to the corner. One-time cost; blitted every frame.
+    if (width > 0 && height > 0) {
+      const vc = document.createElement('canvas');
+      vc.width = width; vc.height = height;
+      const vctx = vc.getContext('2d')!;
+      const cx = width / 2, cy = height / 2;
+      const innerR = 0.62 * Math.max(width, height);
+      const outerR = Math.hypot(cx, cy);
+      const vgrad = vctx.createRadialGradient(cx, cy, innerR, cx, cy, Math.max(innerR + 1, outerR));
+      vgrad.addColorStop(0, 'rgba(15,10,4,0)');
+      vgrad.addColorStop(1, 'rgba(15,10,4,0.22)');
+      vctx.fillStyle = vgrad;
+      vctx.fillRect(0, 0, width, height);
+      vignetteCanvas = vc;
+    }
     if (state !== 'paused') return;
     state = 'playing';
     setOverlay(null);
@@ -443,6 +463,7 @@ export function initLanderGame(root: HTMLElement) {
   // (near the RAF loop) — hoisting via `let` at current position is fine
   // since calls only happen after init; do not reorder declarations.
 
+      levelIndex,
   function startRun() {
     // Focus the canvas so keyboard input goes to the game, not the page.
     canvas.tabIndex = -1;
@@ -2678,3 +2699,6 @@ export function initLanderGame(root: HTMLElement) {
     stopCameraStream();
   };
 }
+
+    // v12 Commit 1: vignette — LAST draw call, screen-space, one drawImage.
+    if (vignetteCanvas) ctx.drawImage(vignetteCanvas, 0, 0);

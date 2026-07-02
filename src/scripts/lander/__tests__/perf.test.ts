@@ -186,7 +186,7 @@ describe('render/layers: LayerCache.tryRebuildTerrain respects the dirty flag + 
     const { stars, planet } = generateSky(cfg, 800, 500);
     const cache = new LayerCache();
 
-    cache.build({ width: 800, height: 500, cfg, terrain, stars, planet, skyTheme: SKIES[0] });
+    cache.build({ width: 800, height: 500, cfg, terrain, stars, planet, skyTheme: SKIES[0], levelIndex: 0 });
     expect(cache.ready).toBe(true);
 
     // Not dirty — repeated calls must never trigger a rebuild (no new canvas created).

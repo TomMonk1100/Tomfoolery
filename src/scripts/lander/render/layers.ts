@@ -26,6 +26,7 @@
 import { mulberry32 } from '../rng';
 import { shouldRebuild, REBUILD_INTERVAL_S } from '../entities';
 import { terrainYAt } from '../levels';
+import { shade, depthTint, LIGHT } from './palette';
 import type { LevelConfig, SkyDef, Star, Terrain } from '../types';
 
 export { REBUILD_INTERVAL_S };
@@ -67,6 +68,7 @@ export interface LayerBuildInput {
   stars: Star[];
   planet: { x: number; y: number; r: number; hue: [string, string]; ring: boolean };
   skyTheme: SkyDef;
+  levelIndex: number;
 }
 
 export class LayerCache {
@@ -84,18 +86,39 @@ export class LayerCache {
   // (a) sky gradient + planet + ridge — rebuilt on loadLevel/resize only
   // (never dirtied by gameplay: nothing in-run mutates the sky/planet/ridge).
   private buildSkyLayer(input: LayerBuildInput) {
-    const { width, height, terrain, planet, skyTheme } = input;
+    const { width, height, terrain, planet, skyTheme, levelIndex } = input;
     const c = makeOffscreen(width, height);
     const ctx = c.getContext('2d', { alpha: false })!;
     const grad = ctx.createLinearGradient(0, 0, 0, height);
     grad.addColorStop(0, skyTheme.top);
-    grad.addColorStop(0.6, skyTheme.mid);
+
+    // v12 Commit 1: 5-stop gradient instead of 3 — gives the sky a subtle
+    // banded read (a shaded upper dome, a brighter equator band) instead of
+    // a flat linear wash.
+    grad.addColorStop(0.35, shade(skyTheme.top, -0.1));
+    grad.addColorStop(0.62, skyTheme.mid);
+    grad.addColorStop(0.8, shade(skyTheme.mid, 0.12));
     grad.addColorStop(1, skyTheme.bot);
     ctx.fillStyle = grad;
     ctx.fillRect(-10, -10, width + 20, height + 20);
 
     const plHue = skyTheme.planet ?? planet.hue;
     const plGrad = ctx.createRadialGradient(
+    // Horizon glow band — warm dusk light pooling above the ridge line.
+    // Additive so it reads as a soft glow rather than a hard color patch.
+    const glowFrom = height * 0.55, glowTo = height * 0.78;
+    const glowGrad = ctx.createLinearGradient(0, glowFrom, 0, glowTo);
+    const glowColor = shade(skyTheme.bot, 0.25);
+    const gr = parseInt(glowColor.slice(1, 3), 16), gg = parseInt(glowColor.slice(3, 5), 16), gb = parseInt(glowColor.slice(5, 7), 16);
+    glowGrad.addColorStop(0, `rgba(${gr},${gg},${gb},0)`);
+    glowGrad.addColorStop(0.5, `rgba(${gr},${gg},${gb},0.35)`);
+    glowGrad.addColorStop(1, `rgba(${gr},${gg},${gb},0)`);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = glowGrad;
+    ctx.fillRect(0, glowFrom, width, glowTo - glowFrom);
+    ctx.restore();
+
       planet.x - planet.r * 0.35, planet.y - planet.r * 0.35, planet.r * 0.15, planet.x, planet.y, planet.r
     );
     plGrad.addColorStop(0, plHue[0]);
@@ -106,6 +129,16 @@ export class LayerCache {
     ctx.fill();
     if (planet.ring) {
       ctx.save();
+    // Crescent shadow — lit from the same sun as everything else (LIGHT).
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(planet.x, planet.y, planet.r, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.beginPath();
+    ctx.arc(planet.x + LIGHT.x * planet.r * 0.45, planet.y + LIGHT.y * planet.r * 0.45, planet.r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.fill();
+    ctx.restore();
       ctx.translate(planet.x, planet.y);
       ctx.rotate(-0.35);
       ctx.beginPath();
