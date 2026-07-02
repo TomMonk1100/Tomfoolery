@@ -381,18 +381,18 @@ describe('stats: §7 Cosmic Dice — never doubles and halves the same stat', ()
 });
 
 describe('stats: §7 Star Forge — rarity weight multiplier compounds per stack', () => {
-  it('weight at stacks=2 is 9x base and stacks=3 is 27x base for uncommon+ rarities', () => {
+  it('weight at stacks=2 is 4x base and stacks=3 is 8x base for uncommon+ rarities', () => {
     const base = 55;
     expect(starForgeRarityWeight('uncommon', base, 0)).toBe(base);
-    expect(starForgeRarityWeight('uncommon', base, 1)).toBeCloseTo(base * 3, 6);
-    expect(starForgeRarityWeight('uncommon', base, 2)).toBeCloseTo(base * 9, 6);
-    expect(starForgeRarityWeight('uncommon', base, 3)).toBeCloseTo(base * 27, 6);
+    expect(starForgeRarityWeight('uncommon', base, 1)).toBeCloseTo(base * 2, 6);
+    expect(starForgeRarityWeight('uncommon', base, 2)).toBeCloseTo(base * 4, 6);
+    expect(starForgeRarityWeight('uncommon', base, 3)).toBeCloseTo(base * 8, 6);
   });
 
   it('compounds identically for rare, epic, and legendary', () => {
     for (const rarity of ['rare', 'epic', 'legendary'] as const) {
       const base = RARITY[rarity].weight;
-      expect(starForgeRarityWeight(rarity, base, 2)).toBeCloseTo(base * 9, 6);
+      expect(starForgeRarityWeight(rarity, base, 2)).toBeCloseTo(base * 4, 6);
     }
   });
 

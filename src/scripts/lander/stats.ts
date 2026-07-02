@@ -292,10 +292,11 @@ export function rollCosmicDice(rand: () => number = Math.random): { up: keyof Sh
 }
 
 // §7 Star Forge: multiplies rarity weights for uncommon+ rarities by
-// 3^stacks when rolling upgrade offers (common is unaffected). The
-// weighted-random draw always divides by the sum of these adjusted
+// 2^stacks when rolling upgrade offers (common is unaffected; rebalanced
+// from 3^stacks in Commit 4 of the v11 plan — see lander-v11-plan.md §Commit 4).
+// The weighted-random draw always divides by the sum of these adjusted
 // weights, so this IS the renormalization — no separate step needed.
 export function starForgeRarityWeight(rarity: Rarity, baseWeight: number, starForgeStacks: number): number {
   if (rarity === 'common' || starForgeStacks <= 0) return baseWeight;
-  return baseWeight * Math.pow(3, starForgeStacks);
+  return baseWeight * Math.pow(2, starForgeStacks);
 }

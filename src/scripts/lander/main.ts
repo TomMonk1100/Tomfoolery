@@ -1602,6 +1602,7 @@ export function initLanderGame(root: HTMLElement) {
       .upg-timerbar{height:6px;border-radius:3px;background:var(--color-line);overflow:hidden;}
       .upg-timerbar>div{height:100%;border-radius:3px;transition:width .1s linear;
         background:linear-gradient(90deg,var(--color-accent-mid),var(--color-accent));}
+      .upg-owned{position:absolute;top:8px;right:8px;font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.06em;color:#FFFDF6;background:var(--uc);padding:2px 8px;border-radius:999px;}
     `;
     document.head.appendChild(st);
   }
@@ -1697,10 +1698,11 @@ export function initLanderGame(root: HTMLElement) {
   // within a single offer.
   const DUPLICATE_WEIGHT = 0.75;
   // §7 Star Forge: multiplies rarity weights for uncommon+ rarities by
-  // 3^stacks when rolling upgrade offers, then renormalizes (i.e. the
+  // 2^stacks when rolling upgrade offers, then renormalizes (i.e. the
   // multiplied weight IS the renormalization basis — weighted-random draw
   // over the adjusted weights already "sums correctly" because we always
-  // divide by the adjusted total, not the original one).
+  // divide by the adjusted total, not the original one). Rebalanced from
+  // 3^stacks in Commit 4 of the v11 plan.
   function rarityWeight(rarity: Rarity): number {
     return starForgeRarityWeight(rarity, RARITY[rarity].weight, stats.starForgeStacks);
   }
@@ -1734,10 +1736,12 @@ export function initLanderGame(root: HTMLElement) {
       const rank = RARITY_RANK.indexOf(u.rarity);
       const glowPx = rank >= 4 ? 30 : rank >= 3 ? 22 : rank >= 2 ? 14 : 0;
       const label = rank >= 4 ? `✦ ${r.label} ✦` : r.label;
+      const n = pickedUpgrades.filter((x) => x === u.id).length;
       return `
       <button class="upg-card" data-pick="${u.id}"
         style="--uc:${r.color};--uc-tint:${r.color}26;--uc-glow:${glowPx}px;--uc-glowc:${glowPx ? `${r.color}${rank >= 4 ? '66' : '44'}` : 'transparent'};">
         ${upgradeEmblemSvg(u)}
+        ${n > 0 ? `<div class="upg-owned">owned ×${n}</div>` : ''}
         <div class="upg-name">${u.name}</div>
         <div class="upg-desc">${u.desc}</div>
         <div class="upg-rarity">${label}</div>
