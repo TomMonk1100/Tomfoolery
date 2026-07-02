@@ -236,35 +236,173 @@ export class LayerCache {
   // (c) terrain fill + stroke + surface texture — the layer noodle piles
   // and terraform() invalidate (terrain.points mutates in place under
   // both mechanics).
+  //
+  // v12 Commit 3: slope-lit terrain. Per-segment outward normals are dotted
+  // against the global LIGHT direction to shade each ground quad, a
+  // composited depth gradient restores the "ground gets darker with depth"
+  // read on top, the top edge re-strokes per-segment lit/shadow instead of
+  // one flat color, boulders (a new isolated rng) sit in the corridor gaps,
+  // scratch texture gains per-stroke width/alpha variance, and canyon walls
+  // get an ambient-occlusion pool at their base.
   private buildTerrainLayer(input: LayerBuildInput) {
     const { width, height, cfg, terrain } = input;
     const c = makeOffscreen(width, height);
     const ctx = c.getContext('2d')!;
     ctx.clearRect(0, 0, width, height);
 
+    // Base silhouette fill — establishes the shape the slope quads tile
+    // over and gives the composited passes below something to key off of.
     ctx.beginPath();
     ctx.moveTo(0, height);
     terrain.points.forEach((p) => ctx.lineTo(p.x, p.y));
     ctx.lineTo(width, height);
     ctx.closePath();
+    ctx.fillStyle = '#2a1f10';
+    ctx.fill();
+
+    // 1. Slope shading — each segment's outward (upward-facing) normal
+    // dotted against LIGHT decides how bright that patch of ground reads.
+    // Quads overlap 0.75px on each side to hide seams between segments.
+    const lits: number[] = [];
+    for (let i = 0; i < terrain.points.length - 1; i++) {
+      const p0 = terrain.points[i], p1 = terrain.points[i + 1];
+      let dx = p1.x - p0.x, dy = p1.y - p0.y;
+      const len = Math.hypot(dx, dy) || 1;
+      dx /= len; dy /= len;
+      let nx = -dy, ny = dx;
+      if (ny > 0) { nx = -nx; ny = -ny; } // keep the normal pointing "up" on screen
+      const lit = -(nx * LIGHT.x + ny * LIGHT.y);
+      lits.push(lit);
+      ctx.beginPath();
+      ctx.moveTo(p0.x - 0.75, p0.y);
+      ctx.lineTo(p1.x + 0.75, p1.y);
+      ctx.lineTo(p1.x + 0.75, height);
+      ctx.lineTo(p0.x - 0.75, height);
+      ctx.closePath();
+      ctx.fillStyle = shade('#3B2C16', lit * 0.22);
+      ctx.fill();
+    }
+
+    // 2. Depth gradient — composited with source-atop so it only recolors
+    // pixels the silhouette/slope quads already painted, restoring the
+    // ground-gets-darker-with-depth read on top of the slope shading.
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.globalAlpha = 0.55;
     const groundGrad = ctx.createLinearGradient(0, height * 0.5, 0, height);
     groundGrad.addColorStop(0, '#3B2C16');
     groundGrad.addColorStop(1, '#221808');
     ctx.fillStyle = groundGrad;
-    ctx.fill();
-    ctx.strokeStyle = '#4a3620';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    terrain.points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
-    ctx.stroke();
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
 
-    ctx.strokeStyle = 'rgba(74, 54, 32, 0.5)';
-    ctx.lineWidth = 1;
+    // 6. Canyon AO — an ambient-occlusion pool at the base of each wall
+    // (inner 60px, nearest the gap), also composited via source-atop so it
+    // only darkens terrain pixels that actually exist there.
+    if (cfg.terrain === 'canyon') {
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-atop';
+      const aoTop = height * 0.15;
+      const drawAo = (x0: number, x1: number) => {
+        const g = ctx.createLinearGradient(0, aoTop, 0, height);
+        g.addColorStop(0, 'rgba(0,0,0,0)');
+        g.addColorStop(1, 'rgba(0,0,0,0.3)');
+        ctx.fillStyle = g;
+        ctx.fillRect(x0, aoTop, x1 - x0, height - aoTop);
+      };
+      drawAo(width * 0.32 - 60, width * 0.32);
+      drawAo(width * 0.68, width * 0.68 + 60);
+      ctx.restore();
+    }
+
+    // 3. Surface highlight — replaces the old single flat-color stroke:
+    // lit crests catch the sun, shadowed crests go dark, per segment.
+    for (let i = 0; i < terrain.points.length - 1; i++) {
+      const p0 = terrain.points[i], p1 = terrain.points[i + 1];
+      const lit = lits[i];
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      if (lit > 0.15) {
+        ctx.strokeStyle = shade('#8a6a3c', lit * 0.5);
+        ctx.lineWidth = 2;
+      } else {
+        ctx.strokeStyle = '#221808';
+        ctx.lineWidth = 1.5;
+      }
+      ctx.stroke();
+    }
+
+    // 4. Boulders — an isolated rng (never interleaved with any gameplay
+    // stream, I1), rejected from the pad corridor and bonus-pad zone.
+    const halfW = cfg.padWidth / 2;
+    const padLo = terrain.pad.baseX - (terrain.pad.range + halfW + 20);
+    const padHi = terrain.pad.baseX + (terrain.pad.range + halfW + 20);
+    const bonusLo = terrain.bonusPad ? terrain.bonusPad.xStart - 20 : null;
+    const bonusHi = terrain.bonusPad ? terrain.bonusPad.xEnd + 20 : null;
+    const br = mulberry32(cfg.seed * 431 + 19);
+    const boulderCount = 8 + Math.floor(br() * 7); // 8..14
+    const facingAng = Math.atan2(-LIGHT.y, -LIGHT.x);
+    const angDist = (a: number, b: number) => {
+      let d = Math.abs(a - b) % (Math.PI * 2);
+      if (d > Math.PI) d = Math.PI * 2 - d;
+      return d;
+    };
+    let placed = 0, guard = 0;
+    while (placed < boulderCount && guard < boulderCount * 8) {
+      guard++;
+      const x = br() * width;
+      if (x > padLo && x < padHi) continue;
+      if (bonusLo !== null && x > bonusLo && x < (bonusHi as number)) continue;
+      const y = terrainYAt(terrain.points, x);
+      const sides = 5 + Math.floor(br() * 2); // 5 or 6
+      const baseR = 2.5 + br() * 3.5; // 2.5..6
+      const verts: { x: number; y: number; ang: number }[] = [];
+      for (let k = 0; k < sides; k++) {
+        const ang = (k / sides) * Math.PI * 2;
+        const jitter = 1 + (br() - 0.5) * 0.7; // vertex jitter ±35%
+        const r = baseR * jitter;
+        verts.push({ x: x + Math.cos(ang) * r, y: y + Math.sin(ang) * r * 0.85, ang });
+      }
+      ctx.beginPath();
+      verts.forEach((v, k) => (k === 0 ? ctx.moveTo(v.x, v.y) : ctx.lineTo(v.x, v.y)));
+      ctx.closePath();
+      ctx.fillStyle = shade('#3B2C16', -0.15);
+      ctx.fill();
+
+      // Lit-side facet: the 2 vertices nearest the light-facing direction.
+      const sorted = [...verts].sort((a, b) => angDist(a.ang, facingAng) - angDist(b.ang, facingAng));
+      const facet = sorted.slice(0, 2);
+      if (facet.length === 2) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(facet[0].x, facet[0].y);
+        ctx.lineTo(facet[1].x, facet[1].y);
+        ctx.closePath();
+        ctx.fillStyle = shade('#3B2C16', 0.3);
+        ctx.fill();
+      }
+
+      // Contact shadow.
+      ctx.beginPath();
+      ctx.ellipse(x, y + baseR * 0.3, baseR * 0.9, baseR * 0.35, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(10,6,2,0.35)';
+      ctx.fill();
+
+      placed++;
+    }
+
+    // 5. Scratch texture — per-stroke width/alpha variance from the same
+    // texRand stream (extra calls are safe: used nowhere else).
     const texRand = mulberry32(cfg.seed * 77 + 1);
     for (let i = 0; i < 26; i++) {
       const x = texRand() * width;
       const y = terrainYAt(terrain.points, x) + 6 + texRand() * 26;
       if (y > height - 4) continue;
+      const lw = 0.6 + texRand() * 1.0; // 0.6..1.6
+      const alpha = 0.25 + texRand() * 0.3; // 0.25..0.55
+      ctx.strokeStyle = `rgba(74, 54, 32, ${alpha.toFixed(3)})`;
+      ctx.lineWidth = lw;
       ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.lineTo(x + 4 + texRand() * 8, y + (texRand() - 0.5) * 3);
@@ -281,6 +419,8 @@ export class LayerCache {
     this.lastInput = input;
     this.buildSkyLayer(input);
     this.buildStarLayers(input);
+    this.buildRidgeFarLayer(input);
+    this.buildRidgeNearLayer(input);
     this.buildTerrainLayer(input);
     this.dirty = false;
   }
@@ -309,7 +449,10 @@ export class LayerCache {
   }
 
   get ready(): boolean {
-    return !!(this.skyCanvas && this.starCanvasA && this.starCanvasB && this.terrainCanvas);
+    return !!(
+      this.skyCanvas && this.starCanvasA && this.starCanvasB &&
+      this.ridgeFarCanvas && this.ridgeNearCanvas && this.terrainCanvas
+    );
   }
 }
 
