@@ -43,7 +43,7 @@ export function levelConfigFor(idx: number, diff: Difficulty): LevelConfig {
     ['hills', 'rough', 'canyon'];
   const terrain = styles[Math.floor(r() * styles.length)];
 
-  const padWidth = Math.max(56, (130 - idx * 5 - creep * 30) * m.pad);
+  const padWidth = Math.max(48, (130 - idx * 5 - creep * 30) * m.pad);
 
   const movingPad = idx >= 6 && r() < Math.min(0.65, 0.32 + idx * 0.015);
   // Fog is disabled for now — even after the v9 visibility rework it read
@@ -52,12 +52,22 @@ export function levelConfigFor(idx: number, diff: Difficulty): LevelConfig {
   // later as a rarer, gentler variant.
   const fog = false;
   void r(); // burn the roll fog used to consume, keeping level seeds stable
-  const asteroids = idx >= 4 && r() < 0.55 ? Math.min(5, Math.round((2 + Math.floor(idx / 5)) * m.hazard)) : 0;
-  const ufos = idx >= 8 && r() < 0.45 ? Math.min(3, Math.max(1, Math.round((1 + Math.floor(idx / 9)) * m.hazard))) : 0;
+  let asteroids = idx >= 4 && r() < 0.55 ? Math.min(8, Math.round((2 + Math.floor(idx / 5)) * m.hazard)) : 0;
+  // Surge levels always have debris, even if the base roll didn't hit.
+  if (surge) asteroids = Math.min(10, Math.max(3, asteroids + 3));
+  let ufos = idx >= 8 && r() < 0.45 ? Math.min(5, Math.max(1, Math.round((1 + Math.floor(idx / 9)) * m.hazard))) : 0;
+  // Surge UFO floor only applies once the idx >= 8 unlock has kicked in —
+  // guards a hypothetical future renumbering (§5 resolution 6).
+  if (surge && idx >= 8) ufos = Math.min(6, Math.max(2, ufos + 2));
 
-  const name = idx < LEVEL_NAMES.length
+  const baseName = idx < LEVEL_NAMES.length
     ? LEVEL_NAMES[idx]
     : `${NAME_ADJ[Math.floor(r() * NAME_ADJ.length)]} ${NAME_NOUN[Math.floor(r() * NAME_NOUN.length)]}`;
+  const name = baseName + (surge ? ' — Surge' : '');
+
+  // Hostile shots get faster from level 11 onward, asymptoting at +80%;
+  // surge levels add a further +15% on top.
+  const projSpeed = (130 * (1 + Math.min(0.8, Math.max(0, idx - 10) * 0.02))) * (surge ? 1.15 : 1);
 
   return {
     name,
@@ -69,9 +79,11 @@ export function levelConfigFor(idx: number, diff: Difficulty): LevelConfig {
     fog,
     asteroids,
     movingPad,
-    padSpeed: movingPad ? Math.min(46, 24 + idx * 1.1) : 0,
+    padSpeed: movingPad ? Math.min(58, 24 + idx * 1.1) : 0,
     ufos,
     seed: idx * 13 + 7,
+    surge,
+    projSpeed,
   };
 }
 
