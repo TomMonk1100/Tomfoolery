@@ -1,0 +1,27 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+const entries = (await getCollection('coffee')).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+---
+
+<Layout title="Coffee — Tomfoolery" description="Brew log, current beans, gear shelf.">
+  <span class="badge">brew log</span>
+  <h1 class="font-display text-3xl md:text-4xl font-semibold mt-2">Coffee</h1>
+  <p class="text-muted mt-2 max-w-xl">Current beans, gear, and tasting notes.</p>
+
+  <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+    {entries.map((entry) => (
+      <article class="tile reveal">
+        <span class="badge">{entry.data.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</span>
+        <h2 class="font-display text-lg font-semibold mt-2">{entry.data.title}</h2>
+        {entry.data.roaster && <p class="text-sm text-muted mt-1">{entry.data.roaster} · {entry.data.origin}</p>}
+        {entry.data.rating && (
+          <p class="mt-2 text-signal text-sm">{'●'.repeat(entry.data.rating)}{'○'.repeat(5 - entry.data.rating)}</p>
+        )}
+      </article>
+    ))}
+  </div>
+</Layout>

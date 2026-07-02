@@ -1,0 +1,91 @@
+---
+// Ambient canvas particle field — warm floating motes (embers/fireflies),
+// low-opacity, GPU-cheap, native Canvas 2D (no libraries). Purely
+// decorative and pauses entirely under prefers-reduced-motion.
+---
+
+<canvas id="ember-field" class="fixed inset-0 pointer-events-none z-[1]" aria-hidden="true"></canvas>
+
+<script>
+  function initEmberField() {
+    const canvas = document.getElementById('ember-field') as HTMLCanvasElement | null;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) return; // skip entirely — no canvas loop at all
+
+    let width = 0;
+    let height = 0;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    function resize() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas!.width = width * dpr;
+      canvas!.height = height * dpr;
+      canvas!.style.width = `${width}px`;
+      canvas!.style.height = `${height}px`;
+      ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const COLORS = ['#C97B3D', '#D9A441', '#7C8F5C', '#94B03D'];
+    const COUNT = Math.min(38, Math.floor((width * height) / 32000));
+
+    type Ember = {
+      x: number; y: number; r: number; speed: number; drift: number;
+      opacity: number; color: string; phase: number;
+    };
+
+    const embers: Ember[] = Array.from({ length: COUNT }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      r: 0.8 + Math.random() * 1.8,
+      speed: 0.15 + Math.random() * 0.35,
+      drift: (Math.random() - 0.5) * 0.4,
+      opacity: 0.15 + Math.random() * 0.35,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      phase: Math.random() * Math.PI * 2,
+    }));
+
+    let raf = 0;
+    let t = 0;
+
+    function tick() {
+      t += 1;
+      ctx!.clearRect(0, 0, width, height);
+      for (const e of embers) {
+        e.y -= e.speed;
+        e.x += Math.sin(t * 0.01 + e.phase) * e.drift * 0.5;
+        if (e.y < -10) {
+          e.y = height + 10;
+          e.x = Math.random() * width;
+        }
+        if (e.x < -10) e.x = width + 10;
+        if (e.x > width + 10) e.x = -10;
+
+        const flicker = 0.7 + Math.sin(t * 0.05 + e.phase) * 0.3;
+        ctx!.beginPath();
+        ctx!.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+        ctx!.fillStyle = e.color;
+        ctx!.globalAlpha = e.opacity * flicker;
+        ctx!.fill();
+      }
+      ctx!.globalAlpha = 1;
+      raf = requestAnimationFrame(tick);
+    }
+
+    tick();
+
+    // Clean up on Astro view-transition navigation so we don't stack loops
+    document.addEventListener('astro:before-swap', () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', resize);
+    }, { once: true });
+  }
+
+  document.addEventListener('astro:page-load', initEmberField);
+</script>

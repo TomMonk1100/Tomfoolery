@@ -1,0 +1,246 @@
+---
+// Live "what's happening outside" widget: weather, sunset time/quality,
+// moon phase, and the ISS — fetched/computed client-side, no API keys.
+// Defaults to Breckenridge, TX; visitors can opt in to their own location
+// via the browser Geolocation API (button-gated, graceful fallback).
+---
+
+<div class="tile reveal" id="outside-widget">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div class="flex items-center gap-2">
+      <span class="badge" data-field="location-label">outside · Breckenridge, TX</span>
+      <span class="w-1.5 h-1.5 bg-signal live-pulse" aria-hidden="true"></span>
+    </div>
+    <button
+      id="use-location-btn"
+      type="button"
+      class="badge border border-line px-2 py-1 hover:text-ink hover:border-accent transition-colors cursor-pointer"
+    >
+      use my location
+    </button>
+  </div>
+  <p class="text-xs text-muted mt-1" data-field="location-status" hidden></p>
+
+  <div class="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-5">
+    <div>
+      <p class="badge">weather</p>
+      <p class="mt-1 font-display text-xl font-semibold" data-field="weather-temp">—</p>
+      <p class="text-xs text-muted mt-0.5" data-field="weather-desc">loading…</p>
+    </div>
+    <div>
+      <p class="badge">sunset</p>
+      <p class="mt-1 font-display text-xl font-semibold" data-field="sunset-time">—</p>
+      <p class="text-xs text-muted mt-0.5" data-field="sunset-quality">loading…</p>
+    </div>
+    <div>
+      <p class="badge">moon</p>
+      <p class="mt-1 font-display text-xl font-semibold" data-field="moon-phase">—</p>
+      <p class="text-xs text-muted mt-0.5" data-field="moon-illum">loading…</p>
+    </div>
+    <div>
+      <p class="badge">ISS overhead</p>
+      <p class="mt-1 font-display text-xl font-semibold" data-field="iss-distance">—</p>
+      <p class="text-xs text-muted mt-0.5" data-field="iss-visibility">loading…</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const BRECKENRIDGE = { lat: 32.7557, lon: -98.9023, label: 'Breckenridge, TX' };
+  let current = { ...BRECKENRIDGE };
+
+  function setField(name: string, value: string) {
+    document.querySelectorAll(`[data-field="${name}"]`).forEach((el) => {
+      el.textContent = value;
+    });
+  }
+
+  function setStatus(msg: string) {
+    const el = document.querySelector('[data-field="location-status"]') as HTMLElement | null;
+    if (!el) return;
+    if (!msg) {
+      el.hidden = true;
+      el.textContent = '';
+    } else {
+      el.hidden = false;
+      el.textContent = msg;
+    }
+  }
+
+  const WEATHER_CODES: Record<number, string> = {
+    0: 'Clear sky', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Overcast',
+    45: 'Fog', 48: 'Freezing fog',
+    51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle',
+    61: 'Light rain', 63: 'Rain', 65: 'Heavy rain',
+    71: 'Light snow', 73: 'Snow', 75: 'Heavy snow',
+    80: 'Rain showers', 81: 'Rain showers', 82: 'Violent showers',
+    95: 'Thunderstorm', 96: 'Thunderstorm w/ hail', 99: 'Severe thunderstorm',
+  };
+
+  function sunsetQuality(cloudPct: number): string {
+    if (cloudPct < 15) return 'Clear — simple gold, minimal color';
+    if (cloudPct < 45) return 'Vibrant — good chance of color';
+    if (cloudPct < 70) return 'Painted — clouds catching light';
+    if (cloudPct < 90) return 'Muted — heavy cloud, soft glow at best';
+    return 'Socked in — sunset likely hidden';
+  }
+
+  async function loadWeather(lat: number, lon: number) {
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+        `&current=temperature_2m,weather_code,cloud_cover&hourly=cloud_cover&daily=sunset` +
+        `&temperature_unit=fahrenheit&timezone=auto&forecast_days=1`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      const temp = Math.round(data.current.temperature_2m);
+      const desc = WEATHER_CODES[data.current.weather_code] ?? 'Weather unavailable';
+      setField('weather-temp', `${temp}°F`);
+      setField('weather-desc', desc);
+
+      const sunsetISO = data.daily.sunset[0];
+      const sunsetDate = new Date(sunsetISO);
+      setField(
+        'sunset-time',
+        sunsetDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      );
+
+      const hourlyTimes: string[] = data.hourly.time;
+      const hourlyClouds: number[] = data.hourly.cloud_cover;
+      let closestIdx = 0;
+      let closestDiff = Infinity;
+      hourlyTimes.forEach((t, i) => {
+        const diff = Math.abs(new Date(t).getTime() - sunsetDate.getTime());
+        if (diff < closestDiff) {
+          closestDiff = diff;
+          closestIdx = i;
+        }
+      });
+      const cloudAtSunset = hourlyClouds[closestIdx] ?? data.current.cloud_cover;
+      setField('sunset-quality', sunsetQuality(cloudAtSunset));
+    } catch (e) {
+      setField('weather-desc', "Couldn't load weather");
+      setField('sunset-quality', "Couldn't load forecast");
+    }
+  }
+
+  function moonPhase(date: Date) {
+    const synodic = 29.53058867;
+    const knownNewMoon = Date.UTC(2000, 0, 6, 18, 14, 0);
+    const daysSince = (date.getTime() - knownNewMoon) / 86400000;
+    let phase = (daysSince % synodic) / synodic;
+    if (phase < 0) phase += 1;
+    return phase;
+  }
+
+  function loadMoon() {
+    // Moon phase is the same everywhere on Earth (give or take a day near
+    // the terminator), so this doesn't depend on location.
+    const phase = moonPhase(new Date());
+    const illum = Math.round((1 - Math.cos(2 * Math.PI * phase)) / 2 * 100);
+
+    let name = 'New Moon';
+    let emoji = '🌑';
+    if (phase < 0.033 || phase >= 0.967) { name = 'New Moon'; emoji = '🌑'; }
+    else if (phase < 0.216) { name = 'Waxing Crescent'; emoji = '🌒'; }
+    else if (phase < 0.284) { name = 'First Quarter'; emoji = '🌓'; }
+    else if (phase < 0.466) { name = 'Waxing Gibbous'; emoji = '🌔'; }
+    else if (phase < 0.534) { name = 'Full Moon'; emoji = '🌕'; }
+    else if (phase < 0.716) { name = 'Waning Gibbous'; emoji = '🌖'; }
+    else if (phase < 0.784) { name = 'Last Quarter'; emoji = '🌗'; }
+    else { name = 'Waning Crescent'; emoji = '🌘'; }
+
+    setField('moon-phase', `${emoji} ${name}`);
+    setField('moon-illum', `${illum}% illuminated`);
+  }
+
+  function haversineMiles(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const R = 3958.8;
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  async function loadISS(lat: number, lon: number) {
+    try {
+      const res = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
+      const data = await res.json();
+      const dist = Math.round(haversineMiles(lat, lon, data.latitude, data.longitude));
+      setField('iss-distance', `${dist.toLocaleString()} mi`);
+      setField(
+        'iss-visibility',
+        data.visibility === 'daylight' ? 'in sunlight' : "in Earth's shadow"
+      );
+    } catch (e) {
+      setField('iss-distance', '—');
+      setField('iss-visibility', "Couldn't reach ISS tracker");
+    }
+  }
+
+  async function reverseGeocodeLabel(lat: number, lon: number): Promise<string> {
+    try {
+      const res = await fetch(
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
+      );
+      const data = await res.json();
+      const city = data.city || data.locality;
+      const region = data.principalSubdivisionCode?.split('-')[1] || data.principalSubdivision;
+      if (city && region) return `${city}, ${region}`;
+      if (data.locality) return data.locality;
+    } catch (e) {
+      // fall through to coordinate label
+    }
+    return `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+  }
+
+  async function refreshFor(lat: number, lon: number, label: string) {
+    setField('location-label', `outside · ${label}`);
+    await Promise.all([loadWeather(lat, lon), loadISS(lat, lon)]);
+  }
+
+  function useMyLocation() {
+    const btn = document.getElementById('use-location-btn');
+    if (!('geolocation' in navigator)) {
+      setStatus("Your browser doesn't support geolocation — showing Breckenridge, TX.");
+      return;
+    }
+    setStatus('Requesting your location…');
+    if (btn) (btn as HTMLButtonElement).disabled = true;
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        current = { lat: latitude, lon: longitude, label: 'your location' };
+        setStatus('Got it — updating…');
+        const label = await reverseGeocodeLabel(latitude, longitude);
+        await refreshFor(latitude, longitude, label);
+        setStatus('');
+        if (btn) (btn as HTMLButtonElement).disabled = false;
+      },
+      () => {
+        // Declined or failed — graceful fallback, stay on Breckenridge data.
+        setStatus("Couldn't get your location — showing Breckenridge, TX instead.");
+        if (btn) (btn as HTMLButtonElement).disabled = false;
+      },
+      { timeout: 8000 }
+    );
+  }
+
+  function initOutsideWidget() {
+    current = { ...BRECKENRIDGE };
+    setField('location-label', `outside · ${BRECKENRIDGE.label}`);
+    setStatus('');
+    loadWeather(BRECKENRIDGE.lat, BRECKENRIDGE.lon);
+    loadMoon();
+    loadISS(BRECKENRIDGE.lat, BRECKENRIDGE.lon);
+
+    const btn = document.getElementById('use-location-btn');
+    btn?.addEventListener('click', useMyLocation);
+  }
+
+  document.addEventListener('astro:page-load', initOutsideWidget);
+</script>

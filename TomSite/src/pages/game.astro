@@ -1,0 +1,78 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Moon Lander — Tomfoolery" description="A roguelite Moon Lander game — 10 levels, procedural upgrades.">
+  <div class="max-w-3xl mx-auto reveal is-visible">
+    <span class="badge">play</span>
+    <h1 class="font-display text-3xl md:text-4xl font-semibold mt-2">Moon Lander</h1>
+    <p class="text-muted mt-2 text-sm">
+      Land gently on the pad, ten times in a row. Pick an upgrade after each
+      landing — they carry through the run. Crash, and it resets. Built with
+      canvas + Web Audio, no libraries.
+    </p>
+
+    <div id="lander-root" class="mt-6 relative">
+      <div class="tile !p-0 overflow-hidden relative">
+        <canvas class="block w-full"></canvas>
+
+        <!-- HUD -->
+        <div class="absolute top-3 left-3 right-3 flex items-start justify-between gap-4 font-mono text-xs pointer-events-none">
+          <div class="bg-canvas/70 px-2 py-1 border border-line">
+            <span class="text-muted">LVL </span><span data-hud="level" class="text-ink">1 / 10</span>
+          </div>
+          <div class="flex gap-3">
+            <div class="bg-canvas/70 px-2 py-1 border border-line">
+              <span class="text-muted">ALT </span><span data-hud="altitude" class="text-ink">—</span>
+            </div>
+            <div class="bg-canvas/70 px-2 py-1 border border-line">
+              <span class="text-muted">SPD </span><span data-hud="speed" class="text-ink">0</span>
+            </div>
+          </div>
+        </div>
+        <div class="absolute bottom-3 left-3 right-3 flex items-center gap-2 font-mono text-xs pointer-events-none">
+          <span class="text-muted">FUEL</span>
+          <div class="flex-1 h-2 bg-canvas/70 border border-line">
+            <div data-hud="fuel-bar" class="h-full bg-signal" style="width:100%"></div>
+          </div>
+          <span data-hud="fuel" class="text-ink w-10 text-right">100%</span>
+        </div>
+
+        <!-- Overlay (start / upgrade / crash / win screens) -->
+        <div data-overlay class="absolute inset-0 bg-canvas/92 backdrop-blur-sm flex items-center justify-center p-6">
+          <div data-overlay-content></div>
+        </div>
+      </div>
+
+      <!-- Touch controls (mobile) -->
+      <div class="touch-controls justify-between items-center gap-3 mt-3 select-none">
+        <button data-touch="left" class="tile flex-1 py-4 text-center font-display text-xl cursor-pointer" aria-label="Rotate left">⟲</button>
+        <button data-touch="thrust" class="tile flex-1 py-5 text-center font-display text-xl cursor-pointer badge-signal" aria-label="Thrust">▲</button>
+        <button data-touch="right" class="tile flex-1 py-4 text-center font-display text-xl cursor-pointer" aria-label="Rotate right">⟳</button>
+      </div>
+
+      <p class="text-xs text-muted font-mono mt-3">
+        ←/→ or A/D rotate · ↑ / W / Space thrust
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { initLanderGame } from '../scripts/lander-game';
+
+  let cleanup: (() => void) | null = null;
+
+  function boot() {
+    const root = document.getElementById('lander-root');
+    if (!root) return;
+    cleanup?.();
+    cleanup = initLanderGame(root);
+  }
+
+  document.addEventListener('astro:page-load', boot);
+  document.addEventListener('astro:before-swap', () => {
+    cleanup?.();
+    cleanup = null;
+  });
+</script>

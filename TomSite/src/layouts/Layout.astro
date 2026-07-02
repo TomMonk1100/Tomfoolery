@@ -1,0 +1,244 @@
+---
+import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
+import EmberField from '../components/EmberField.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Tomfoolery",
+  description = "Tom's personal hub — photos, collections, coffee, and whatever else.",
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <ClientRouter />
+  </head>
+  <body class="min-h-screen bg-canvas text-ink font-body antialiased">
+    <!-- SVG filter used by .ambient-blob for organic, non-uniform distortion
+         (feTurbulence + feDisplacementMap) instead of a flat CSS blur. -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <filter id="organic-distort" x="-20%" y="-20%" width="140%" height="140%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.008 0.015" numOctaves="2" seed="7" result="noise">
+          <animate attributeName="baseFrequency" values="0.008 0.015;0.012 0.02;0.008 0.015" dur="18s" repeatCount="indefinite" />
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="40" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </svg>
+
+    <div class="grain-overlay"></div>
+    <EmberField />
+
+    <header class="glass-nav">
+      <div class="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+        <a href="/" class="font-display font-semibold tracking-tight text-lg flicker-hover">
+          Tom<span class="gradient-text">foolery</span>
+        </a>
+        <nav class="flex gap-5 text-sm text-muted font-mono">
+          <a href="/now" class="hover:text-ink transition-colors">now</a>
+          <a href="/about" class="hover:text-ink transition-colors">about</a>
+        </nav>
+      </div>
+    </header>
+    <main class="max-w-6xl mx-auto px-6 py-10 relative z-10" transition:name="main-content" transition:animate="fade">
+      <slot />
+    </main>
+    <footer class="max-w-6xl mx-auto px-6 py-12 text-xs text-muted font-mono relative z-10">
+      built with a little help from an AI, tended by hand
+    </footer>
+
+    <script>
+      // --- Scroll reveal (tiles/sections) ---
+      function setupReveal() {
+        const els = document.querySelectorAll('.reveal:not(.is-visible)');
+        if (!('IntersectionObserver' in window) || els.length === 0) {
+          document.querySelectorAll('.reveal').forEach((el) => el.classList.add('is-visible'));
+          return;
+        }
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                io.unobserve(entry.target);
+              }
+            });
+          },
+          { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+        );
+        els.forEach((el) => io.observe(el));
+      }
+
+      // --- Kinetic type: split [data-kinetic] elements into word spans ---
+      function setupKineticType() {
+        document.querySelectorAll('[data-kinetic]:not([data-kinetic-done])').forEach((el) => {
+          const text = el.textContent ?? '';
+          const words = text.split(/(\s+)/);
+          el.innerHTML = words
+            .map((w, i) =>
+              w.trim() === ''
+                ? w
+                : `<span class="kinetic-word" style="--i:${i}">${w}</span>`
+            )
+            .join('');
+          el.setAttribute('data-kinetic-done', 'true');
+        });
+
+        const kineticEls = document.querySelectorAll('.kinetic-word:not(.is-visible)');
+        if (!('IntersectionObserver' in window)) {
+          kineticEls.forEach((el) => el.classList.add('is-visible'));
+          return;
+        }
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                io.unobserve(entry.target);
+              }
+            });
+          },
+          { threshold: 0.1 }
+        );
+        kineticEls.forEach((el) => io.observe(el));
+      }
+
+      // --- Parallax: elements with [data-parallax="0.3"] move at 0.3x scroll speed ---
+      let parallaxEls: NodeListOf<HTMLElement>;
+      let ticking = false;
+      function updateParallax() {
+        const scrollY = window.scrollY;
+        parallaxEls.forEach((el) => {
+          const speed = parseFloat(el.dataset.parallax || '0.2');
+          el.style.transform = `translateY(${scrollY * speed}px)`;
+        });
+        ticking = false;
+      }
+      function onScroll() {
+        if (!ticking) {
+          requestAnimationFrame(updateParallax);
+          ticking = true;
+        }
+      }
+      function setupParallax() {
+        parallaxEls = document.querySelectorAll('[data-parallax]');
+        if (parallaxEls.length === 0) return;
+        window.addEventListener('scroll', onScroll, { passive: true });
+        updateParallax();
+      }
+
+      // --- Houdini CSS Paint API: progressive enhancement, feature-detected ---
+      function setupHoudini() {
+        if ('paintWorklet' in CSS) {
+          // @ts-ignore - paintWorklet is experimental, not in default TS lib
+          CSS.paintWorklet.addModule('/paint-worklet.js').then(() => {
+            document.documentElement.classList.add('houdini-supported');
+          }).catch(() => {});
+        }
+      }
+
+      // --- Magnetic hover: .tile elements pull slightly toward the cursor ---
+      let magneticTiles: NodeListOf<HTMLElement>;
+      let mouseX = 0;
+      let mouseY = 0;
+      let magneticRaf = 0;
+      const MAGNET_RADIUS = 130;
+      const MAGNET_STRENGTH = 0.28;
+
+      function updateMagnetic() {
+        magneticTiles.forEach((tile) => {
+          const rect = tile.getBoundingClientRect();
+          const cx = rect.left + rect.width / 2;
+          const cy = rect.top + rect.height / 2;
+          const dx = mouseX - cx;
+          const dy = mouseY - cy;
+          const dist = Math.hypot(dx, dy);
+          if (dist < MAGNET_RADIUS) {
+            const pull = (1 - dist / MAGNET_RADIUS) * MAGNET_STRENGTH;
+            tile.style.setProperty('--magnet-x', `${dx * pull}px`);
+            tile.style.setProperty('--magnet-y', `${dy * pull}px`);
+          } else {
+            tile.style.setProperty('--magnet-x', '0px');
+            tile.style.setProperty('--magnet-y', '0px');
+          }
+        });
+        magneticRaf = 0;
+      }
+
+      function onMouseMoveMagnetic(e: MouseEvent) {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        if (!magneticRaf) magneticRaf = requestAnimationFrame(updateMagnetic);
+      }
+
+      function setupMagnetic() {
+        magneticTiles = document.querySelectorAll('.tile');
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        if (window.matchMedia('(pointer: coarse)').matches) return; // skip on touch
+        window.addEventListener('mousemove', onMouseMoveMagnetic, { passive: true });
+      }
+
+      // --- Scroll-velocity reactive elements: [data-scroll-fx] skews/blurs
+      //     proportional to how FAST you're scrolling, not just position ---
+      let lastScrollYFx = window.scrollY;
+      let scrollVelocity = 0;
+      let scrollFxRaf = 0;
+      function scrollFxLoop() {
+        const currentY = window.scrollY;
+        const delta = currentY - lastScrollYFx;
+        lastScrollYFx = currentY;
+        scrollVelocity += (delta - scrollVelocity) * 0.3;
+        const els = document.querySelectorAll<HTMLElement>('[data-scroll-fx]');
+        if (els.length) {
+          const skew = Math.max(-5, Math.min(5, scrollVelocity * 0.4));
+          const blur = Math.min(3, Math.abs(scrollVelocity) * 0.12);
+          els.forEach((el) => {
+            el.style.transform = `skewY(${skew}deg)`;
+            el.style.filter = blur > 0.15 ? `blur(${blur.toFixed(2)}px)` : 'none';
+          });
+        }
+        scrollVelocity *= 0.85;
+        scrollFxRaf = requestAnimationFrame(scrollFxLoop);
+      }
+      function setupScrollFx() {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        if (document.querySelectorAll('[data-scroll-fx]').length === 0) return;
+        lastScrollYFx = window.scrollY;
+        scrollFxRaf = requestAnimationFrame(scrollFxLoop);
+      }
+
+      function initAll() {
+        setupReveal();
+        setupKineticType();
+        setupParallax();
+        setupHoudini();
+        setupMagnetic();
+        setupScrollFx();
+      }
+
+      document.addEventListener('astro:page-load', initAll);
+      document.addEventListener('astro:before-swap', () => {
+        window.removeEventListener('scroll', onScroll);
+        window.removeEventListener('mousemove', onMouseMoveMagnetic);
+        if (scrollFxRaf) cancelAnimationFrame(scrollFxRaf);
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,33 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+const pieces = await getCollection('art');
+const categories = [
+  { key: 'coffee-art', label: 'Latte Art' },
+  { key: 'hand-drawn', label: 'Hand-Drawn' },
+  { key: 'ai-art', label: 'AI Art' },
+] as const;
+---
+
+<Layout title="Art — Tomfoolery" description="Latte art, hand-drawn sketches, and AI-art experiments.">
+  <span class="badge">creative</span>
+  <h1 class="font-display text-3xl md:text-4xl font-semibold mt-2">Art</h1>
+  <p class="text-muted mt-2 max-w-xl">Latte art, hand-drawn sketches, and AI-art experiments — all in one place, sorted by type.</p>
+
+  {categories.map((cat) => {
+    const items = pieces.filter((p) => p.data.category === cat.key);
+    return items.length > 0 ? (
+      <section class="mt-10">
+        <h2 class="font-display text-xl font-semibold gradient-text">{cat.label}</h2>
+        <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {items.map((item) => (
+            <article class="tile reveal aspect-square flex flex-col justify-end">
+              <h3 class="font-display font-semibold text-sm">{item.data.title}</h3>
+            </article>
+          ))}
+        </div>
+      </section>
+    ) : null;
+  })}
+</Layout>
