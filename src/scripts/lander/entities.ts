@@ -22,6 +22,11 @@ export interface Asteroid {
   x: number;          // current computed position (updated by updateAsteroids)
   y: number;
   alive: boolean;
+  // v12 Commit 6: render-only — an irregular polygon shape + a rotation
+  // speed so asteroids read as tumbling rock instead of a plain circle.
+  // Collision still uses the circle `r` above — gameplay untouched (I1).
+  shape: number[];
+  rotSpeed: number;
 }
 
 // Generated once per level load. Mirrors the exact seeding the old inline
@@ -35,7 +40,15 @@ export function generateAsteroids(cfg: LevelConfig, width: number, height: numbe
     const baseX = rand() * width;
     const baseY = height * (0.15 + rand() * 0.35);
     const r = (10 + rand() * 12) * Math.min(1.25, S);
-    list.push({ baseX, baseY, r, seedIndex: i, x: baseX, y: baseY, alive: true });
+    // v12 Commit 6: an isolated NEW rng, seeded per-asteroid-index, so this
+    // render-only polygon/spin data never perturbs the shared `rand` stream
+    // above (which must stay pixel-identical for existing layouts — I1).
+    const sr = mulberry32(cfg.seed * 947 + i);
+    const sides = 8 + Math.floor(sr() * 3); // 8..10
+    const shape: number[] = [];
+    for (let k = 0; k < sides; k++) shape.push(0.72 + sr() * 0.56); // 0.72..1.28
+    const rotSpeed = (sr() < 0.5 ? -1 : 1) * (0.2 + sr() * 0.4); // ±0.2..0.6 rad/s
+    list.push({ baseX, baseY, r, seedIndex: i, x: baseX, y: baseY, alive: true, shape, rotSpeed });
   }
   return list;
 }

@@ -41,7 +41,7 @@ import {
 import { AudioEngine } from './audio/sfx';
 import { MusicEngine } from './audio/music';
 import { DEFAULT_FACE, analyzeFace, drawShip, checkGhostSave } from './render/ship';
-import { drawCritters, drawUfos, drawPad, drawAsteroids, drawDrones, drawNoodle, drawNoodlePiles, drawCanisters, drawBonusPad } from './render/world';
+import { drawCritters, drawUfos, drawPad, drawAsteroids, drawDrones, drawNoodle, drawNoodlePiles, drawCanisters, drawBonusPad, drawProjectileTracers } from './render/world';
 import { updateHud as updateHudEl, drawAbilityPips } from './render/hud';
 import { upgradeListHtml, shopItemHtml, trailSwatch, diffButtonsHtml } from './ui/overlays';
 import { loadJSON, bestFor as bestForStored, saveBest, fetchLeaderboard as fetchLeaderboardRemote, submitScore as submitScoreRemote, writeSchemaTag } from './persistence';
@@ -2384,17 +2384,9 @@ export function initLanderGame(root: HTMLElement) {
       drawNoodle(ctx, noo, S);
     }
 
-    // Ally shots (Alien Diplomacy stack 2+, §5.1) — green to read as friendly.
-    for (const ap of allyProjectiles) {
-      if (!ap.alive) continue;
-      ctx.beginPath();
-      ctx.arc(ap.x, ap.y, 2.8, 0, Math.PI * 2);
-      ctx.fillStyle = '#94B03D';
-      ctx.shadowColor = '#7C8F5C';
-      ctx.shadowBlur = 8;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    }
+    // Ally shots (Alien Diplomacy stack 2+, §5.1) — same capsule-tracer
+    // geometry as hostile shots (v12 Commit 6), in green to read as friendly.
+    drawProjectileTracers(ctx, allyProjectiles, '#94B03D', perfGuard.degraded);
 
     // §8.3 Particles. True draw-call batching (accumulating same-color
     // particles into one path + one fill()) doesn't apply cleanly here: each
