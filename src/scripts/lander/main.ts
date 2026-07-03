@@ -403,9 +403,17 @@ export function initLanderGame(root: HTMLElement) {
   const WIND_STREAK_COUNT = 5;
   let windStreaks: { x: number; y: number; len: number }[] | null = null;
 
+  // Mobile performance mode: coarse-pointer devices on narrow viewports get
+  // a lower DPR cap (biggest fill-rate win on phone GPUs) and reduced
+  // particle emission from the first frame, instead of waiting for the
+  // degradation guard to notice jank mid-run. The guard still layers on top
+  // for dynamic conditions.
+  let mobilePerf = false;
+
   // --- Responsive sizing: fill the container, go taller on portrait phones ---
   function resize() {
     const rect = canvas.parentElement!.getBoundingClientRect();
+    mobilePerf = window.matchMedia('(pointer: coarse)').matches && window.innerWidth < 820;
     const portrait = window.innerHeight > window.innerWidth * 1.1;
     let w = Math.min(rect.width, 1200);
     const aspect = portrait ? 1.15 : 0.62;
@@ -418,7 +426,7 @@ export function initLanderGame(root: HTMLElement) {
     // Big ship — the pilot's face is a feature, so it gets real pixels.
     // Scaled to the canvas: ~1.6x on phones up to ~2.3x on desktop.
     S = Math.max(1.6, Math.min(2.3, width / 420));
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = Math.min(window.devicePixelRatio || 1, mobilePerf ? 1.5 : 2);
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     canvas.style.width = `${width}px`;
@@ -743,7 +751,10 @@ export function initLanderGame(root: HTMLElement) {
   // 1) when the degradation guard has tripped. `emitCount(n)` centralizes
   // that so every emitter applies the same rule.
   function emitCount(n: number): number {
-    return perfGuard.degraded ? Math.max(1, Math.round(n / 2)) : n;
+    // Degraded (guard tripped) halves emission; mobile perf mode trims to
+    // 60% preemptively. Degraded wins when both apply.
+    const scale = perfGuard.degraded ? 0.5 : mobilePerf ? 0.6 : 1;
+    return scale === 1 ? n : Math.max(1, Math.round(n * scale));
   }
 
   function emitThrusterParticles() {
@@ -1853,10 +1864,23 @@ export function initLanderGame(root: HTMLElement) {
       .upg-desc{font-size:.8rem;line-height:1.35;color:#5D5140;}
       .upg-rarity{margin-top:auto;font-family:"JetBrains Mono",monospace;font-size:.62rem;
         letter-spacing:.14em;text-transform:uppercase;color:var(--uc);}
+      .upg-body{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;flex:1;}
       .upg-timerbar{height:6px;border-radius:3px;background:var(--color-line);overflow:hidden;}
       .upg-timerbar>div{height:100%;border-radius:3px;transition:width .1s linear;
         background:linear-gradient(90deg,var(--color-accent-mid),var(--color-accent));}
       .upg-owned{position:absolute;top:8px;right:8px;font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.06em;color:#FFFDF6;background:var(--uc);padding:2px 8px;border-radius:999px;}
+      /* Mobile: horizontal compact cards — emblem left, text right — so a
+         full offer (3-6 cards) fits the overlay with minimal scrolling and
+         every card stays a big, easy tap target. */
+      @media (max-width: 520px){
+        .upg-card{flex-direction:row;text-align:left;padding:12px 14px;gap:12px;align-items:center;}
+        .upg-card .upg-emblem{width:60px;height:60px;flex-shrink:0;}
+        .upg-body{align-items:flex-start;gap:4px;}
+        .upg-name{font-size:.95rem;}
+        .upg-desc{font-size:.76rem;}
+        .upg-rarity{margin-top:2px;}
+        .upg-card:hover{transform:none;}
+      }
     `;
     document.head.appendChild(st);
   }
@@ -1996,9 +2020,11 @@ export function initLanderGame(root: HTMLElement) {
         style="--uc:${r.color};--uc-tint:${r.color}26;--uc-glow:${glowPx}px;--uc-glowc:${glowPx ? `${r.color}${rank >= 4 ? '66' : '44'}` : 'transparent'};">
         ${upgradeEmblemSvg(u)}
         ${n > 0 ? `<div class="upg-owned">owned ×${n}</div>` : ''}
-        <div class="upg-name">${u.name}</div>
-        <div class="upg-desc">${u.desc}</div>
-        <div class="upg-rarity">${label}</div>
+        <span class="upg-body">
+          <span class="upg-name">${u.name}</span>
+          <span class="upg-desc">${u.desc}</span>
+          <span class="upg-rarity">${label}</span>
+        </span>
       </button>
     `;
     }).join('');
@@ -2100,8 +2126,9 @@ export function initLanderGame(root: HTMLElement) {
 
   // --- Global leaderboard screen ---
   async function showLeaderboard() {
+    // px/py padding keeps these comfortable thumb targets on phones.
     const filterBtnClass = (active: boolean) =>
-      `cursor-pointer ${active ? 'text-ink underline underline-offset-2' : 'text-muted hover:text-ink transition-colors'}`;
+      `cursor-pointer px-2 py-1.5 ${active ? 'text-ink underline underline-offset-2' : 'text-muted hover:text-ink transition-colors'}`;
     setOverlay(`
       <div class="text-center max-w-md mx-auto">
         <p class="badge badge-signal">🌍 global leaderboard</p>
@@ -2948,6 +2975,7 @@ export function initLanderGame(root: HTMLElement) {
   function updateHud() {
     updateHudEl({
       hud, ship, stats, terrain, levelIndex, cfg, bestFor: () => bestFor(difficulty), stardust,
+      compact: width < 480,
     });
   }
 

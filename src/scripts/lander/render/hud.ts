@@ -20,6 +20,10 @@ export interface UpdateHudParams {
   cfg: LevelConfig | undefined;
   bestFor: () => number;
   stardust: number;
+  // Narrow-viewport mode: drop the level *name* from the LVL chip ("3"
+  // instead of "3 — First Light") so the HUD row never wraps or overlaps
+  // the ALT/SPD chips on phone-width canvases.
+  compact?: boolean;
 }
 
 // §8.7 DOM discipline: only touch the DOM when the value being displayed
@@ -42,7 +46,7 @@ function setStyle<K extends keyof CSSStyleDeclaration>(
 }
 
 export function updateHud(p: UpdateHudParams) {
-  const { hud, ship, stats, terrain, levelIndex, cfg, bestFor, stardust } = p;
+  const { hud, ship, stats, terrain, levelIndex, cfg, bestFor, stardust, compact } = p;
   if (!hud.fuel) return;
   setText(hud.fuel, `${Math.round(ship.fuel)}`);
   if (hud.fuelBar) {
@@ -54,7 +58,7 @@ export function updateHud(p: UpdateHudParams) {
   setStyle(hud.speed, 'color',
     speed < stats.landingSpeedTol * 0.8 ? '#94B03D' :
     speed < stats.landingSpeedTol ? '#D9A441' : '#C97B3D');
-  setText(hud.level, `${levelIndex + 1} — ${cfg?.name ?? ''}`);
+  setText(hud.level, compact ? `${levelIndex + 1}` : `${levelIndex + 1} — ${cfg?.name ?? ''}`);
   if (hud.best) setText(hud.best, `${bestFor() || '—'}`);
   if (hud.stardust) setText(hud.stardust, `${stardust}`);
 }

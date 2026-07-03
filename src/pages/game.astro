@@ -4,15 +4,21 @@ import Layout from '../layouts/Layout.astro';
 
 <Layout title="Moon Lander — Tomfoolery" description="An endless roguelite Moon Lander — procedurally harder levels, upgrades with real tradeoffs.">
   <div class="reveal is-visible">
-    <span class="badge">play</span>
-    <h1 class="font-display text-3xl md:text-4xl font-semibold mt-2">Moon Lander</h1>
-    <p class="text-muted mt-2 text-sm">
-      Land gently on the pad. Endless levels, each harder than the last — pick an
-      upgrade after every landing, but every boon has a cost. Three difficulty
-      modes. Built with canvas + Web Audio, no libraries.
-    </p>
+    <!-- On phones the canvas must be the first thing under the nav — no
+         scrolling to reach the action (the in-canvas title screen already
+         introduces the game). The header lives here for sm+ viewports and
+         moves into a collapsible section below the game on mobile. -->
+    <div class="hidden sm:block">
+      <span class="badge">play</span>
+      <h1 class="font-display text-3xl md:text-4xl font-semibold mt-2">Moon Lander</h1>
+      <p class="text-muted mt-2 text-sm">
+        Land gently on the pad. Endless levels, each harder than the last — pick an
+        upgrade after every landing, but every boon has a cost. Three difficulty
+        modes. Built with canvas + Web Audio, no libraries.
+      </p>
+    </div>
 
-    <div id="lander-root" class="mt-6 relative">
+    <div id="lander-root" class="mt-0 sm:mt-6 relative">
       <div class="game-bleed">
         <div class="tile !p-0 overflow-hidden relative">
           <canvas class="block w-full"></canvas>
@@ -84,6 +90,19 @@ import Layout from '../layouts/Layout.astro';
           </label>
         </div>
       </div>
+
+      <!-- Mobile-only: the page header relocated below the game so the
+           canvas is first. Collapsed by default. -->
+      <details class="sm:hidden mt-4">
+        <summary class="font-display font-semibold cursor-pointer select-none">
+          <span class="badge mr-2">play</span>About Moon Lander
+        </summary>
+        <p class="text-muted mt-2 text-sm">
+          Land gently on the pad. Endless levels, each harder than the last — pick an
+          upgrade after every landing, but every boon has a cost. Three difficulty
+          modes. Built with canvas + Web Audio, no libraries.
+        </p>
+      </details>
     </div>
   </div>
 </Layout>
@@ -112,6 +131,19 @@ import Layout from '../layouts/Layout.astro';
     accent-color: var(--color-accent);
     cursor: pointer;
   }
+
+  /* Touch hygiene: no double-tap zoom, no text selection, no gray tap
+     flashes on the game surface or the thumb buttons. */
+  #lander-root canvas,
+  #lander-root [data-touch] {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #lander-root {
+    -webkit-tap-highlight-color: transparent;
+  }
 </style>
 
 <script>
@@ -119,15 +151,25 @@ import Layout from '../layouts/Layout.astro';
 
   let cleanup: (() => void) | null = null;
 
+  // Page-scoped viewport lock: disable pinch/double-tap zoom while on the
+  // game page (accidental zooms during play), restored on navigation away.
+  const VIEWPORT_DEFAULT = 'width=device-width, initial-scale=1';
+  const VIEWPORT_GAME = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';
+  function setViewport(content: string) {
+    document.querySelector('meta[name="viewport"]')?.setAttribute('content', content);
+  }
+
   function boot() {
     const root = document.getElementById('lander-root');
     if (!root) return;
+    setViewport(VIEWPORT_GAME);
     cleanup?.();
     cleanup = initLanderGame(root);
   }
 
   document.addEventListener('astro:page-load', boot);
   document.addEventListener('astro:before-swap', () => {
+    setViewport(VIEWPORT_DEFAULT);
     cleanup?.();
     cleanup = null;
   });
