@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://unpkg.com/@sveltia/cms/schema/sveltia-cms.json
+
+backend:
+  name: github
+  repo: TomMonk1100/Tomfoolery
+  branch: main
+
+# Drafts create a content branch + Netlify deploy preview instead of
+# committing straight to main — review a post (with real images) before
+# it goes live.
+publish_mode: editorial_workflow
+
+media_folder: /public/uploads
+public_folder: /uploads
+
+collections:
+  - name: now
+    label: "Now (blog)"
+    label_singular: "Post"
+    folder: /src/content/now
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Date, name: date, widget: datetime, format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false }
+      - { label: Tag, name: tag, widget: select, options: ["coffee", "retreat", "life", "update", "photo"], required: false }
+      - { label: Location, name: location, widget: string, required: false }
+      - { label: Image, name: image, widget: image, required: false }
+      - { label: Body, name: body, widget: markdown }
+
+  - name: art
+    label: "Art"
+    label_singular: "Piece"
+    folder: /src/content/art
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Category, name: category, widget: select, options: ["coffee-art", "hand-drawn", "ai-art"] }
+      - { label: Date, name: date, widget: datetime, format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false, required: false }
+      - { label: Image, name: image, widget: image, required: false }
+      - { label: Body, name: body, widget: markdown }
+
+  - name: pokemon
+    label: "Pokémon TCG"
+    label_singular: "Card"
+    folder: /src/content/pokemon
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Set, name: set, widget: string, required: false }
+      - { label: Grade, name: grade, widget: string, required: false }
+      - { label: "Date Acquired", name: dateAcquired, widget: datetime, format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false, required: false }
+      - { label: Image, name: image, widget: image, required: false }
+      - { label: Body, name: body, widget: markdown }

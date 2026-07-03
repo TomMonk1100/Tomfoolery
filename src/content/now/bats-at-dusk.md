@@ -1,7 +1,8 @@
 ---
 title: "Bats at dusk"
-location: "West Texas"
 date: 2026-06-30
+tag: "photo"
+location: "West Texas"
 image: "/photos/bats-dusk.jpg"
 ---
 Stood still for probably twenty minutes while a few hundred thousand bats

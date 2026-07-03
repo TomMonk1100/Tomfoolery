@@ -12,3 +12,35 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+
+# Coffee/Photos/Retreats collections were folded into the "Now" blog
+# (2026-07-03 IA prune). Old links redirect instead of 404ing.
+[[redirects]]
+  from = "/coffee"
+  to = "/now"
+  status = 301
+
+[[redirects]]
+  from = "/coffee/*"
+  to = "/now"
+  status = 301
+
+[[redirects]]
+  from = "/photos"
+  to = "/now"
+  status = 301
+
+[[redirects]]
+  from = "/photos/*"
+  to = "/now"
+  status = 301
+
+[[redirects]]
+  from = "/retreats"
+  to = "/now"
+  status = 301
+
+[[redirects]]
+  from = "/retreats/*"
+  to = "/now"
+  status = 301

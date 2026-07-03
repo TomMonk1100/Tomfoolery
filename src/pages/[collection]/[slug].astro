@@ -1,13 +1,12 @@
 ---
-// Generic detail page for any collection entry — /coffee/:slug,
-// /pokemon/:slug, /photos/:slug, /retreats/:slug, /art/:slug. One template
-// instead of five near-duplicates; renders whichever metadata fields a
-// given entry actually has.
+// Generic detail page for any collection entry — /now/:slug,
+// /pokemon/:slug, /art/:slug. One template instead of near-duplicates;
+// renders whichever metadata fields a given entry actually has.
 import Layout from '../../layouts/Layout.astro';
 import { getCollection, render } from 'astro:content';
 
 export async function getStaticPaths() {
-  const COLLECTIONS = ['coffee', 'pokemon', 'photos', 'retreats', 'art'] as const;
+  const COLLECTIONS = ['now', 'pokemon', 'art'] as const;
   const paths = [];
   for (const name of COLLECTIONS) {
     const entries = await getCollection(name);
@@ -38,12 +37,10 @@ function fmt(date: Date) {
     {d.date && <span>{fmt(new Date(d.date))}</span>}
     {d.dateAcquired && <span>{fmt(new Date(d.dateAcquired))}</span>}
     {d.location && <span>{d.location}</span>}
-    {d.roaster && <span>{d.roaster}{d.origin ? ` · ${d.origin}` : ''}</span>}
+    {d.tag && <span class="badge-signal">{d.tag}</span>}
     {d.set && <span>{d.set}</span>}
     {d.category && <span>{d.category}</span>}
     {d.grade && <span class="badge-signal">{d.grade}</span>}
-    {d.status && <span class="badge-signal">{d.status}</span>}
-    {d.rating && <span class="text-signal">{'●'.repeat(d.rating)}{'○'.repeat(5 - d.rating)}</span>}
   </p>
 
   {d.image && (
