@@ -438,9 +438,16 @@ export function initLanderGame(root: HTMLElement) {
     mobilePerf = window.matchMedia('(pointer: coarse)').matches && window.innerWidth < 820;
     const portrait = vh > window.innerWidth * 1.1;
     let w = Math.min(rect.width, 1200);
-    const aspect = portrait ? 1.15 : 0.62;
+    // Portrait aspect raised 1.15 -> 1.45 (and maxH 0.66 -> 0.78 to match):
+    // on most phone widths, w*1.15 landed well under 0.66*viewport height,
+    // so the *aspect* ratio — not the maxH cap — was the actual limiter,
+    // leaving a large unused strip of page below the game (nav hint text +
+    // sound row + About collapsible don't come close to filling the other
+    // 34% of viewport height). Taller aspect + higher cap means the canvas
+    // now claims most of that space instead of leaving it blank.
+    const aspect = portrait ? 1.45 : 0.62;
     let h = Math.round(w * aspect);
-    const maxH = Math.round(vh * (portrait ? 0.66 : 0.72));
+    const maxH = Math.round(vh * (portrait ? 0.78 : 0.72));
     if (h > maxH && maxH > 160) h = maxH;
     const oldW = width, oldH = height;
     width = w;
