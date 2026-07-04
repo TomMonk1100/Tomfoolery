@@ -201,7 +201,7 @@ export function initLanderGame(root: HTMLElement) {
   // shots are harmless while this counts down; terrain crashes still count
   // (piloting mistakes should still matter).
   let invulnT = 0;
-  const SPAWN_INVULN_S = 4;
+  const SPAWN_INVULN_S = 3;
   const REVIVE_INVULN_S = 3;
   let shakeT = 0;
   // v12 Commit 5: hit-stop — freezes physics/frame-timer advancement for a
