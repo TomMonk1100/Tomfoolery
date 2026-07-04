@@ -571,7 +571,16 @@ export function initLanderGame(root: HTMLElement) {
     terrain = generateTerrain(cfg, width, height);
     sky = generateSky(cfg, width, height);
     ship.x = width * 0.5;
-    ship.y = height * 0.1;
+    // Spawn higher (was a flat height*0.1) so there's more altitude — and
+    // more time — to read the terrain and pick a landing line before
+    // committing to a descent. Player-requested after feeling rushed into
+    // landings. Can't just shrink the fraction further on small phones: the
+    // top HUD chip row sits ~32px tall, and going much higher than that on
+    // a ~450-500px-tall mobile canvas would spawn the ship visually behind
+    // the HUD. height*0.05 gives a meaningfully higher spawn (and scales up
+    // nicely on taller/desktop canvases), clamped to a 40px floor so it
+    // never tucks in under the HUD on short screens.
+    ship.y = Math.max(40, height * 0.05);
     ship.vx = (Math.random() - 0.5) * 20;
     ship.vy = 10;
     ship.angle = 0;

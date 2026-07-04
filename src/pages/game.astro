@@ -23,7 +23,19 @@ import Layout from '../layouts/Layout.astro';
         <div class="tile !p-0 overflow-hidden relative">
           <canvas class="block w-full"></canvas>
 
-          <!-- HUD -->
+          <!-- HUD — fuel folded into the top row as a compact chip instead
+               of a separate row. Terrain groundBase sits ~72% down the
+               canvas (levels.ts), so a bottom-anchored fuel bar could end up
+               sitting right on top of the landing pad depending on level
+               layout (confirmed bug: pad hidden behind the fuel bar on a
+               hills level) — the top is reliably clear of terrain across
+               every terrain type. Kept it in the SAME row (not a new one
+               below) rather than growing the HUD's height, since the ship
+               now spawns much closer to the top (main.ts) and a taller HUD
+               block would just reintroduce the same "hidden behind the HUD"
+               problem for the ship instead of the pad. flex-wrap already
+               handles overflow on the narrowest phones exactly like the
+               other chips. -->
           <div class="absolute top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 flex items-start justify-between gap-2 font-mono text-xs pointer-events-none">
             <div class="flex items-center gap-1.5 sm:gap-2 pointer-events-auto flex-wrap">
               <div class="bg-canvas/70 px-2 py-1 border border-line">
@@ -35,6 +47,13 @@ import Layout from '../layouts/Layout.astro';
               <div class="bg-canvas/70 px-2 py-1 border border-line">
                 <span class="text-muted">✨ </span><span data-hud="stardust" class="text-ink">0</span>
               </div>
+              <div class="bg-canvas/70 px-2 py-1 border border-line flex items-center gap-1.5">
+                <span class="text-muted">⛽</span>
+                <div class="w-9 h-1.5 bg-line/50">
+                  <div data-hud="fuel-bar" class="h-full bg-signal" style="width:100%"></div>
+                </div>
+                <span data-hud="fuel" class="text-ink">100</span>
+              </div>
             </div>
             <div class="flex gap-1.5 sm:gap-3">
               <div class="bg-canvas/70 px-2 py-1 border border-line">
@@ -44,13 +63,6 @@ import Layout from '../layouts/Layout.astro';
                 <span class="text-muted">SPD </span><span data-hud="speed" class="text-ink">0</span>
               </div>
             </div>
-          </div>
-          <div class="hud-fuel-row absolute bottom-2 left-2 right-2 sm:bottom-3 sm:left-3 sm:right-3 flex items-center gap-2 font-mono text-xs pointer-events-none">
-            <span class="text-muted">FUEL</span>
-            <div class="flex-1 h-2 bg-canvas/70 border border-line">
-              <div data-hud="fuel-bar" class="h-full bg-signal" style="width:100%"></div>
-            </div>
-            <span data-hud="fuel" class="text-ink w-10 text-right">100</span>
           </div>
 
           <!-- Touch controls (mobile) — corner-anchored overlay directly on
@@ -194,17 +206,6 @@ import Layout from '../layouts/Layout.astro';
   }
   .touch-controls {
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
-  }
-
-  /* The fuel HUD strip normally hugs the bottom edge of the canvas, but on
-     mobile that's exactly where the corner touch buttons now live — lift
-     it clear of the button zone (thrust button + ability slot + padding)
-     whenever touch controls are shown. Same trigger condition as the
-     .touch-controls display toggle in global.css. */
-  @media (max-width: 720px), (pointer: coarse) {
-    .hud-fuel-row {
-      bottom: calc(6.5rem + env(safe-area-inset-bottom));
-    }
   }
 </style>
 
