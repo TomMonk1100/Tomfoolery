@@ -45,12 +45,36 @@ import Layout from '../layouts/Layout.astro';
               </div>
             </div>
           </div>
-          <div class="absolute bottom-2 left-2 right-2 sm:bottom-3 sm:left-3 sm:right-3 flex items-center gap-2 font-mono text-xs pointer-events-none">
+          <div class="hud-fuel-row absolute bottom-2 left-2 right-2 sm:bottom-3 sm:left-3 sm:right-3 flex items-center gap-2 font-mono text-xs pointer-events-none">
             <span class="text-muted">FUEL</span>
             <div class="flex-1 h-2 bg-canvas/70 border border-line">
               <div data-hud="fuel-bar" class="h-full bg-signal" style="width:100%"></div>
             </div>
             <span data-hud="fuel" class="text-ink w-10 text-right">100</span>
+          </div>
+
+          <!-- Touch controls (mobile) — corner-anchored overlay directly on
+               the canvas, not a separate row below it. This is the standard
+               two-thumb mobile layout: left thumb rests over the rotate
+               pair (opposing actions, so adjacent buttons make sense),
+               right thumb owns thrust. Anchoring to the canvas itself means
+               there's zero extra scroll distance between "canvas visible"
+               and "controls reachable" — the #1 mobile complaint this
+               rework addresses. `pointer-events-none` on the wrapper +
+               `pointer-events-auto` on each cluster keeps the dead space
+               between the clusters from swallowing taps meant for the
+               canvas/HUD above it. The 4th "ability" button (§6.2) is
+               hidden by default via the `hidden` class; main.ts toggles it
+               when the player owns >=1 active-ability upgrade. -->
+          <div class="touch-controls absolute inset-x-0 bottom-0 items-end justify-between gap-3 p-3 sm:p-4 select-none pointer-events-none">
+            <div class="flex gap-2 pointer-events-auto">
+              <button data-touch="left" class="touch-btn bg-canvas/70 border border-line text-ink font-display text-2xl" aria-label="Rotate left">⟲</button>
+              <button data-touch="right" class="touch-btn bg-canvas/70 border border-line text-ink font-display text-2xl" aria-label="Rotate right">⟳</button>
+            </div>
+            <div class="flex flex-col items-center gap-2 pointer-events-auto">
+              <button data-touch="ability" class="touch-btn touch-btn-ability hidden bg-canvas/70 border border-line text-ink font-display text-xl" aria-label="Use ability">◈</button>
+              <button data-touch="thrust" class="touch-btn touch-btn-thrust bg-canvas/70 border border-line badge-signal font-display text-2xl" aria-label="Thrust">▲</button>
+            </div>
           </div>
 
           <!-- Overlay (start / upgrade / crash / shop screens).
@@ -61,17 +85,6 @@ import Layout from '../layouts/Layout.astro';
           <div data-overlay class="absolute inset-0 bg-canvas/92 backdrop-blur-sm flex p-4 sm:p-6 overflow-y-auto">
             <div data-overlay-content class="w-full m-auto"></div>
           </div>
-        </div>
-
-        <!-- Touch controls (mobile) — big targets, thrust widest.
-             The 4th "ability" button (§6.2) is hidden by default via the
-             `hidden` class; main.ts toggles it when the player owns >=1
-             active-ability upgrade (none exist yet in this commit). -->
-        <div class="touch-controls justify-between items-stretch gap-2 mt-2 select-none">
-          <button data-touch="left" class="tile flex-1 py-6 text-center font-display text-2xl cursor-pointer" aria-label="Rotate left">⟲</button>
-          <button data-touch="thrust" class="tile flex-[1.5] py-6 text-center font-display text-2xl cursor-pointer badge-signal" aria-label="Thrust">▲</button>
-          <button data-touch="right" class="tile flex-1 py-6 text-center font-display text-2xl cursor-pointer" aria-label="Rotate right">⟳</button>
-          <button data-touch="ability" class="tile hidden flex-1 py-6 text-center font-display text-2xl cursor-pointer" aria-label="Use ability">◈</button>
         </div>
       </div>
 
@@ -120,16 +133,20 @@ import Layout from '../layouts/Layout.astro';
       border-right: none;
       border-radius: 0;
     }
-    .game-bleed .touch-controls {
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
-    }
   }
 
   .lander-vol {
     width: 110px;
     accent-color: var(--color-accent);
     cursor: pointer;
+  }
+
+  /* Matches the sticky .glass-nav height + a little breathing room, so
+     #lander-root.scrollIntoView({block:'start'}) (main.ts's setOverlay,
+     called whenever a crash/level-complete/shop overlay opens) lands the
+     canvas just below the nav instead of partly hidden behind it. */
+  #lander-root {
+    scroll-margin-top: 4.5rem;
   }
 
   /* Touch hygiene: no double-tap zoom, no text selection, no gray tap
@@ -143,6 +160,51 @@ import Layout from '../layouts/Layout.astro';
   }
   #lander-root {
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Corner-anchored touch controls — sized/shaped here; color comes from
+     the same bg-canvas/70 + border-line utilities the HUD chips use, so
+     they read as one visual system. Brighten/scale on press for immediate
+     feedback (main.ts's bindTouch toggles .is-pressed; real devices don't
+     reliably show :active once touch-action:none + preventDefault are in
+     play). env(safe-area-inset-bottom) keeps buttons clear of the
+     home-indicator bar on notched phones. */
+  .touch-btn {
+    width: 3.25rem;
+    height: 3.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: transform 0.08s ease, border-color 0.08s ease;
+  }
+  .touch-btn-thrust {
+    width: 4.5rem;
+    height: 4.5rem;
+  }
+  .touch-btn-ability {
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 1rem;
+  }
+  .touch-btn.is-pressed {
+    border-color: var(--color-accent);
+    transform: scale(0.92);
+  }
+  .touch-controls {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  /* The fuel HUD strip normally hugs the bottom edge of the canvas, but on
+     mobile that's exactly where the corner touch buttons now live — lift
+     it clear of the button zone (thrust button + ability slot + padding)
+     whenever touch controls are shown. Same trigger condition as the
+     .touch-controls display toggle in global.css. */
+  @media (max-width: 720px), (pointer: coarse) {
+    .hud-fuel-row {
+      bottom: calc(6.5rem + env(safe-area-inset-bottom));
+    }
   }
 </style>
 

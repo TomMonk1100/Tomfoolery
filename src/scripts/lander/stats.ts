@@ -227,9 +227,6 @@ export function computeStats(picked: UpgradeId[], diff: Difficulty): ShipStats {
       case 'mothership_favor': s.escortUfos += 1; break;
       case 'big_crunch':       s.bigCrunchStacks += 1;         s.doubleProgress += 1; break;
     }
-    // §4.2: every module stack contributes a small default drag area even
-    // before the full mass-conversion of upgrade cons lands in Commit 4.
-    s.areaSum += 0.02;
   }
   // §4.5 Stability floors — numerical guards only, NOT gameplay caps.
   // These only fire in degenerate stacking scenarios (hundreds of picks of

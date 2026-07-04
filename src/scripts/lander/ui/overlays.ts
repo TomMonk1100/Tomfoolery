@@ -21,9 +21,12 @@ export function shopItemHtml(
 ): string {
   const owned = cosmetics.owned.includes(id);
   const equipped = cosmetics[kind] === id;
+  // px-3 py-2.5 (not the tighter px-2 py-1 badges use elsewhere) keeps this
+  // at/near the 44px touch-target minimum — these are tappable purchase
+  // actions on a scrolling mobile list, not inline text badges.
   const action = equipped ? '' : owned
-    ? `<button data-shop="equip:${kind}:${id}" class="badge border border-line px-2 py-1 cursor-pointer hover:border-accent">equip</button>`
-    : `<button data-shop="buy:${kind}:${id}" class="badge border border-line px-2 py-1 cursor-pointer hover:border-accent">✨ ${price}</button>`;
+    ? `<button data-shop="equip:${kind}:${id}" class="badge border border-line px-3 py-2.5 cursor-pointer hover:border-accent">equip</button>`
+    : `<button data-shop="buy:${kind}:${id}" class="badge border border-line px-3 py-2.5 cursor-pointer hover:border-accent">✨ ${price}</button>`;
   return `
     <div class="flex items-center gap-3 py-2 border-b border-line">
       <span class="inline-block w-9 h-5 border border-line shrink-0" style="background:${swatch}"></span>

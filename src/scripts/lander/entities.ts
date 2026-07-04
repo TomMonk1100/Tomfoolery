@@ -32,13 +32,29 @@ export interface Asteroid {
 // Generated once per level load. Mirrors the exact seeding the old inline
 // draw()-time code used: `mulberry32(cfg.seed * 71)`, drawn in order for
 // baseX/baseY/r per asteroid index — so layouts are pixel-identical.
+// The ship always spawns at width*0.5 and spends its first few seconds
+// (covered by main.ts's spawn-immunity window) descending through roughly
+// the top half of the screen. Asteroids orbit their baseX by up to ±60px,
+// so keep any asteroid whose baseY falls in that band clear of a column
+// around spawn — otherwise a level-start death can still feel unearned even
+// once immunity runs out, since a rock could be waiting right on top of you.
+// Deterministic (no extra rand() calls), so it doesn't disturb the existing
+// seeded sequence used below (I7).
+const SPAWN_SAFE_Y_FRAC = 0.55;
+const SPAWN_SAFE_X_RADIUS = 110;
+
 export function generateAsteroids(cfg: LevelConfig, width: number, height: number, S: number): Asteroid[] {
   if (cfg.asteroids <= 0) return [];
   const rand = mulberry32(cfg.seed * 71);
   const list: Asteroid[] = [];
+  const spawnX = width * 0.5;
   for (let i = 0; i < cfg.asteroids; i++) {
-    const baseX = rand() * width;
+    let baseX = rand() * width;
     const baseY = height * (0.15 + rand() * 0.35);
+    if (baseY < height * SPAWN_SAFE_Y_FRAC && Math.abs(baseX - spawnX) < SPAWN_SAFE_X_RADIUS) {
+      baseX = baseX < spawnX ? spawnX - SPAWN_SAFE_X_RADIUS : spawnX + SPAWN_SAFE_X_RADIUS;
+      baseX = Math.max(0, Math.min(width, baseX));
+    }
     const r = (10 + rand() * 12) * Math.min(1.25, S);
     // v12 Commit 6: an isolated NEW rng, seeded per-asteroid-index, so this
     // render-only polygon/spin data never perturbs the shared `rand` stream

@@ -196,6 +196,13 @@ export function initLanderGame(root: HTMLElement) {
   let simTime = 0; // accumulated sim seconds (fixed-step ticks only) — drives asteroid orbits, moved out of the render path per §4.4
   let windPhase = 0;
   let shieldFlash = 0;
+  // Spawn-grace immunity: set at loadLevel and on Phoenix revive so a level
+  // never kills you before you've had a chance to react — asteroids/UFO
+  // shots are harmless while this counts down; terrain crashes still count
+  // (piloting mistakes should still matter).
+  let invulnT = 0;
+  const SPAWN_INVULN_S = 4;
+  const REVIVE_INVULN_S = 3;
   let shakeT = 0;
   // v12 Commit 5: hit-stop — freezes physics/frame-timer advancement for a
   // few frames at the moment of impact (set in destroyShip()/handleTouchdown,
@@ -313,6 +320,13 @@ export function initLanderGame(root: HTMLElement) {
   let width = 0, height = 0, dpr = 1;
   let S = 1.6; // ship render/collision scale
 
+  // Haptic feedback for touch play — no-ops silently on devices/browsers
+  // without the Vibration API (desktop, iOS Safari). Kept to short pulses:
+  // thrust-start is a tick, landing is a light double-tap, crash is a buzz.
+  function haptic(pattern: number | number[]) {
+    try { navigator.vibrate?.(pattern); } catch { /* ignore */ }
+  }
+
   // --- Dynamic camera zoom -------------------------------------------------
   // Each level starts at zoom 1 (the full-terrain wide view — the world is
   // exactly one canvas, so 1.0 IS "zoomed out"). As the ship closes on the
@@ -411,14 +425,22 @@ export function initLanderGame(root: HTMLElement) {
   let mobilePerf = false;
 
   // --- Responsive sizing: fill the container, go taller on portrait phones ---
+  // Uses visualViewport height (falls back to innerHeight) so the canvas
+  // doesn't jump/resize as the mobile browser address bar collapses or
+  // reappears during scroll/play — innerHeight changes with the chrome,
+  // visualViewport.height is the actually-visible area.
+  function viewportHeight() {
+    return window.visualViewport?.height ?? window.innerHeight;
+  }
   function resize() {
     const rect = canvas.parentElement!.getBoundingClientRect();
+    const vh = viewportHeight();
     mobilePerf = window.matchMedia('(pointer: coarse)').matches && window.innerWidth < 820;
-    const portrait = window.innerHeight > window.innerWidth * 1.1;
+    const portrait = vh > window.innerWidth * 1.1;
     let w = Math.min(rect.width, 1200);
     const aspect = portrait ? 1.15 : 0.62;
     let h = Math.round(w * aspect);
-    const maxH = Math.round(window.innerHeight * (portrait ? 0.66 : 0.72));
+    const maxH = Math.round(vh * (portrait ? 0.66 : 0.72));
     if (h > maxH && maxH > 160) h = maxH;
     const oldW = width, oldH = height;
     width = w;
@@ -483,6 +505,15 @@ export function initLanderGame(root: HTMLElement) {
     } else {
       overlay.classList.remove('hidden');
       overlayContent.innerHTML = html;
+      // Crash/level-complete/shop screens can be taller than the canvas and
+      // scroll internally (overlay has overflow-y-auto), but if the player
+      // had scrolled the *page* down mid-flight (chasing the ship lower on
+      // a tall level, or just page bounce on mobile), the sticky site nav
+      // can end up covering the top of the game entirely with no obvious
+      // way back short of manually scrolling up. Snap the game back into
+      // view under the nav every time an overlay opens — #lander-root's
+      // scroll-margin-top (game.astro) keeps this clear of the sticky nav.
+      root.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
 
@@ -547,6 +578,7 @@ export function initLanderGame(root: HTMLElement) {
     ship.fuel = stats.maxFuel;
     ship.reserveUsed = false;
     particlePool.clear();
+    invulnT = SPAWN_INVULN_S;
     critters = generateCritters(cfg, terrain, width);
     ufos = generateUfos(cfg, width, height);
     hackedUfos.clear();
@@ -1294,6 +1326,7 @@ export function initLanderGame(root: HTMLElement) {
 
     simulateParticles(effPdt);
     if (shieldFlash > 0) shieldFlash -= dt;
+    if (invulnT > 0) invulnT -= dt;
 
     // §7 Tailwind Turbine: +1 fuel/s per 10 wind speed, ×stack count.
     if (stats.tailwindTurbine > 0) {
@@ -1406,7 +1439,7 @@ export function initLanderGame(root: HTMLElement) {
     if (!hazardsFrozen) updateAsteroids(asteroids, simTime);
     if (state === 'playing') {
       const hit = findAsteroidHit(asteroids, ship.x, ship.y, 8 * S);
-      if (hit) {
+      if (hit && invulnT <= 0) {
         if (stats.asteroidMiner > 0) {
           // §7 Asteroid Miner: contact shatters the asteroid instead of
           // hurting the ship — +10 fuel, a small random kick, +10 stardust.
@@ -1460,6 +1493,7 @@ export function initLanderGame(root: HTMLElement) {
       ship.vy = 10;
       ship.angle = 0;
       ship.fuel = Math.round(stats.maxFuel * 0.6);
+      invulnT = REVIVE_INVULN_S;
       audio.phoenix();
       unlockAch('ach_phoenix');
       return;
@@ -1468,6 +1502,7 @@ export function initLanderGame(root: HTMLElement) {
     explode();
     hitStopT = 0.07;
     audio.crash();
+    haptic([40, 30, 60]);
     state = 'crashed';
     crashTimerId = window.setTimeout(showCrashScreen, 600);
   }
@@ -1527,6 +1562,7 @@ export function initLanderGame(root: HTMLElement) {
       confetti();
       emitLandingDustRing(groundY);
       hitStopT = 0.04;
+      haptic([15, 40, 15]);
 
       // Stardust payout — deeper levels and harder modes pay more. Credited
       // once per level advanced (Big Crunch: both/all levels get paid).
@@ -1787,7 +1823,9 @@ export function initLanderGame(root: HTMLElement) {
       // would tunnel through the ship between two ticks.
       if (state === 'playing' && sweptSegmentCircleHit(px0, py0, p.x, p.y, ship.x, ship.y, 9 * S)) {
         p.alive = false;
-        if (stats.pocketMoon > 0) {
+        if (invulnT > 0) {
+          // Spawn-grace immunity: shot harmlessly deflects, no charge spent.
+        } else if (stats.pocketMoon > 0) {
           // Pocket Moon permanently blocks projectiles — no charge cost.
         } else if (stats.droneCharges > 0 && drones.some((d) => d.alive && d.charges > 0)) {
           const interceptor = drones.find((d) => d.alive && d.charges > 0)!;
@@ -2424,22 +2462,34 @@ export function initLanderGame(root: HTMLElement) {
   window.addEventListener('keydown', keydown);
   window.addEventListener('keyup', keyup);
 
+  // bindTouch also toggles a `.is-pressed` class for immediate visual
+  // feedback on tap (mobile browsers don't reliably show :active once
+  // touch-action:none + preventDefault are in play) — the CSS in game.astro
+  // brightens/scales the button on that class.
   function bindTouch(el: HTMLElement | null, on: () => void, off: () => void) {
     if (!el) return;
-    el.addEventListener('touchstart', (e) => { e.preventDefault(); on(); }, { passive: false });
-    el.addEventListener('touchend', (e) => { e.preventDefault(); off(); }, { passive: false });
-    el.addEventListener('mousedown', on);
-    el.addEventListener('mouseup', off);
-    el.addEventListener('mouseleave', off);
+    const press = (e: Event) => { e.preventDefault(); el.classList.add('is-pressed'); on(); };
+    const release = (e: Event) => { e.preventDefault(); el.classList.remove('is-pressed'); off(); };
+    el.addEventListener('touchstart', press, { passive: false });
+    el.addEventListener('touchend', release, { passive: false });
+    el.addEventListener('touchcancel', release, { passive: false });
+    el.addEventListener('mousedown', () => { el.classList.add('is-pressed'); on(); });
+    el.addEventListener('mouseup', () => { el.classList.remove('is-pressed'); off(); });
+    el.addEventListener('mouseleave', () => { el.classList.remove('is-pressed'); off(); });
   }
   bindTouch(touchLeft, () => { input.left = true; registerTap('left'); }, () => (input.left = false));
   bindTouch(touchRight, () => { input.right = true; registerTap('right'); }, () => (input.right = false));
-  bindTouch(touchThrust, () => (input.thrust = true), () => (input.thrust = false));
+  bindTouch(touchThrust, () => { input.thrust = true; haptic(10); }, () => (input.thrust = false));
   // §6.2: 4th touch button fires the ability on press (not hold — matches
   // "one press fires ... one ability per press"). Hidden by default via CSS
   // class, shown only when abilityDefStates is non-empty (updateAbilityButtonVisibility).
   if (touchAbility) {
-    touchAbility.addEventListener('touchstart', (e) => { e.preventDefault(); if (state === 'playing') fireAbility(); }, { passive: false });
+    touchAbility.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      touchAbility.classList.add('is-pressed');
+      if (state === 'playing') { fireAbility(); haptic(10); }
+    }, { passive: false });
+    touchAbility.addEventListener('touchend', (e) => { e.preventDefault(); touchAbility.classList.remove('is-pressed'); }, { passive: false });
     touchAbility.addEventListener('mousedown', () => { if (state === 'playing') fireAbility(); });
   }
 
@@ -2634,7 +2684,7 @@ export function initLanderGame(root: HTMLElement) {
       drawShip({
         ctx, ship, S, mood: currentMood(), shieldFlash, stats, pickedUpgrades,
         paint: equippedPaint(), pilotPhoto, faceMap, thrustT: shipThrustT,
-        degraded: perfGuard.degraded,
+        degraded: perfGuard.degraded, invulnT,
       });
     }
 
@@ -3051,6 +3101,15 @@ export function initLanderGame(root: HTMLElement) {
 
   resize();
   window.addEventListener('resize', resize);
+  // visualViewport fires its own resize event when the address bar
+  // collapses/expands or the on-screen keyboard opens, independent of
+  // window's resize event on some mobile browsers — listen to both.
+  let vvResizeT = 0;
+  function onVisualViewportResize() {
+    window.clearTimeout(vvResizeT);
+    vvResizeT = window.setTimeout(resize, 60);
+  }
+  window.visualViewport?.addEventListener('resize', onVisualViewportResize);
   function onOrientation() {
     setTimeout(resize, 150);
   }
@@ -3062,8 +3121,10 @@ export function initLanderGame(root: HTMLElement) {
   return function cleanup() {
     clearUpgradeTimer();
     window.clearTimeout(crashTimerId);
+    window.clearTimeout(vvResizeT);
     cancelAnimationFrame(raf);
     window.removeEventListener('resize', resize);
+    window.visualViewport?.removeEventListener('resize', onVisualViewportResize);
     window.removeEventListener('orientationchange', onOrientation);
     window.removeEventListener('keydown', keydown);
     window.removeEventListener('keyup', keyup);
