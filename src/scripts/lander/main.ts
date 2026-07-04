@@ -90,6 +90,45 @@ export function initLanderGame(root: HTMLElement) {
   // updateAbilityButtonVisibility()). No upgrade owns one yet in this
   // commit, so the button stays hidden through Commit 4a.
   const touchAbility = root.querySelector('[data-touch="ability"]') as HTMLElement | null;
+  const tcWrap = root.querySelector('.touch-controls') as HTMLElement | null;
+  const tcZoneLeft = root.querySelector('[data-tc-zone="left"]') as HTMLElement | null;
+  const tcZoneMid = root.querySelector('[data-tc-zone="mid"]') as HTMLElement | null;
+  const tcZoneRight = root.querySelector('[data-tc-zone="right"]') as HTMLElement | null;
+  const controlsToggleBtn = root.querySelector('[data-controls-toggle]') as HTMLElement | null;
+  const shareBtn = root.querySelector('[data-share]') as HTMLElement | null;
+
+  // --- Touch control layout: 'corner' (two-thumb, default) or 'classic'
+  // (⟲ far left, thrust center, ⟳ far right — full-width one-thumb-per-edge).
+  // Persisted so the choice sticks between visits. The same button NODES are
+  // re-seated between zones, so bindTouch listeners survive the move.
+  type TouchLayout = 'corner' | 'classic';
+  let touchLayout: TouchLayout = 'corner';
+  try { if (localStorage.getItem('lander-touch-layout') === 'classic') touchLayout = 'classic'; } catch (e) {}
+
+  function applyTouchLayout(layout: TouchLayout) {
+    touchLayout = layout;
+    try { localStorage.setItem('lander-touch-layout', layout); } catch (e) {}
+    if (!tcWrap || !tcZoneLeft || !tcZoneMid || !tcZoneRight || !touchLeft || !touchRight || !touchThrust) return;
+    if (layout === 'classic') {
+      tcWrap.classList.add('layout-classic');
+      tcZoneLeft.appendChild(touchLeft);
+      if (touchAbility) tcZoneMid.appendChild(touchAbility);
+      tcZoneMid.appendChild(touchThrust);
+      tcZoneRight.appendChild(touchRight);
+    } else {
+      tcWrap.classList.remove('layout-classic');
+      tcZoneLeft.appendChild(touchLeft);
+      tcZoneLeft.appendChild(touchRight);
+      if (touchAbility) tcZoneRight.appendChild(touchAbility);
+      tcZoneRight.appendChild(touchThrust);
+    }
+    if (controlsToggleBtn) controlsToggleBtn.title = `Touch controls: ${layout} (tap to switch)`;
+  }
+
+  function toggleTouchLayout() {
+    applyTouchLayout(touchLayout === 'corner' ? 'classic' : 'corner');
+    if (state === 'playing') toasts.push({ text: `🎮 controls: ${touchLayout}`, t: 2.2 });
+  }
 
   const audio = new AudioEngine();
   const music = new MusicEngine();
@@ -2323,6 +2362,7 @@ export function initLanderGame(root: HTMLElement) {
           <button data-action="leaderboard" class="text-muted hover:text-ink transition-colors cursor-pointer underline underline-offset-2">🌍 leaderboard</button>
           <button data-action="achievements" class="text-muted hover:text-ink transition-colors cursor-pointer underline underline-offset-2">🎖 achievements ${ACHIEVEMENTS.filter((a) => achievements[a.id]).length}/${ACHIEVEMENTS.length}</button>
           <button data-action="shop" class="text-muted hover:text-ink transition-colors cursor-pointer underline underline-offset-2">🛒 hangar shop · ✨${stardust}</button>
+          <button data-action="toggle-controls" class="text-muted hover:text-ink transition-colors cursor-pointer underline underline-offset-2">🎮 touch controls: ${touchLayout}</button>
         </div>
       </div>
     `);
@@ -2426,6 +2466,10 @@ export function initLanderGame(root: HTMLElement) {
     if (target.dataset.action === 'shop') showShop();
     if (target.dataset.action === 'submit-score') handleScoreSubmit();
     if (target.dataset.action === 'skip-upgrade') skipUpgrade();
+    if (target.dataset.action === 'toggle-controls') {
+      toggleTouchLayout();
+      if (state === 'start') showStartScreen(); // re-render so the label updates
+    }
   });
 
   // --- Input ---
@@ -2508,6 +2552,40 @@ export function initLanderGame(root: HTMLElement) {
     touchAbility.addEventListener('touchend', (e) => { e.preventDefault(); touchAbility.classList.remove('is-pressed'); }, { passive: false });
     touchAbility.addEventListener('mousedown', () => { if (state === 'playing') fireAbility(); });
   }
+
+  // Seat the touch buttons per the saved layout preference and wire the
+  // 🎮 toggle in the settings row (mobile-only via CSS).
+  applyTouchLayout(touchLayout);
+  controlsToggleBtn?.addEventListener('click', () => {
+    toggleTouchLayout();
+    if (state === 'start') showStartScreen(); // refresh the "controls:" label
+  });
+
+  // --- Share: native share sheet on mobile, clipboard fallback elsewhere ---
+  async function shareGame() {
+    const url = `${location.origin}/game/`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Moon Lander — Tomfoolery',
+          text: 'An endless roguelite Moon Lander — how deep can you go?',
+          url,
+        });
+        return;
+      } catch (e) {
+        return; // user closed the share sheet — not an error
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      if (shareBtn) {
+        const orig = shareBtn.textContent;
+        shareBtn.textContent = '✓ link copied';
+        window.setTimeout(() => { if (shareBtn) shareBtn.textContent = orig; }, 1600);
+      }
+    } catch (e) {}
+  }
+  shareBtn?.addEventListener('click', () => { shareGame(); });
 
   // --- Rendering ---
   function currentMood(): Mood {
