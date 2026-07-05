@@ -73,19 +73,27 @@ export class WorldGenSystem implements System, WorldView {
    * walkable pocket. Any tile flipped walkable this way becomes "grass".
    */
   private ensureConnectivity(): void {
-    const size = this.size;
+    // Defensive: iterate the ACTUAL tile grid dimensions, not `this.size`.
+    // `this.size` is the current WORLD_SIZE constant; a stale/mismatched
+    // source (e.g. an older fixed-size fallback-layout.json) could produce
+    // a differently-sized `this.tiles`, and indexing past its real bounds
+    // must never throw — it should just mean "nothing more to connect".
+    const rows = this.tiles.length;
+    const cols = this.tiles[0]?.length ?? 0;
+    if (rows === 0 || cols === 0) return;
+
     const isWalkableType = (t: TileType) => t !== "obstacle" && t !== "water";
     const walkable: Grid = this.tiles.map((row) => row.map((t) => isWalkableType(t.type)));
 
-    const spawnCol = Math.floor(size / 2);
-    const spawnRow = Math.floor(size / 2);
+    const spawnCol = Phaser.Math.Clamp(Math.floor(cols / 2), 0, cols - 1);
+    const spawnRow = Phaser.Math.Clamp(Math.floor(rows / 2), 0, rows - 1);
 
     const forcedWalkable: [number, number][] = [
       ...guaranteeWalkableRing(walkable, spawnCol, spawnRow, true),
     ];
-    for (let row = 0; row < size; row++) {
-      for (let col = 0; col < size; col++) {
-        if (this.tiles[row][col].type === "nest") {
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        if (this.tiles[row][col]?.type === "nest") {
           forcedWalkable.push(...guaranteeWalkableRing(walkable, col, row, true));
         }
       }
