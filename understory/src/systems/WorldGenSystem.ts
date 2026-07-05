@@ -267,8 +267,10 @@ export class WorldGenSystem implements System, WorldView {
 
     this.fogTexture = this.scene.add.renderTexture(0, 0, width, height);
     this.fogTexture.setOrigin(0, 0);
-    this.fogTexture.setDepth(1000);
-    this.fogTexture.fill(0x000000, 0.92);
+    // Below enemies/player so approaching threats are never fully hidden;
+    // softened so combat stays readable (Nest & Fang).
+    this.fogTexture.setDepth(850);
+    this.fogTexture.fill(0x000000, 0.55);
   }
 
   // --------------------------------------------------------------------
@@ -278,8 +280,11 @@ export class WorldGenSystem implements System, WorldView {
   update(_deltaMs: number): void {
     if (this.ctx.isPaused()) return;
     const pos = this.ctx.getPlayerPos();
+    // 2.2x base for combat readability — you must see waves coming.
     const radius =
-      this.ctx.animal.forageRadius * (1 + this.ctx.statBonus("senseRadius") / 100);
+      this.ctx.animal.forageRadius *
+      2.2 *
+      (1 + this.ctx.statBonus("senseRadius") / 100);
     this.revealAround(pos.x, pos.y, radius);
   }
 

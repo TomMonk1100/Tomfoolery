@@ -16,12 +16,11 @@ const config: Phaser.Types.Core.GameConfig = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  render: {
-    antialias: true,
-    roundPixels: false,
-  },
+  // Chunky pixel-art rendering: nearest-neighbor everywhere, no smoothing.
+  pixelArt: true,
   scene: [BootScene, MetaHubScene, WorldScene, DraftScene, LifeStoryScene],
 };
 
-// eslint-disable-next-line no-new
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+// Exposed for debugging/automated playtests.
+(window as unknown as { __understory?: Phaser.Game }).__understory = game;
