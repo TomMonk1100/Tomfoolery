@@ -43,6 +43,7 @@ import {
   GoalDecision,
   InstinctGoal,
 } from "./instinctBrain";
+import { wrapDeltaVec } from "./combat/sim";
 
 const DECISION_INTERVAL_MS = 500;
 const ARRIVAL_RADIUS_PX = 24;
@@ -194,8 +195,17 @@ export class InstinctAI implements InputSource, System {
 
     const pos = this.ctx.getPlayerPos();
     const target = { x: this.decision.targetX, y: this.decision.targetY };
-    const dx = target.x - pos.x;
-    const dy = target.y - pos.y;
+    // Wrap-aware: the world seam means the shorter path to a target may be
+    // "the other way around" the torus. decideGoal()'s target selection
+    // itself is plain-Euclidean (see instinctBrain.ts DECISIONS), but the
+    // actual steering vector toward whatever target it picked must wrap,
+    // or the bot walks the long way and can stall/hug the world edge right
+    // at the seam (found via live playtest after the Update 2 wrap rework).
+    const bounds = this.ctx.world.bounds();
+    const worldSize = Math.max(bounds.width, bounds.height);
+    const wrapped = wrapDeltaVec(pos, target, worldSize);
+    const dx = wrapped.x;
+    const dy = wrapped.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
     // Forage tap-harvest when within range (verb harvest performed by
