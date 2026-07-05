@@ -19,10 +19,22 @@ import { MovementSystem } from "../systems/MovementSystem";
 import { WorldGenSystem } from "../systems/WorldGenSystem";
 import { VerbSystem } from "../systems/VerbSystem";
 import { SeasonSystem } from "../systems/SeasonSystem";
-import { HazardSystem } from "../systems/HazardSystem";
 import { DraftSystem } from "../systems/DraftSystem";
 import { SpriteComposer } from "../systems/SpriteComposer";
 import { InstinctAI } from "../systems/InstinctAI";
+import { ProjectilePool } from "../systems/combat/ProjectilePool";
+import { EnemySystem } from "../systems/combat/EnemySystem";
+import { WaveDirector } from "../systems/combat/WaveDirector";
+import { WeaponSystem } from "../systems/combat/WeaponSystem";
+import { XPMoteSystem } from "../systems/combat/XPMoteSystem";
+import { HungerSystem } from "../systems/HungerSystem";
+import { FoodSystem } from "../systems/FoodSystem";
+import { NestSystem } from "../systems/NestSystem";
+import { CompanionSystem } from "../systems/CompanionSystem";
+import { registerAllSprites } from "../gfx/sprites";
+import { buildAtlas, frameKey, playAnim } from "../gfx/PixelArt";
+import { JuiceSystem } from "../vfx/Juice";
+import { HUD } from "../ui/HUD";
 import type { System } from "../core/context";
 import type { InputSource } from "../core/types";
 
@@ -53,29 +65,58 @@ export class WorldScene extends Phaser.Scene {
   private inputSource!: InputSource & Partial<System>;
   private season!: SeasonSystem;
   private world!: WorldGenSystem;
-  private hud!: Phaser.GameObjects.Text;
   private worldBounds = { width: WORLD_SIZE * TILE_PX, height: WORLD_SIZE * TILE_PX };
 
   constructor() {
     super(SCENE.World);
   }
 
-  create(data: { instinct?: boolean }): void {
-    const animal = ANIMALS.dog;
-    const player = createPlayerState("dog", !!data.instinct);
+  create(data: { instinct?: boolean; animalId?: string }): void {
+    const animalId = data.animalId && ANIMALS[data.animalId] ? data.animalId : "dog";
+    const animal = ANIMALS[animalId];
+    const player = createPlayerState(animalId, !!data.instinct, animal.maxHp ?? 100);
+    // Equip the species starting weapon.
+    const startingWeaponId =
+      animal.startingWeaponId ??
+      WEAPONS.find((w) => w.animal === animalId && w.isStarting)?.id;
+    if (startingWeaponId) {
+      player.activeWeapons.push({
+        weaponId: startingWeaponId,
+        level: 1,
+        evolved: false,
+      });
+    }
     this.emitter = new Phaser.Events.EventEmitter();
+
+    // Bake the pixel-art atlas (idempotent across runs).
+    try {
+      registerAllSprites();
+      buildAtlas(this);
+    } catch (err) {
+      console.warn("[WorldScene] atlas build failed, using fallback shapes", err);
+    }
 
     const audio: AudioLike =
       (this.registry.get(REG.audio) as AudioManager | undefined) ??
       new AudioManager();
 
-    // Player avatar (a base body + slot children the SpriteComposer manages).
+    // Player avatar (animal sprite + slot children the SpriteComposer manages).
     const cx = this.worldBounds.width / 2;
     const cy = this.worldBounds.height / 2;
     this.playerContainer = this.add.container(cx, cy);
-    const body = this.add.ellipse(0, 0, 26, 20, 0xdcc7a0);
-    body.setStrokeStyle(2, 0x7a5c3a);
-    this.playerContainer.add(body);
+    const animalKey = animal.spriteKey ?? `animal_${animalId}`;
+    if (this.textures.exists(frameKey(animalKey))) {
+      const body = this.add.sprite(0, 0, frameKey(animalKey));
+      body.setDisplaySize(40, 40); // 24px map baked at 3x, shown at ~1.25 tiles
+      playAnim(body, animalKey, "idle");
+      this.playerSprite = body;
+      this.playerSpriteKey = animalKey;
+      this.playerContainer.add(body);
+    } else {
+      const body = this.add.ellipse(0, 0, 26, 20, 0xdcc7a0);
+      body.setStrokeStyle(2, 0x7a5c3a);
+      this.playerContainer.add(body);
+    }
     this.playerContainer.setDepth(1000);
 
     // Build the shared context. `world` is filled in immediately after we
@@ -104,14 +145,30 @@ export class WorldScene extends Phaser.Scene {
           scene.worldBounds.height - 12
         );
         scene.playerContainer.setPosition(nx, ny);
+        // Drive walk anim + facing from actual motion.
+        if (Math.abs(dx) + Math.abs(dy) > 0.05) {
+          scene.lastMoveAt = scene.time.now;
+          if (scene.playerSprite && Math.abs(dx) > 0.05) {
+            scene.playerSprite.setFlipX(dx < 0);
+          }
+        }
       },
       get world(): WorldView {
         return worldRef;
       },
       season: (): Season => scene.season.currentSeason(),
       addXP: (amount: number): void => scene.addXP(amount),
-      statBonus: (statType: string): number =>
-        statBonus(player, CARDS, statType),
+      statBonus: (statType: string): number => {
+        // Cards (legacy stat cards) + species passives (magnitude x stacks).
+        let total = statBonus(player, CARDS, statType);
+        for (const ap of player.activePassives) {
+          const def = PASSIVES.find((ps) => ps.id === ap.passiveId);
+          if (def && def.effect.type === statType) {
+            total += def.effect.magnitude * ap.stacks;
+          }
+        }
+        return total;
+      },
       audio,
       isPaused: (): boolean => scene.scene.isPaused(SCENE.World),
 
@@ -148,19 +205,38 @@ export class WorldScene extends Phaser.Scene {
     this.season = new SeasonSystem(this, this.ctx);
     const movement = new MovementSystem(this, this.ctx);
     const verbs = new VerbSystem(this, this.ctx);
-    const hazards = new HazardSystem(this, this.ctx);
     const draft = new DraftSystem(this, this.ctx);
     const composer = new SpriteComposer(this, this.ctx, this.playerContainer);
-    if (typeof hazards.setVerbSystem === "function") {
-      hazards.setVerbSystem(verbs);
-    }
+
+    // ---- Nest & Fang combat/survival systems ----
+    const projectiles = new ProjectilePool(this, this.ctx);
+    const enemies = new EnemySystem(this, this.ctx, projectiles);
+    const waves = new WaveDirector(this, this.ctx, enemies);
+    const weaponsSys = new WeaponSystem(this, this.ctx, projectiles);
+    const motes = new XPMoteSystem(this, this.ctx);
+    const hunger = new HungerSystem(this, this.ctx);
+    const food = new FoodSystem(this, this.ctx, hunger);
+    const nest = new NestSystem(this, this.ctx);
+    const companions = new CompanionSystem(this, this.ctx);
+    const juice = new JuiceSystem(this, this.ctx);
+    const hudSystem = new HUD(this, this.ctx);
 
     this.systems = [
+      juice,
+      hudSystem,
       this.world,
       this.season,
       movement,
       verbs,
-      hazards,
+      projectiles,
+      enemies,
+      waves,
+      weaponsSys,
+      motes,
+      hunger,
+      food,
+      nest,
+      companions,
       draft,
       composer,
     ];
@@ -175,16 +251,6 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.playerContainer, true, 0.12, 0.12);
     this.cameras.main.setBackgroundColor(0x14261a);
 
-    // HUD (fixed to the camera).
-    this.hud = this.add
-      .text(12, 12, "", {
-        fontFamily: "system-ui, sans-serif",
-        fontSize: "16px",
-        color: "#eef6ec",
-      })
-      .setScrollFactor(0)
-      .setDepth(5000);
-
     // Unlock audio on first gesture.
     this.input.once("pointerdown", () => {
       audio.resume();
@@ -196,10 +262,15 @@ export class WorldScene extends Phaser.Scene {
     audio.setSeasonMood(this.season.currentSeason());
 
     // Run end → Life Story.
-    this.emitter.once(EV.runEnded, () => {
-      this.scene.start(SCENE.LifeStory, { player });
+    this.emitter.once(EV.runEnded, (outcome?: string) => {
+      this.scene.start(SCENE.LifeStory, { player, outcome: outcome ?? "survived" });
     });
   }
+
+  /** Player animal sprite (undefined when using the ellipse fallback). */
+  private playerSprite?: Phaser.GameObjects.Sprite;
+  private playerSpriteKey = "";
+  private lastMoveAt = 0;
 
   /** Live combat provider registry — systems fill this in via ctx. */
   private combat: Partial<CombatProvider> = {};
@@ -208,6 +279,13 @@ export class WorldScene extends Phaser.Scene {
   private onPlayerDamaged(amount: number, source: string): void {
     const p = this.ctx.player;
     if (p.hp <= 0) return;
+    // Feline Grace etc.: flat % chance to dodge entirely.
+    const dodge = this.ctx.statBonus("dodgePct");
+    if (dodge > 0 && Math.random() * 100 < Math.min(dodge, 60)) return;
+    // Thick Fur etc.: flat armor reduction, min 1 damage.
+    const armor = this.ctx.statBonus("armor");
+    if (armor > 0) amount = Math.max(1, amount - armor);
+    this.ctx.audio.blip("playerHurt");
     p.hp = Math.max(0, p.hp - amount);
     p.stats.damageTaken += amount;
     this.emitter.emit(EVX.playerDamaged, {
@@ -219,6 +297,14 @@ export class WorldScene extends Phaser.Scene {
       this.emitter.emit(EVX.playerDied);
       this.emitter.emit(EV.runEnded, "died");
     }
+  }
+
+  /** Loyal Heart etc.: passive HP regen, applied once per frame. */
+  private applyRegen(deltaMs: number): void {
+    const p = this.ctx.player;
+    if (p.hp <= 0 || p.hp >= p.maxHp) return;
+    const regen = this.ctx.statBonus("hpRegen");
+    if (regen > 0) p.hp = Math.min(p.maxHp, p.hp + (regen * deltaMs) / 1000);
   }
 
   private addXP(amount: number): void {
@@ -246,21 +332,12 @@ export class WorldScene extends Phaser.Scene {
     if (this.scene.isPaused(SCENE.World)) return;
     if (this.inputSource.update) this.inputSource.update(delta);
     for (const s of this.systems) s.update(delta);
-    this.updateHud();
-  }
-
-  private updateHud(): void {
-    const p = this.ctx.player;
-    const season = this.season.currentSeason();
-    const stage = { spring: "Newborn", summer: "Juvenile", autumn: "Adult", winter: "Elder" }[
-      season
-    ];
-    const pct = Math.round(this.season.progress() * 100);
-    this.hud.setText(
-      `${season[0].toUpperCase() + season.slice(1)} · ${stage}\n` +
-        `Lv ${p.level}  XP ${Math.floor(p.xp)}  Forage ${p.stats.forageCount}\n` +
-        `Run ${pct}%${p.instinctMode ? "  · Instinct" : ""}`
-    );
+    this.applyRegen(delta);
+    // Walk/idle animation swap based on recent movement.
+    if (this.playerSprite) {
+      const moving = this.time.now - this.lastMoveAt < 130;
+      playAnim(this.playerSprite, this.playerSpriteKey, moving ? "walk" : "idle");
+    }
   }
 
   // Convenience for potential external/testing use.

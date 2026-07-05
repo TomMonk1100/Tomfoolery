@@ -12,6 +12,7 @@ import Phaser from "phaser";
 import { GameContext, System, WorldView, Vec2 } from "../core/context";
 import { TileType, WorldTile, WORLD_SIZE, TILE_PX } from "../core/types";
 import fallbackLayout from "../data/fallback-layout.json";
+import { SPRITE_KEYS, frameKey } from "../gfx/spriteRegistry";
 
 const MIN_FORAGE_NODES = 8;
 const MIN_NEST_ZONES = 1;
@@ -200,19 +201,59 @@ export class WorldGenSystem implements System, WorldView {
 
   private renderTiles(): void {
     this.container = this.scene.add.container(0, 0);
+    // Deterministic per-tile variation (grass variants, scattered props).
+    const rng = mulberry32(0x5eed);
+    const usesAtlas = this.scene.textures.exists(frameKey(SPRITE_KEYS.tileGrassA));
+    const grassKeys = [
+      SPRITE_KEYS.tileGrassA,
+      SPRITE_KEYS.tileGrassB,
+      SPRITE_KEYS.tileGrassC,
+    ];
     for (let row = 0; row < this.tiles.length; row++) {
       for (let col = 0; col < this.tiles[row].length; col++) {
         const tile = this.tiles[row][col];
-        const worldX = col * this.tilePx;
-        const worldY = row * this.tilePx;
-        const rect = this.scene.add.rectangle(
-          worldX + this.tilePx / 2,
-          worldY + this.tilePx / 2,
-          this.tilePx - 1,
-          this.tilePx - 1,
-          TILE_COLORS[tile.type]
-        );
-        this.container.add(rect);
+        const cxp = col * this.tilePx + this.tilePx / 2;
+        const cyp = row * this.tilePx + this.tilePx / 2;
+
+        if (!usesAtlas) {
+          const rect = this.scene.add.rectangle(
+            cxp,
+            cyp,
+            this.tilePx - 1,
+            this.tilePx - 1,
+            TILE_COLORS[tile.type]
+          );
+          this.container.add(rect);
+          continue;
+        }
+
+        // Ground layer: grass everywhere (water gets its own tile).
+        const roll = rng();
+        const groundKey =
+          tile.type === "water"
+            ? SPRITE_KEYS.tileWater
+            : grassKeys[Math.floor(roll * grassKeys.length)];
+        const ground = this.scene.add.image(cxp, cyp, frameKey(groundKey));
+        ground.setDisplaySize(this.tilePx, this.tilePx);
+        this.container.add(ground);
+
+        // Feature layer.
+        let featureKey: string | null = null;
+        if (tile.type === "obstacle") {
+          featureKey =
+            roll < 0.6 ? SPRITE_KEYS.tileObstacleTree : SPRITE_KEYS.tileObstacleRock;
+        } else if (tile.type === "forage") {
+          featureKey = SPRITE_KEYS.forageBush;
+        } else if (tile.type === "grass" && roll > 0.93) {
+          featureKey = roll > 0.965 ? SPRITE_KEYS.propFlower : SPRITE_KEYS.propPebble;
+        }
+        if (featureKey && this.scene.textures.exists(frameKey(featureKey))) {
+          const feat = this.scene.add.image(cxp, cyp, frameKey(featureKey));
+          feat.setDisplaySize(this.tilePx, this.tilePx);
+          feat.setDepth(tile.type === "obstacle" ? 600 : 10);
+          this.container.add(feat);
+        }
+        // Nest tile ground only — NestSystem renders the nest itself.
       }
     }
   }

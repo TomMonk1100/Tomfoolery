@@ -1,17 +1,194 @@
 {
   "dog": {
     "name": "Dog",
-    "speed": 160,
+    "speed": 200,
     "forageRadius": 96,
-    "xpToLevel": [0, 12, 28, 48, 72, 100, 132, 168, 208, 252],
-    "verbs": ["forage", "explore", "nest", "befriend", "evade", "migrate"],
+    "xpToLevel": [
+      5,
+      15,
+      30,
+      50,
+      75,
+      110,
+      150,
+      200,
+      260,
+      330,
+      420,
+      510,
+      600,
+      690,
+      780,
+      870,
+      960,
+      1050,
+      1140,
+      1230
+    ],
+    "verbs": [
+      "forage",
+      "explore",
+      "nest",
+      "befriend",
+      "evade",
+      "migrate"
+    ],
     "spriteAnchors": {
-      "head": { "x": 0, "y": -22 },
-      "back": { "x": 0, "y": -6 },
-      "tail": { "x": -16, "y": -2 },
-      "paws": { "x": 0, "y": 14 },
-      "aura": { "x": 0, "y": 0 },
-      "trail": { "x": 0, "y": 12 }
-    }
+      "head": {
+        "x": 0,
+        "y": -22
+      },
+      "back": {
+        "x": 0,
+        "y": -6
+      },
+      "tail": {
+        "x": -16,
+        "y": -2
+      },
+      "paws": {
+        "x": 0,
+        "y": 14
+      },
+      "aura": {
+        "x": 0,
+        "y": 0
+      },
+      "trail": {
+        "x": 0,
+        "y": 12
+      }
+    },
+    "maxHp": 100,
+    "startingWeaponId": "bark-blast",
+    "spriteKey": "animal_dog"
+  },
+  "cat": {
+    "name": "Cat",
+    "speed": 210,
+    "forageRadius": 96,
+    "xpToLevel": [
+      5,
+      15,
+      30,
+      50,
+      75,
+      110,
+      150,
+      200,
+      260,
+      330,
+      420,
+      510,
+      600,
+      690,
+      780,
+      870,
+      960,
+      1050,
+      1140,
+      1230
+    ],
+    "verbs": [
+      "forage",
+      "explore",
+      "nest",
+      "befriend",
+      "evade",
+      "migrate"
+    ],
+    "spriteAnchors": {
+      "head": {
+        "x": 0,
+        "y": -22
+      },
+      "back": {
+        "x": 0,
+        "y": -6
+      },
+      "tail": {
+        "x": -16,
+        "y": -2
+      },
+      "paws": {
+        "x": 0,
+        "y": 14
+      },
+      "aura": {
+        "x": 0,
+        "y": 0
+      },
+      "trail": {
+        "x": 0,
+        "y": 12
+      }
+    },
+    "maxHp": 100,
+    "startingWeaponId": "pounce-slash",
+    "spriteKey": "animal_cat"
+  },
+  "rabbit": {
+    "name": "Rabbit",
+    "speed": 220,
+    "forageRadius": 96,
+    "xpToLevel": [
+      5,
+      15,
+      30,
+      50,
+      75,
+      110,
+      150,
+      200,
+      260,
+      330,
+      420,
+      510,
+      600,
+      690,
+      780,
+      870,
+      960,
+      1050,
+      1140,
+      1230
+    ],
+    "verbs": [
+      "forage",
+      "explore",
+      "nest",
+      "befriend",
+      "evade",
+      "migrate"
+    ],
+    "spriteAnchors": {
+      "head": {
+        "x": 0,
+        "y": -22
+      },
+      "back": {
+        "x": 0,
+        "y": -6
+      },
+      "tail": {
+        "x": -16,
+        "y": -2
+      },
+      "paws": {
+        "x": 0,
+        "y": 14
+      },
+      "aura": {
+        "x": 0,
+        "y": 0
+      },
+      "trail": {
+        "x": 0,
+        "y": 12
+      }
+    },
+    "maxHp": 100,
+    "startingWeaponId": "thumper-quake",
+    "spriteKey": "animal_rabbit"
   }
 }

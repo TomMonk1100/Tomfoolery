@@ -3,10 +3,156 @@
     "id": "loyal-heart",
     "name": "Loyal Heart",
     "animal": "dog",
-    "rarity": "uncommon",
-    "effect": { "type": "hpRegen", "magnitude": 1 },
-    "description": "Regenerate 1 HP/s per stack.",
+    "rarity": "common",
+    "effect": {
+      "type": "hpRegen",
+      "magnitude": 1
+    },
+    "description": "A steady heartbeat that mends wounds over time.",
     "icon": "icon_loyal_heart",
+    "maxStacks": 5
+  },
+  {
+    "id": "thick-fur",
+    "name": "Thick Fur",
+    "animal": "dog",
+    "rarity": "common",
+    "effect": {
+      "type": "armor",
+      "magnitude": 2
+    },
+    "description": "Thick fur blunts incoming blows.",
+    "icon": "icon_thick_fur",
+    "maxStacks": 5
+  },
+  {
+    "id": "keen-nose",
+    "name": "Keen Nose",
+    "animal": "dog",
+    "rarity": "uncommon",
+    "effect": {
+      "type": "pickupRadius",
+      "magnitude": 25
+    },
+    "description": "Sniffs out XP and food from farther away.",
+    "icon": "icon_keen_nose",
+    "maxStacks": 4
+  },
+  {
+    "id": "big-appetite",
+    "name": "Big Appetite",
+    "animal": "dog",
+    "rarity": "uncommon",
+    "effect": {
+      "type": "foodHeal",
+      "magnitude": 30
+    },
+    "description": "Every meal heals for much more.",
+    "icon": "icon_big_appetite",
+    "maxStacks": 4
+  },
+  {
+    "id": "feline-grace",
+    "name": "Feline Grace",
+    "animal": "cat",
+    "rarity": "common",
+    "effect": {
+      "type": "dodgePct",
+      "magnitude": 8
+    },
+    "description": "Uncanny grace lets you slip past danger.",
+    "icon": "icon_feline_grace",
+    "maxStacks": 5
+  },
+  {
+    "id": "predator-eye",
+    "name": "Predator Eye",
+    "animal": "cat",
+    "rarity": "common",
+    "effect": {
+      "type": "critPct",
+      "magnitude": 10
+    },
+    "description": "A predator's eye finds every weak spot.",
+    "icon": "icon_predator_eye",
+    "maxStacks": 5
+  },
+  {
+    "id": "soft-paws",
+    "name": "Soft Paws",
+    "animal": "cat",
+    "rarity": "uncommon",
+    "effect": {
+      "type": "moveSpeed",
+      "magnitude": 8
+    },
+    "description": "Silent paws move faster than they should.",
+    "icon": "icon_soft_paws",
+    "maxStacks": 4
+  },
+  {
+    "id": "picky-eater",
+    "name": "Picky Eater",
+    "animal": "cat",
+    "rarity": "rare",
+    "effect": {
+      "type": "wellFedBonus",
+      "magnitude": 10
+    },
+    "description": "Picky eating makes each meal count double.",
+    "icon": "icon_picky_eater",
     "maxStacks": 3
+  },
+  {
+    "id": "lucky-foot",
+    "name": "Lucky Foot",
+    "animal": "rabbit",
+    "rarity": "common",
+    "effect": {
+      "type": "luck",
+      "magnitude": 15
+    },
+    "description": "A lucky foot tilts the odds in your favor.",
+    "icon": "icon_lucky_foot",
+    "maxStacks": 5
+  },
+  {
+    "id": "spring-legs",
+    "name": "Spring Legs",
+    "animal": "rabbit",
+    "rarity": "common",
+    "effect": {
+      "type": "moveSpeed",
+      "magnitude": 8
+    },
+    "description": "Springy legs cover ground in a hurry.",
+    "icon": "icon_spring_legs",
+    "maxStacks": 5
+  },
+  {
+    "id": "litter-of-friends",
+    "name": "Litter Of Friends",
+    "animal": "rabbit",
+    "rarity": "rare",
+    "effect": {
+      "type": "companionSlots",
+      "magnitude": 1
+    },
+    "description": "A litter of friends joins the fight.",
+    "icon": "icon_litter_of_friends",
+    "maxStacks": 1
+  },
+  {
+    "id": "nibbler",
+    "name": "Nibbler",
+    "animal": "rabbit",
+    "rarity": "uncommon",
+    "effect": {
+      "type": "forageSpeed",
+      "magnitude": 25
+    },
+    "description": "A nibbler's habit speeds up every forage.",
+    "icon": "icon_nibbler",
+    "maxStacks": 4
   }
 ]

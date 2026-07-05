@@ -7,7 +7,15 @@
  */
 import Phaser from "phaser";
 import { System, GameContext } from "../core/context";
-import { CardData, Rarity, RARITY_ORDER, EV, SCENE } from "../core/types";
+import {
+  CardData,
+  Rarity,
+  RARITY_ORDER,
+  EV,
+  SCENE,
+  WEAPON_SLOTS,
+  PASSIVE_SLOTS,
+} from "../core/types";
 import { pickRarity } from "../core/rarityWeights";
 import { applyCard, logCardValue } from "../core/playerState";
 
@@ -48,8 +56,8 @@ export class DraftSystem implements System {
    */
   buildOffer(level: number): CardData[] {
     const player = this.ctx.player;
-    const pool = this.ctx.cards.filter((c) =>
-      player.instinctMode ? !c.isUnique : true
+    const pool = this.ctx.cards.filter(
+      (c) => (player.instinctMode ? !c.isUnique : true) && this.isDraftable(c)
     );
 
     const picked: CardData[] = [];
@@ -100,6 +108,7 @@ export class DraftSystem implements System {
         if (card) {
           applyCard(this.ctx.player, card);
           logCardValue(this.ctx.player, card.id, 0, 0); // seed the per-card record
+          this.applyWeaponOrPassive(cardId);
           this.ctx.events.emit(EV.cardChosen, cardId);
           this.ctx.events.emit(EV.spriteDirty);
         }
@@ -112,8 +121,82 @@ export class DraftSystem implements System {
       this.scene.scene.stop(SCENE.Draft);
     };
 
-    this.scene.scene.launch(SCENE.Draft, { cards, onPick });
+    this.scene.scene.launch(SCENE.Draft, {
+      cards,
+      onPick,
+      player: this.ctx.player,
+    });
     this.scene.scene.pause(SCENE.World);
+  }
+
+  // --------------------------------------------------------------------
+  // Nest & Fang: weapon/passive draft integration.
+  // Card ids in cards.json match weapon/passive ids in weapons/passives.json.
+  // --------------------------------------------------------------------
+
+  /** Is this card a legal offer for the current player right now? */
+  private isDraftable(card: CardData): boolean {
+    const p = this.ctx.player;
+    const weapon = this.ctx.weapons.find((w) => w.id === card.id);
+    if (weapon) {
+      if (weapon.animal !== p.animalId) return false;
+      const owned = p.activeWeapons.find((w) => w.weaponId === weapon.id);
+      if (!owned) return p.activeWeapons.length < WEAPON_SLOTS;
+      if (owned.evolved) return false;
+      if (owned.level < weapon.levels.length) return true;
+      // At max level: draftable only as an evolution (required passive owned).
+      return p.activePassives.some(
+        (ap) => ap.passiveId === weapon.evolution.requiresPassiveId
+      );
+    }
+    const passive = this.ctx.passives.find((ps) => ps.id === card.id);
+    if (passive) {
+      if (passive.animal !== p.animalId) return false;
+      const owned = p.activePassives.find((ap) => ap.passiveId === passive.id);
+      if (!owned) return p.activePassives.length < PASSIVE_SLOTS;
+      return owned.stacks < passive.maxStacks;
+    }
+    // Legacy stat cards (if any remain in cards.json) stay draftable.
+    return true;
+  }
+
+  /** Mutate activeWeapons/activePassives for a chosen weapon/passive card. */
+  private applyWeaponOrPassive(cardId: string): void {
+    const p = this.ctx.player;
+    const weapon = this.ctx.weapons.find((w) => w.id === cardId);
+    if (weapon) {
+      const owned = p.activeWeapons.find((w) => w.weaponId === weapon.id);
+      if (!owned) {
+        p.activeWeapons.push({ weaponId: weapon.id, level: 1, evolved: false });
+        this.ctx.events.emit(EV.weaponUpgraded, {
+          weaponId: weapon.id,
+          level: 1,
+          evolved: false,
+        });
+      } else if (owned.level < weapon.levels.length) {
+        owned.level += 1;
+        this.ctx.events.emit(EV.weaponUpgraded, {
+          weaponId: weapon.id,
+          level: owned.level,
+          evolved: false,
+        });
+      } else if (!owned.evolved) {
+        owned.evolved = true;
+        this.ctx.audio.blip("evolve");
+        this.ctx.events.emit(EV.weaponUpgraded, {
+          weaponId: weapon.id,
+          level: owned.level,
+          evolved: true,
+        });
+      }
+      return;
+    }
+    const passive = this.ctx.passives.find((ps) => ps.id === cardId);
+    if (passive) {
+      const owned = p.activePassives.find((ap) => ap.passiveId === passive.id);
+      if (!owned) p.activePassives.push({ passiveId: passive.id, stacks: 1 });
+      else owned.stacks = Math.min(owned.stacks + 1, passive.maxStacks);
+    }
   }
 
   private hasAnyEpicPlus(pool: CardData[]): boolean {

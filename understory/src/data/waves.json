@@ -1,6 +1,288 @@
 {
   "waves": [
-    { "atMs": 3000, "enemyId": "slime-green", "count": 5, "intervalMs": 1500 }
+    {
+      "atMs": 3000,
+      "enemyId": "slime-green",
+      "count": 5,
+      "intervalMs": 2200
+    },
+    {
+      "atMs": 45000,
+      "enemyId": "slime-green",
+      "count": 7,
+      "intervalMs": 1900
+    },
+    {
+      "atMs": 50000,
+      "enemyId": "slime-red",
+      "count": 3,
+      "intervalMs": 2600
+    },
+    {
+      "atMs": 90000,
+      "enemyId": "slime-green",
+      "count": 9,
+      "intervalMs": 1600
+    },
+    {
+      "atMs": 90000,
+      "enemyId": "slime-green",
+      "count": 1,
+      "intervalMs": 45000,
+      "elite": true
+    },
+    {
+      "atMs": 100000,
+      "enemyId": "slime-red",
+      "count": 4,
+      "intervalMs": 2200
+    },
+    {
+      "atMs": 110000,
+      "enemyId": "slime-blue",
+      "count": 2,
+      "intervalMs": 4500
+    },
+    {
+      "atMs": 130000,
+      "enemyId": "gloomcap",
+      "count": 2,
+      "intervalMs": 3800
+    },
+    {
+      "atMs": 135000,
+      "enemyId": "slime-red",
+      "count": 1,
+      "intervalMs": 45000,
+      "elite": true
+    },
+    {
+      "atMs": 150000,
+      "enemyId": "slime-green",
+      "count": 10,
+      "intervalMs": 1400
+    },
+    {
+      "atMs": 160000,
+      "enemyId": "slime-red",
+      "count": 5,
+      "intervalMs": 1900
+    },
+    {
+      "atMs": 170000,
+      "enemyId": "slime-blue",
+      "count": 2,
+      "intervalMs": 4000
+    },
+    {
+      "atMs": 180000,
+      "enemyId": "wisp",
+      "count": 3,
+      "intervalMs": 2600
+    },
+    {
+      "atMs": 180000,
+      "enemyId": "slime-blue",
+      "count": 1,
+      "intervalMs": 45000,
+      "elite": true
+    },
+    {
+      "atMs": 190000,
+      "enemyId": "gloomcap",
+      "count": 2,
+      "intervalMs": 3400
+    },
+    {
+      "atMs": 210000,
+      "enemyId": "slime-green",
+      "count": 11,
+      "intervalMs": 1200
+    },
+    {
+      "atMs": 220000,
+      "enemyId": "slime-red",
+      "count": 6,
+      "intervalMs": 1700
+    },
+    {
+      "atMs": 225000,
+      "enemyId": "gloomcap",
+      "count": 1,
+      "intervalMs": 45000,
+      "elite": true
+    },
+    {
+      "atMs": 230000,
+      "enemyId": "slime-blue",
+      "count": 3,
+      "intervalMs": 3600
+    },
+    {
+      "atMs": 240000,
+      "enemyId": "wisp",
+      "count": 3,
+      "intervalMs": 2200
+    },
+    {
+      "atMs": 250000,
+      "enemyId": "gloomcap",
+      "count": 3,
+      "intervalMs": 3000
+    },
+    {
+      "atMs": 250000,
+      "enemyId": "thorn-crawler",
+      "count": 2,
+      "intervalMs": 4200
+    },
+    {
+      "atMs": 270000,
+      "enemyId": "slime-green",
+      "count": 12,
+      "intervalMs": 1100
+    },
+    {
+      "atMs": 270000,
+      "enemyId": "slime-green",
+      "count": 1,
+      "intervalMs": 45000,
+      "elite": true
+    },
+    {
+      "atMs": 280000,
+      "enemyId": "slime-red",
+      "count": 6,
+      "intervalMs": 1500
+    },
+    {
+      "atMs": 290000,
+      "enemyId": "slime-blue",
+      "count": 3,
+      "intervalMs": 3200
+    },
+    {
+      "atMs": 300000,
+      "enemyId": "wisp",
+      "count": 4,
+      "intervalMs": 2000
+    },
+    {
+      "atMs": 310000,
+      "enemyId": "gloomcap",
+      "count": 3,
+      "intervalMs": 2800
+    },
+    {
+      "atMs": 310000,
+      "enemyId": "thorn-crawler",
+      "count": 2,
+      "intervalMs": 3800
+    },
+    {
+      "atMs": 310000,
+      "enemyId": "mudmaw",
+      "count": 2,
+      "intervalMs": 5000
+    },
+    {
+      "atMs": 315000,
+      "enemyId": "thorn-crawler",
+      "count": 1,
+      "intervalMs": 45000,
+      "elite": true
+    },
+    {
+      "atMs": 330000,
+      "enemyId": "slime-green",
+      "count": 12,
+      "intervalMs": 1000
+    },
+    {
+      "atMs": 340000,
+      "enemyId": "slime-red",
+      "count": 7,
+      "intervalMs": 1400
+    },
+    {
+      "atMs": 350000,
+      "enemyId": "slime-blue",
+      "count": 4,
+      "intervalMs": 3000
+    },
+    {
+      "atMs": 360000,
+      "enemyId": "wisp",
+      "count": 4,
+      "intervalMs": 1800
+    },
+    {
+      "atMs": 360000,
+      "enemyId": "slime-blue",
+      "count": 1,
+      "intervalMs": 45000,
+      "elite": true
+    },
+    {
+      "atMs": 370000,
+      "enemyId": "gloomcap",
+      "count": 4,
+      "intervalMs": 2600
+    },
+    {
+      "atMs": 370000,
+      "enemyId": "thorn-crawler",
+      "count": 3,
+      "intervalMs": 3400
+    },
+    {
+      "atMs": 370000,
+      "enemyId": "mudmaw",
+      "count": 2,
+      "intervalMs": 4500
+    },
+    {
+      "atMs": 390000,
+      "enemyId": "slime-green",
+      "count": 13,
+      "intervalMs": 950
+    },
+    {
+      "atMs": 400000,
+      "enemyId": "slime-red",
+      "count": 7,
+      "intervalMs": 1300
+    },
+    {
+      "atMs": 405000,
+      "enemyId": "mudmaw",
+      "count": 1,
+      "intervalMs": 45000,
+      "elite": true
+    },
+    {
+      "atMs": 410000,
+      "enemyId": "slime-blue",
+      "count": 4,
+      "intervalMs": 2800
+    }
   ],
-  "bosses": []
+  "bosses": [
+    {
+      "atMs": 120000,
+      "enemyId": "king-slime"
+    },
+    {
+      "atMs": 240000,
+      "enemyId": "elder-gloomcap"
+    },
+    {
+      "atMs": 360000,
+      "enemyId": "bramble-tyrant"
+    },
+    {
+      "atMs": 460000,
+      "enemyId": "the-long-dark"
+    }
+  ]
 }

@@ -17,50 +17,103 @@
  *   PIXEL_SCALE=3 with nearest-neighbor (no smoothing), registers Phaser
  *   textures named `${key}_${frameIndex}` and Phaser animations named
  *   `${key}:${animName}`.
+ *
+ * DECISIONS:
+ * - All pure data/types/registry live in ./spriteRegistry.ts (zero Phaser
+ *   imports) so tests/sprites.test.ts can import sprite data without pulling
+ *   in Phaser. This file re-exports everything from there so existing
+ *   `import { X } from "../gfx/PixelArt"` call sites are unaffected, and adds
+ *   only the Phaser-dependent buildAtlas()/playAnim().
+ * - "malformed def" guard covers: empty frames array, rows of unequal
+ *   length (within or across frames), and any non-"." char missing from the
+ *   def's palette. On any violation the whole sprite def is skipped (no
+ *   textures, no anims) with a console.warn, never a throw.
+ * - AnimDef frame indices that are out of range for a given def are skipped
+ *   individually (warn + drop that frame index) rather than discarding the
+ *   whole animation, so a single bad index doesn't lose idle/walk/etc.
  */
 import Phaser from "phaser";
+import type { PixelSpriteDef } from "./spriteRegistry";
+import { frameKey, animKey, getRegisteredSprites, PIXEL_SCALE } from "./spriteRegistry";
 
-export const PIXEL_SCALE = 3;
+export {
+  PIXEL_SCALE,
+  frameKey,
+  animKey,
+  registerSprite,
+  getRegisteredSprites,
+  SPRITE_KEYS,
+  iconKey,
+  PALETTE,
+} from "./spriteRegistry";
+export type { Palette, AnimDef, PixelSpriteDef } from "./spriteRegistry";
 
-/** char -> CSS color. "." is always transparent and must not appear here. */
-export type Palette = Record<string, string>;
-
-export interface AnimDef {
-  /** Frame indices into `frames`. */
-  frames: number[];
-  frameRate: number;
-  /** -1 = loop forever, 0 = play once. */
-  repeat: number;
+/** Returns null (and warns) if the def is malformed; otherwise the frame dims. */
+function validateDef(def: PixelSpriteDef): { w: number; h: number } | null {
+  if (!def.frames || def.frames.length === 0) {
+    console.warn(`PixelArt: sprite "${def.key}" has no frames, skipping`);
+    return null;
+  }
+  const first = def.frames[0];
+  if (!first || first.length === 0) {
+    console.warn(`PixelArt: sprite "${def.key}" frame 0 is empty, skipping`);
+    return null;
+  }
+  const h = first.length;
+  const w = first[0].length;
+  for (let f = 0; f < def.frames.length; f++) {
+    const frame = def.frames[f];
+    if (frame.length !== h) {
+      console.warn(
+        `PixelArt: sprite "${def.key}" frame ${f} has ${frame.length} rows, expected ${h}, skipping sprite`
+      );
+      return null;
+    }
+    for (let r = 0; r < frame.length; r++) {
+      if (frame[r].length !== w) {
+        console.warn(
+          `PixelArt: sprite "${def.key}" frame ${f} row ${r} has width ${frame[r].length}, expected ${w}, skipping sprite`
+        );
+        return null;
+      }
+      for (const ch of frame[r]) {
+        if (ch === ".") continue;
+        if (!(ch in def.palette)) {
+          console.warn(
+            `PixelArt: sprite "${def.key}" frame ${f} uses unknown palette char "${ch}", skipping sprite`
+          );
+          return null;
+        }
+      }
+    }
+  }
+  return { w, h };
 }
 
-export interface PixelSpriteDef {
-  key: string;
-  /** Each frame: array of equal-length strings. All frames same dimensions. */
-  frames: string[][];
-  palette: Palette;
-  /** Named animations, e.g. { idle: {...}, walk: {...}, death: {...} }. */
-  anims: Record<string, AnimDef>;
-}
-
-const registry = new Map<string, PixelSpriteDef>();
-
-/** Register a sprite definition (call at module scope in src/gfx/sprites/*). */
-export function registerSprite(def: PixelSpriteDef): void {
-  registry.set(def.key, def);
-}
-
-export function getRegisteredSprites(): ReadonlyMap<string, PixelSpriteDef> {
-  return registry;
-}
-
-/** Texture key for a specific frame of a sprite. */
-export function frameKey(key: string, frame = 0): string {
-  return `${key}_${frame}`;
-}
-
-/** Phaser animation key. */
-export function animKey(key: string, anim: string): string {
-  return `${key}:${anim}`;
+function renderFrameCanvas(
+  frame: string[],
+  palette: Record<string, string>,
+  w: number,
+  h: number
+): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  canvas.width = w * PIXEL_SCALE;
+  canvas.height = h * PIXEL_SCALE;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return canvas;
+  ctx.imageSmoothingEnabled = false;
+  for (let y = 0; y < h; y++) {
+    const row = frame[y];
+    for (let x = 0; x < w; x++) {
+      const ch = row[x];
+      if (ch === ".") continue;
+      const color = palette[ch];
+      if (!color) continue;
+      ctx.fillStyle = color;
+      ctx.fillRect(x * PIXEL_SCALE, y * PIXEL_SCALE, PIXEL_SCALE, PIXEL_SCALE);
+    }
+  }
+  return canvas;
 }
 
 /**
@@ -68,12 +121,52 @@ export function animKey(key: string, anim: string): string {
  * Idempotent; safe to call once per scene boot. Implemented by Worker A.
  */
 export function buildAtlas(scene: Phaser.Scene): void {
-  // Worker A: canvas-render every frame of every registered def at
-  // PIXEL_SCALE with imageSmoothingEnabled=false, addCanvas texture per
-  // frame under frameKey(), then scene.anims.create per AnimDef under
-  // animKey() using generateFrameNames-equivalent single-frame entries.
-  void scene;
-  throw new Error("PixelArt.buildAtlas: implemented by Worker A");
+  for (const def of getRegisteredSprites().values()) {
+    try {
+      const dims = validateDef(def);
+      if (!dims) continue;
+      const { w, h } = dims;
+
+      for (let i = 0; i < def.frames.length; i++) {
+        const fk = frameKey(def.key, i);
+        if (scene.textures.exists(fk)) continue;
+        const canvas = renderFrameCanvas(def.frames[i], def.palette, w, h);
+        const tex = scene.textures.addCanvas(fk, canvas);
+        // Keep pixel art crisp under any display scaling.
+        tex?.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      }
+
+      for (const [animName, animDef] of Object.entries(def.anims)) {
+        const ak = animKey(def.key, animName);
+        if (scene.anims.exists(ak)) continue;
+        const validIndices = animDef.frames.filter((idx) => {
+          const ok = idx >= 0 && idx < def.frames.length;
+          if (!ok) {
+            console.warn(
+              `PixelArt: sprite "${def.key}" anim "${animName}" references invalid frame index ${idx}, dropping`
+            );
+          }
+          return ok;
+        });
+        if (validIndices.length === 0) {
+          console.warn(
+            `PixelArt: sprite "${def.key}" anim "${animName}" has no valid frames, skipping anim`
+          );
+          continue;
+        }
+        scene.anims.create({
+          key: ak,
+          frames: validIndices.map((idx) => ({
+            key: frameKey(def.key, idx),
+          })),
+          frameRate: animDef.frameRate,
+          repeat: animDef.repeat,
+        });
+      }
+    } catch (err) {
+      console.warn(`PixelArt: failed to build sprite "${def.key}"`, err);
+    }
+  }
 }
 
 /**
@@ -88,86 +181,3 @@ export function playAnim(
   const ak = animKey(key, anim);
   if (sprite.scene.anims.exists(ak)) sprite.play(ak, true);
 }
-
-// ---------------------------------------------------------------------------
-// CANONICAL SPRITE KEYS — the shared vocabulary between Workers A, B, D, E, F.
-// Worker A MUST register a sprite for every key. Consumers MUST use these
-// constants (never string literals).
-// ---------------------------------------------------------------------------
-export const SPRITE_KEYS = {
-  // Animals (24x24; anims: idle, walk, attack, hurt; face right, flipX for left)
-  dog: "animal_dog",
-  cat: "animal_cat",
-  rabbit: "animal_rabbit",
-  // Enemies (anims: idle, move, death)
-  slimeGreen: "enemy_slime_green", // 16
-  slimeRed: "enemy_slime_red", // 16
-  slimeBlue: "enemy_slime_blue", // 24
-  gloomcap: "enemy_gloomcap", // 24
-  thornCrawler: "enemy_thorn_crawler", // 24
-  wisp: "enemy_wisp", // 16
-  mudmaw: "enemy_mudmaw", // 24
-  bossKingSlime: "boss_king_slime", // 48
-  bossElderGloomcap: "boss_elder_gloomcap", // 48
-  bossBrambleTyrant: "boss_bramble_tyrant", // 48
-  bossLongDark: "boss_long_dark", // 48
-  // Companions (16x16; idle, walk, attack)
-  companionSparrow: "companion_sparrow",
-  companionSquirrel: "companion_squirrel",
-  // Projectiles & effects (16x16 unless noted; anims optional)
-  projStick: "proj_stick",
-  projHairball: "proj_hairball",
-  projCarrot: "proj_carrot",
-  projGoo: "proj_goo",
-  projSpore: "proj_spore",
-  projClover: "proj_clover",
-  fxBarkRing: "fx_bark_ring", // 32, anim: pulse (play once)
-  fxSweep: "fx_sweep", // 32, anim: swing (play once)
-  fxQuakeRing: "fx_quake_ring", // 32
-  fxDust: "fx_dust",
-  fxAura: "fx_aura", // 32, anim: pulse loop
-  // Pickups (16x16)
-  xpMote: "pickup_xp_mote", // anim: sparkle loop
-  foodBerry: "pickup_food_berry",
-  foodMushroom: "pickup_food_mushroom",
-  foodBone: "pickup_food_bone",
-  // World (32x32 tiles / props)
-  tileGrassA: "tile_grass_a",
-  tileGrassB: "tile_grass_b",
-  tileGrassC: "tile_grass_c",
-  tileWater: "tile_water", // anim: shimmer loop (2 frames)
-  tileObstacleTree: "tile_obstacle_tree",
-  tileObstacleRock: "tile_obstacle_rock",
-  propFlower: "prop_flower",
-  propPebble: "prop_pebble",
-  nest: "world_nest", // 32; anims: idle, damaged
-  forageBush: "world_forage_bush", // anims: full, harvested
-  // UI icons (16x16) — one per weapon + passive; naming: icon_<id kebab->snake>
-  // e.g. weapon "bark-blast" -> "icon_bark_blast". Worker A generates the full
-  // set from the ids listed in docs/CONTRACTS.md §Weapons/§Passives.
-} as const;
-
-/** Icon key for a weapon/passive id, e.g. "bark-blast" -> "icon_bark_blast". */
-export function iconKey(id: string): string {
-  return `icon_${id.replace(/-/g, "_")}`;
-}
-
-/** Shared 16-color palette (workers may add sprite-local accents sparingly). */
-export const PALETTE = {
-  outline: "#1a1423",
-  white: "#f4f0e8",
-  cream: "#dcc7a0",
-  brown: "#7a5c3a",
-  darkBrown: "#4a3423",
-  grassLight: "#7bb661",
-  grass: "#4a7c3f",
-  grassDark: "#2f5430",
-  leaf: "#a8d878",
-  water: "#3a6ea5",
-  waterLight: "#6fa8dc",
-  slime: "#5fd35f",
-  danger: "#d94f4f",
-  gold: "#e8b23d",
-  purple: "#8b5fbf",
-  shadow: "#00000055",
-} as const;

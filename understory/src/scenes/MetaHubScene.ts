@@ -1,17 +1,61 @@
 /**
- * MetaHubScene — the home screen ("Meadow"). Shows Sunseeds, the Dog
- * meta-tree nodes (locked/unlockable/unlocked), an Instinct Mode toggle,
- * and the "Begin a Life" entry point into WorldScene.
+ * MetaHubScene — "The Meadow": run-start hub. Lets the player pick their
+ * animal, spend Sunseeds on that animal's meta-tree, then launches a run via
+ * "Begin Life" (normal) or "Instinct Mode" (AI-driven, XP-penalized).
+ *
+ * DECISIONS:
+ * - metaTrees.json keys are "dog"/"cat"/"rabbit" with node ids that are
+ *   already unique per species (e.g. "warm-welcome" for dog vs
+ *   "silent-approach" for cat) — NOT species-prefixed strings. SaveManager's
+ *   `unlockedNodes: string[]` is a flat list shared across all three trees;
+ *   since ids don't collide across species this is safe as-is and requires
+ *   no migration. Preserved the exact purchase logic (prereqs + cost check)
+ *   from the previous single-species version, just re-pointed at the
+ *   selected animal's node list.
+ * - Selection is a scene-local var (`selectedAnimalId`), default "dog", not
+ *   persisted — matches "Selection stored in a scene-local var" in the spec.
+ * - Audio: previous MetaHubScene never unlocked audio itself (WorldScene
+ *   does it on first pointerdown). Kept that behavior — no audio calls here
+ *   beyond reading REG.audio indirectly through nothing (out of scope).
+ * - animals.json is read directly for name/sprite/speed; kit blurbs and
+ *   starting-weapon icons are hand-authored per CONTRACTS.md weapon list
+ *   (dog starts bark-blast, cat starts pounce-slash, rabbit starts
+ *   thumper-quake — matches animals.json startingWeaponId already).
  */
 import Phaser from "phaser";
-import { SCENE, REG, MetaNode, MetaSave } from "../core/types";
+import {
+  SCENE,
+  REG,
+  MetaNode,
+  MetaSave,
+  AnimalData,
+  WeaponData,
+} from "../core/types";
 import metaTreesJson from "../data/metaTrees.json";
+import animalsJson from "../data/animals.json";
+import weaponsJson from "../data/weapons.json";
 import { SaveManager } from "../core/SaveManager";
+import { PALETTE, frameKey, iconKey } from "../gfx/spriteRegistry";
+import { buildAtlas, playAnim } from "../gfx/PixelArt";
+import { registerAllSprites } from "../gfx/sprites";
 
 type MetaTrees = Record<string, MetaNode[]>;
 const metaTreesData = metaTreesJson as MetaTrees;
+const ANIMALS = animalsJson as unknown as Record<string, AnimalData>;
+const WEAPONS = weaponsJson as unknown as WeaponData[];
 
-const DOG_ANIMAL_ID = "dog";
+const ANIMAL_IDS = ["dog", "cat", "rabbit"] as const;
+type AnimalId = (typeof ANIMAL_IDS)[number];
+
+const ANIMAL_BLURB: Record<AnimalId, string> = {
+  dog: "Loyal brawler — barks, fetch & zoomies",
+  cat: "Precision hunter — crits & pounces",
+  rabbit: "Lucky swarm-clearer — thumps & clovers",
+};
+
+function hex(n: string): number {
+  return parseInt(n.replace("#", ""), 16);
+}
 
 export class MetaHubScene extends Phaser.Scene {
   private saveManager!: SaveManager;
@@ -20,7 +64,13 @@ export class MetaHubScene extends Phaser.Scene {
   private sunseedsText?: Phaser.GameObjects.Text;
   private nodeButtons: Phaser.GameObjects.Container[] = [];
   private instinctChoice = false;
-  private instinctToggle?: Phaser.GameObjects.Container;
+
+  private selectedAnimalId: AnimalId = "dog";
+  private animalPanels: Partial<Record<AnimalId, Phaser.GameObjects.Container>> = {};
+  private animalPanelBgs: Partial<Record<AnimalId, Phaser.GameObjects.Rectangle>> = {};
+
+  private treeContainer?: Phaser.GameObjects.Container;
+  private treeHeading?: Phaser.GameObjects.Text;
 
   constructor() {
     super(SCENE.Meta);
@@ -29,56 +79,66 @@ export class MetaHubScene extends Phaser.Scene {
   create(): void {
     const sm = this.registry.get(REG.saveManager) as SaveManager | undefined;
     if (!sm) {
-      // Contract mismatch guard: SaveManager should always be registered
-      // before MetaHubScene starts. Fail soft with a fresh in-scene
-      // instance rather than crashing the hub.
       // eslint-disable-next-line no-console
       console.warn(
         "[MetaHubScene] REG.saveManager missing from registry; " +
           "meta progression will not persist this session."
       );
     }
-    this.saveManager = sm ?? this.createFallbackSaveManager();
+    this.saveManager = sm ?? new SaveManager();
     this.meta = this.saveManager.load();
 
     this.instinctChoice = Boolean(this.registry.get("instinctChoice"));
 
+    // Bake the atlas so animal sprites/icons are available for the panels
+    // and meta tree without depending on WorldScene having run first.
+    try {
+      registerAllSprites();
+      buildAtlas(this);
+    } catch (err) {
+      console.warn("[MetaHubScene] atlas build failed, using fallback shapes", err);
+    }
+
     const width = this.scale.width;
     const height = this.scale.height;
 
-    this.add.rectangle(0, 0, width, height, 0x0f1a0f, 1).setOrigin(0, 0);
+    this.add.rectangle(0, 0, width, height, hex(PALETTE.outline), 1).setOrigin(0, 0);
 
     this.buildTitle(width);
     this.buildSunseedsDisplay(width);
+    this.buildAnimalSelect(width);
     this.buildMetaTree(width, height);
-    this.buildInstinctToggle(width, height);
-    this.buildBeginButton(width, height);
+    this.buildButtons(width, height);
   }
 
-  private createFallbackSaveManager(): SaveManager {
-    // Construct one locally so the hub still renders even if the wiring
-    // scene forgot to register REG.saveManager. Not persisted to the
-    // registry — this is a last-resort fallback, not a replacement for
-    // proper wiring.
-    return new SaveManager();
-  }
+  // --------------------------------------------------------------------
+  // Header
+  // --------------------------------------------------------------------
 
   private buildTitle(width: number): void {
     this.add
-      .text(width / 2, 40, "Understory", {
-        fontFamily: "sans-serif",
-        fontSize: "30px",
-        color: "#f2f6ee",
+      .text(width / 2, 16, "UNDERSTORY", {
+        fontFamily: "monospace",
+        fontSize: "26px",
+        color: PALETTE.white,
+      })
+      .setOrigin(0.5, 0);
+
+    this.add
+      .text(width / 2, 44, "Nest & Fang", {
+        fontFamily: "monospace",
+        fontSize: "13px",
+        color: PALETTE.gold,
       })
       .setOrigin(0.5, 0);
   }
 
   private buildSunseedsDisplay(width: number): void {
     this.sunseedsText = this.add
-      .text(width / 2, 82, `Sunseeds: ${this.meta.sunseeds}`, {
-        fontFamily: "sans-serif",
-        fontSize: "16px",
-        color: "#f2d675",
+      .text(width / 2, 66, `Sunseeds: ${this.meta.sunseeds}`, {
+        fontFamily: "monospace",
+        fontSize: "14px",
+        color: PALETTE.gold,
       })
       .setOrigin(0.5, 0);
   }
@@ -88,31 +148,145 @@ export class MetaHubScene extends Phaser.Scene {
   }
 
   // --------------------------------------------------------------------
+  // Animal select
+  // --------------------------------------------------------------------
+
+  private buildAnimalSelect(width: number): void {
+    const panelW = Math.floor((width - 24 - 16) / 3); // 12px margins + 8px gaps x2
+    const panelH = 118;
+    const y = 94;
+    const marginX = 12;
+    const gap = 8;
+
+    ANIMAL_IDS.forEach((id, i) => {
+      const x = marginX + i * (panelW + gap);
+      const panel = this.buildAnimalPanel(id, x, y, panelW, panelH);
+      this.animalPanels[id] = panel;
+    });
+
+    this.refreshAnimalSelection();
+  }
+
+  private buildAnimalPanel(
+    id: AnimalId,
+    x: number,
+    y: number,
+    w: number,
+    h: number
+  ): Phaser.GameObjects.Container {
+    const animal = ANIMALS[id];
+    const container = this.add.container(x + w / 2, y + h / 2);
+
+    const bg = this.add.rectangle(0, 0, w, h, hex(PALETTE.darkBrown), 0.9);
+    bg.setStrokeStyle(2, hex(PALETTE.brown), 1);
+    this.animalPanelBgs[id] = bg;
+
+    const spriteKey = animal.spriteKey ?? `animal_${id}`;
+    let sprite: Phaser.GameObjects.GameObject;
+    if (this.textures.exists(frameKey(spriteKey))) {
+      const s = this.add.sprite(0, -h / 2 + 34, frameKey(spriteKey));
+      s.setDisplaySize(24 * 3, 24 * 3);
+      playAnim(s, spriteKey, "idle");
+      sprite = s;
+    } else {
+      const s = this.add.ellipse(0, -h / 2 + 34, 40, 30, hex(PALETTE.cream));
+      s.setStrokeStyle(2, hex(PALETTE.brown));
+      sprite = s;
+    }
+
+    const nameText = this.add
+      .text(0, 4, animal.name, {
+        fontFamily: "monospace",
+        fontSize: "13px",
+        color: PALETTE.white,
+      })
+      .setOrigin(0.5, 0);
+
+    const blurb = this.add
+      .text(0, 20, ANIMAL_BLURB[id], {
+        fontFamily: "monospace",
+        fontSize: "8px",
+        color: PALETTE.cream,
+        align: "center",
+        wordWrap: { width: w - 10 },
+      })
+      .setOrigin(0.5, 0);
+
+    const startWeapon = WEAPONS.find(
+      (wp) => wp.id === animal.startingWeaponId
+    );
+    let weaponIcon: Phaser.GameObjects.GameObject;
+    if (startWeapon && this.textures.exists(frameKey(iconKey(startWeapon.id)))) {
+      const img = this.add.image(0, h / 2 - 12, frameKey(iconKey(startWeapon.id)));
+      img.setDisplaySize(16, 16);
+      weaponIcon = img;
+    } else {
+      const label = this.add
+        .text(0, h / 2 - 18, startWeapon?.name ?? "", {
+          fontFamily: "monospace",
+          fontSize: "8px",
+          color: PALETTE.grassLight,
+        })
+        .setOrigin(0.5, 0);
+      weaponIcon = label;
+    }
+
+    container.add([bg, sprite, nameText, blurb, weaponIcon]);
+    container.setSize(w, h);
+    container.setInteractive({ useHandCursor: true });
+    container.on("pointerdown", () => {
+      this.selectedAnimalId = id;
+      this.refreshAnimalSelection();
+      this.rebuildMetaTree();
+    });
+
+    return container;
+  }
+
+  private refreshAnimalSelection(): void {
+    for (const id of ANIMAL_IDS) {
+      const bg = this.animalPanelBgs[id];
+      if (!bg) continue;
+      const selected = id === this.selectedAnimalId;
+      bg.setStrokeStyle(selected ? 3 : 2, selected ? hex(PALETTE.gold) : hex(PALETTE.brown), 1);
+      bg.setFillStyle(hex(PALETTE.darkBrown), selected ? 1 : 0.9);
+    }
+  }
+
+  // --------------------------------------------------------------------
   // Meta tree
   // --------------------------------------------------------------------
 
   private buildMetaTree(width: number, height: number): void {
-    const nodes = metaTreesData[DOG_ANIMAL_ID] ?? [];
+    void height;
+    const nodes = metaTreesData[this.selectedAnimalId] ?? [];
 
-    const heading = this.add
-      .text(width / 2, 118, "Dog — Meta Tree", {
-        fontFamily: "sans-serif",
-        fontSize: "16px",
-        color: "#a8e0a0",
+    this.treeHeading = this.add
+      .text(width / 2, 222, this.treeHeadingText(), {
+        fontFamily: "monospace",
+        fontSize: "14px",
+        color: PALETTE.leaf,
       })
       .setOrigin(0.5, 0);
-    void heading;
 
-    const topY = 150;
-    const rowHeight = 56;
-    const marginX = 20;
+    this.treeContainer = this.add.container(0, 0);
+
+    const topY = 250;
+    const rowHeight = 50;
+    const marginX = 16;
     const btnWidth = width - marginX * 2;
 
     nodes.forEach((node, i) => {
       const y = topY + i * rowHeight;
       const btn = this.buildNodeButton(node, marginX, y, btnWidth, rowHeight - 8);
       this.nodeButtons.push(btn);
+      this.treeContainer?.add(btn);
     });
+  }
+
+  private treeHeadingText(): string {
+    const name = ANIMALS[this.selectedAnimalId]?.name ?? this.selectedAnimalId;
+    return `${name} — Meta Tree`;
   }
 
   private nodeState(node: MetaNode): "locked" | "unlockable" | "unlocked" {
@@ -137,33 +311,33 @@ export class MetaHubScene extends Phaser.Scene {
 
     const state = this.nodeState(node);
     const colors: Record<string, number> = {
-      locked: 0x2a2a2a,
-      unlockable: 0x3a5a34,
-      unlocked: 0x4f7d3a,
+      locked: hex(PALETTE.outline),
+      unlockable: hex(PALETTE.grass),
+      unlocked: hex(PALETTE.grassDark),
     };
     const strokeColors: Record<string, number> = {
-      locked: 0x4a4a4a,
-      unlockable: 0x6b8f5a,
-      unlocked: 0xf2d675,
+      locked: hex(PALETTE.brown),
+      unlockable: hex(PALETTE.grassLight),
+      unlocked: hex(PALETTE.gold),
     };
 
     const bg = this.add.rectangle(0, 0, w, h, colors[state], 1);
     bg.setStrokeStyle(2, strokeColors[state], 1);
 
     const nameText = this.add
-      .text(-w / 2 + 12, -h / 2 + 6, node.name, {
-        fontFamily: "sans-serif",
-        fontSize: "13px",
-        color: "#f2f6ee",
+      .text(-w / 2 + 10, -h / 2 + 5, node.name, {
+        fontFamily: "monospace",
+        fontSize: "12px",
+        color: PALETTE.white,
       })
       .setOrigin(0, 0);
 
     const effectText = this.add
-      .text(-w / 2 + 12, h / 2 - 18, node.effect, {
-        fontFamily: "sans-serif",
-        fontSize: "10px",
-        color: "#c8dcc0",
-        wordWrap: { width: w - 24 },
+      .text(-w / 2 + 10, h / 2 - 16, node.effect, {
+        fontFamily: "monospace",
+        fontSize: "9px",
+        color: PALETTE.cream,
+        wordWrap: { width: w - 20 },
       })
       .setOrigin(0, 0);
 
@@ -171,19 +345,19 @@ export class MetaHubScene extends Phaser.Scene {
       state === "unlocked"
         ? "Unlocked"
         : state === "unlockable"
-        ? `Unlock — ${node.costSunseeds} Sunseeds`
-        : `Locked — ${node.costSunseeds} Sunseeds`;
+        ? `Unlock — ${node.costSunseeds}`
+        : `Locked — ${node.costSunseeds}`;
 
     const statusText = this.add
-      .text(w / 2 - 12, -h / 2 + 6, statusLabel, {
-        fontFamily: "sans-serif",
-        fontSize: "11px",
+      .text(w / 2 - 10, -h / 2 + 5, statusLabel, {
+        fontFamily: "monospace",
+        fontSize: "10px",
         color:
           state === "unlocked"
-            ? "#f2d675"
+            ? PALETTE.gold
             : state === "unlockable"
-            ? "#a8e0a0"
-            : "#8a8a8a",
+            ? PALETTE.grassLight
+            : PALETTE.brown,
       })
       .setOrigin(1, 0);
 
@@ -191,7 +365,7 @@ export class MetaHubScene extends Phaser.Scene {
 
     if (state === "unlockable") {
       bg.setInteractive({ useHandCursor: true });
-      bg.on("pointerover", () => bg.setFillStyle(0x4a6a44));
+      bg.on("pointerover", () => bg.setFillStyle(hex(PALETTE.grassLight)));
       bg.on("pointerout", () => bg.setFillStyle(colors[state]));
       bg.on("pointerdown", () => this.tryUnlock(node));
     }
@@ -218,94 +392,78 @@ export class MetaHubScene extends Phaser.Scene {
   private rebuildMetaTree(): void {
     for (const btn of this.nodeButtons) btn.destroy();
     this.nodeButtons = [];
-    const nodes = metaTreesData[DOG_ANIMAL_ID] ?? [];
-    const topY = 150;
-    const rowHeight = 56;
-    const marginX = 20;
+    this.treeHeading?.setText(this.treeHeadingText());
+
+    const nodes = metaTreesData[this.selectedAnimalId] ?? [];
+    const topY = 250;
+    const rowHeight = 50;
+    const marginX = 16;
     const btnWidth = this.scale.width - marginX * 2;
 
     nodes.forEach((node, i) => {
       const y = topY + i * rowHeight;
-      const btn = this.buildNodeButton(
-        node,
-        marginX,
-        y,
-        btnWidth,
-        rowHeight - 8
-      );
+      const btn = this.buildNodeButton(node, marginX, y, btnWidth, rowHeight - 8);
       this.nodeButtons.push(btn);
+      this.treeContainer?.add(btn);
     });
   }
 
   // --------------------------------------------------------------------
-  // Instinct Mode toggle
+  // Begin Life / Instinct Mode
   // --------------------------------------------------------------------
 
-  private buildInstinctToggle(width: number, height: number): void {
-    const y = height - 140;
-    const container = this.add.container(width / 2, y);
-
-    const w = 220;
-    const h = 40;
-
-    const bg = this.add.rectangle(
-      0,
-      0,
-      w,
-      h,
-      this.instinctChoice ? 0x4f7d3a : 0x2a2a2a,
-      1
-    );
-    bg.setStrokeStyle(2, 0x6b8f5a, 1);
-    bg.setInteractive({ useHandCursor: true });
-
-    const label = this.add
-      .text(0, 0, `Instinct Mode: ${this.instinctChoice ? "On" : "Off"}`, {
-        fontFamily: "sans-serif",
-        fontSize: "14px",
-        color: "#f2f6ee",
-      })
-      .setOrigin(0.5);
-
-    container.add([bg, label]);
-    this.instinctToggle = container;
-
-    bg.on("pointerdown", () => {
-      this.instinctChoice = !this.instinctChoice;
-      this.registry.set("instinctChoice", this.instinctChoice);
-      bg.setFillStyle(this.instinctChoice ? 0x4f7d3a : 0x2a2a2a);
-      label.setText(`Instinct Mode: ${this.instinctChoice ? "On" : "Off"}`);
-    });
-  }
-
-  // --------------------------------------------------------------------
-  // Begin a Life
-  // --------------------------------------------------------------------
-
-  private buildBeginButton(width: number, height: number): void {
-    const btnWidth = Math.min(260, width * 0.75);
-    const btnHeight = 56;
+  private buildButtons(width: number, height: number): void {
+    const bigW = Math.min(280, width * 0.8);
+    const bigH = 52;
     const x = width / 2;
-    const y = height - 60;
+    const bigY = height - 76;
 
-    const bg = this.add.rectangle(x, y, btnWidth, btnHeight, 0x3a5a34, 1);
-    bg.setStrokeStyle(3, 0xf2d675, 1);
-    bg.setInteractive({ useHandCursor: true });
+    const bigBg = this.add.rectangle(x, bigY, bigW, bigH, hex(PALETTE.grass), 1);
+    bigBg.setStrokeStyle(3, hex(PALETTE.gold), 1);
+    bigBg.setInteractive({ useHandCursor: true });
 
-    const label = this.add
-      .text(x, y, "Begin a Life", {
-        fontFamily: "sans-serif",
+    const bigLabel = this.add
+      .text(x, bigY, "Begin Life", {
+        fontFamily: "monospace",
         fontSize: "18px",
-        color: "#f2f6ee",
+        color: PALETTE.white,
       })
       .setOrigin(0.5);
 
-    bg.on("pointerover", () => bg.setFillStyle(0x4a6a44));
-    bg.on("pointerout", () => bg.setFillStyle(0x3a5a34));
-    bg.on("pointerdown", () => {
-      this.scene.start(SCENE.World, { instinct: this.instinctChoice });
+    bigBg.on("pointerover", () => bigBg.setFillStyle(hex(PALETTE.grassLight)));
+    bigBg.on("pointerout", () => bigBg.setFillStyle(hex(PALETTE.grass)));
+    bigBg.on("pointerdown", () => {
+      this.scene.start(SCENE.World, {
+        instinct: false,
+        animalId: this.selectedAnimalId,
+      });
     });
+    void bigLabel;
 
-    void label;
+    const smallW = Math.min(220, width * 0.65);
+    const smallH = 36;
+    const smallY = height - 30;
+
+    const smallBg = this.add.rectangle(x, smallY, smallW, smallH, hex(PALETTE.outline), 0.9);
+    smallBg.setStrokeStyle(2, hex(PALETTE.purple), 1);
+    smallBg.setInteractive({ useHandCursor: true });
+
+    const smallLabel = this.add
+      .text(x, smallY, "Instinct Mode", {
+        fontFamily: "monospace",
+        fontSize: "13px",
+        color: PALETTE.cream,
+      })
+      .setOrigin(0.5);
+
+    smallBg.on("pointerover", () => smallBg.setFillStyle(hex(PALETTE.purple), 0.5));
+    smallBg.on("pointerout", () => smallBg.setFillStyle(hex(PALETTE.outline), 0.9));
+    smallBg.on("pointerdown", () => {
+      this.scene.start(SCENE.World, {
+        instinct: true,
+        animalId: this.selectedAnimalId,
+      });
+    });
+    void smallLabel;
   }
 }

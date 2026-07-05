@@ -10,5 +10,143 @@
     "size": "small",
     "spriteKey": "enemy_slime_green",
     "foodDropChance": 0.04
+  },
+  {
+    "id": "slime-red",
+    "name": "Red Slime",
+    "hp": 8,
+    "speed": 85,
+    "damage": 7,
+    "xp": 4,
+    "behavior": "lunger",
+    "size": "small",
+    "spriteKey": "enemy_slime_red",
+    "foodDropChance": 0.05
+  },
+  {
+    "id": "slime-blue",
+    "name": "Blue Slime",
+    "hp": 40,
+    "speed": 30,
+    "damage": 9,
+    "xp": 10,
+    "behavior": "splitter",
+    "size": "medium",
+    "spriteKey": "enemy_slime_blue",
+    "splitsInto": {
+      "id": "slime-green",
+      "count": 2
+    },
+    "foodDropChance": 0.15
+  },
+  {
+    "id": "gloomcap",
+    "name": "Gloomcap",
+    "hp": 25,
+    "speed": 12,
+    "damage": 4,
+    "xp": 8,
+    "behavior": "shooter",
+    "size": "medium",
+    "spriteKey": "enemy_gloomcap",
+    "projectile": {
+      "speed": 120,
+      "damage": 8,
+      "cooldownMs": 2500
+    },
+    "foodDropChance": 0.1
+  },
+  {
+    "id": "thorn-crawler",
+    "name": "Thorn Crawler",
+    "hp": 30,
+    "speed": 50,
+    "damage": 12,
+    "xp": 10,
+    "behavior": "charger",
+    "size": "medium",
+    "spriteKey": "enemy_thorn_crawler",
+    "foodDropChance": 0.1
+  },
+  {
+    "id": "wisp",
+    "name": "Will-o-Wisp",
+    "hp": 10,
+    "speed": 70,
+    "damage": 6,
+    "xp": 5,
+    "behavior": "drifter",
+    "size": "small",
+    "spriteKey": "enemy_wisp",
+    "foodDropChance": 0.06
+  },
+  {
+    "id": "mudmaw",
+    "name": "Mudmaw",
+    "hp": 35,
+    "speed": 0,
+    "damage": 15,
+    "xp": 12,
+    "behavior": "ambusher",
+    "size": "medium",
+    "spriteKey": "enemy_mudmaw",
+    "foodDropChance": 0.2
+  },
+  {
+    "id": "king-slime",
+    "name": "King Slime",
+    "hp": 450,
+    "speed": 25,
+    "damage": 15,
+    "xp": 80,
+    "behavior": "boss",
+    "size": "boss",
+    "spriteKey": "boss_king_slime",
+    "splitsInto": {
+      "id": "slime-green",
+      "count": 4
+    },
+    "foodDropChance": 1.0
+  },
+  {
+    "id": "elder-gloomcap",
+    "name": "Elder Gloomcap",
+    "hp": 700,
+    "speed": 10,
+    "damage": 12,
+    "xp": 120,
+    "behavior": "boss",
+    "size": "boss",
+    "spriteKey": "boss_elder_gloomcap",
+    "projectile": {
+      "speed": 100,
+      "damage": 10,
+      "cooldownMs": 1800
+    },
+    "foodDropChance": 1.0
+  },
+  {
+    "id": "bramble-tyrant",
+    "name": "Bramble Tyrant",
+    "hp": 1000,
+    "speed": 35,
+    "damage": 18,
+    "xp": 160,
+    "behavior": "boss",
+    "size": "boss",
+    "spriteKey": "boss_bramble_tyrant",
+    "foodDropChance": 1.0
+  },
+  {
+    "id": "the-long-dark",
+    "name": "The Long Dark",
+    "hp": 1400,
+    "speed": 40,
+    "damage": 20,
+    "xp": 250,
+    "behavior": "boss",
+    "size": "boss",
+    "spriteKey": "boss_long_dark",
+    "foodDropChance": 1.0
   }
 ]

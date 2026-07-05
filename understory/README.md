@@ -1,9 +1,9 @@
-# Understory
+# Understory: Nest & Fang
 
-A one-handed mobile nature roguelite — live one small life well, from Spring
-hatchling to Winter elder, foraging, exploring, nesting, and befriending in a
-soft, unhurried world. MVP vertical slice built with **Phaser 3 + TypeScript +
-Vite** (PWA-installable).
+A one-handed mobile action roguelite — live one small, ferocious life from
+Spring to Winter. Auto-attacking Vampire-Survivors-style combat against slimes
+and forest horrors, with species-specific weapon kits, a nest to defend, and a
+belly to keep full. Built with **Phaser 3 + TypeScript + Vite** (PWA).
 
 **Live:** https://understory-life.netlify.app
 
@@ -17,19 +17,28 @@ npm run build    # tsc --noEmit && vite build → dist/
 npm test         # vitest (pure-logic unit tests)
 ```
 
-## What's in the MVP
+## What's in Nest & Fang (v2 overhaul)
 
-- Playable **Dog** with all six verbs (Forage, Explore, Nest, Befriend, Evade, Migrate).
-- Touch input: drag joystick, swipe dash, hold-release Focus Action, tap interact.
-- 40×40 tile world with fog-of-war revealed by Sense Radius.
-- Four-season run clock (Spring→Winter) with per-season hazards.
-- 3-card draft on level-up: 18 cards across all six rarities, GDD rarity-weight
-  curve, Luck tail-widening, 4-draft pity, one `isUnique` card excluded in Instinct Mode.
-- Visible sprite evolution (head/back slots wired; four more computed).
-- Sunseeds meta-currency + Dog meta-tree (6 nodes), saved to localStorage.
-- Life Story screen: stats + per-card value/cost breakdown.
-- Instinct Mode autopilot (0.6× XP).
-- Procedural Web Audio ambient bed + SFX (no external assets — programmer art throughout).
+- **3 playable animals** — Dog (brawler), Cat (crit hunter), Rabbit (swarm-clearer),
+  each with 6 species weapons (Bark Blast, Tail Wag Strike, Fetch!, Zoomies,
+  Pounce Slash, Thumper Quake, Lucky Clover…), 5 levels each + an evolution
+  (e.g. Bark Blast + Loyal Heart → **Sonic Howl**), and 4 species passives.
+- **8-minute dense runs**: 4 seasons × 2 min, escalating waves of slimes,
+  Gloomcaps, Thorn Crawlers, Wisps and Mudmaws (~5 → 40 on screen), elites
+  every ~45s, and a boss at each season end — King Slime, Elder Gloomcap,
+  Bramble Tyrant, The Long Dark. Level-up draft every 20–40s.
+- **Nest & eating kept core**: hunger meter with a Well-Fed damage bonus,
+  food drops you eat or carry, a nest that heals you and banks food for bonus
+  Sunseeds — defended during two scripted nest raids per run.
+- **Companions**: befriend sparrows/squirrels mid-run; they fight beside you.
+- **Chunky procedural pixel art**: 65 code-generated sprites (no asset files),
+  animated slimes/animals/tiles, damage numbers, particles, screen shake,
+  boss banners.
+- Per-species meta trees + Sunseeds, saved to localStorage; Life Story combat
+  recap; Instinct Mode autopilot that actually fights (kites, eats, defends
+  the nest).
+- Procedural Web Audio: per-weapon SFX (bark/pounce/thump), boss stingers,
+  raid alarms, ambient seasonal bed.
 
 ## Architecture
 

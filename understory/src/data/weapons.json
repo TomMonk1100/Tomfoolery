@@ -7,19 +7,1047 @@
     "isStarting": true,
     "rarity": "common",
     "levels": [
-      { "damage": 8, "cooldownMs": 1400, "area": 70, "knockback": 40 },
-      { "damage": 11, "cooldownMs": 1300, "area": 80, "knockback": 45 },
-      { "damage": 14, "cooldownMs": 1200, "area": 90, "knockback": 50 },
-      { "damage": 18, "cooldownMs": 1100, "area": 100, "knockback": 55 },
-      { "damage": 24, "cooldownMs": 1000, "area": 115, "knockback": 60 }
+      {
+        "damage": 9,
+        "cooldownMs": 1300,
+        "area": 70,
+        "knockback": 40
+      },
+      {
+        "damage": 12,
+        "cooldownMs": 1196,
+        "area": 77,
+        "knockback": 44
+      },
+      {
+        "damage": 15,
+        "cooldownMs": 1100,
+        "area": 85,
+        "knockback": 48
+      },
+      {
+        "damage": 20,
+        "cooldownMs": 1012,
+        "area": 93,
+        "knockback": 53
+      },
+      {
+        "damage": 26,
+        "cooldownMs": 931,
+        "area": 102,
+        "knockback": 59
+      }
     ],
     "evolution": {
       "name": "Sonic Howl",
       "requiresPassiveId": "loyal-heart",
-      "stats": { "damage": 30, "cooldownMs": 900, "area": 220, "knockback": 90 },
+      "stats": {
+        "damage": 57,
+        "cooldownMs": 791,
+        "area": 163,
+        "knockback": 59
+      },
       "description": "A screen-shaking roar that scatters everything."
     },
     "description": "A shockwave ring of pure WOOF.",
     "icon": "icon_bark_blast"
+  },
+  {
+    "id": "tail-wag-strike",
+    "name": "Tail Wag Strike",
+    "animal": "dog",
+    "archetype": "melee-sweep",
+    "isStarting": false,
+    "rarity": "uncommon",
+    "levels": [
+      {
+        "damage": 11,
+        "cooldownMs": 850,
+        "area": 55,
+        "knockback": 25
+      },
+      {
+        "damage": 14,
+        "cooldownMs": 782,
+        "area": 61,
+        "knockback": 27
+      },
+      {
+        "damage": 19,
+        "cooldownMs": 719,
+        "area": 67,
+        "knockback": 29
+      },
+      {
+        "damage": 24,
+        "cooldownMs": 662,
+        "area": 73,
+        "knockback": 31
+      },
+      {
+        "damage": 31,
+        "cooldownMs": 609,
+        "area": 81,
+        "knockback": 34
+      }
+    ],
+    "evolution": {
+      "name": "Wag Tornado",
+      "requiresPassiveId": "thick-fur",
+      "stats": {
+        "damage": 68,
+        "cooldownMs": 518,
+        "area": 146,
+        "knockback": 34
+      },
+      "description": "A spinning frenzy of tail-powered destruction."
+    },
+    "description": "A wide tail sweep that smacks everything nearby.",
+    "icon": "icon_tail_wag_strike"
+  },
+  {
+    "id": "fetch",
+    "name": "Fetch",
+    "animal": "dog",
+    "archetype": "projectile",
+    "isStarting": false,
+    "rarity": "uncommon",
+    "levels": [
+      {
+        "damage": 14,
+        "cooldownMs": 1100,
+        "area": 260,
+        "speed": 210,
+        "count": 1,
+        "knockback": 15
+      },
+      {
+        "damage": 18,
+        "cooldownMs": 1012,
+        "area": 286,
+        "speed": 223,
+        "count": 1,
+        "knockback": 16
+      },
+      {
+        "damage": 24,
+        "cooldownMs": 931,
+        "area": 315,
+        "speed": 236,
+        "count": 1,
+        "knockback": 17
+      },
+      {
+        "damage": 31,
+        "cooldownMs": 857,
+        "area": 346,
+        "speed": 250,
+        "count": 1,
+        "knockback": 17
+      },
+      {
+        "damage": 40,
+        "cooldownMs": 788,
+        "area": 381,
+        "speed": 265,
+        "count": 1,
+        "knockback": 18
+      }
+    ],
+    "evolution": {
+      "name": "Double Fetch",
+      "requiresPassiveId": "keen-nose",
+      "stats": {
+        "damage": 88,
+        "cooldownMs": 670,
+        "area": 610,
+        "speed": 265,
+        "count": 2,
+        "knockback": 18
+      },
+      "description": "Two sticks, zero returns unfetched."
+    },
+    "description": "Throws a stick that boomerangs back through enemies.",
+    "icon": "icon_fetch",
+    "projectile": {
+      "kind": "boomerang"
+    }
+  },
+  {
+    "id": "zoomies",
+    "name": "Zoomies",
+    "animal": "dog",
+    "archetype": "trail",
+    "isStarting": false,
+    "rarity": "rare",
+    "levels": [
+      {
+        "damage": 8,
+        "cooldownMs": 1600,
+        "area": 40,
+        "count": 3,
+        "durationMs": 900
+      },
+      {
+        "damage": 10,
+        "cooldownMs": 1472,
+        "area": 46,
+        "count": 3,
+        "durationMs": 945
+      },
+      {
+        "damage": 14,
+        "cooldownMs": 1354,
+        "area": 53,
+        "count": 4,
+        "durationMs": 992
+      },
+      {
+        "damage": 18,
+        "cooldownMs": 1246,
+        "area": 61,
+        "count": 5,
+        "durationMs": 1042
+      },
+      {
+        "damage": 23,
+        "cooldownMs": 1146,
+        "area": 70,
+        "count": 5,
+        "durationMs": 1094
+      }
+    ],
+    "evolution": {
+      "name": "Mach Zoomies",
+      "requiresPassiveId": "big-appetite",
+      "stats": {
+        "damage": 51,
+        "cooldownMs": 974,
+        "area": 140,
+        "count": 5,
+        "durationMs": 1094
+      },
+      "description": "Leaves a scorching path that lingers as a damage zone.",
+      "archetype": "zone"
+    },
+    "description": "A burst of sprinting speed that damages everything you brush past.",
+    "icon": "icon_zoomies"
+  },
+  {
+    "id": "dig",
+    "name": "Dig",
+    "animal": "dog",
+    "archetype": "zone",
+    "isStarting": false,
+    "rarity": "rare",
+    "levels": [
+      {
+        "damage": 16,
+        "cooldownMs": 2200,
+        "area": 65,
+        "durationMs": 1200
+      },
+      {
+        "damage": 21,
+        "cooldownMs": 2024,
+        "area": 73,
+        "durationMs": 1296
+      },
+      {
+        "damage": 27,
+        "cooldownMs": 1862,
+        "area": 82,
+        "durationMs": 1400
+      },
+      {
+        "damage": 35,
+        "cooldownMs": 1713,
+        "area": 91,
+        "durationMs": 1512
+      },
+      {
+        "damage": 46,
+        "cooldownMs": 1576,
+        "area": 102,
+        "durationMs": 1633
+      }
+    ],
+    "evolution": {
+      "name": "Ambush Den",
+      "requiresPassiveId": "thick-fur",
+      "stats": {
+        "damage": 101,
+        "cooldownMs": 1340,
+        "area": 163,
+        "durationMs": 1633
+      },
+      "description": "Buries multiple eruption traps that chain together."
+    },
+    "description": "Digs an eruption of dirt and rocks beneath enemies.",
+    "icon": "icon_dig"
+  },
+  {
+    "id": "slobber-shot",
+    "name": "Slobber Shot",
+    "animal": "dog",
+    "archetype": "projectile",
+    "isStarting": false,
+    "rarity": "rare",
+    "levels": [
+      {
+        "damage": 13,
+        "cooldownMs": 1350,
+        "area": 240,
+        "speed": 190,
+        "count": 1
+      },
+      {
+        "damage": 17,
+        "cooldownMs": 1242,
+        "area": 264,
+        "speed": 200,
+        "count": 1
+      },
+      {
+        "damage": 22,
+        "cooldownMs": 1143,
+        "area": 290,
+        "speed": 209,
+        "count": 1
+      },
+      {
+        "damage": 29,
+        "cooldownMs": 1051,
+        "area": 319,
+        "speed": 220,
+        "count": 1
+      },
+      {
+        "damage": 37,
+        "cooldownMs": 967,
+        "area": 351,
+        "speed": 231,
+        "count": 1
+      }
+    ],
+    "evolution": {
+      "name": "Drool Flood",
+      "requiresPassiveId": "big-appetite",
+      "stats": {
+        "damage": 81,
+        "cooldownMs": 822,
+        "area": 562,
+        "speed": 231,
+        "count": 3
+      },
+      "description": "A relentless flood of slobber arcs."
+    },
+    "description": "Lobs a gross glob of slobber in an arc.",
+    "icon": "icon_slobber_shot",
+    "projectile": {
+      "kind": "arc"
+    }
+  },
+  {
+    "id": "pounce-slash",
+    "name": "Pounce Slash",
+    "animal": "cat",
+    "archetype": "melee-sweep",
+    "isStarting": true,
+    "rarity": "common",
+    "levels": [
+      {
+        "damage": 7,
+        "cooldownMs": 900,
+        "area": 60,
+        "knockback": 20
+      },
+      {
+        "damage": 9,
+        "cooldownMs": 828,
+        "area": 66,
+        "knockback": 22
+      },
+      {
+        "damage": 12,
+        "cooldownMs": 762,
+        "area": 73,
+        "knockback": 23
+      },
+      {
+        "damage": 15,
+        "cooldownMs": 701,
+        "area": 80,
+        "knockback": 25
+      },
+      {
+        "damage": 20,
+        "cooldownMs": 645,
+        "area": 88,
+        "knockback": 27
+      }
+    ],
+    "evolution": {
+      "name": "Nine Lives Pounce",
+      "requiresPassiveId": "feline-grace",
+      "stats": {
+        "damage": 44,
+        "cooldownMs": 548,
+        "area": 141,
+        "knockback": 27
+      },
+      "description": "A flurry of pounces that seem to defy death itself."
+    },
+    "description": "A quick slashing pounce at nearby foes.",
+    "icon": "icon_pounce_slash"
+  },
+  {
+    "id": "claw-flurry",
+    "name": "Claw Flurry",
+    "animal": "cat",
+    "archetype": "melee-sweep",
+    "isStarting": false,
+    "rarity": "uncommon",
+    "levels": [
+      {
+        "damage": 9,
+        "cooldownMs": 700,
+        "area": 50,
+        "count": 3,
+        "critPct": 10.0
+      },
+      {
+        "damage": 12,
+        "cooldownMs": 644,
+        "area": 55,
+        "count": 3,
+        "critPct": 10.5
+      },
+      {
+        "damage": 15,
+        "cooldownMs": 592,
+        "area": 61,
+        "count": 4,
+        "critPct": 11.03
+      },
+      {
+        "damage": 20,
+        "cooldownMs": 545,
+        "area": 67,
+        "count": 4,
+        "critPct": 11.58
+      },
+      {
+        "damage": 26,
+        "cooldownMs": 501,
+        "area": 73,
+        "count": 4,
+        "critPct": 12.16
+      }
+    ],
+    "evolution": {
+      "name": "Shredder",
+      "requiresPassiveId": "predator-eye",
+      "stats": {
+        "damage": 57,
+        "cooldownMs": 426,
+        "area": 117,
+        "count": 4,
+        "critPct": 18.24
+      },
+      "description": "Claws so fast they blur into a shredding storm."
+    },
+    "description": "Rapid claw swipes, chance to crit.",
+    "icon": "icon_claw_flurry"
+  },
+  {
+    "id": "hairball-lob",
+    "name": "Hairball Lob",
+    "animal": "cat",
+    "archetype": "projectile",
+    "isStarting": false,
+    "rarity": "uncommon",
+    "levels": [
+      {
+        "damage": 12,
+        "cooldownMs": 1300,
+        "area": 230,
+        "speed": 180,
+        "count": 1
+      },
+      {
+        "damage": 16,
+        "cooldownMs": 1196,
+        "area": 253,
+        "speed": 189,
+        "count": 1
+      },
+      {
+        "damage": 20,
+        "cooldownMs": 1100,
+        "area": 278,
+        "speed": 198,
+        "count": 1
+      },
+      {
+        "damage": 26,
+        "cooldownMs": 1012,
+        "area": 306,
+        "speed": 208,
+        "count": 1
+      },
+      {
+        "damage": 34,
+        "cooldownMs": 931,
+        "area": 337,
+        "speed": 219,
+        "count": 1
+      }
+    ],
+    "evolution": {
+      "name": "Triple Hairball",
+      "requiresPassiveId": "picky-eater",
+      "stats": {
+        "damage": 75,
+        "cooldownMs": 791,
+        "area": 539,
+        "speed": 219,
+        "count": 3
+      },
+      "description": "Three hairballs of pure disgust, launched in sequence."
+    },
+    "description": "Coughs up a hairball in a lobbed arc.",
+    "icon": "icon_hairball_lob",
+    "projectile": {
+      "kind": "arc"
+    }
+  },
+  {
+    "id": "purr-aura",
+    "name": "Purr Aura",
+    "animal": "cat",
+    "archetype": "zone",
+    "isStarting": false,
+    "rarity": "rare",
+    "levels": [
+      {
+        "damage": 6,
+        "cooldownMs": 500,
+        "area": 55,
+        "durationMs": 99999
+      },
+      {
+        "damage": 8,
+        "cooldownMs": 460,
+        "area": 62,
+        "durationMs": 99999
+      },
+      {
+        "damage": 10,
+        "cooldownMs": 423,
+        "area": 69,
+        "durationMs": 99999
+      },
+      {
+        "damage": 13,
+        "cooldownMs": 389,
+        "area": 77,
+        "durationMs": 99999
+      },
+      {
+        "damage": 17,
+        "cooldownMs": 358,
+        "area": 87,
+        "durationMs": 99999
+      }
+    ],
+    "evolution": {
+      "name": "Thunder Purr",
+      "requiresPassiveId": "soft-paws",
+      "stats": {
+        "damage": 37,
+        "cooldownMs": 304,
+        "area": 157,
+        "durationMs": 99999
+      },
+      "description": "A resonant purr that shakes the whole battlefield."
+    },
+    "description": "A constant vibrating purr-field that damages nearby enemies.",
+    "icon": "icon_purr_aura"
+  },
+  {
+    "id": "midnight-prowl",
+    "name": "Midnight Prowl",
+    "animal": "cat",
+    "archetype": "trail",
+    "isStarting": false,
+    "rarity": "rare",
+    "levels": [
+      {
+        "damage": 9,
+        "cooldownMs": 1500,
+        "area": 45,
+        "count": 3,
+        "durationMs": 800
+      },
+      {
+        "damage": 12,
+        "cooldownMs": 1380,
+        "area": 52,
+        "count": 3,
+        "durationMs": 840
+      },
+      {
+        "damage": 15,
+        "cooldownMs": 1270,
+        "area": 60,
+        "count": 4,
+        "durationMs": 882
+      },
+      {
+        "damage": 20,
+        "cooldownMs": 1168,
+        "area": 68,
+        "count": 5,
+        "durationMs": 926
+      },
+      {
+        "damage": 26,
+        "cooldownMs": 1075,
+        "area": 79,
+        "count": 5,
+        "durationMs": 972
+      }
+    ],
+    "evolution": {
+      "name": "Shadow Dance",
+      "requiresPassiveId": "feline-grace",
+      "stats": {
+        "damage": 57,
+        "cooldownMs": 914,
+        "area": 158,
+        "count": 5,
+        "durationMs": 972
+      },
+      "description": "Vanishes into shadow, leaving a trail of lingering dark.",
+      "archetype": "zone"
+    },
+    "description": "A shadowy dash that slices through anything in its path.",
+    "icon": "icon_midnight_prowl"
+  },
+  {
+    "id": "yarn-whip",
+    "name": "Yarn Whip",
+    "animal": "cat",
+    "archetype": "projectile",
+    "isStarting": false,
+    "rarity": "rare",
+    "levels": [
+      {
+        "damage": 15,
+        "cooldownMs": 1250,
+        "area": 280,
+        "speed": 220,
+        "count": 1
+      },
+      {
+        "damage": 20,
+        "cooldownMs": 1150,
+        "area": 308,
+        "speed": 231,
+        "count": 1
+      },
+      {
+        "damage": 25,
+        "cooldownMs": 1058,
+        "area": 339,
+        "speed": 243,
+        "count": 1
+      },
+      {
+        "damage": 33,
+        "cooldownMs": 973,
+        "area": 373,
+        "speed": 255,
+        "count": 1
+      },
+      {
+        "damage": 43,
+        "cooldownMs": 895,
+        "area": 410,
+        "speed": 267,
+        "count": 1
+      }
+    ],
+    "evolution": {
+      "name": "Yarn Storm",
+      "requiresPassiveId": "predator-eye",
+      "stats": {
+        "damage": 95,
+        "cooldownMs": 761,
+        "area": 656,
+        "speed": 267,
+        "count": 3
+      },
+      "description": "An endless tangle of whipping yarn."
+    },
+    "description": "Cracks a taut yarn-whip straight through the line, piercing foes.",
+    "icon": "icon_yarn_whip",
+    "projectile": {
+      "kind": "straight",
+      "pierce": 3
+    }
+  },
+  {
+    "id": "thumper-quake",
+    "name": "Thumper Quake",
+    "animal": "rabbit",
+    "archetype": "aoe-pulse",
+    "isStarting": true,
+    "rarity": "common",
+    "levels": [
+      {
+        "damage": 10,
+        "cooldownMs": 1500,
+        "area": 75,
+        "knockback": 50,
+        "slowPct": 15.0
+      },
+      {
+        "damage": 13,
+        "cooldownMs": 1380,
+        "area": 82,
+        "knockback": 55,
+        "slowPct": 15.75
+      },
+      {
+        "damage": 17,
+        "cooldownMs": 1270,
+        "area": 91,
+        "knockback": 61,
+        "slowPct": 16.54
+      },
+      {
+        "damage": 22,
+        "cooldownMs": 1168,
+        "area": 100,
+        "knockback": 67,
+        "slowPct": 17.36
+      },
+      {
+        "damage": 29,
+        "cooldownMs": 1075,
+        "area": 110,
+        "knockback": 73,
+        "slowPct": 18.23
+      }
+    ],
+    "evolution": {
+      "name": "Seismic Thump",
+      "requiresPassiveId": "spring-legs",
+      "stats": {
+        "damage": 64,
+        "cooldownMs": 914,
+        "area": 176,
+        "knockback": 73,
+        "slowPct": 18.23
+      },
+      "description": "A ground-splitting thump that levels the field."
+    },
+    "description": "Thumps the ground in a rippling shockwave.",
+    "icon": "icon_thumper_quake"
+  },
+  {
+    "id": "bunny-barrage",
+    "name": "Bunny Barrage",
+    "animal": "rabbit",
+    "archetype": "trail",
+    "isStarting": false,
+    "rarity": "uncommon",
+    "levels": [
+      {
+        "damage": 8,
+        "cooldownMs": 1400,
+        "area": 40,
+        "count": 3,
+        "durationMs": 850
+      },
+      {
+        "damage": 10,
+        "cooldownMs": 1288,
+        "area": 46,
+        "count": 3,
+        "durationMs": 892
+      },
+      {
+        "damage": 14,
+        "cooldownMs": 1185,
+        "area": 53,
+        "count": 4,
+        "durationMs": 937
+      },
+      {
+        "damage": 18,
+        "cooldownMs": 1090,
+        "area": 61,
+        "count": 5,
+        "durationMs": 984
+      },
+      {
+        "damage": 23,
+        "cooldownMs": 1003,
+        "area": 70,
+        "count": 5,
+        "durationMs": 1033
+      }
+    ],
+    "evolution": {
+      "name": "Zig-Zag Blitz",
+      "requiresPassiveId": "lucky-foot",
+      "stats": {
+        "damage": 51,
+        "cooldownMs": 853,
+        "area": 133,
+        "count": 5,
+        "durationMs": 1033
+      },
+      "description": "An erratic zig-zag blitz too fast to track."
+    },
+    "description": "A rapid zig-zag hop-attack leaving damage in its wake.",
+    "icon": "icon_bunny_barrage"
+  },
+  {
+    "id": "carrot-toss",
+    "name": "Carrot Toss",
+    "animal": "rabbit",
+    "archetype": "projectile",
+    "isStarting": false,
+    "rarity": "uncommon",
+    "levels": [
+      {
+        "damage": 11,
+        "cooldownMs": 1150,
+        "area": 250,
+        "speed": 200,
+        "count": 1
+      },
+      {
+        "damage": 14,
+        "cooldownMs": 1058,
+        "area": 275,
+        "speed": 210,
+        "count": 1
+      },
+      {
+        "damage": 19,
+        "cooldownMs": 973,
+        "area": 302,
+        "speed": 220,
+        "count": 1
+      },
+      {
+        "damage": 24,
+        "cooldownMs": 895,
+        "area": 333,
+        "speed": 232,
+        "count": 1
+      },
+      {
+        "damage": 31,
+        "cooldownMs": 824,
+        "area": 366,
+        "speed": 243,
+        "count": 1
+      }
+    ],
+    "evolution": {
+      "name": "Carrot Volley",
+      "requiresPassiveId": "nibbler",
+      "stats": {
+        "damage": 68,
+        "cooldownMs": 700,
+        "area": 586,
+        "speed": 243,
+        "count": 2
+      },
+      "description": "A volley of carrots splitting again and again."
+    },
+    "description": "Tosses a carrot that splits into fragments on impact.",
+    "icon": "icon_carrot_toss",
+    "projectile": {
+      "kind": "split",
+      "splitCount": 3
+    }
+  },
+  {
+    "id": "lucky-clover",
+    "name": "Lucky Clover",
+    "animal": "rabbit",
+    "archetype": "orbit",
+    "isStarting": false,
+    "rarity": "rare",
+    "levels": [
+      {
+        "damage": 10,
+        "cooldownMs": 1000,
+        "area": 90,
+        "speed": 140,
+        "count": 2
+      },
+      {
+        "damage": 13,
+        "cooldownMs": 920,
+        "area": 99,
+        "speed": 146,
+        "count": 2
+      },
+      {
+        "damage": 17,
+        "cooldownMs": 846,
+        "area": 109,
+        "speed": 151,
+        "count": 3
+      },
+      {
+        "damage": 22,
+        "cooldownMs": 779,
+        "area": 120,
+        "speed": 157,
+        "count": 3
+      },
+      {
+        "damage": 29,
+        "cooldownMs": 716,
+        "area": 132,
+        "speed": 164,
+        "count": 3
+      }
+    ],
+    "evolution": {
+      "name": "Four-Leaf Wall",
+      "requiresPassiveId": "lucky-foot",
+      "stats": {
+        "damage": 64,
+        "cooldownMs": 609,
+        "area": 185,
+        "speed": 164,
+        "count": 6
+      },
+      "description": "A rotating wall of four-leaf clovers."
+    },
+    "description": "Orbiting clovers that shred anything they touch.",
+    "icon": "icon_lucky_clover"
+  },
+  {
+    "id": "burrow-network",
+    "name": "Burrow Network",
+    "animal": "rabbit",
+    "archetype": "zone",
+    "isStarting": false,
+    "rarity": "rare",
+    "levels": [
+      {
+        "damage": 17,
+        "cooldownMs": 2300,
+        "area": 70,
+        "durationMs": 1300
+      },
+      {
+        "damage": 22,
+        "cooldownMs": 2116,
+        "area": 78,
+        "durationMs": 1404
+      },
+      {
+        "damage": 29,
+        "cooldownMs": 1947,
+        "area": 88,
+        "durationMs": 1516
+      },
+      {
+        "damage": 37,
+        "cooldownMs": 1791,
+        "area": 98,
+        "durationMs": 1638
+      },
+      {
+        "damage": 49,
+        "cooldownMs": 1648,
+        "area": 110,
+        "durationMs": 1769
+      }
+    ],
+    "evolution": {
+      "name": "Warren Web",
+      "requiresPassiveId": "spring-legs",
+      "stats": {
+        "damage": 108,
+        "cooldownMs": 1401,
+        "area": 176,
+        "durationMs": 1769
+      },
+      "description": "An interconnected warren of eruptions across the field."
+    },
+    "description": "Erupts a network of burrow tunnels beneath enemies.",
+    "icon": "icon_burrow_network"
+  },
+  {
+    "id": "cottontail-decoy",
+    "name": "Cottontail Decoy",
+    "animal": "rabbit",
+    "archetype": "zone",
+    "isStarting": false,
+    "rarity": "rare",
+    "levels": [
+      {
+        "damage": 9,
+        "cooldownMs": 1800,
+        "area": 60,
+        "count": 1,
+        "durationMs": 2500
+      },
+      {
+        "damage": 12,
+        "cooldownMs": 1656,
+        "area": 67,
+        "count": 1,
+        "durationMs": 2625
+      },
+      {
+        "damage": 15,
+        "cooldownMs": 1524,
+        "area": 75,
+        "count": 1,
+        "durationMs": 2756
+      },
+      {
+        "damage": 20,
+        "cooldownMs": 1402,
+        "area": 84,
+        "count": 2,
+        "durationMs": 2894
+      },
+      {
+        "damage": 26,
+        "cooldownMs": 1290,
+        "area": 94,
+        "count": 2,
+        "durationMs": 3039
+      }
+    ],
+    "evolution": {
+      "name": "Decoy Swarm",
+      "requiresPassiveId": "litter-of-friends",
+      "stats": {
+        "damage": 57,
+        "cooldownMs": 1096,
+        "area": 150,
+        "count": 4,
+        "durationMs": 3039
+      },
+      "description": "A swarm of decoys drawing fire and dealing it back."
+    },
+    "description": "Plants a decoy that lures and damages nearby enemies.",
+    "icon": "icon_cottontail_decoy"
   }
 ]

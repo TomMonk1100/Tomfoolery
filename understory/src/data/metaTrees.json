@@ -25,21 +25,127 @@
       "id": "familiar-scent",
       "name": "Familiar Scent",
       "costSunseeds": 400,
-      "prerequisiteIds": ["warm-welcome"],
+      "prerequisiteIds": [
+        "warm-welcome"
+      ],
       "effect": "Befriended animals trust 20% faster on repeat meetings"
     },
     {
       "id": "cache-memory",
       "name": "Cache Memory",
       "costSunseeds": 400,
-      "prerequisiteIds": ["steady-paws"],
+      "prerequisiteIds": [
+        "steady-paws"
+      ],
       "effect": "Buried caches show a faint marker for 1 in-run day"
     },
     {
       "id": "second-wind",
       "name": "Second Wind",
       "costSunseeds": 400,
-      "prerequisiteIds": ["long-legs"],
+      "prerequisiteIds": [
+        "long-legs"
+      ],
+      "effect": "Stamina regenerates 25% faster after a sprint dash"
+    }
+  ],
+  "cat": [
+    {
+      "id": "silent-approach",
+      "name": "Silent Approach",
+      "costSunseeds": 150,
+      "prerequisiteIds": [],
+      "effect": "+10% Charm when approaching a wary animal"
+    },
+    {
+      "id": "patient-claws",
+      "name": "Patient Claws",
+      "costSunseeds": 150,
+      "prerequisiteIds": [],
+      "effect": "+15% Forage Speed while digging"
+    },
+    {
+      "id": "quick-pounce",
+      "name": "Quick Pounce",
+      "costSunseeds": 150,
+      "prerequisiteIds": [],
+      "effect": "+8% Movement Speed"
+    },
+    {
+      "id": "nine-lives-trust",
+      "name": "Nine Lives Trust",
+      "costSunseeds": 400,
+      "prerequisiteIds": [
+        "silent-approach"
+      ],
+      "effect": "Befriended animals trust 20% faster on repeat meetings"
+    },
+    {
+      "id": "whisker-memory",
+      "name": "Whisker Memory",
+      "costSunseeds": 400,
+      "prerequisiteIds": [
+        "patient-claws"
+      ],
+      "effect": "Buried caches show a faint marker for 1 in-run day"
+    },
+    {
+      "id": "second-breath",
+      "name": "Second Breath",
+      "costSunseeds": 400,
+      "prerequisiteIds": [
+        "quick-pounce"
+      ],
+      "effect": "Stamina regenerates 25% faster after a sprint dash"
+    }
+  ],
+  "rabbit": [
+    {
+      "id": "gentle-nuzzle",
+      "name": "Gentle Nuzzle",
+      "costSunseeds": 150,
+      "prerequisiteIds": [],
+      "effect": "+10% Charm when approaching a wary animal"
+    },
+    {
+      "id": "nimble-digger",
+      "name": "Nimble Digger",
+      "costSunseeds": 150,
+      "prerequisiteIds": [],
+      "effect": "+15% Forage Speed while digging"
+    },
+    {
+      "id": "spring-step",
+      "name": "Spring Step",
+      "costSunseeds": 150,
+      "prerequisiteIds": [],
+      "effect": "+8% Movement Speed"
+    },
+    {
+      "id": "warren-trust",
+      "name": "Warren Trust",
+      "costSunseeds": 400,
+      "prerequisiteIds": [
+        "gentle-nuzzle"
+      ],
+      "effect": "Befriended animals trust 20% faster on repeat meetings"
+    },
+    {
+      "id": "burrow-memory",
+      "name": "Burrow Memory",
+      "costSunseeds": 400,
+      "prerequisiteIds": [
+        "nimble-digger"
+      ],
+      "effect": "Buried caches show a faint marker for 1 in-run day"
+    },
+    {
+      "id": "lucky-recovery",
+      "name": "Lucky Recovery",
+      "costSunseeds": 400,
+      "prerequisiteIds": [
+        "spring-step"
+      ],
       "effect": "Stamina regenerates 25% faster after a sprint dash"
     }
   ]
