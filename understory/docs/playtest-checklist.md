@@ -43,3 +43,52 @@ Run through this on a real touch device (portrait) after each deploy.
 ## PWA
 - [ ] "Add to Home Screen" installs; launches standalone in portrait.
 - [ ] Loads offline after first visit (service worker precache).
+
+## Update 2 — "Wild Kit" (verified live on understory-life.netlify.app, 2026-07-05)
+
+Verified via headless playtest through the Claude-in-Chrome MCP, driving
+`window.__understory` (the Phaser game instance) directly — `game.step(t, deltaMs)`
+to fast-forward simulated time, and the context/scene APIs to inspect state,
+since the sandboxed browser tab throttles real-time rAF when backgrounded.
+
+- [x] Distinct starter attacks: Dog ring, Cat cone, Rabbit line-both
+      (Scissor Kick) all fire and render their own shape.
+- [x] Every weapon (incl. zone/trail types) renders a real visual — audited
+      in WeaponSystem.ts, no silent no-op fire methods left.
+- [x] Neutral weapon/passive pool (7 weapons + 4 passives, `animal: "any"`)
+      draftable by every species; verified `laser-pointer` card data present
+      with nonzero draft weight at all levels 1–20.
+- [x] Seamless ground texture (no checkerboard tiles) confirmed visually in
+      live screenshots.
+- [x] World wraps Pac-Man style at every edge — confirmed programmatically:
+      walked the player past x=1536 (world width) and position wrapped to
+      x≈30 in the same move.
+- [x] No NaN state: checked player hp/maxHp/xp/position after a multi-minute
+      instinct run — all finite.
+- [ ] **Kills > 50 in 2 min, instinct-mode Cat: NOT MET.** A clean 2-minute
+      fast-forwarded instinct run (fresh start, no manual interference)
+      reached **27 kills** by the 2:00 mark, level 4, hp stable at 27/100
+      (survival-kiting below the 35% hp threshold cut into the back half of
+      the run). This is a balance/tuning gap, not a crash — likely Cat's
+      single-target cone weapon (Pounce Slash) plus the SURVIVE-mode kiting
+      threshold combining to reduce effective DPS uptime. Left as a known
+      follow-up; did not retune damage numbers without a full balance-sim
+      re-run per CONTRACTS.md.
+
+### Bugs found and fixed during this playtest
+1. **Production crash on run start** (`WorldGenSystem.ensureConnectivity`
+   TypeError): `src/data/fallback-layout.json` was still the pre-Update-2
+   40×40 grid while `WORLD_SIZE` is now 48, and the procedural generator's
+   strict validation rejects most random layouts, so production was
+   silently falling back to the stale 40×40 file on nearly every run,
+   crashing on load. Fixed by regenerating the fallback file as a proper
+   48×48 grid and making `ensureConnectivity()` bounds-safe regardless.
+2. **Instinct AI stalling at the world seam**: `InstinctAI.ts` turned
+   `instinctBrain.ts`'s chosen target into a movement vector with a plain
+   (non-wrap-aware) subtraction, so whenever the AI's target was on the far
+   side of the seam it steered toward the world edge instead of through it,
+   stalling combat (kill count and hp frozen for 30+ real seconds in
+   testing). Fixed by routing the final steering vector through
+   `wrapDeltaVec` so it always takes the shorter, wrapped path.
+3. Both fixes verified live post-redeploy: fresh instinct run no longer
+   crashes or stalls at the seam; kill count climbs steadily throughout.
