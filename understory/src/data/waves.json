@@ -1,0 +1,6 @@
+{
+  "waves": [
+    { "atMs": 3000, "enemyId": "slime-green", "count": 5, "intervalMs": 1500 }
+  ],
+  "bosses": []
+}

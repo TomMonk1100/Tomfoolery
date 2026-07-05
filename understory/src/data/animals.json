@@ -1,0 +1,17 @@
+{
+  "dog": {
+    "name": "Dog",
+    "speed": 160,
+    "forageRadius": 96,
+    "xpToLevel": [0, 12, 28, 48, 72, 100, 132, 168, 208, 252],
+    "verbs": ["forage", "explore", "nest", "befriend", "evade", "migrate"],
+    "spriteAnchors": {
+      "head": { "x": 0, "y": -22 },
+      "back": { "x": 0, "y": -6 },
+      "tail": { "x": -16, "y": -2 },
+      "paws": { "x": 0, "y": 14 },
+      "aura": { "x": 0, "y": 0 },
+      "trail": { "x": 0, "y": 12 }
+    }
+  }
+}

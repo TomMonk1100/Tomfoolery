@@ -1,0 +1,14 @@
+[
+  {
+    "id": "slime-green",
+    "name": "Green Slime",
+    "hp": 12,
+    "speed": 45,
+    "damage": 5,
+    "xp": 3,
+    "behavior": "chaser",
+    "size": "small",
+    "spriteKey": "enemy_slime_green",
+    "foodDropChance": 0.04
+  }
+]

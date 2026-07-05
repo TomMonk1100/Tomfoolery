@@ -1,0 +1,25 @@
+[
+  {
+    "id": "bark-blast",
+    "name": "Bark Blast",
+    "animal": "dog",
+    "archetype": "aoe-pulse",
+    "isStarting": true,
+    "rarity": "common",
+    "levels": [
+      { "damage": 8, "cooldownMs": 1400, "area": 70, "knockback": 40 },
+      { "damage": 11, "cooldownMs": 1300, "area": 80, "knockback": 45 },
+      { "damage": 14, "cooldownMs": 1200, "area": 90, "knockback": 50 },
+      { "damage": 18, "cooldownMs": 1100, "area": 100, "knockback": 55 },
+      { "damage": 24, "cooldownMs": 1000, "area": 115, "knockback": 60 }
+    ],
+    "evolution": {
+      "name": "Sonic Howl",
+      "requiresPassiveId": "loyal-heart",
+      "stats": { "damage": 30, "cooldownMs": 900, "area": 220, "knockback": 90 },
+      "description": "A screen-shaking roar that scatters everything."
+    },
+    "description": "A shockwave ring of pure WOOF.",
+    "icon": "icon_bark_blast"
+  }
+]

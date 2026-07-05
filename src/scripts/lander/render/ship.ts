@@ -1251,7 +1251,7 @@ export interface DrawShipParams {
   degraded?: boolean;
   // Spawn-grace immunity remaining, in seconds (main.ts's invulnT). Optional
   // + defaults to 0/off for callers that haven't been updated. Drives a
-  // steady soft golden glow so it's obvious you're temporarily safe.
+  // pulsing ring + gentle flicker so it's obvious you're temporarily safe.
   invulnT?: number;
 }
 
@@ -1271,22 +1271,24 @@ export function drawShip(p: DrawShipParams) {
     c.stroke();
   }
 
-  // Spawn-grace immunity: a steady soft golden glow behind the ship — no
-  // pulsing, no flicker (the earlier version did both and it read as
-  // distracting rather than reassuring). Full brightness for the first part
-  // of the window, then a smooth one-second fade-out so it doesn't cut off
-  // abruptly right as immunity ends.
+  // Spawn-grace immunity: a soft pulsing cyan ring plus a gentle flicker on
+  // the whole ship, fading out over the last second so the transition back
+  // to "vulnerable" reads clearly instead of cutting off abruptly.
   const invulnT = p.invulnT ?? 0;
   if (invulnT > 0) {
     const fadeOut = Math.min(1, invulnT);
-    const glowR = 27;
-    const glow = c.createRadialGradient(0, -1, 0, 0, -1, glowR);
-    glow.addColorStop(0, `rgba(217, 164, 74, ${0.4 * fadeOut})`);
-    glow.addColorStop(1, 'rgba(217, 164, 74, 0)');
-    c.fillStyle = glow;
+    const pulse = 0.55 + 0.35 * Math.sin(invulnT * 14);
     c.beginPath();
-    c.arc(0, -1, glowR, 0, Math.PI * 2);
-    c.fill();
+    c.arc(0, -1, 19, 0, Math.PI * 2);
+    c.strokeStyle = `rgba(123, 167, 199, ${0.55 * fadeOut * pulse})`;
+    c.lineWidth = 1.6;
+    c.setLineDash([3, 3]);
+    c.stroke();
+    c.setLineDash([]);
+    // Flicker: brief dips in opacity, restored automatically by the c.restore()
+    // at the end of this function (it's within the same save() as everything below).
+    const flicker = Math.floor(invulnT * 10) % 3 === 0 ? 0.55 : 1;
+    c.globalAlpha = 1 - fadeOut * (1 - flicker);
   }
 
   // Star Core aura — a soft golden halo behind everything. §7 table: "nose

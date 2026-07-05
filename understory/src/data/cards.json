@@ -1,0 +1,200 @@
+[
+  {
+    "id": "clover-tuft",
+    "name": "Clover Tuft",
+    "rarity": "common",
+    "isUnique": false,
+    "weightsByLevel": { "1": 45, "2": 43, "3": 42, "4": 40, "5": 38, "6": 37, "7": 35, "8": 34, "9": 32, "10": 30 },
+    "effect": { "type": "forageYield", "magnitude": 10 },
+    "tradeoff": { "type": "moveSpeed", "magnitude": -3 },
+    "spriteSlot": "paws",
+    "stacking": true
+  },
+  {
+    "id": "dew-drop-charm",
+    "name": "Dew Drop Charm",
+    "rarity": "common",
+    "isUnique": false,
+    "weightsByLevel": { "1": 45, "2": 43, "3": 42, "4": 40, "5": 38, "6": 37, "7": 35, "8": 34, "9": 32, "10": 30 },
+    "effect": { "type": "senseRadius", "magnitude": 9 },
+    "tradeoff": { "type": "forageSpeed", "magnitude": -3 },
+    "spriteSlot": "head",
+    "stacking": true
+  },
+  {
+    "id": "mossy-anchor",
+    "name": "Mossy Anchor",
+    "rarity": "common",
+    "isUnique": false,
+    "weightsByLevel": { "1": 45, "2": 43, "3": 42, "4": 40, "5": 38, "6": 37, "7": 35, "8": 34, "9": 32, "10": 30 },
+    "effect": { "type": "comfort", "magnitude": 15 },
+    "tradeoff": { "type": "moveSpeed", "magnitude": -4 },
+    "spriteSlot": "back",
+    "stacking": true
+  },
+  {
+    "id": "windgrass-wisp",
+    "name": "Windgrass Wisp",
+    "rarity": "common",
+    "isUnique": false,
+    "weightsByLevel": { "1": 45, "2": 43, "3": 42, "4": 40, "5": 38, "6": 37, "7": 35, "8": 34, "9": 32, "10": 30 },
+    "effect": { "type": "moveSpeed", "magnitude": 11 },
+    "tradeoff": { "type": "forageYield", "magnitude": -3 },
+    "spriteSlot": "trail",
+    "stacking": true
+  },
+  {
+    "id": "firefly-speck",
+    "name": "Firefly Speck",
+    "rarity": "common",
+    "isUnique": false,
+    "weightsByLevel": { "1": 45, "2": 43, "3": 42, "4": 40, "5": 38, "6": 37, "7": 35, "8": 34, "9": 32, "10": 30 },
+    "effect": { "type": "charm", "magnitude": 10 },
+    "tradeoff": { "type": "senseRadius", "magnitude": -2 },
+    "spriteSlot": "aura",
+    "stacking": true
+  },
+  {
+    "id": "honeywell-paws",
+    "name": "Honeywell Paws",
+    "rarity": "uncommon",
+    "isUnique": false,
+    "weightsByLevel": { "1": 30, "2": 30, "3": 30, "4": 30, "5": 30, "6": 30, "7": 30, "8": 30, "9": 30, "10": 30 },
+    "effect": { "type": "forageYield", "magnitude": 18 },
+    "tradeoff": { "type": "moveSpeed", "magnitude": -5 },
+    "spriteSlot": "paws",
+    "stacking": true
+  },
+  {
+    "id": "glimmerdew-paws",
+    "name": "Glimmerdew Paws",
+    "rarity": "uncommon",
+    "isUnique": false,
+    "weightsByLevel": { "1": 30, "2": 30, "3": 30, "4": 30, "5": 30, "6": 30, "7": 30, "8": 30, "9": 30, "10": 30 },
+    "effect": { "type": "forageSpeed", "magnitude": 18 },
+    "tradeoff": { "type": "moveSpeed", "magnitude": -4 },
+    "spriteSlot": "paws",
+    "stacking": true
+  },
+  {
+    "id": "glowmoth-aura",
+    "name": "Glowmoth Aura",
+    "rarity": "uncommon",
+    "isUnique": false,
+    "weightsByLevel": { "1": 30, "2": 30, "3": 30, "4": 30, "5": 30, "6": 30, "7": 30, "8": 30, "9": 30, "10": 30 },
+    "effect": { "type": "charm", "magnitude": 19 },
+    "tradeoff": { "type": "senseRadius", "magnitude": -5 },
+    "spriteSlot": "aura",
+    "stacking": true
+  },
+  {
+    "id": "sureheart-vitals",
+    "name": "Sureheart Vitals",
+    "rarity": "uncommon",
+    "isUnique": false,
+    "weightsByLevel": { "1": 30, "2": 30, "3": 30, "4": 30, "5": 30, "6": 30, "7": 30, "8": 30, "9": 30, "10": 30 },
+    "effect": { "type": "vitality", "magnitude": 20 },
+    "tradeoff": { "type": "stamina", "magnitude": -5 },
+    "spriteSlot": "head",
+    "stacking": true
+  },
+  {
+    "id": "elderroot-crown",
+    "name": "Elderroot Crown",
+    "rarity": "rare",
+    "isUnique": false,
+    "weightsByLevel": { "1": 15, "2": 16, "3": 17, "4": 18, "5": 19, "6": 20, "7": 22, "8": 24, "9": 26, "10": 27 },
+    "effect": { "type": "forageYield", "magnitude": 32 },
+    "tradeoff": { "type": "moveSpeed", "magnitude": -7 },
+    "spriteSlot": "head",
+    "stacking": true
+  },
+  {
+    "id": "thistledown-drift",
+    "name": "Thistledown Drift",
+    "rarity": "rare",
+    "isUnique": false,
+    "weightsByLevel": { "1": 15, "2": 16, "3": 17, "4": 18, "5": 19, "6": 20, "7": 22, "8": 24, "9": 26, "10": 27 },
+    "effect": { "type": "moveSpeed", "magnitude": 35 },
+    "tradeoff": { "type": "forageYield", "magnitude": -8 },
+    "spriteSlot": "trail",
+    "stacking": true
+  },
+  {
+    "id": "foxfire-luckwisp",
+    "name": "Foxfire Luckwisp",
+    "rarity": "rare",
+    "isUnique": false,
+    "weightsByLevel": { "1": 15, "2": 16, "3": 17, "4": 18, "5": 19, "6": 20, "7": 22, "8": 24, "9": 26, "10": 27 },
+    "effect": { "type": "luck", "magnitude": 26 },
+    "tradeoff": { "type": "forageSpeed", "magnitude": -6 },
+    "spriteSlot": "aura",
+    "stacking": true
+  },
+  {
+    "id": "aurora-slick-fur",
+    "name": "Aurora-Slick Fur",
+    "rarity": "epic",
+    "isUnique": false,
+    "weightsByLevel": { "1": 7, "2": 8, "3": 8, "4": 9, "5": 10, "6": 11, "7": 12, "8": 14, "9": 16, "10": 17 },
+    "effect": { "type": "weatherResist", "magnitude": 50 },
+    "tradeoff": { "type": "moveSpeed", "magnitude": -8 },
+    "spriteSlot": "back",
+    "stacking": true
+  },
+  {
+    "id": "deep-root-anchor",
+    "name": "Deep Root Anchor",
+    "rarity": "epic",
+    "isUnique": false,
+    "weightsByLevel": { "1": 7, "2": 8, "3": 8, "4": 9, "5": 10, "6": 11, "7": 12, "8": 14, "9": 16, "10": 17 },
+    "effect": { "type": "vitality", "magnitude": 55 },
+    "tradeoff": { "type": "moveSpeed", "magnitude": -9 },
+    "spriteSlot": "paws",
+    "stacking": true
+  },
+  {
+    "id": "ancient-grove-heartwood",
+    "name": "Ancient Grove Heartwood",
+    "rarity": "legendary",
+    "isUnique": false,
+    "weightsByLevel": { "1": 2, "2": 3, "3": 3, "4": 4, "5": 4, "6": 5, "7": 6, "8": 7, "9": 8, "10": 9 },
+    "effect": { "type": "autoForage", "magnitude": 1 },
+    "tradeoff": { "type": "forageYield", "magnitude": -10 },
+    "spriteSlot": "back",
+    "stacking": true
+  },
+  {
+    "id": "comet-dust-trail",
+    "name": "Comet Dust Trail",
+    "rarity": "legendary",
+    "isUnique": false,
+    "weightsByLevel": { "1": 2, "2": 3, "3": 3, "4": 4, "5": 4, "6": 5, "7": 6, "8": 7, "9": 8, "10": 9 },
+    "effect": { "type": "evadeSpeedPatch", "magnitude": 40 },
+    "tradeoff": { "type": "stamina", "magnitude": -8 },
+    "spriteSlot": "trail",
+    "stacking": true
+  },
+  {
+    "id": "the-second-spring",
+    "name": "The Second Spring",
+    "rarity": "mythic",
+    "isUnique": true,
+    "weightsByLevel": { "1": 0, "2": 0, "3": 0, "4": 0, "5": 1, "6": 2, "7": 3, "8": 4, "9": 4, "10": 5 },
+    "effect": { "type": "extraLifeStage", "magnitude": 1 },
+    "tradeoff": { "type": "cannotEndEarly", "magnitude": 1 },
+    "spriteSlot": "aura",
+    "stacking": false
+  },
+  {
+    "id": "winterheart-ember",
+    "name": "Winterheart Ember",
+    "rarity": "mythic",
+    "isUnique": false,
+    "weightsByLevel": { "1": 0, "2": 0, "3": 0, "4": 0, "5": 1, "6": 2, "7": 3, "8": 4, "9": 4, "10": 5 },
+    "effect": { "type": "invertWinter", "magnitude": 1 },
+    "tradeoff": { "type": "noWeatherResist", "magnitude": 1 },
+    "spriteSlot": "back",
+    "stacking": false
+  }
+]

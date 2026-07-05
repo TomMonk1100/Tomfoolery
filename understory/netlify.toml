@@ -1,0 +1,17 @@
+# Understory — deployed as a static Vite build.
+# Explicit build command + publish dir to avoid the sitewide-404 failure mode
+# from an unset build config in the Netlify dashboard.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+
+# SPA-style fallback: serve index.html for unknown routes.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

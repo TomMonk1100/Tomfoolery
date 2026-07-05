@@ -1,0 +1,12 @@
+[
+  {
+    "id": "loyal-heart",
+    "name": "Loyal Heart",
+    "animal": "dog",
+    "rarity": "uncommon",
+    "effect": { "type": "hpRegen", "magnitude": 1 },
+    "description": "Regenerate 1 HP/s per stack.",
+    "icon": "icon_loyal_heart",
+    "maxStacks": 3
+  }
+]

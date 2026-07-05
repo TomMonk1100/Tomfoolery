@@ -1,0 +1,46 @@
+{
+  "dog": [
+    {
+      "id": "warm-welcome",
+      "name": "Warm Welcome",
+      "costSunseeds": 150,
+      "prerequisiteIds": [],
+      "effect": "+10% Charm when approaching a wary animal"
+    },
+    {
+      "id": "steady-paws",
+      "name": "Steady Paws",
+      "costSunseeds": 150,
+      "prerequisiteIds": [],
+      "effect": "+15% Forage Speed while digging"
+    },
+    {
+      "id": "long-legs",
+      "name": "Long Legs",
+      "costSunseeds": 150,
+      "prerequisiteIds": [],
+      "effect": "+8% Movement Speed"
+    },
+    {
+      "id": "familiar-scent",
+      "name": "Familiar Scent",
+      "costSunseeds": 400,
+      "prerequisiteIds": ["warm-welcome"],
+      "effect": "Befriended animals trust 20% faster on repeat meetings"
+    },
+    {
+      "id": "cache-memory",
+      "name": "Cache Memory",
+      "costSunseeds": 400,
+      "prerequisiteIds": ["steady-paws"],
+      "effect": "Buried caches show a faint marker for 1 in-run day"
+    },
+    {
+      "id": "second-wind",
+      "name": "Second Wind",
+      "costSunseeds": 400,
+      "prerequisiteIds": ["long-legs"],
+      "effect": "Stamina regenerates 25% faster after a sprint dash"
+    }
+  ]
+}
