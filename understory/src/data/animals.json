@@ -188,7 +188,7 @@
       }
     },
     "maxHp": 100,
-    "startingWeaponId": "thumper-quake",
+    "startingWeaponId": "scissor-kick",
     "spriteKey": "animal_rabbit"
   }
 }

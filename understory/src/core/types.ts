@@ -260,7 +260,8 @@ export interface WorldTile {
   harvested?: boolean;
 }
 
-export const WORLD_SIZE = 40;
+/** Update 2: world grows to 48x48 and wraps Pac-Man style (toroidal). */
+export const WORLD_SIZE = 48;
 export const TILE_PX = 32;
 
 // ----------------------------------------------------------------------------
@@ -345,6 +346,13 @@ export type WeaponArchetype =
   | "trail" // damaging path left by movement/burst (Zoomies, Bunny Barrage)
   | "zone"; // placed/held damaging area (Purr Aura, Dig eruption, Slobber puddle)
 
+/** Update 2 — directional pattern for aoe-pulse/melee-sweep archetypes and
+ * projectile spawn direction. Defaults to "ring" (unchanged 360 behavior)
+ * when absent, so pre-Update-2 weapon data keeps working unmodified.
+ * "cross" (4-way line-both + perpendicular line-both) is evolution-only
+ * (e.g. Guillotine Hop). */
+export type WeaponPattern = "ring" | "arc" | "line-both" | "cross";
+
 export interface WeaponLevelStats {
   damage: number;
   cooldownMs: number;
@@ -370,12 +378,14 @@ export interface WeaponEvolution {
   description: string;
   /** Optional archetype override (e.g. Zoomies trail -> Mach Zoomies zone). */
   archetype?: WeaponArchetype;
+  /** Update 2: optional pattern override (e.g. scissor-kick line-both -> Guillotine Hop cross). */
+  pattern?: WeaponPattern;
 }
 
 export interface WeaponData {
   id: string;
   name: string;
-  /** "dog" | "cat" | "rabbit" — weapons are species-specific. */
+  /** "dog" | "cat" | "rabbit" | "any" — "any" = neutral, draftable by every animal. */
   animal: string;
   archetype: WeaponArchetype;
   isStarting: boolean;
@@ -392,6 +402,10 @@ export interface WeaponData {
     splitCount?: number;
     pierce?: number;
   };
+  /** Update 2: directional pattern for aoe-pulse/melee-sweep/projectile-spawn-dir. Defaults to "ring" if absent. */
+  pattern?: WeaponPattern;
+  /** Update 2: cone half-angle in degrees for pattern "arc". Defaults to 100. */
+  arcDeg?: number;
 }
 
 export interface PassiveData {

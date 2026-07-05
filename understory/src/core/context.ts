@@ -76,6 +76,12 @@ export interface GameContext {
   getPlayerPos(): Vec2;
   /** Translate the avatar by (dx,dy) px; WorldScene clamps to world bounds. */
   movePlayer(dx: number, dy: number): void;
+  /** Update 2: unit vector toward nearest enemy (wrap-aware); falls back to
+   * last nonzero move direction, then default right. Computed once/frame by
+   * WorldScene via sim.computeFacing. All directional weapons (arc,
+   * line-both, projectile spawn dir) use this — sprite flipX stays driven by
+   * movement, not aim. */
+  getFacing(): Vec2;
 
   world: WorldView;
 

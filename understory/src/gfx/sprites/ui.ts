@@ -224,6 +224,19 @@ icon(
   })
 );
 icon(
+  "scissor-kick",
+  { o: P.outline, w: P.white },
+  withRows({
+    4: "...o.........o..",
+    5: "....o.......o...",
+    6: ".....o.....o....",
+    7: "......ooooo.....",
+    8: ".....o.....o....",
+    9: "....o.......o...",
+    10: "...o.........o..",
+  })
+);
+icon(
   "bunny-barrage",
   { o: P.outline, c: P.cream },
   withRows({
@@ -409,6 +422,152 @@ icon(
     8: "..oo..oo..oo....",
   })
 );
+// ---------------------------------------------------------------------------
+// NEUTRAL WEAPONS (7) — Update 2, animal:"any"
+// ---------------------------------------------------------------------------
+icon(
+  "tennis-ball",
+  { o: P.outline, y: "#d9e84f" },
+  withRows({
+    5: "......oooo......",
+    6: ".....oyyyyo.....",
+    7: "....oyy..yyo....",
+    8: "....oy....yo....",
+    9: "....oyy..yyo....",
+    10: ".....oyyyyo.....",
+    11: "......oooo......",
+  })
+);
+icon(
+  "skunk-cloud",
+  { o: P.outline, w: P.white, k: P.outline },
+  withRows({
+    4: "....oooooooo....",
+    5: "...oyyyyyyyyo...".replace(/y/g, "w"),
+    6: "..owwkwwwwkwwo..",
+    7: "..owwwwwwwwwwo..",
+    8: "...owwwwwwwo....",
+    9: "....oo..oo......",
+  })
+);
+icon(
+  "bee-swarm",
+  { o: P.outline, y: P.gold, k: P.outline },
+  withRows({
+    5: "...oo....oo.....",
+    6: "..oyko...oyko....",
+    7: "...oo....oo.....",
+    8: "................",
+    9: "....oo...oo.....",
+    10: "...oyko..oyko...",
+    11: "....oo...oo.....",
+  })
+);
+icon(
+  "acorn-mortar",
+  { o: P.outline, b: P.darkBrown, l: P.leaf },
+  withRows({
+    4: ".....ll.........",
+    5: "....llll........",
+    6: ".....oo.........",
+    7: "....obbo........",
+    8: "....obbo........",
+    9: "....obbo........",
+    10: ".....oo.........",
+  })
+);
+icon(
+  "firefly-lantern",
+  { o: P.outline, y: P.gold },
+  withRows({
+    4: "....oooo........",
+    5: "...oyyyyo.......",
+    6: "..oyyyyyyo......",
+    7: "...oyyyyo.......",
+    8: "....oooo........",
+    9: ".....oo.........",
+  })
+);
+icon(
+  "echo-screech",
+  { o: P.outline, w: P.white },
+  withRows({
+    5: "..o.............",
+    6: "..o.o...........",
+    7: "..o.o.o.........",
+    8: "..o.o.o.o.......",
+    9: "..o.o.o.........",
+    10: "..o.o...........",
+    11: "..o.............",
+  })
+);
+icon(
+  "laser-pointer",
+  { o: P.outline, r: P.danger },
+  withRows({
+    4: "..............o.",
+    5: ".............o..",
+    6: "............o...",
+    7: "...........o....",
+    8: "..........o.....",
+    9: ".........orro...",
+    10: "..........oo....",
+  })
+);
+
+// ---------------------------------------------------------------------------
+// NEUTRAL PASSIVES (4) — Update 2, animal:"any"
+// ---------------------------------------------------------------------------
+icon(
+  "magnet-collar",
+  { o: P.outline, r: P.danger, w: P.white },
+  withRows({
+    5: "..oo........oo..",
+    6: ".orro......orro.",
+    7: ".orro......orro.",
+    8: ".orro......orro.",
+    9: "..oo........oo..",
+    10: "................",
+  })
+);
+icon(
+  "wild-heart",
+  { o: P.outline, r: P.danger, g: P.grass },
+  withRows({
+    4: "...oo..oo.......",
+    5: "..orroorro......",
+    6: "..orrrrrro......",
+    7: "...orrrro.......",
+    8: "....orro........",
+    9: "....gggg........",
+  })
+);
+icon(
+  "alpha-scent",
+  { o: P.outline, y: P.gold },
+  withRows({
+    4: "....oo..oo......",
+    5: "...oyyooyyyo....",
+    6: "..oyyyyyyyyyo...",
+    7: "...oyyyyyyo.....",
+    8: "....oyyyyo......",
+    9: ".....oyyo.......",
+  })
+);
+icon(
+  "four-leaf",
+  { o: P.outline, l: P.leaf, g: P.grass },
+  withRows({
+    4: "....oo..oo......",
+    5: "...olgo.olgo....",
+    6: "....oo..oo......",
+    7: ".....ooo........",
+    8: "....oo.oo.......",
+    9: "...olgo.olgo....",
+    10: "....oo...oo.....",
+  })
+);
+
 icon(
   "nibbler",
   { o: P.outline, r: "#e8823d", l: P.leaf },

@@ -580,6 +580,12 @@ export class HUD implements System {
 
       const star = slot.getData("star") as Phaser.GameObjects.Text;
       star.setVisible(weapon.evolved);
+
+      // Update 2 §5 verification: the rack previously only showed a star for
+      // evolved weapons with no border change — added the gold border here
+      // so evolved weapons are readable at a glance without the small star.
+      const bg = slot.getData("bg") as Phaser.GameObjects.Rectangle;
+      bg.setStrokeStyle(weapon.evolved ? 3 : 2, weapon.evolved ? hex(PALETTE.gold) : hex(PALETTE.cream), weapon.evolved ? 1 : 0.9);
     }
 
     for (let i = 0; i < this.passiveSlots.length; i++) {

@@ -93,6 +93,184 @@ export function nearestTarget<T extends TargetCandidate>(
 }
 
 // ----------------------------------------------------------------------------
+// Toroidal wrap helpers (Update 2 — Wild Kit, world wraps Pac-Man style)
+//
+// DECISIONS:
+// - Player position (WorldScene.movePlayer) and facing (computeFacing below,
+//   used by all directional weapons + projectile aim) ARE fully wrap-aware —
+//   these are the two things Update 2 §1/§4 and the acceptance checklist
+//   ("walk player past edge, pos wraps") explicitly require.
+// - Enemy steering (chaserSteer/lungerSteer/etc.), XP mote / food magnetism,
+//   companion follow, and nest raid radius still use plain (non-wrapped)
+//   distance/direction to the player. Making those wrap-aware would mean
+//   threading a worldSize through every SteeringInput call site and
+//   rewriting ~20 existing steering tests that assert plain-Euclidean
+//   behavior. Scope-reduced: enemies spawn on a ring around the *camera*,
+//   not at arbitrary map coordinates, so they are rarely on the opposite
+//   side of the seam from the player — the failure mode is a slightly
+//   longer path for a brief moment right at the seam, never a crash/NaN/
+//   stuck enemy. Noted here per the CONTRACTS.md "note it, keep going"
+//   convention rather than silently leaving it unstated.
+// ----------------------------------------------------------------------------
+
+/** Shortest signed delta from a to b on a 1D torus of circumference `size`. */
+export function wrapDelta(a: number, b: number, size: number): number {
+  const half = size / 2;
+  return (((b - a + half) % size) + size) % size - half;
+}
+
+/** Shortest signed (dx,dy) from `from` to `to` on a square torus of side `size`. */
+export function wrapDeltaVec(from: Vec2, to: Vec2, size: number): Vec2 {
+  return { x: wrapDelta(from.x, to.x, size), y: wrapDelta(from.y, to.y, size) };
+}
+
+/** Wrap-aware distance (shortest path across either seam). */
+export function wrapDistance(from: Vec2, to: Vec2, size: number): number {
+  const d = wrapDeltaVec(from, to, size);
+  return Math.sqrt(d.x * d.x + d.y * d.y);
+}
+
+/** Wrap-aware unit vector from `from` toward `to`; {0,0} if coincident. */
+export function wrapDirectionTo(from: Vec2, to: Vec2, size: number): Vec2 {
+  const d = wrapDeltaVec(from, to, size);
+  const len = Math.sqrt(d.x * d.x + d.y * d.y);
+  if (len < 1e-6) return { x: 0, y: 0 };
+  return { x: d.x / len, y: d.y / len };
+}
+
+/** Wrap-aware nearest candidate (same tie-break rule as nearestTarget). */
+export function nearestTargetWrapped<T extends TargetCandidate>(
+  from: Vec2,
+  candidates: T[],
+  worldSize: number,
+  maxRange: number = Infinity
+): T | null {
+  let best: T | null = null;
+  let bestDist = Infinity;
+  for (const c of candidates) {
+    const d = wrapDistance(from, c, worldSize);
+    if (d > maxRange) continue;
+    if (d < bestDist || (d === bestDist && best !== null && c.id < best.id)) {
+      bestDist = d;
+      best = c;
+    }
+  }
+  return best;
+}
+
+// ----------------------------------------------------------------------------
+// Facing (Update 2 — VS-style auto-aim toward the nearest enemy)
+// ----------------------------------------------------------------------------
+
+/**
+ * Facing = unit vector toward the nearest enemy (wrap-aware) when any exist;
+ * else the normalized fallback direction (last nonzero move dir); else the
+ * default (1,0) (facing right). Never returns {0,0} or NaN.
+ */
+export function computeFacing(
+  playerPos: Vec2,
+  enemies: TargetCandidate[],
+  worldSize: number,
+  fallbackDir: Vec2
+): Vec2 {
+  const nearest = nearestTargetWrapped(playerPos, enemies, worldSize);
+  if (nearest) {
+    const dir = wrapDirectionTo(playerPos, nearest, worldSize);
+    if (dir.x !== 0 || dir.y !== 0) return dir;
+  }
+  const flen = Math.sqrt(fallbackDir.x ** 2 + fallbackDir.y ** 2);
+  if (flen > 1e-6) return { x: fallbackDir.x / flen, y: fallbackDir.y / flen };
+  return { x: 1, y: 0 };
+}
+
+// ----------------------------------------------------------------------------
+// Weapon patterns (Update 2 — ring / arc / line-both hit tests)
+// ----------------------------------------------------------------------------
+
+export type WeaponPattern = "ring" | "arc" | "line-both" | "cross";
+export const DEFAULT_ARC_DEG = 100;
+export const DEFAULT_LINE_WIDTH_PX = 28;
+
+/** 360 deg around the player — `delta` is the (dx,dy) from player to point. */
+export function isInRing(delta: Vec2, radius: number): boolean {
+  return Math.sqrt(delta.x ** 2 + delta.y ** 2) <= radius;
+}
+
+/** Cone in the facing direction. `facing` need not be normalized. */
+export function isInCone(
+  delta: Vec2,
+  facing: Vec2,
+  radius: number,
+  arcDeg: number = DEFAULT_ARC_DEG
+): boolean {
+  const dist = Math.sqrt(delta.x ** 2 + delta.y ** 2);
+  if (dist > radius) return false;
+  if (dist < 1e-6) return true;
+  const facingLen = Math.sqrt(facing.x ** 2 + facing.y ** 2);
+  if (facingLen < 1e-6) return true; // no facing = can't exclude anything
+  const cosAngle = (delta.x * facing.x + delta.y * facing.y) / (dist * facingLen);
+  const halfArcRad = ((arcDeg * Math.PI) / 180) / 2;
+  return cosAngle >= Math.cos(halfArcRad);
+}
+
+/**
+ * Two opposed narrow strikes along facing, front AND back simultaneously:
+ * a rectangle of half-length `length` in both directions along facing,
+ * width 2*halfWidth centered on the facing axis.
+ */
+export function isInLineBoth(
+  delta: Vec2,
+  facing: Vec2,
+  length: number,
+  halfWidth: number = DEFAULT_LINE_WIDTH_PX / 2
+): boolean {
+  const facingLen = Math.sqrt(facing.x ** 2 + facing.y ** 2);
+  if (facingLen < 1e-6) return Math.sqrt(delta.x ** 2 + delta.y ** 2) <= length;
+  const fx = facing.x / facingLen;
+  const fy = facing.y / facingLen;
+  const along = delta.x * fx + delta.y * fy; // signed: +front, -back
+  const perp = delta.x * -fy + delta.y * fx; // perpendicular offset
+  return Math.abs(along) <= length && Math.abs(perp) <= halfWidth;
+}
+
+/**
+ * Guillotine Hop-style 4-way cross: line-both along facing UNION line-both
+ * along the perpendicular axis — a plus-shape strike front/back/left/right.
+ */
+export function isInCross(
+  delta: Vec2,
+  facing: Vec2,
+  length: number,
+  halfWidth: number = DEFAULT_LINE_WIDTH_PX / 2
+): boolean {
+  const perpFacing = { x: -facing.y, y: facing.x };
+  return (
+    isInLineBoth(delta, facing, length, halfWidth) ||
+    isInLineBoth(delta, perpFacing, length, halfWidth)
+  );
+}
+
+/** Dispatch helper: does `point` fall within `pattern` centered on `origin`? */
+export function isInPattern(
+  pattern: WeaponPattern,
+  originDelta: Vec2,
+  facing: Vec2,
+  radiusOrLength: number,
+  opts?: { arcDeg?: number; halfWidth?: number }
+): boolean {
+  switch (pattern) {
+    case "ring":
+      return isInRing(originDelta, radiusOrLength);
+    case "arc":
+      return isInCone(originDelta, facing, radiusOrLength, opts?.arcDeg ?? DEFAULT_ARC_DEG);
+    case "line-both":
+      return isInLineBoth(originDelta, facing, radiusOrLength, opts?.halfWidth ?? DEFAULT_LINE_WIDTH_PX / 2);
+    case "cross":
+      return isInCross(originDelta, facing, radiusOrLength, opts?.halfWidth ?? DEFAULT_LINE_WIDTH_PX / 2);
+  }
+}
+
+// ----------------------------------------------------------------------------
 // Cooldown ticking
 // ----------------------------------------------------------------------------
 

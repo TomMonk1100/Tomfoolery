@@ -32,6 +32,12 @@ import { EV, CARRY_CAP } from "../core/types";
 import { SPRITE_KEYS, frameKey, playAnim } from "../gfx/PixelArt";
 import { HungerSystem } from "./HungerSystem";
 import { addCarriedFood, dist } from "./nestHungerSim";
+import {
+  moteStep,
+  moteMagnetRadius,
+  makeMoteMagnetState,
+  MoteMagnetState,
+} from "./combat/sim";
 
 const MAX_FOOD = 60;
 const PICKUP_RADIUS_PX = 18;
@@ -39,6 +45,13 @@ const EAT_IMMEDIATELY_HUNGER_THRESHOLD = 85;
 const AUTO_EAT_HP_FRACTION = 0.5;
 const AUTO_EAT_COOLDOWN_MS = 1500;
 const FORAGE_FOOD_SPAWN_COUNT = 2;
+/** Update 2 — magnet-collar: food now drifts toward the player inside a
+ * pickupRadius-scaled magnet zone (previously walk-over only), same base
+ * mechanic as XPMoteSystem's motes. */
+const FOOD_MAGNET_BASE_RADIUS = 60;
+/** Update 2 — magnet-collar at 3+ stacks: auto-vacuum everything on screen every 20s. */
+const MAGNET_VACUUM_INTERVAL_MS = 20000;
+const MAGNET_VACUUM_MIN_STACKS = 3;
 
 const FOOD_KEYS = [
   SPRITE_KEYS.foodBerry,
@@ -50,6 +63,7 @@ interface FoodItem {
   obj: Phaser.GameObjects.GameObject & { x: number; y: number };
   heal: number;
   active: boolean;
+  magnetState: MoteMagnetState;
 }
 
 export class FoodSystem implements System {
@@ -60,6 +74,7 @@ export class FoodSystem implements System {
   private pool: FoodItem[] = [];
   private rotateIndex = 0;
   private autoEatCooldownMs = 0;
+  private vacuumCooldownMs = MAGNET_VACUUM_INTERVAL_MS;
 
   constructor(scene: Phaser.Scene, ctx: GameContext, hunger: HungerSystem) {
     this.scene = scene;
@@ -81,16 +96,47 @@ export class FoodSystem implements System {
     }
 
     const playerPos = this.ctx.getPlayerPos();
+    const magnetRadius = moteMagnetRadius(
+      FOOD_MAGNET_BASE_RADIUS,
+      this.ctx.statBonus("pickupRadius")
+    );
 
     for (const item of this.pool) {
       if (!item.active) continue;
       const d = dist(playerPos, { x: item.obj.x, y: item.obj.y });
       if (d <= PICKUP_RADIUS_PX) {
         this.collect(item);
+        continue;
       }
+      // Update 2 — magnet-collar: drift toward the player inside the magnet
+      // radius instead of requiring a literal walk-over.
+      const result = moteStep(item.magnetState, item.obj, playerPos, magnetRadius, deltaMs);
+      if (result.collected) {
+        this.collect(item);
+        continue;
+      }
+      item.obj.x += result.dx;
+      item.obj.y += result.dy;
     }
 
+    this.maybeAutoVacuum(deltaMs);
     this.maybeAutoEatCarried();
+  }
+
+  /** Update 2 — magnet-collar at 3+ stacks: every 20s, instantly collect everything on screen. */
+  private maybeAutoVacuum(deltaMs: number): void {
+    this.vacuumCooldownMs -= deltaMs;
+    if (this.vacuumCooldownMs > 0) return;
+    this.vacuumCooldownMs = MAGNET_VACUUM_INTERVAL_MS;
+
+    const magnetCollar = this.ctx.player.activePassives.find(
+      (ap) => ap.passiveId === "magnet-collar"
+    );
+    if (!magnetCollar || magnetCollar.stacks < MAGNET_VACUUM_MIN_STACKS) return;
+
+    for (const item of this.pool) {
+      if (item.active) this.collect(item);
+    }
   }
 
   destroy(): void {
@@ -112,12 +158,13 @@ export class FoodSystem implements System {
     let slot = this.pool.find((f) => !f.active);
     if (!slot) {
       const obj = this.createSprite(x, y, key);
-      slot = { obj, heal, active: true };
+      slot = { obj, heal, active: true, magnetState: makeMoteMagnetState() };
       this.pool.push(slot);
     } else {
       this.reviveSprite(slot.obj, x, y, key);
       slot.heal = heal;
       slot.active = true;
+      slot.magnetState = makeMoteMagnetState();
     }
 
     this.ctx.events.emit(EV.foodSpawned, { x, y, heal });

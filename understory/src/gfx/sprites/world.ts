@@ -67,6 +67,40 @@ registerSprite({
 } satisfies PixelSpriteDef);
 
 // ===========================================================================
+// SEAMLESS GRASS BACKGROUND (64x64) — Update 2 "seamless looping wilds".
+// One low-contrast, edge-matched noise texture tiled across the whole world
+// as a single TileSprite, replacing per-tile grass images (was ~1600 image
+// draws; now 1). Edges are built from a periodic function of x/y so the
+// tile wraps with no visible seam when repeated.
+// ===========================================================================
+function seamlessGrassTile(): string[] {
+  const rows: string[] = [];
+  const SIZE = 64;
+  for (let y = 0; y < SIZE; y++) {
+    let row = "";
+    for (let x = 0; x < SIZE; x++) {
+      // Periodic (sine-based) low-contrast speckle: since sin() is periodic
+      // over the tile's own size, value at x=0 and x=SIZE naturally match,
+      // so the texture tiles edge-to-edge without a visible seam.
+      const n =
+        Math.sin((x / SIZE) * Math.PI * 4) * Math.cos((y / SIZE) * Math.PI * 4) +
+        Math.sin((x / SIZE) * Math.PI * 9 + (y / SIZE) * Math.PI * 6) * 0.3;
+      if (n > 0.85) row += "d";
+      else if (n < -0.9) row += "l";
+      else row += "g";
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+registerSprite({
+  key: SPRITE_KEYS.tileGrassSeamless,
+  palette: { g: P.grassLight, d: P.grass, l: P.grassDark },
+  frames: [pad(seamlessGrassTile(), 64)],
+  anims: {},
+} satisfies PixelSpriteDef);
+
+// ===========================================================================
 // WATER TILE (32x32, 2-frame shimmer loop).
 // ===========================================================================
 function waterTile(phase: 0 | 1): string[] {

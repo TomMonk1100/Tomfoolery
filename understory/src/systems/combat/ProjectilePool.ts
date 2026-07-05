@@ -52,6 +52,8 @@ export interface ProjectileSpawnParams {
   weaponId?: string;
   /** Internal: generation depth to prevent infinite split recursion. */
   splitGeneration?: number;
+  /** Update 2 §2: evolved weapons get a gold tint on their fx (incl. projectiles). */
+  tint?: number;
 }
 
 interface ProjectileInstance {
@@ -128,7 +130,25 @@ export class ProjectilePool {
     inst.boomerangReturning = false;
     inst.hitEnemyIds.clear();
 
-    this.attachVisual(inst, params.spriteKey);
+    this.attachVisual(inst, params.spriteKey, params.tint);
+
+    // Update 2 §5: enemy projectiles (e.g. gloomcap/elder-gloomcap spore)
+    // get a brief spawn flash so shots read clearly against the busier,
+    // seamless-background world, matching the "every attack must show
+    // itself" rule already applied to player weapons.
+    if (params.owner === "enemy") this.playSpawnFlash(params.x, params.y);
+  }
+
+  private playSpawnFlash(x: number, y: number): void {
+    const flash = this.scene.add.circle(x, y, 10, 0xd94f4f, 0.6);
+    flash.setDepth(DEPTH + 1);
+    this.scene.tweens.add({
+      targets: flash,
+      scale: 1.8,
+      alpha: 0,
+      duration: 180,
+      onComplete: () => flash.destroy(),
+    });
   }
 
   private makeBlankInstance(): ProjectileInstance {
@@ -158,7 +178,7 @@ export class ProjectilePool {
     };
   }
 
-  private attachVisual(inst: ProjectileInstance, spriteKey?: string): void {
+  private attachVisual(inst: ProjectileInstance, spriteKey?: string, tint?: number): void {
     if (inst.sprite) {
       inst.sprite.destroy();
       inst.sprite = null;
@@ -167,10 +187,11 @@ export class ProjectilePool {
     if (fk && this.scene.textures.exists(fk)) {
       const s = this.scene.add.sprite(inst.x, inst.y, fk);
       s.setDepth(DEPTH);
+      if (tint) s.setTint(tint);
       inst.sprite = s;
       inst.usingFallback = false;
     } else {
-      const color = inst.owner === "friendly" ? 0xe8b23d : 0x8b5fbf;
+      const color = tint ?? (inst.owner === "friendly" ? 0xe8b23d : 0x8b5fbf);
       const s = this.scene.add.circle(
         inst.x,
         inst.y,

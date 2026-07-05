@@ -35,6 +35,7 @@ import { registerAllSprites } from "../gfx/sprites";
 import { buildAtlas, frameKey, playAnim } from "../gfx/PixelArt";
 import { JuiceSystem } from "../vfx/Juice";
 import { HUD } from "../ui/HUD";
+import { computeFacing } from "../systems/combat/sim";
 import type { System } from "../core/context";
 import type { InputSource } from "../core/types";
 
@@ -134,25 +135,54 @@ export class WorldScene extends Phaser.Scene {
         y: scene.playerContainer.y,
       }),
       movePlayer: (dx: number, dy: number): void => {
-        const nx = Phaser.Math.Clamp(
-          scene.playerContainer.x + dx,
-          12,
-          scene.worldBounds.width - 12
-        );
-        const ny = Phaser.Math.Clamp(
-          scene.playerContainer.y + dy,
-          12,
-          scene.worldBounds.height - 12
-        );
-        scene.playerContainer.setPosition(nx, ny);
+        const w = scene.worldBounds.width;
+        const h = scene.worldBounds.height;
+        const curX = scene.playerContainer.x;
+        const curY = scene.playerContainer.y;
+
+        // Update 2 — water/obstacle uncrossable: slide along the free axis
+        // rather than stopping dead. Each axis is checked independently
+        // against the *other* axis's current (not yet moved) position, so
+        // moving diagonally into a wall corner still slides along the open
+        // axis instead of getting stuck.
+        const isBlocked = (px: number, py: number): boolean => {
+          if (!worldRef) return false;
+          const t = worldRef.worldToTile(px, py);
+          const tile = worldRef.tileAt(t.col, t.row);
+          return !!tile && (tile.type === "water" || tile.type === "obstacle");
+        };
+        let nx = curX + dx;
+        let ny = curY + dy;
+        if (dx !== 0 && isBlocked(nx, curY)) nx = curX;
+        if (dy !== 0 && isBlocked(nx, ny)) ny = curY;
+
+        // Update 2 — toroidal wrap (Pac-Man style): position wraps modulo
+        // world size instead of clamping at the edges. The camera hard-snaps
+        // on wrap (acceptable seam per plan — no 9-way ghost rendering).
+        const wrappedX = ((nx % w) + w) % w;
+        const wrappedY = ((ny % h) + h) % h;
+        const didWrap = wrappedX !== nx || wrappedY !== ny;
+
+        scene.playerContainer.setPosition(wrappedX, wrappedY);
+        if (didWrap) {
+          scene.cameras.main.centerOn(wrappedX, wrappedY);
+        }
         // Drive walk anim + facing from actual motion.
         if (Math.abs(dx) + Math.abs(dy) > 0.05) {
           scene.lastMoveAt = scene.time.now;
+          scene.lastMoveDir = { x: dx, y: dy };
           if (scene.playerSprite && Math.abs(dx) > 0.05) {
             scene.playerSprite.setFlipX(dx < 0);
           }
         }
       },
+      getFacing: (): Vec2 =>
+        computeFacing(
+          { x: scene.playerContainer.x, y: scene.playerContainer.y },
+          scene.combat.getEnemies?.() ?? [],
+          Math.max(scene.worldBounds.width, scene.worldBounds.height),
+          scene.lastMoveDir
+        ),
       get world(): WorldView {
         return worldRef;
       },
@@ -271,6 +301,8 @@ export class WorldScene extends Phaser.Scene {
   private playerSprite?: Phaser.GameObjects.Sprite;
   private playerSpriteKey = "";
   private lastMoveAt = 0;
+  /** Last nonzero movement direction (unnormalized); facing fallback when no enemies. Defaults to facing right. */
+  private lastMoveDir: Vec2 = { x: 1, y: 0 };
 
   /** Live combat provider registry — systems fill this in via ctx. */
   private combat: Partial<CombatProvider> = {};

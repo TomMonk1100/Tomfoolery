@@ -52,6 +52,7 @@ const EXPECTED_SIZE: Record<string, number> = {
   [SPRITE_KEYS.tileGrassA]: 32,
   [SPRITE_KEYS.tileGrassB]: 32,
   [SPRITE_KEYS.tileGrassC]: 32,
+  [SPRITE_KEYS.tileGrassSeamless]: 64,
   [SPRITE_KEYS.tileWater]: 32,
   [SPRITE_KEYS.tileObstacleTree]: 32,
   [SPRITE_KEYS.tileObstacleRock]: 32,
@@ -76,11 +77,20 @@ const WEAPON_IDS = [
   "midnight-prowl",
   "yarn-whip",
   "thumper-quake",
+  "scissor-kick",
   "bunny-barrage",
   "carrot-toss",
   "lucky-clover",
   "burrow-network",
   "cottontail-decoy",
+  // Update 2 — neutral weapons (animal: "any")
+  "tennis-ball",
+  "skunk-cloud",
+  "bee-swarm",
+  "acorn-mortar",
+  "firefly-lantern",
+  "echo-screech",
+  "laser-pointer",
 ];
 
 // The 12 passive ids from docs/CONTRACTS.md §Passives.
@@ -97,6 +107,11 @@ const PASSIVE_IDS = [
   "spring-legs",
   "litter-of-friends",
   "nibbler",
+  // Update 2 — neutral passives (animal: "any")
+  "magnet-collar",
+  "wild-heart",
+  "alpha-scent",
+  "four-leaf",
 ];
 
 describe("sprite registry", () => {

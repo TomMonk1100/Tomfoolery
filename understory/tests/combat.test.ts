@@ -43,6 +43,19 @@ import {
   makeBossPhaseState,
   bossPhaseCheck,
 } from "../src/systems/combat/sim";
+import {
+  wrapDelta,
+  wrapDeltaVec,
+  wrapDistance,
+  wrapDirectionTo,
+  nearestTargetWrapped,
+  computeFacing,
+  isInRing,
+  isInCone,
+  isInLineBoth,
+  isInCross,
+  isInPattern,
+} from "../src/systems/combat/sim";
 import { WELL_FED_DAMAGE_BONUS, WaveEntry } from "../src/core/types";
 
 describe("cooldown ticking", () => {
@@ -492,6 +505,132 @@ describe("XP mote magnet", () => {
 // at level 3 vs continuously-spawned slime-green (hp 12, speed 45).
 // Assert >=30 kills, no NaN positions/hp.
 // ----------------------------------------------------------------------------
+describe("Update 2 — toroidal wrap helpers", () => {
+  it("wrapDelta finds the shortest signed delta across the seam", () => {
+    // world size 1000: point at 990 to point at 10 should wrap as +20, not -980
+    expect(wrapDelta(990, 10, 1000)).toBeCloseTo(20, 6);
+    expect(wrapDelta(10, 990, 1000)).toBeCloseTo(-20, 6);
+    // no wrap needed for nearby points
+    expect(wrapDelta(100, 150, 1000)).toBeCloseTo(50, 6);
+  });
+
+  it("wrapDistance/wrapDirectionTo use the shorter wrapped path", () => {
+    const a = { x: 990, y: 500 };
+    const b = { x: 10, y: 500 };
+    expect(wrapDistance(a, b, 1000)).toBeCloseTo(20, 6);
+    const dir = wrapDirectionTo(a, b, 1000);
+    expect(dir.x).toBeCloseTo(1, 6); // wraps forward (+x), not backward
+    expect(dir.y).toBeCloseTo(0, 6);
+  });
+
+  it("wrapDeltaVec matches componentwise wrapDelta", () => {
+    const d = wrapDeltaVec({ x: 990, y: 990 }, { x: 10, y: 10 }, 1000);
+    expect(d.x).toBeCloseTo(20, 6);
+    expect(d.y).toBeCloseTo(20, 6);
+  });
+
+  it("nearestTargetWrapped picks the enemy that's nearer across the seam", () => {
+    const from = { x: 995, y: 500 };
+    const candidates = [
+      { id: "far-direct", x: 500, y: 500 }, // 495 away directly
+      { id: "near-wrap", x: 5, y: 500 }, // wraps to 10 away
+    ];
+    const best = nearestTargetWrapped(from, candidates, 1000);
+    expect(best?.id).toBe("near-wrap");
+  });
+
+  it("nearestTargetWrapped returns null with no candidates / out of range", () => {
+    expect(nearestTargetWrapped({ x: 0, y: 0 }, [], 1000)).toBeNull();
+    expect(
+      nearestTargetWrapped({ x: 0, y: 0 }, [{ id: "a", x: 400, y: 0 }], 1000, 50)
+    ).toBeNull();
+  });
+});
+
+describe("Update 2 — computeFacing auto-aim", () => {
+  it("aims at the nearest enemy (wrap-aware) when enemies exist", () => {
+    const facing = computeFacing(
+      { x: 0, y: 0 },
+      [
+        { id: "b", x: 100, y: 0 },
+        { id: "a", x: 10, y: 0 },
+      ],
+      1000,
+      { x: 0, y: -1 }
+    );
+    expect(facing.x).toBeCloseTo(1, 6);
+    expect(facing.y).toBeCloseTo(0, 6);
+  });
+
+  it("falls back to last nonzero move direction when no enemies", () => {
+    const facing = computeFacing({ x: 0, y: 0 }, [], 1000, { x: 0, y: 5 });
+    expect(facing.x).toBeCloseTo(0, 6);
+    expect(facing.y).toBeCloseTo(1, 6);
+  });
+
+  it("defaults to facing right when no enemies and no fallback direction", () => {
+    const facing = computeFacing({ x: 0, y: 0 }, [], 1000, { x: 0, y: 0 });
+    expect(facing.x).toBe(1);
+    expect(facing.y).toBe(0);
+  });
+
+  it("never returns NaN even with a coincident nearest enemy", () => {
+    const facing = computeFacing(
+      { x: 5, y: 5 },
+      [{ id: "a", x: 5, y: 5 }],
+      1000,
+      { x: 0, y: 0 }
+    );
+    expect(Number.isNaN(facing.x)).toBe(false);
+    expect(Number.isNaN(facing.y)).toBe(false);
+  });
+});
+
+describe("Update 2 — weapon patterns (ring/arc/line-both)", () => {
+  it("isInRing is 360 degrees regardless of facing", () => {
+    expect(isInRing({ x: 50, y: 0 }, 60)).toBe(true);
+    expect(isInRing({ x: -50, y: 0 }, 60)).toBe(true);
+    expect(isInRing({ x: 0, y: 70 }, 60)).toBe(false);
+  });
+
+  it("isInCone only hits within the arc in front of facing", () => {
+    const facing = { x: 1, y: 0 }; // facing +x
+    expect(isInCone({ x: 50, y: 0 }, facing, 60, 90)).toBe(true); // dead ahead
+    expect(isInCone({ x: -50, y: 0 }, facing, 60, 90)).toBe(false); // directly behind
+    expect(isInCone({ x: 0, y: 60 }, facing, 60, 90)).toBe(false); // 90deg off-axis, outside 45deg half-arc
+    expect(isInCone({ x: 100, y: 0 }, facing, 60, 90)).toBe(false); // out of radius
+  });
+
+  it("isInCone with no facing vector treats everything in radius as hit", () => {
+    expect(isInCone({ x: 10, y: 10 }, { x: 0, y: 0 }, 60, 90)).toBe(true);
+  });
+
+  it("isInLineBoth hits both front and back simultaneously, narrow perpendicular", () => {
+    const facing = { x: 1, y: 0 };
+    expect(isInLineBoth({ x: 40, y: 0 }, facing, 60, 14)).toBe(true); // front
+    expect(isInLineBoth({ x: -40, y: 0 }, facing, 60, 14)).toBe(true); // back
+    expect(isInLineBoth({ x: 40, y: 20 }, facing, 60, 14)).toBe(false); // too wide
+    expect(isInLineBoth({ x: 80, y: 0 }, facing, 60, 14)).toBe(false); // beyond length
+  });
+
+  it("isInCross hits along facing AND the perpendicular axis (4-way)", () => {
+    const facing = { x: 1, y: 0 };
+    expect(isInCross({ x: 40, y: 0 }, facing, 60, 14)).toBe(true); // front
+    expect(isInCross({ x: -40, y: 0 }, facing, 60, 14)).toBe(true); // back
+    expect(isInCross({ x: 0, y: 40 }, facing, 60, 14)).toBe(true); // left/right (perpendicular)
+    expect(isInCross({ x: 0, y: -40 }, facing, 60, 14)).toBe(true);
+    expect(isInCross({ x: 40, y: 40 }, facing, 60, 14)).toBe(false); // diagonal gap
+  });
+
+  it("isInPattern dispatches to the right test per pattern", () => {
+    const facing = { x: 0, y: 1 }; // facing +y
+    expect(isInPattern("ring", { x: -30, y: 0 }, facing, 50)).toBe(true);
+    expect(isInPattern("arc", { x: 0, y: 30 }, facing, 50, { arcDeg: 90 })).toBe(true);
+    expect(isInPattern("arc", { x: 0, y: -30 }, facing, 50, { arcDeg: 90 })).toBe(false);
+    expect(isInPattern("line-both", { x: 0, y: -30 }, facing, 50, { halfWidth: 10 })).toBe(true);
+  });
+});
+
 describe("acceptance sim — 60s dog bark-blast vs slime-green swarm", () => {
   it("kills >=30 slimes in 60s with no NaN state", () => {
     const STEP_MS = 16.6;

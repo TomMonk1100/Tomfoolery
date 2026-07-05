@@ -89,6 +89,7 @@ export const SPRITE_KEYS = {
   fxQuakeRing: "fx_quake_ring", // 32
   fxDust: "fx_dust",
   fxAura: "fx_aura", // 32, anim: pulse loop
+  fxScissor: "fx_scissor", // 32, anim: slash (play once), 2-frame thin line — Update 2 scissor-kick
   // Pickups (16x16)
   xpMote: "pickup_xp_mote", // anim: sparkle loop
   foodBerry: "pickup_food_berry",
@@ -98,6 +99,7 @@ export const SPRITE_KEYS = {
   tileGrassA: "tile_grass_a",
   tileGrassB: "tile_grass_b",
   tileGrassC: "tile_grass_c",
+  tileGrassSeamless: "tile_grass_seamless", // 64 — Update 2: single tileable background, replaces the per-tile grass checkerboard
   tileWater: "tile_water", // anim: shimmer loop (2 frames)
   tileObstacleTree: "tile_obstacle_tree",
   tileObstacleRock: "tile_obstacle_rock",

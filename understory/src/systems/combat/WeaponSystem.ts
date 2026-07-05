@@ -38,11 +38,9 @@ import {
   WeaponLevelStats,
   WeaponArchetype,
 } from "../../core/types";
-import { SPRITE_KEYS, frameKey } from "../../gfx/PixelArt";
+import { SPRITE_KEYS, frameKey, playAnim } from "../../gfx/PixelArt";
 import {
-  nearestTarget,
   distance,
-  directionTo,
   tickCooldown,
   resetCooldown,
   computeDamage,
@@ -51,8 +49,10 @@ import {
   computeCritChance,
   resolveWeaponStats,
   shouldFireWeapon,
+  isInPattern,
   CooldownState,
 } from "./sim";
+import { WeaponPattern } from "../../core/types";
 import { ProjectilePool } from "./ProjectilePool";
 
 const PLAYER_RADIUS = 14;
@@ -74,8 +74,27 @@ interface ZoneInstance {
   crit: boolean;
   remainingMs: number;
   tickRemainingMs: number;
-  graphic: Phaser.GameObjects.Arc | null;
+  graphic: Phaser.GameObjects.Arc | Phaser.GameObjects.Sprite | null;
 }
+
+/** Update 2 §3: every weapon must SHOW its attack. Per-weapon zone tint so
+ * dig/burrow-network read as dirt, purr-aura as its established purple, etc.
+ * (previously spawnZone rendered NOTHING when the fx_aura atlas texture
+ * existed — this was the root cause of "invisible" dig/purr-aura/
+ * burrow-network/trail-segment weapons; fixed in spawnZone below.) */
+const ZONE_TINT_BY_WEAPON: Record<string, number> = {
+  dig: 0x4a3423,
+  "burrow-network": 0x4a3423,
+  "purr-aura": 0x8b5fbf,
+  "cottontail-decoy": 0xf4f0e8,
+  zoomies: 0xe8b23d,
+  "bunny-barrage": 0xdcc7a0,
+  "midnight-prowl": 0x3a2f4a,
+  "skunk-cloud": 0x9ad35f,
+  "laser-pointer": 0xd94f4f,
+};
+const DEFAULT_ZONE_TINT = 0x8b5fbf;
+const GOLD_TINT = 0xe8b23d;
 
 interface TrailBurstState {
   active: boolean;
@@ -124,6 +143,20 @@ export class WeaponSystem implements System {
     return this.ctx.weapons.find((w) => w.id === id) ?? null;
   }
 
+  /** Update 2 §2: evolved weapons get a gold tint on their fx, whatever kind of display object it is. */
+  private tintIfEvolved(obj: Phaser.GameObjects.GameObject, evolved: boolean): void {
+    if (!evolved) return;
+    const anyObj = obj as unknown as {
+      setTint?: (c: number) => unknown;
+      setFillStyle?: (c: number, a?: number) => unknown;
+      setStrokeStyle?: (w: number, c: number, a?: number) => unknown;
+      fillAlpha?: number;
+    };
+    if (typeof anyObj.setTint === "function") anyObj.setTint(GOLD_TINT);
+    else if (typeof anyObj.setFillStyle === "function") anyObj.setFillStyle(GOLD_TINT, anyObj.fillAlpha ?? 0.4);
+    else if (typeof anyObj.setStrokeStyle === "function") anyObj.setStrokeStyle(2, GOLD_TINT, 0.9);
+  }
+
   /** Public per CONTRACTS: WorldScene/DraftSystem may call to force a resync (no-op here since update() syncs every frame anyway; kept as a stable stub). */
   refresh(): void {
     // No-op: update() reconciles runtimes from ctx.player.activeWeapons every
@@ -137,6 +170,7 @@ export class WeaponSystem implements System {
 
     const playerPos = this.ctx.getPlayerPos();
     const enemies = this.ctx.getEnemies();
+    const facing = this.ctx.getFacing();
 
     for (const active of this.ctx.player.activeWeapons) {
       const runtime = this.runtimes.get(active.weaponId);
@@ -145,7 +179,7 @@ export class WeaponSystem implements System {
 
       this.updateZones(runtime, enemies, deltaMs);
       this.updateOrbiters(runtime, data, active, enemies, deltaMs, playerPos);
-      this.updateTrailBurst(runtime, deltaMs, playerPos);
+      this.updateTrailBurst(runtime, deltaMs, playerPos, data, active.evolved);
 
       const stats = resolveWeaponStats(
         data.levels,
@@ -168,7 +202,7 @@ export class WeaponSystem implements System {
         continue;
       }
 
-      this.fireWeapon(runtime, data, stats, archetype, active, area, playerPos, enemies);
+      this.fireWeapon(runtime, data, stats, archetype, active, area, playerPos, enemies, facing);
 
       const scaledCooldown = computeCooldown(
         stats.cooldownMs,
@@ -214,6 +248,19 @@ export class WeaponSystem implements System {
     }
   }
 
+  /** Effective pattern for this fire: evolution override (if evolved) else base, defaulting per-archetype for backward compatibility. */
+  private resolvePattern(data: WeaponData, evolved: boolean): WeaponPattern {
+    const explicit = evolved ? data.evolution.pattern ?? data.pattern : data.pattern;
+    if (explicit) return explicit;
+    // No explicit pattern: preserve pre-Update-2 behavior per archetype.
+    return data.archetype === "melee-sweep" ? "arc" : "ring";
+  }
+
+  private resolveArcDeg(data: WeaponData): number {
+    // Legacy melee-sweep (no explicit pattern) used a fixed 140deg cone.
+    return data.arcDeg ?? (data.pattern ? 100 : 140);
+  }
+
   private fireWeapon(
     runtime: WeaponRuntime,
     data: WeaponData,
@@ -222,7 +269,8 @@ export class WeaponSystem implements System {
     active: ActiveWeapon,
     area: number,
     playerPos: { x: number; y: number },
-    enemies: EnemyView[]
+    enemies: EnemyView[],
+    facing: { x: number; y: number }
   ): void {
     const critRoll = Math.random();
     const critChance = computeCritChance(stats.critPct, this.ctx.statBonus("critPct"));
@@ -234,24 +282,27 @@ export class WeaponSystem implements System {
       critChancePct: critChance,
     });
 
+    const pattern = this.resolvePattern(data, active.evolved);
+    const arcDeg = this.resolveArcDeg(data);
+
     switch (archetype) {
       case "aoe-pulse":
-        this.fireAoePulse(playerPos, area, damage, crit, enemies, data);
+        this.fireAoePulse(playerPos, area, damage, crit, enemies, data, facing, pattern, arcDeg, active.evolved);
         break;
       case "melee-sweep":
-        this.fireMeleeSweep(playerPos, area, damage, crit, enemies, data);
+        this.fireMeleeSweep(playerPos, area, damage, crit, enemies, data, facing, pattern, arcDeg, active.evolved);
         break;
       case "projectile":
-        this.fireProjectile(playerPos, stats, data, damage, crit, area, enemies);
+        this.fireProjectile(playerPos, stats, data, damage, crit, area, enemies, facing, active.evolved);
         break;
       case "orbit":
         this.setupOrbiters(runtime, stats, area);
         break;
       case "trail":
-        this.startTrailBurst(runtime, damage, crit, area, stats.durationMs ?? 1000);
+        this.startTrailBurst(runtime, damage, crit, area, stats.durationMs ?? 1000, data, playerPos, facing, active.evolved);
         break;
       case "zone":
-        this.spawnZone(runtime, playerPos, area, damage, crit, stats.durationMs ?? 2000);
+        this.spawnZone(runtime, playerPos, area, damage, crit, stats.durationMs ?? 2000, false, data, active.evolved);
         break;
     }
 
@@ -272,17 +323,27 @@ export class WeaponSystem implements System {
     damage: number,
     crit: boolean,
     enemies: EnemyView[],
-    data: WeaponData
+    data: WeaponData,
+    facing: { x: number; y: number },
+    pattern: WeaponPattern,
+    arcDeg: number,
+    evolved: boolean
   ): void {
     for (const e of enemies) {
-      if (distance(playerPos, e) <= area + e.radius) {
+      const delta = { x: e.x - playerPos.x, y: e.y - playerPos.y };
+      if (isInPattern(pattern, delta, facing, area + e.radius, { arcDeg })) {
         this.ctx.damageEnemy(e.id, damage, crit);
       }
     }
-    this.playRingFx(playerPos, area, data);
+    this.playRingFx(playerPos, area, data, evolved);
   }
 
-  private playRingFx(playerPos: { x: number; y: number }, area: number, data: WeaponData): void {
+  private playRingFx(
+    playerPos: { x: number; y: number },
+    area: number,
+    data: WeaponData,
+    evolved: boolean
+  ): void {
     const key = data.animal === "rabbit" ? SPRITE_KEYS.fxQuakeRing : SPRITE_KEYS.fxBarkRing;
     const fk = frameKey(key);
     if (this.scene.textures.exists(fk)) {
@@ -290,6 +351,7 @@ export class WeaponSystem implements System {
       s.setDepth(950);
       const scale = area / 32;
       s.setScale(scale);
+      this.tintIfEvolved(s, evolved);
       this.scene.tweens.add({
         targets: s,
         alpha: 0,
@@ -298,7 +360,7 @@ export class WeaponSystem implements System {
       });
     } else {
       const ring = this.scene.add.circle(playerPos.x, playerPos.y, area, 0xffffff, 0);
-      ring.setStrokeStyle(2, 0xe8b23d, 0.8);
+      ring.setStrokeStyle(2, evolved ? GOLD_TINT : 0xe8b23d, 0.8);
       ring.setDepth(950);
       this.scene.tweens.add({
         targets: ring,
@@ -317,44 +379,100 @@ export class WeaponSystem implements System {
     damage: number,
     crit: boolean,
     enemies: EnemyView[],
-    data: WeaponData
+    data: WeaponData,
+    facing: { x: number; y: number },
+    pattern: WeaponPattern,
+    arcDeg: number,
+    evolved: boolean
   ): void {
-    const nearest = nearestTarget(playerPos, enemies, Infinity);
-    const facing = nearest ? directionTo(playerPos, nearest) : { x: 1, y: 0 };
     const facingAngle = Math.atan2(facing.y, facing.x);
-    const halfArc = (140 * Math.PI) / 180 / 2;
     const range = area > 0 ? area : 60;
+    const halfWidth = 14;
 
     for (const e of enemies) {
-      const d = distance(playerPos, e);
-      if (d > range + e.radius) continue;
-      const toEnemy = Math.atan2(e.y - playerPos.y, e.x - playerPos.x);
-      let diff = Math.abs(toEnemy - facingAngle);
-      if (diff > Math.PI) diff = Math.PI * 2 - diff;
-      if (diff <= halfArc) {
+      const delta = { x: e.x - playerPos.x, y: e.y - playerPos.y };
+      if (isInPattern(pattern, delta, facing, range + e.radius, { arcDeg, halfWidth: halfWidth + e.radius })) {
         this.ctx.damageEnemy(e.id, damage, crit);
       }
     }
 
+    this.playMeleeFx(playerPos, range, facingAngle, pattern, arcDeg, halfWidth, data, evolved);
+  }
+
+  private playMeleeFx(
+    playerPos: { x: number; y: number },
+    range: number,
+    facingAngle: number,
+    pattern: WeaponPattern,
+    arcDeg: number,
+    halfWidth: number,
+    data: WeaponData,
+    evolved: boolean
+  ): void {
     const fk = frameKey(SPRITE_KEYS.fxSweep);
-    if (this.scene.textures.exists(fk)) {
+    if (this.scene.textures.exists(fk) && pattern === "arc") {
       const s = this.scene.add.sprite(playerPos.x, playerPos.y, fk);
       s.setDepth(950);
       s.setRotation(facingAngle);
+      this.tintIfEvolved(s, evolved);
       this.scene.tweens.add({ targets: s, alpha: 0, duration: 200, onComplete: () => s.destroy() });
-    } else {
-      const arc = this.scene.add.arc(
-        playerPos.x,
-        playerPos.y,
-        range,
-        Phaser.Math.RadToDeg(facingAngle - halfArc),
-        Phaser.Math.RadToDeg(facingAngle + halfArc),
-        false,
-        0xf4f0e8,
-        0.4
-      );
-      arc.setDepth(950);
-      this.scene.tweens.add({ targets: arc, alpha: 0, duration: 200, onComplete: () => arc.destroy() });
+      return;
+    }
+
+    if (pattern === "line-both" || pattern === "cross") {
+      this.playLineFx(playerPos, range, halfWidth, facingAngle, pattern === "cross", evolved);
+      return;
+    }
+
+    const halfArcRad = ((arcDeg * Math.PI) / 180) / 2;
+    const arc = this.scene.add.arc(
+      playerPos.x,
+      playerPos.y,
+      range,
+      Phaser.Math.RadToDeg(facingAngle - halfArcRad),
+      Phaser.Math.RadToDeg(facingAngle + halfArcRad),
+      false,
+      evolved ? GOLD_TINT : 0xf4f0e8,
+      0.4
+    );
+    arc.setDepth(950);
+    this.scene.tweens.add({ targets: arc, alpha: 0, duration: 200, onComplete: () => arc.destroy() });
+  }
+
+  /** Thin front+back slash strip (line-both), or +2 more at 90deg for cross. */
+  private playLineFx(
+    playerPos: { x: number; y: number },
+    length: number,
+    halfWidth: number,
+    facingAngle: number,
+    cross: boolean,
+    evolved: boolean
+  ): void {
+    const fk = frameKey(SPRITE_KEYS.fxScissor);
+    const angles = cross
+      ? [facingAngle, facingAngle + Math.PI / 2]
+      : [facingAngle];
+    for (const angle of angles) {
+      if (this.scene.textures.exists(fk)) {
+        const s = this.scene.add.sprite(playerPos.x, playerPos.y, fk);
+        s.setDepth(950);
+        s.setRotation(angle);
+        s.setDisplaySize(length * 2, halfWidth * 2);
+        this.tintIfEvolved(s, evolved);
+        this.scene.tweens.add({ targets: s, alpha: 0, duration: 150, onComplete: () => s.destroy() });
+      } else {
+        const rect = this.scene.add.rectangle(
+          playerPos.x,
+          playerPos.y,
+          length * 2,
+          halfWidth * 2,
+          evolved ? GOLD_TINT : 0xf4f0e8,
+          0.45
+        );
+        rect.setRotation(angle);
+        rect.setDepth(950);
+        this.scene.tweens.add({ targets: rect, alpha: 0, duration: 150, onComplete: () => rect.destroy() });
+      }
     }
   }
 
@@ -366,15 +484,18 @@ export class WeaponSystem implements System {
     damage: number,
     crit: boolean,
     area: number,
-    enemies: EnemyView[]
+    enemies: EnemyView[],
+    facing: { x: number; y: number },
+    evolved: boolean
   ): void {
     const kind = data.projectile?.kind ?? "straight";
     const speed = stats.speed ?? 260;
     const pierce = data.projectile?.pierce ?? 0;
     const splitCount = data.projectile?.splitCount ?? 0;
 
-    const nearest = nearestTarget(playerPos, enemies, Infinity);
-    const dir = nearest ? directionTo(playerPos, nearest) : { x: 1, y: 0 };
+    // Update 2: all projectiles spawn toward the shared facing (nearest-enemy
+    // auto-aim, wrap-aware), not a locally-recomputed nearest target.
+    const dir = facing;
 
     this.projectiles.spawn({
       owner: "friendly",
@@ -390,6 +511,7 @@ export class WeaponSystem implements System {
       pierce,
       splitCount,
       spriteKey: this.projectileSpriteFor(data),
+      tint: evolved ? GOLD_TINT : undefined,
     });
   }
 
@@ -470,7 +592,11 @@ export class WeaponSystem implements System {
     damage: number,
     crit: boolean,
     area: number,
-    durationMs: number
+    durationMs: number,
+    data: WeaponData,
+    playerPos: { x: number; y: number },
+    facing: { x: number; y: number },
+    evolved: boolean
   ): void {
     runtime.trail = {
       active: true,
@@ -481,12 +607,47 @@ export class WeaponSystem implements System {
       area,
       durationMs,
     };
+    // Update 2 §2: midnight-prowl (and other trail weapons) get an immediate
+    // dash-streak flash at burst start so the attack reads instantly, not just
+    // via the trailing segments laid down as the player moves.
+    this.playDashStreak(playerPos, facing, area, data, evolved);
+  }
+
+  private playDashStreak(
+    playerPos: { x: number; y: number },
+    facing: { x: number; y: number },
+    area: number,
+    data: WeaponData,
+    evolved: boolean
+  ): void {
+    const angle = Math.atan2(facing.y, facing.x);
+    const length = Math.max(40, area);
+    const tint = evolved ? GOLD_TINT : ZONE_TINT_BY_WEAPON[data.id] ?? DEFAULT_ZONE_TINT;
+    const streak = this.scene.add.rectangle(
+      playerPos.x + facing.x * length * 0.3,
+      playerPos.y + facing.y * length * 0.3,
+      length,
+      10,
+      tint,
+      0.5
+    );
+    streak.setRotation(angle);
+    streak.setDepth(945);
+    this.scene.tweens.add({
+      targets: streak,
+      alpha: 0,
+      scaleX: 1.4,
+      duration: 220,
+      onComplete: () => streak.destroy(),
+    });
   }
 
   private updateTrailBurst(
     runtime: WeaponRuntime,
     deltaMs: number,
-    playerPos: { x: number; y: number }
+    playerPos: { x: number; y: number },
+    data: WeaponData,
+    evolved: boolean
   ): void {
     if (!runtime.trail.active) return;
 
@@ -508,12 +669,25 @@ export class WeaponSystem implements System {
         runtime.trail.damage,
         runtime.trail.crit,
         runtime.trail.durationMs,
-        true
+        true,
+        data,
+        evolved
       );
     }
   }
 
   // ---- zone ----
+  /**
+   * Update 2 §2 fix: previously, when the fx_aura atlas texture existed, this
+   * set `graphic = null` ("visuals are cosmetic") and rendered NOTHING at
+   * all — the root cause behind dig/purr-aura/burrow-network/cottontail-decoy
+   * and every trail weapon's segments (zoomies/bunny-barrage/midnight-prowl)
+   * being invisible. Now every zone always gets a real, per-weapon-tinted
+   * display object (the atlas fx_aura sprite playing its pulse loop when
+   * available, else a tinted fallback circle), attached to the ZoneInstance
+   * exactly like the old fallback path so the existing cleanup in
+   * updateZones() (`z.graphic?.destroy()`) keeps working unchanged.
+   */
   private spawnZone(
     runtime: WeaponRuntime,
     pos: { x: number; y: number },
@@ -521,17 +695,25 @@ export class WeaponSystem implements System {
     damage: number,
     crit: boolean,
     durationMs: number,
-    oneShot = false
+    oneShot: boolean,
+    data: WeaponData,
+    evolved: boolean
   ): void {
     const fk = frameKey(SPRITE_KEYS.fxAura);
-    let graphic: Phaser.GameObjects.Arc | null = null;
-    if (!this.scene.textures.exists(fk)) {
-      graphic = this.scene.add.circle(pos.x, pos.y, radius, 0x8b5fbf, 0.25);
-      graphic.setDepth(940);
+    const tint = evolved ? GOLD_TINT : ZONE_TINT_BY_WEAPON[data.id] ?? DEFAULT_ZONE_TINT;
+    let graphic: Phaser.GameObjects.Arc | Phaser.GameObjects.Sprite;
+    if (this.scene.textures.exists(fk)) {
+      const s = this.scene.add.sprite(pos.x, pos.y, fk);
+      s.setDepth(940);
+      s.setScale(radius / 16);
+      s.setTint(tint);
+      s.setAlpha(oneShot ? 0.55 : 0.4);
+      playAnim(s, SPRITE_KEYS.fxAura, "pulse");
+      graphic = s;
     } else {
-      // Even with an atlas fx sprite available we still track a lightweight
-      // invisible hit-area circle for collision math; visuals are cosmetic.
-      graphic = null;
+      const c = this.scene.add.circle(pos.x, pos.y, radius, tint, oneShot ? 0.35 : 0.25);
+      c.setDepth(940);
+      graphic = c;
     }
 
     runtime.zones.push({
@@ -544,11 +726,6 @@ export class WeaponSystem implements System {
       tickRemainingMs: 0, // tick immediately on spawn
       graphic,
     });
-
-    if (oneShot) {
-      // Trail segments are short-lived single zones; nothing extra needed,
-      // they expire naturally via updateZones().
-    }
   }
 
   private updateZones(runtime: WeaponRuntime, enemies: EnemyView[], deltaMs: number): void {

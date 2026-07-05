@@ -139,7 +139,8 @@ export class DraftSystem implements System {
     const p = this.ctx.player;
     const weapon = this.ctx.weapons.find((w) => w.id === card.id);
     if (weapon) {
-      if (weapon.animal !== p.animalId) return false;
+      // Update 2: animal "any" = neutral weapon, legal for every species.
+      if (weapon.animal !== "any" && weapon.animal !== p.animalId) return false;
       const owned = p.activeWeapons.find((w) => w.weaponId === weapon.id);
       if (!owned) return p.activeWeapons.length < WEAPON_SLOTS;
       if (owned.evolved) return false;
@@ -151,7 +152,8 @@ export class DraftSystem implements System {
     }
     const passive = this.ctx.passives.find((ps) => ps.id === card.id);
     if (passive) {
-      if (passive.animal !== p.animalId) return false;
+      // Update 2: animal "any" = neutral passive, legal for every species.
+      if (passive.animal !== "any" && passive.animal !== p.animalId) return false;
       const owned = p.activePassives.find((ap) => ap.passiveId === passive.id);
       if (!owned) return p.activePassives.length < PASSIVE_SLOTS;
       return owned.stacks < passive.maxStacks;
@@ -194,8 +196,16 @@ export class DraftSystem implements System {
     const passive = this.ctx.passives.find((ps) => ps.id === cardId);
     if (passive) {
       const owned = p.activePassives.find((ap) => ap.passiveId === passive.id);
+      const wasAtCap = !!owned && owned.stacks >= passive.maxStacks;
       if (!owned) p.activePassives.push({ passiveId: passive.id, stacks: 1 });
       else owned.stacks = Math.min(owned.stacks + 1, passive.maxStacks);
+      // Update 2 — wild-heart: +maxHp/stack, heal the delta on pick. Special-
+      // cased here (like the existing "luck" handling in applyCard) since
+      // maxHp is stored player state, not a derived statBonus() lookup.
+      if (passive.effect.type === "maxHp" && !wasAtCap) {
+        p.maxHp += passive.effect.magnitude;
+        p.hp = Math.min(p.maxHp, p.hp + passive.effect.magnitude);
+      }
     }
   }
 

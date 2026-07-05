@@ -13,6 +13,7 @@ import { GameContext, System, WorldView, Vec2 } from "../core/context";
 import { TileType, WorldTile, WORLD_SIZE, TILE_PX } from "../core/types";
 import fallbackLayout from "../data/fallback-layout.json";
 import { SPRITE_KEYS, frameKey } from "../gfx/spriteRegistry";
+import { Grid, carveToConnect, guaranteeWalkableRing } from "./worldGenSim";
 
 const MIN_FORAGE_NODES = 8;
 const MIN_NEST_ZONES = 1;
@@ -59,8 +60,45 @@ export class WorldGenSystem implements System, WorldView {
     this.ctx = ctx;
 
     this.tiles = this.generateValidGrid();
+    this.ensureConnectivity();
     this.renderTiles();
     this.setupFog();
+  }
+
+  /**
+   * Update 2 §4 — "water uncrossable + guaranteed path": guarantee a
+   * walkable ring around spawn and every nest, then flood-fill (with wrap
+   * adjacency, since the world is now toroidal) from spawn and carve minimal
+   * 1-tile grass channels through any obstacle/water that isolates a
+   * walkable pocket. Any tile flipped walkable this way becomes "grass".
+   */
+  private ensureConnectivity(): void {
+    const size = this.size;
+    const isWalkableType = (t: TileType) => t !== "obstacle" && t !== "water";
+    const walkable: Grid = this.tiles.map((row) => row.map((t) => isWalkableType(t.type)));
+
+    const spawnCol = Math.floor(size / 2);
+    const spawnRow = Math.floor(size / 2);
+
+    const forcedWalkable: [number, number][] = [
+      ...guaranteeWalkableRing(walkable, spawnCol, spawnRow, true),
+    ];
+    for (let row = 0; row < size; row++) {
+      for (let col = 0; col < size; col++) {
+        if (this.tiles[row][col].type === "nest") {
+          forcedWalkable.push(...guaranteeWalkableRing(walkable, col, row, true));
+        }
+      }
+    }
+
+    const { carved } = carveToConnect(walkable, spawnCol, spawnRow, true);
+
+    for (const [col, row] of [...forcedWalkable, ...carved]) {
+      const tile = this.tiles[row]?.[col];
+      if (tile && !isWalkableType(tile.type)) {
+        this.tiles[row][col] = { type: "grass", revealed: false };
+      }
+    }
   }
 
   // --------------------------------------------------------------------
@@ -199,21 +237,33 @@ export class WorldGenSystem implements System, WorldView {
   // Rendering
   // --------------------------------------------------------------------
 
+  /**
+   * Update 2 §4 — "seamless looping wilds": ONE tileable background
+   * (fx_grass_seamless via a single TileSprite) replaces the old per-tile
+   * grass-variant checkerboard (~1600 individual images down to 1 draw
+   * call). Obstacles/water/forage/nest still render as individual feature
+   * sprites on top, and props (flowers/pebbles) are scattered individually
+   * at ~1-per-12-tiles, seeded so it's stable across reloads.
+   */
   private renderTiles(): void {
     this.container = this.scene.add.container(0, 0);
-    // Deterministic per-tile variation (grass variants, scattered props).
     const rng = mulberry32(0x5eed);
-    const usesAtlas = this.scene.textures.exists(frameKey(SPRITE_KEYS.tileGrassA));
-    const grassKeys = [
-      SPRITE_KEYS.tileGrassA,
-      SPRITE_KEYS.tileGrassB,
-      SPRITE_KEYS.tileGrassC,
-    ];
+    const usesAtlas = this.scene.textures.exists(frameKey(SPRITE_KEYS.tileGrassSeamless));
+    const { width, height } = this.bounds();
+
+    if (usesAtlas) {
+      const bg = this.scene.add.tileSprite(0, 0, width, height, frameKey(SPRITE_KEYS.tileGrassSeamless));
+      bg.setOrigin(0, 0);
+      bg.setDepth(0);
+      this.container.add(bg);
+    }
+
     for (let row = 0; row < this.tiles.length; row++) {
       for (let col = 0; col < this.tiles[row].length; col++) {
         const tile = this.tiles[row][col];
         const cxp = col * this.tilePx + this.tilePx / 2;
         const cyp = row * this.tilePx + this.tilePx / 2;
+        const roll = rng();
 
         if (!usesAtlas) {
           const rect = this.scene.add.rectangle(
@@ -227,25 +277,26 @@ export class WorldGenSystem implements System, WorldView {
           continue;
         }
 
-        // Ground layer: grass everywhere (water gets its own tile).
-        const roll = rng();
-        const groundKey =
-          tile.type === "water"
-            ? SPRITE_KEYS.tileWater
-            : grassKeys[Math.floor(roll * grassKeys.length)];
-        const ground = this.scene.add.image(cxp, cyp, frameKey(groundKey));
-        ground.setDisplaySize(this.tilePx, this.tilePx);
-        this.container.add(ground);
+        // Water still gets its own full tile (feature, not part of the
+        // shared grass background).
+        if (tile.type === "water") {
+          const water = this.scene.add.image(cxp, cyp, frameKey(SPRITE_KEYS.tileWater));
+          water.setDisplaySize(this.tilePx, this.tilePx);
+          this.container.add(water);
+          continue;
+        }
 
-        // Feature layer.
+        // Feature layer (obstacles/forage sit directly on the shared grass
+        // background now; no separate per-tile ground image underneath).
         let featureKey: string | null = null;
         if (tile.type === "obstacle") {
           featureKey =
             roll < 0.6 ? SPRITE_KEYS.tileObstacleTree : SPRITE_KEYS.tileObstacleRock;
         } else if (tile.type === "forage") {
           featureKey = SPRITE_KEYS.forageBush;
-        } else if (tile.type === "grass" && roll > 0.93) {
-          featureKey = roll > 0.965 ? SPRITE_KEYS.propFlower : SPRITE_KEYS.propPebble;
+        } else if (tile.type === "grass" && roll > 0.9167) {
+          // ~1 prop per 12 tiles.
+          featureKey = roll > 0.958 ? SPRITE_KEYS.propFlower : SPRITE_KEYS.propPebble;
         }
         if (featureKey && this.scene.textures.exists(frameKey(featureKey))) {
           const feat = this.scene.add.image(cxp, cyp, frameKey(featureKey));
@@ -298,23 +349,33 @@ export class WorldGenSystem implements System, WorldView {
   // WorldView
   // --------------------------------------------------------------------
 
+  /** Update 2: world is toroidal, so any col/row wraps modulo the grid size. */
+  private wrapIndex(v: number): number {
+    return ((v % this.size) + this.size) % this.size;
+  }
+
   tileAt(col: number, row: number): WorldTile | null {
-    if (row < 0 || row >= this.tiles.length) return null;
-    if (col < 0 || col >= this.tiles[row].length) return null;
-    return this.tiles[row][col];
+    if (this.tiles.length === 0) return null;
+    const r = this.wrapIndex(row);
+    const c = this.wrapIndex(col);
+    if (r < 0 || r >= this.tiles.length) return null;
+    if (c < 0 || c >= this.tiles[r].length) return null;
+    return this.tiles[r][c];
   }
 
   worldToTile(x: number, y: number): { col: number; row: number } {
     return {
-      col: Math.floor(x / this.tilePx),
-      row: Math.floor(y / this.tilePx),
+      col: this.wrapIndex(Math.floor(x / this.tilePx)),
+      row: this.wrapIndex(Math.floor(y / this.tilePx)),
     };
   }
 
   tileToWorld(col: number, row: number): Vec2 {
+    const c = this.wrapIndex(col);
+    const r = this.wrapIndex(row);
     return {
-      x: col * this.tilePx + this.tilePx / 2,
-      y: row * this.tilePx + this.tilePx / 2,
+      x: c * this.tilePx + this.tilePx / 2,
+      y: r * this.tilePx + this.tilePx / 2,
     };
   }
 
@@ -400,11 +461,23 @@ export class WorldGenSystem implements System, WorldView {
       }
     }
 
-    // Clear a soft circle in the fog RenderTexture.
+    // Clear a soft circle in the fog RenderTexture. Update 2: also erase at
+    // wrapped mirror positions near an edge/corner so the fog doesn't show a
+    // false "wall" right after the camera hard-snaps across the seam.
     this.fogGraphics.clear();
     this.fogGraphics.fillStyle(0xffffff, 1);
     this.fogGraphics.fillCircle(0, 0, radiusPx);
-    this.fogTexture.erase(this.fogGraphics, x, y);
+    const { width, height } = this.bounds();
+    for (const ox of [-width, 0, width]) {
+      for (const oy of [-height, 0, height]) {
+        const mx = x + ox;
+        const my = y + oy;
+        // Skip mirrors that can't possibly touch the texture (cheap cull).
+        if (mx + radiusPx < 0 || mx - radiusPx > width) continue;
+        if (my + radiusPx < 0 || my - radiusPx > height) continue;
+        this.fogTexture.erase(this.fogGraphics, mx, my);
+      }
+    }
   }
 
   bounds(): { width: number; height: number } {

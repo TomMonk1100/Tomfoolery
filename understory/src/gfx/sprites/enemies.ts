@@ -1158,3 +1158,28 @@ registerSprite({
     pulse: { frames: [0, 1, 2, 1], frameRate: 4, repeat: -1 },
   },
 } satisfies PixelSpriteDef);
+
+// Update 2 — scissor-kick: thin horizontal slash line through the sprite's
+// center (rotated per-instance by WeaponSystem to match facing). 2 frames:
+// a hairline, then a brighter/thicker flash for the "hit" beat.
+function scissorLineFrame(thickness: number, color: string): string[] {
+  const size = 32;
+  const cy = 15.5;
+  const rows: string[] = [];
+  for (let y = 0; y < size; y++) {
+    let row = "";
+    for (let x = 0; x < size; x++) {
+      row += Math.abs(y - cy) <= thickness ? color : ".";
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+registerSprite({
+  key: SPRITE_KEYS.fxScissor,
+  palette: { s: P.white, h: P.gold },
+  frames: [scissorLineFrame(0.6, "s"), scissorLineFrame(1.4, "h")],
+  anims: {
+    slash: { frames: [0, 1], frameRate: 20, repeat: 0 },
+  },
+} satisfies PixelSpriteDef);

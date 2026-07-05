@@ -208,12 +208,42 @@ export class DraftScene extends Phaser.Scene {
 
     container.add([bg, rarityLabel, iconArea, nameText, statusText, bodyText]);
 
+    // Update 2 §5: neutral (animal:"any") weapons/passives get a small
+    // paw-print corner badge so they read as "usable by everyone" at a
+    // glance, without needing to read the body text.
+    if (this.isNeutralCard(card)) {
+      container.add(this.buildNeutralBadge(w / 2 - 18, -h / 2 + 16));
+    }
+
     bg.setInteractive({ useHandCursor: true });
     bg.on("pointerover", () => container.setScale(1.04));
     bg.on("pointerout", () => container.setScale(1.0));
     bg.on("pointerdown", () => this.pick(card.id, container));
 
     return container;
+  }
+
+  private isNeutralCard(card: CardData): boolean {
+    const weapon = WEAPONS.find((w) => w.id === card.id);
+    if (weapon) return weapon.animal === "any";
+    const passive = PASSIVES.find((p) => p.id === card.id);
+    return passive?.animal === "any";
+  }
+
+  /** Small paw-print-style badge ("ALL") for neutral cards — a filled paw
+   * pad + toes made of circles, cheaper and more legible at 16px than a
+   * hand-authored pixel sprite would be at this size. */
+  private buildNeutralBadge(x: number, y: number): Phaser.GameObjects.Container {
+    const c = this.add.container(x, y);
+    const bg = this.add.circle(0, 0, 11, hex(PALETTE.outline), 0.9);
+    bg.setStrokeStyle(1.5, hex(PALETTE.gold), 1);
+    const pad = this.add.ellipse(0, 2, 10, 7, hex(PALETTE.gold));
+    const toe1 = this.add.circle(-5, -4, 2.4, hex(PALETTE.gold));
+    const toe2 = this.add.circle(-1.5, -6, 2.4, hex(PALETTE.gold));
+    const toe3 = this.add.circle(2, -6, 2.4, hex(PALETTE.gold));
+    const toe4 = this.add.circle(5.5, -4, 2.4, hex(PALETTE.gold));
+    c.add([bg, pad, toe1, toe2, toe3, toe4]);
+    return c;
   }
 
   private buildIcon(card: CardData, x: number, y: number, size: number): Phaser.GameObjects.Container {

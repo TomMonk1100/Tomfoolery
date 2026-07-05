@@ -47,20 +47,39 @@ const ARCHETYPES = [
   "zone",
 ];
 const ANIMALS = ["dog", "cat", "rabbit"];
+// Update 2: "any" = neutral, draftable by every species.
+const VALID_ANIMAL_TAGS = [...ANIMALS, "any"];
+const NEUTRAL_WEAPON_IDS = [
+  "tennis-ball",
+  "skunk-cloud",
+  "bee-swarm",
+  "acorn-mortar",
+  "firefly-lantern",
+  "echo-screech",
+  "laser-pointer",
+];
+const NEUTRAL_PASSIVE_IDS = ["magnet-collar", "wild-heart", "alpha-scent", "four-leaf"];
 const RARITIES = RARITY_ORDER as string[];
 
 describe("weapons.json", () => {
-  it("has exactly 18 weapons with unique ids", () => {
-    expect(weapons).toHaveLength(18);
+  it("has exactly 19 species weapons (18 original + Update 2 scissor-kick) with unique ids", () => {
+    const species = weapons.filter((w) => w.animal !== "any");
+    expect(species).toHaveLength(19);
     const ids = weapons.map((w) => w.id);
-    expect(new Set(ids).size).toBe(18);
+    expect(new Set(ids).size).toBe(weapons.length);
+  });
+
+  it("has exactly 7 neutral (animal:any) weapons with unique ids", () => {
+    const neutral = weapons.filter((w) => w.animal === "any");
+    expect(neutral).toHaveLength(7);
+    expect(new Set(neutral.map((w) => w.id))).toEqual(new Set(NEUTRAL_WEAPON_IDS));
   });
 
   it("every weapon satisfies WeaponData required fields", () => {
     for (const w of weapons) {
       expect(typeof w.id).toBe("string");
       expect(typeof w.name).toBe("string");
-      expect(ANIMALS).toContain(w.animal);
+      expect(VALID_ANIMAL_TAGS).toContain(w.animal);
       expect(ARCHETYPES).toContain(w.archetype);
       expect(typeof w.isStarting).toBe("boolean");
       expect(RARITIES).toContain(w.rarity);
@@ -129,21 +148,44 @@ describe("weapons.json", () => {
       expect(dps).toBeLessThanOrEqual(9);
     }
   });
+
+  it("laser-pointer (mythic) draft weight stays <=2 at every level (mythic thrill, not a giveaway)", () => {
+    const card = cards.find((c) => c.id === "laser-pointer")!;
+    expect(card).toBeDefined();
+    for (const key of Object.keys(card.weightsByLevel)) {
+      expect(card.weightsByLevel[key]).toBeLessThanOrEqual(2);
+    }
+  });
+
+  // NOTE: a cross-archetype "10% weaker" DPS check was tried here and
+  // dropped — archetypes tick on fundamentally different cadences (zone
+  // ticks every 400ms regardless of cooldownMs, orbit hits per-orbiter),
+  // so raw damage/cooldownMs isn't a fair apples-to-apples comparison
+  // across them. The ~10%-weaker guideline was applied by hand when
+  // authoring the neutral weapon numbers instead (see docs/update-2-plan.md
+  // §3); species kits stay the core power fantasy per rarity tier.
 });
 
 describe("passives.json", () => {
-  it("has exactly 12 passives with unique ids, 4 per animal", () => {
-    expect(passives).toHaveLength(12);
+  it("has exactly 12 species passives with unique ids, 4 per animal", () => {
+    const species = passives.filter((p) => p.animal !== "any");
+    expect(species).toHaveLength(12);
     const ids = passives.map((p) => p.id);
-    expect(new Set(ids).size).toBe(12);
+    expect(new Set(ids).size).toBe(passives.length);
     for (const animal of ANIMALS) {
       expect(passives.filter((p) => p.animal === animal)).toHaveLength(4);
     }
   });
 
+  it("has exactly 4 neutral (animal:any) passives with unique ids", () => {
+    const neutral = passives.filter((p) => p.animal === "any");
+    expect(neutral).toHaveLength(4);
+    expect(new Set(neutral.map((p) => p.id))).toEqual(new Set(NEUTRAL_PASSIVE_IDS));
+  });
+
   it("every passive satisfies PassiveData required fields incl. maxStacks range", () => {
     for (const p of passives) {
-      expect(ANIMALS).toContain(p.animal);
+      expect(VALID_ANIMAL_TAGS).toContain(p.animal);
       expect(RARITIES).toContain(p.rarity);
       expect(typeof p.effect.type).toBe("string");
       expect(typeof p.effect.magnitude).toBe("number");
@@ -275,10 +317,10 @@ describe("waves.json", () => {
 });
 
 describe("cards.json", () => {
-  it("has exactly 30 cards (18 weapons + 12 passives) with unique ids", () => {
-    expect(cards).toHaveLength(30);
+  it("has exactly one card per weapon + per passive, unique ids", () => {
+    expect(cards).toHaveLength(weapons.length + passives.length);
     const ids = cards.map((c) => c.id);
-    expect(new Set(ids).size).toBe(30);
+    expect(new Set(ids).size).toBe(cards.length);
   });
 
   it("every weapon has a matching card with effect.type=weapon, non-stacking", () => {

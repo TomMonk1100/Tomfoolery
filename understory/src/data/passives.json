@@ -154,5 +154,57 @@
     "description": "A nibbler's habit speeds up every forage.",
     "icon": "icon_nibbler",
     "maxStacks": 4
+  },
+  {
+    "id": "magnet-collar",
+    "name": "Magnet Collar",
+    "animal": "any",
+    "rarity": "uncommon",
+    "effect": {
+      "type": "pickupRadius",
+      "magnitude": 45
+    },
+    "description": "Draws XP and food toward you from further away. At 3 stacks, sweeps everything on screen every 20s.",
+    "icon": "icon_magnet_collar",
+    "maxStacks": 3
+  },
+  {
+    "id": "wild-heart",
+    "name": "Wild Heart",
+    "animal": "any",
+    "rarity": "common",
+    "effect": {
+      "type": "maxHp",
+      "magnitude": 15
+    },
+    "description": "A bigger heart for a bigger fight — raises max HP and heals the gain immediately.",
+    "icon": "icon_wild_heart",
+    "maxStacks": 5
+  },
+  {
+    "id": "alpha-scent",
+    "name": "Alpha Scent",
+    "animal": "any",
+    "rarity": "rare",
+    "effect": {
+      "type": "damage",
+      "magnitude": 8
+    },
+    "description": "The unmistakable scent of the biggest animal in the yard.",
+    "icon": "icon_alpha_scent",
+    "maxStacks": 5
+  },
+  {
+    "id": "four-leaf",
+    "name": "Four Leaf",
+    "animal": "any",
+    "rarity": "rare",
+    "effect": {
+      "type": "luck",
+      "magnitude": 12
+    },
+    "description": "A little extra luck, shared by every creature in the wild.",
+    "icon": "icon_four_leaf",
+    "maxStacks": 5
   }
 ]

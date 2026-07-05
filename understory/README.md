@@ -40,6 +40,33 @@ npm test         # vitest (pure-logic unit tests)
 - Procedural Web Audio: per-weapon SFX (bark/pounce/thump), boss stingers,
   raid alarms, ambient seasonal bed.
 
+## Update 2 — "Wild Kit"
+
+- **Distinct starter attacks**: every animal's basic attack now has its own
+  shape — Dog's Bark Blast stays a 360° ring, Cat's Pounce Slash is a tight
+  90° front cone (higher damage + crit to make up for the lost coverage),
+  and Rabbit swaps Thumper Quake for a new starter, **Scissor Kick**, a
+  front-and-back line strike that evolves into **Guillotine Hop**, a 4-way
+  cross. All directional attacks (arcs, lines, and projectile aim) share one
+  auto-aim "facing" — always the nearest enemy, wrap-aware across the map
+  seam.
+- **Every weapon shows its attack**: fixed a bug where zone weapons (Dig,
+  Purr Aura, Burrow Network, and every trail weapon's segments) rendered
+  nothing at all once the pixel-art atlas loaded; they now always get a
+  real, per-weapon-tinted visual, and evolved weapons get a gold tint
+  across the board.
+- **Neutral weapon pool**: 7 new weapons and 4 new passives (Tennis Ball,
+  Skunk Cloud, Bee Swarm, Acorn Mortar, Firefly Lantern, Echo Screech, and
+  the mythic Laser Pointer; Magnet Collar, Wild Heart, Alpha Scent, Four
+  Leaf) draftable by every animal, marked with a paw-print badge in the
+  draft UI. Magnet Collar pulls XP and food from further away and, at 3
+  stacks, auto-collects everything on screen every 20 seconds.
+- **Seamless, looping wilds**: the tiled-checkerboard ground is gone,
+  replaced by one continuous background texture; the 48×48 world now wraps
+  Pac-Man style at every edge; and water/obstacles are impassable but the
+  world generator guarantees a path to every forage node and nest, carving
+  through blockages if a fresh layout would otherwise wall something off.
+
 ## Architecture
 
 Systems are built against stable contracts in `src/core/`:
