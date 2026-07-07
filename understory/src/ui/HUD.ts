@@ -24,7 +24,20 @@
  */
 import Phaser from "phaser";
 import type { System, GameContext } from "../core/context";
-import { EV, WELL_FED_THRESHOLD, RUN_LENGTH_MS, WEAPON_SLOTS, PASSIVE_SLOTS } from "../core/types";
+import { EV, WELL_FED_THRESHOLD, RUN_LENGTH_MS, WEAPON_SLOTS, PASSIVE_SLOTS, SynergyData } from "../core/types";
+import synergiesJson from "../data/synergies.json";
+
+const SYNERGY_DEFS = synergiesJson as unknown as SynergyData[];
+
+/** Update 3 (Phase 2.5): same 6 fixed tag colors as the draft card chips. */
+const TAG_COLORS: Record<string, string> = {
+  sonic: PALETTE.water,
+  feral: PALETTE.danger,
+  verdant: PALETTE.grassLight,
+  swift: PALETTE.waterLight,
+  lucky: PALETTE.gold,
+  pack: PALETTE.purple,
+};
 import { PALETTE, iconKey, frameKey } from "../gfx/spriteRegistry";
 
 const HUD_DEPTH = 4000;
@@ -74,6 +87,10 @@ export class HUD implements System {
   private passiveSlots: Phaser.GameObjects.Container[] = [];
   private pollAccum = 0;
 
+  // Update 3 (Phase 2.5): synergy chips, bottom-right, max 3. Mirrors the
+  // weapon rack's bottom-left footprint so nothing collides.
+  private synergyChipsContainer!: Phaser.GameObjects.Container;
+
   // Boss bar
   private bossContainer!: Phaser.GameObjects.Container;
   private bossBarBg!: Phaser.GameObjects.Rectangle;
@@ -100,6 +117,7 @@ export class HUD implements System {
     this.buildTopRight();
     this.buildWeaponRack();
     this.buildBossBar();
+    this.buildSynergyChips();
 
     this.bindEvents();
     this.refreshAll();
@@ -288,6 +306,44 @@ export class HUD implements System {
     }
   }
 
+  /** Bottom-right, stacked upward -- mirrors the bottom-left weapon rack's
+   * footprint on the opposite corner, clear of the centered boss bar
+   * (boss bar spans the middle third of the 480px-wide viewport). */
+  private buildSynergyChips(): void {
+    this.synergyChipsContainer = this.scene.add.container(0, 0);
+    this.synergyChipsContainer.setScrollFactor(0);
+    this.synergyChipsContainer.setDepth(HUD_DEPTH);
+  }
+
+  private refreshSynergyChips(active: { tag: string; tier: number; count: number }[]): void {
+    this.synergyChipsContainer.removeAll(true);
+    const width = this.scene.scale.width;
+    const height = this.scene.scale.height;
+    const chipW = 84;
+    const chipH = 16;
+    const rightX = width - 10 - chipW / 2;
+    let y = height - 10 - chipH / 2;
+
+    for (const s of active.slice(0, 3)) {
+      const def = SYNERGY_DEFS.find((d) => d.id === `syn-${s.tag}`);
+      const thresholds = def?.thresholds ?? [];
+      const need =
+        thresholds[s.tier]?.count ?? thresholds[thresholds.length - 1]?.count ?? s.count;
+      const color = TAG_COLORS[s.tag] ?? PALETTE.cream;
+      const bg = this.scene.add.rectangle(rightX, y, chipW, chipH, hex(color), 0.35);
+      bg.setStrokeStyle(1, hex(color), 1);
+      const label = this.scene.add
+        .text(rightX, y, `${s.tag} ${s.count}/${need}`, {
+          fontFamily: "monospace",
+          fontSize: "9px",
+          color: PALETTE.white,
+        })
+        .setOrigin(0.5);
+      this.synergyChipsContainer.add([bg, label]);
+      y -= chipH + 4;
+    }
+  }
+
   private buildWeaponSlot(x: number, y: number, size: number): Phaser.GameObjects.Container {
     const c = this.scene.add.container(x, y);
     c.setScrollFactor(0);
@@ -431,6 +487,10 @@ export class HUD implements System {
       const payload = args[0] as { count?: number; total?: number } | undefined;
       this.bankedTotal = payload?.total ?? this.bankedTotal + (payload?.count ?? 0);
       this.bankedLabel.setText(`Banked ${this.bankedTotal}`);
+    });
+    this.on(EV.synergyChanged, (...args: unknown[]) => {
+      const active = args[0] as { tag: string; tier: number; count: number }[];
+      this.refreshSynergyChips(active ?? []);
     });
     this.on(EV.bossSpawned, (...args: unknown[]) => {
       const payload = args[0] as { enemyId?: string; name?: string } | undefined;

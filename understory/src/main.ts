@@ -5,6 +5,7 @@ import { MetaHubScene } from "./scenes/MetaHubScene";
 import { WorldScene } from "./scenes/WorldScene";
 import { DraftScene } from "./scenes/DraftScene";
 import { LifeStoryScene } from "./scenes/LifeStoryScene";
+import { CodexScene } from "./scenes/CodexScene";
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -18,7 +19,7 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   // Chunky pixel-art rendering: nearest-neighbor everywhere, no smoothing.
   pixelArt: true,
-  scene: [BootScene, MetaHubScene, WorldScene, DraftScene, LifeStoryScene],
+  scene: [BootScene, MetaHubScene, WorldScene, DraftScene, LifeStoryScene, CodexScene],
 };
 
 const game = new Phaser.Game(config);

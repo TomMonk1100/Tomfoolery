@@ -78,3 +78,45 @@ describe("MetaSave migration (Update 3)", () => {
     expect(loaded.codex).toEqual({ evolutions: [], fusions: [], synergies: [] });
   });
 });
+
+describe("Codex discovery persistence (Update 3 Phase 2)", () => {
+  it("recordCodexDiscovery is idempotent and persists immediately", () => {
+    const sm = new SaveManager();
+    sm.recordCodexDiscovery("evolutions", "bark-blast-evo-a");
+    sm.recordCodexDiscovery("evolutions", "bark-blast-evo-a"); // dup, no-op
+    sm.recordCodexDiscovery("fusions", "thunder-fetch");
+    sm.recordCodexDiscovery("synergies", "syn-sonic");
+    const meta = sm.load();
+    expect(meta.codex.evolutions).toEqual(["bark-blast-evo-a"]);
+    expect(meta.codex.fusions).toEqual(["thunder-fetch"]);
+    expect(meta.codex.synergies).toEqual(["syn-sonic"]);
+  });
+
+  it("markCodexSeen snapshots codex into codexSeen (clears NEW badges)", () => {
+    const sm = new SaveManager();
+    sm.recordCodexDiscovery("evolutions", "zoomies-evo-b");
+    expect(sm.load().codexSeen.evolutions).toEqual([]); // not yet seen
+    sm.markCodexSeen();
+    expect(sm.load().codexSeen.evolutions).toEqual(["zoomies-evo-b"]);
+  });
+
+  it("a discovery made after markCodexSeen shows as new again until the next close", () => {
+    const sm = new SaveManager();
+    sm.recordCodexDiscovery("fusions", "glowhive");
+    sm.markCodexSeen();
+    sm.recordCodexDiscovery("fusions", "cannonade");
+    const meta = sm.load();
+    expect(meta.codex.fusions).toEqual(["glowhive", "cannonade"]);
+    expect(meta.codexSeen.fusions).toEqual(["glowhive"]); // cannonade still NEW
+  });
+
+  it("survives the v1 -> v2 migration path (codexSeen defaults alongside codex)", () => {
+    const migrated = migrateMeta({
+      sunseeds: 0,
+      keepsakes: {},
+      unlockedNodes: [],
+    });
+    expect(migrated!.codex).toEqual({ evolutions: [], fusions: [], synergies: [] });
+    expect(migrated!.codexSeen).toEqual({ evolutions: [], fusions: [], synergies: [] });
+  });
+});

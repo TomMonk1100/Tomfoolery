@@ -53,6 +53,9 @@ export function migrateMeta(parsed: unknown): MetaSave | null {
     codex: isValidCodex(v.codex)
       ? v.codex
       : { evolutions: [], fusions: [], synergies: [] },
+    codexSeen: isValidCodex(v.codexSeen)
+      ? v.codexSeen
+      : { evolutions: [], fusions: [], synergies: [] },
     quality:
       v.quality === "auto" || v.quality === "high" || v.quality === "low"
         ? (v.quality as QualityPref)
@@ -134,6 +137,28 @@ export class SaveManager {
   addKeepsake(type: string, n: number): void {
     const meta = this.load();
     meta.keepsakes[type] = Math.max(0, (meta.keepsakes[type] ?? 0) + n);
+    this.save(meta);
+  }
+
+  /** Update 3: record a discovered combo id (idempotent). Persists immediately
+   * per plan §5.2 ("players die; discoveries shouldn't"). */
+  recordCodexDiscovery(kind: keyof CodexState, id: string): void {
+    const meta = this.load();
+    if (!meta.codex[kind].includes(id)) {
+      meta.codex[kind].push(id);
+      this.save(meta);
+    }
+  }
+
+  /** Update 3: mark all currently-discovered ids as "seen" (clears NEW
+   * badges); called when CodexScene closes. */
+  markCodexSeen(): void {
+    const meta = this.load();
+    meta.codexSeen = {
+      evolutions: [...meta.codex.evolutions],
+      fusions: [...meta.codex.fusions],
+      synergies: [...meta.codex.synergies],
+    };
     this.save(meta);
   }
 

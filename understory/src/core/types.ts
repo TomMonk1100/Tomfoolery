@@ -259,6 +259,10 @@ export interface MetaSave {
   unlockedNodes: string[];
   /** Update 3: discovered combo ids for the codex. */
   codex: CodexState;
+  /** Update 3: ids already viewed in the codex (drives "NEW" badges — an id
+   * discovered-but-not-yet-seen renders with a NEW badge). Synced to `codex`
+   * whenever CodexScene closes. */
+  codexSeen: CodexState;
   /** Update 3: graphics quality preference; "auto" probes at boot. */
   quality?: QualityPref;
 }
@@ -270,6 +274,7 @@ export function defaultMeta(): MetaSave {
     keepsakes: {},
     unlockedNodes: [],
     codex: { evolutions: [], fusions: [], synergies: [] },
+    codexSeen: { evolutions: [], fusions: [], synergies: [] },
     quality: "auto",
   };
 }
@@ -314,6 +319,8 @@ export const SCENE = {
   World: "WorldScene",
   Draft: "DraftScene",
   LifeStory: "LifeStoryScene",
+  /** Update 3: combo discovery browser (evolutions/fusions/synergies). */
+  Codex: "CodexScene",
 } as const;
 
 // Registry keys for cross-scene shared singletons.

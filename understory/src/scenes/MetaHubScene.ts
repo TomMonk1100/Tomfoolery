@@ -494,5 +494,26 @@ export class MetaHubScene extends Phaser.Scene {
       });
     });
     void smallLabel;
+
+    this.buildCodexButton(width);
+  }
+
+  /** Update 3 (Phase 2 §5.3): Codex entry point. No pause menu exists in
+   * this build (grepped WorldScene/HUD — none), so the hub is the sole
+   * entry point per the plan's stated default; logged in
+   * docs/update-3-deviations.md. */
+  private buildCodexButton(width: number): void {
+    const txt = this.add
+      .text(10, 16, "📖 Codex", {
+        fontFamily: "monospace",
+        fontSize: "12px",
+        color: PALETTE.cream,
+      })
+      .setOrigin(0, 0)
+      .setInteractive({ useHandCursor: true });
+    txt.on("pointerover", () => txt.setColor(PALETTE.gold));
+    txt.on("pointerout", () => txt.setColor(PALETTE.cream));
+    txt.on("pointerdown", () => this.scene.start(SCENE.Codex));
+    void width;
   }
 }

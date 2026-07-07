@@ -49,6 +49,8 @@ import synergiesJson from "../data/synergies.json";
 import type { WeaponData, PassiveData, EnemyData, FusionData, SynergyData } from "../core/types";
 import { normalizeWeapons } from "../core/weaponCatalog";
 import { SynergySystem } from "../systems/SynergySystem";
+import { CodexSystem } from "../systems/CodexSystem";
+import type { SaveManager } from "../core/SaveManager";
 import { MAX_LEVEL, WELL_FED_THRESHOLD, EV as EVX } from "../core/types";
 import type { CombatProvider, EnemyView } from "../core/context";
 
@@ -249,6 +251,14 @@ export class WorldScene extends Phaser.Scene {
     const verbs = new VerbSystem(this, this.ctx);
     const draft = new DraftSystem(this, this.ctx);
     this.synergy = new SynergySystem(this, this.ctx);
+    // Update 3: codex discovery writes. REG.saveManager is seeded by
+    // BootScene before any scene starts (see BootScene.create()).
+    const saveManagerForCodex = this.registry.get(REG.saveManager) as
+      | SaveManager
+      | undefined;
+    const codex = saveManagerForCodex
+      ? new CodexSystem(this, this.ctx, saveManagerForCodex)
+      : undefined;
     const composer = new SpriteComposer(this, this.ctx, this.playerContainer);
 
     // ---- Nest & Fang combat/survival systems ----
@@ -284,6 +294,7 @@ export class WorldScene extends Phaser.Scene {
       this.synergy,
       composer,
     ];
+    if (codex) this.systems.push(codex);
 
     // Input source: human controller or AI autopilot.
     this.inputSource = player.instinctMode

@@ -65,6 +65,24 @@ const RARITY_LABEL: Record<Rarity, string> = {
 
 const PULSE_RARITIES: Rarity[] = ["epic", "legendary", "mythic"];
 
+/** Update 3 (Phase 2.4): 6 fixed synergy-tag colors, defined once. */
+const TAG_COLORS: Record<string, string> = {
+  sonic: PALETTE.water,
+  feral: PALETTE.danger,
+  verdant: PALETTE.grassLight,
+  swift: PALETTE.waterLight,
+  lucky: PALETTE.gold,
+  pack: PALETTE.purple,
+};
+const TAG_ABBR: Record<string, string> = {
+  sonic: "SON",
+  feral: "FER",
+  verdant: "VER",
+  swift: "SWI",
+  lucky: "LUC",
+  pack: "PAC",
+};
+
 export class DraftScene extends Phaser.Scene {
   private cards: CardData[] = [];
   private onPick: (cardId: string | null) => void = () => {};
@@ -211,7 +229,21 @@ export class DraftScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0);
 
-    container.add([bg, rarityLabel, iconArea, nameText, statusText, bodyText]);
+    const footer = this.footerHint(card);
+    const footerText = this.add
+      .text(0, -h / 2 + 190, footer, {
+        fontFamily: "monospace",
+        fontSize: "9px",
+        color: PALETTE.grassLight,
+        align: "center",
+        wordWrap: { width: w - 12 },
+        lineSpacing: 2,
+      })
+      .setOrigin(0.5, 0);
+
+    const chips = this.buildTagChips(this.tagsFor(card), h / 2 - 14);
+
+    container.add([bg, rarityLabel, iconArea, nameText, statusText, bodyText, footerText, chips]);
 
     // Update 2 §5: neutral (animal:"any") weapons/passives get a small
     // paw-print corner badge so they read as "usable by everyone" at a
@@ -232,6 +264,76 @@ export class DraftScene extends Phaser.Scene {
    * lookups via the part before "::". */
   private baseCardId(card: CardData): string {
     return card.id.includes("::") ? card.id.split("::")[0] : card.id;
+  }
+
+  /** Update 3 (Phase 2.4): weapon-only footer — evolve preview while below
+   * max level, and/or a "Fuses with X!" hint when a fusion partner is owned.
+   * Synthesized branch/fuse cards skip this: their status line already says
+   * it (EVOLVE -> / FUSE). */
+  private footerHint(card: CardData): string {
+    if (card.id.includes("::")) return "";
+    const weapon = WEAPONS.find((w) => w.id === card.id);
+    if (!weapon) return "";
+    const lines: string[] = [];
+
+    const owned = this.player?.activeWeapons.find((w) => w.weaponId === weapon.id);
+    const belowMax = !owned || owned.level < weapon.levels.length;
+    if (belowMax && weapon.evolutions.length > 0) {
+      const passiveName = (id: string): string =>
+        PASSIVES.find((p) => p.id === id)?.name ?? id;
+      const satisfied = weapon.evolutions.find((evo) =>
+        this.player?.activePassives.some((p) => p.passiveId === evo.requiresPassiveId)
+      );
+      const branch = satisfied ?? weapon.evolutions[0];
+      lines.push(`Evolves: ${branch.name} (needs ${passiveName(branch.requiresPassiveId)})`);
+    }
+
+    const fusion = FUSIONS.find((f) => f.inputs.includes(weapon.id));
+    if (fusion) {
+      const otherId = fusion.inputs.find((id) => id !== weapon.id);
+      const otherOwned =
+        !!otherId && this.player?.activeWeapons.some((w) => w.weaponId === otherId);
+      if (otherOwned) {
+        const otherName = WEAPONS.find((w) => w.id === otherId)?.name ?? otherId;
+        lines.push(`Fuses with ${otherName}!`);
+      }
+    }
+
+    return lines.join("\n");
+  }
+
+  private tagsFor(card: CardData): string[] {
+    const baseId = this.baseCardId(card);
+    return (
+      WEAPONS.find((w) => w.id === baseId)?.tags ??
+      PASSIVES.find((p) => p.id === baseId)?.tags ??
+      []
+    );
+  }
+
+  /** Small colored pills, one per tag (max 2), centered at the given y. */
+  private buildTagChips(tags: string[], y: number): Phaser.GameObjects.Container {
+    const c = this.add.container(0, y);
+    if (tags.length === 0) return c;
+    const chipW = 34;
+    const gap = 4;
+    const totalW = tags.length * chipW + (tags.length - 1) * gap;
+    let x = -totalW / 2 + chipW / 2;
+    for (const tag of tags.slice(0, 2)) {
+      const color = TAG_COLORS[tag] ?? PALETTE.cream;
+      const bg = this.add.rectangle(x, 0, chipW, 13, hex(color), 0.85);
+      bg.setStrokeStyle(1, hex(PALETTE.outline), 1);
+      const label = this.add
+        .text(x, 0, TAG_ABBR[tag] ?? tag.slice(0, 3).toUpperCase(), {
+          fontFamily: "monospace",
+          fontSize: "8px",
+          color: PALETTE.outline,
+        })
+        .setOrigin(0.5);
+      c.add([bg, label]);
+      x += chipW + gap;
+    }
+    return c;
   }
 
   private isNeutralCard(card: CardData): boolean {
