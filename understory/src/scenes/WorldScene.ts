@@ -52,6 +52,7 @@ import { SynergySystem } from "../systems/SynergySystem";
 import { CodexSystem } from "../systems/CodexSystem";
 import { SeasonAmbience } from "../systems/SeasonAmbience";
 import { Quality } from "../core/Quality";
+import { WrapRenderSystem } from "../systems/WrapRenderSystem";
 import type { SaveManager } from "../core/SaveManager";
 import { MAX_LEVEL, WELL_FED_THRESHOLD, EV as EVX } from "../core/types";
 import type { CombatProvider, EnemyView } from "../core/context";
@@ -75,6 +76,7 @@ export class WorldScene extends Phaser.Scene {
   private emitter!: Phaser.Events.EventEmitter;
   private playerContainer!: Phaser.GameObjects.Container;
   private playerShadow?: Phaser.GameObjects.Image;
+  private wrapRender?: WrapRenderSystem;
   private systems: System[] = [];
   private inputSource!: InputSource & Partial<System>;
   private season!: SeasonSystem;
@@ -194,9 +196,7 @@ export class WorldScene extends Phaser.Scene {
         const didWrap = wrappedX !== nx || wrappedY !== ny;
 
         scene.playerContainer.setPosition(wrappedX, wrappedY);
-        if (didWrap) {
-          scene.cameras.main.centerOn(wrappedX, wrappedY);
-        }
+        void didWrap; // camera re-centering is now WrapRenderSystem's job (smooth, every frame)
         // Drive walk anim + facing from actual motion.
         if (Math.abs(dx) + Math.abs(dy) > 0.05) {
           scene.lastMoveAt = scene.time.now;
@@ -266,6 +266,24 @@ export class WorldScene extends Phaser.Scene {
     this.world = new WorldGenSystem(this, this.ctx);
     worldRef = this.world;
 
+    // Update 3 (post-launch fix): wire up the already-built seamless
+    // toroidal camera (WrapRenderSystem + wrapRenderSim.ts, tested in
+    // tests/wrapRender.test.ts) that a prior build session left unwired —
+    // WorldScene was instead hard-snapping the camera on every wrap
+    // (`centerOn` right at the seam), which is the "snaps to the other
+    // side" bug reported live. WrapRenderSystem owns the camera unbounded
+    // from here on and re-centers it via a smooth exponential follow
+    // (cameraStep) every frame, plus wraps every other on-screen dynamic
+    // (enemies, projectiles, motes, fog) to its nearest copy around the
+    // camera center so the seam is never visible crossing it either.
+    this.wrapRender = new WrapRenderSystem(
+      this,
+      this.ctx,
+      this.playerContainer,
+      this.worldBounds.width,
+      this.world.getRenderRefs()
+    );
+
     this.season = new SeasonSystem(this, this.ctx);
     const movement = new MovementSystem(this, this.ctx);
     const verbs = new VerbSystem(this, this.ctx);
@@ -324,8 +342,11 @@ export class WorldScene extends Phaser.Scene {
       : new InputController(this, this.ctx);
 
     // Camera follows the avatar within world bounds.
-    this.cameras.main.setBounds(0, 0, this.worldBounds.width, this.worldBounds.height);
-    this.cameras.main.startFollow(this.playerContainer, true, 0.12, 0.12);
+    // Update 3 (post-launch fix): no setBounds/startFollow here anymore --
+    // WrapRenderSystem owns the camera unbounded (see its constructor call
+    // above) and re-centers it itself every frame via a smooth, wrap-aware
+    // follow (cameraStep), which is what setBounds+startFollow could not do
+    // across the toroidal seam.
     this.cameras.main.setBackgroundColor(0x14261a);
 
     // Update 3 Phase 3.5: postFX, WebGL + Quality.high only, behind the

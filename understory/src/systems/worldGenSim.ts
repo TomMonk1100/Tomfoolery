@@ -624,8 +624,9 @@ export function decideTileDraw(
     return { kind: "rect", color: TILE_COLORS.forage };
   }
 
-  if (tile.type === "grass" && roll > 0.9167) {
-    // ~1 prop per 12 tiles.
+  if (tile.type === "grass" && roll > 0.95) {
+    // Post-launch fix: thinned from ~1/12 to ~1/20 grass tiles (field
+    // reported as too cluttered) -- ~1 prop per 20 tiles.
     const spriteKey = roll > 0.958 ? SPRITE_KEYS.propFlower : SPRITE_KEYS.propPebble;
     if (textureExists(spriteKey)) {
       return { kind: "sprite", spriteKey };

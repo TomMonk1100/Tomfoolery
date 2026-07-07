@@ -307,7 +307,14 @@ export class WorldGenSystem implements System, WorldView {
           this.container.add(rect);
         } else if (decision.kind === "sprite" && decision.spriteKey) {
           const feat = this.scene.add.image(cxp, cyp, frameKey(decision.spriteKey));
-          feat.setDisplaySize(this.tilePx, this.tilePx);
+          // Post-launch fix ("make the trees bigger"): trees render at 1.6x
+          // the tile size, centered, so canopies read as prominent and
+          // overlap neighboring tiles naturally; the collision footprint
+          // (still keyed off the tile grid, not the sprite) is unchanged.
+          // Every other feature (rocks, forage bushes, props) stays at the
+          // plain 1x tile size.
+          const scale = decision.spriteKey === SPRITE_KEYS.tileObstacleTree ? 1.6 : 1;
+          feat.setDisplaySize(this.tilePx * scale, this.tilePx * scale);
           feat.setDepth(tile.type === "obstacle" || tile.type === "water" ? 600 : 10);
           this.container.add(feat);
         }

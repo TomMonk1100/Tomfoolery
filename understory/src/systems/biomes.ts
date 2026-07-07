@@ -49,8 +49,13 @@ export const BIOME_TABLE: Record<Biome, BiomeParams> = {
     groundTint: 0x4a7c3f, // baseline grass green (matches TILE_COLORS.grass)
     obstacleTreeWeight: 0.5,
     obstacleRockWeight: 0.5,
-    obstacleDensity: 0.06,
-    forageDensity: 0.12,
+    // Post-launch fix: obstacleDensity/forageDensity were reported live as
+    // "playfield too cluttered with bushes" -- forageDensity drives the
+    // bush/forage-node tile type, obstacleDensity drives trees/rocks. Both
+    // roughly halved across every biome (see forest below for the worst
+    // offender: 0.16+0.14 = 30% of non-water tiles were obstacle-or-bush).
+    obstacleDensity: 0.035,
+    forageDensity: 0.06,
     propDensity: 0.08,
     waterAllowed: true, // rare ponds allowed everywhere as "else" case
   },
@@ -58,8 +63,8 @@ export const BIOME_TABLE: Record<Biome, BiomeParams> = {
     groundTint: 0x2f5430, // darker, denser green
     obstacleTreeWeight: 0.85,
     obstacleRockWeight: 0.15,
-    obstacleDensity: 0.16,
-    forageDensity: 0.14,
+    obstacleDensity: 0.08,
+    forageDensity: 0.07,
     propDensity: 0.1,
     waterAllowed: true,
   },
@@ -67,8 +72,8 @@ export const BIOME_TABLE: Record<Biome, BiomeParams> = {
     groundTint: 0x3f6a4f, // muddy green-teal
     obstacleTreeWeight: 0.3,
     obstacleRockWeight: 0.1,
-    obstacleDensity: 0.05,
-    forageDensity: 0.1,
+    obstacleDensity: 0.03,
+    forageDensity: 0.05,
     propDensity: 0.05,
     waterAllowed: true, // primary pond/lake host biome
   },
@@ -76,8 +81,8 @@ export const BIOME_TABLE: Record<Biome, BiomeParams> = {
     groundTint: 0x8a7a4a, // dry tan-green
     obstacleTreeWeight: 0.15,
     obstacleRockWeight: 0.85,
-    obstacleDensity: 0.09,
-    forageDensity: 0.05,
+    obstacleDensity: 0.05,
+    forageDensity: 0.03,
     propDensity: 0.04,
     waterAllowed: false, // dry biome: no ponds spawn here
   },

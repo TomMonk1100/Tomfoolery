@@ -65,6 +65,10 @@ const TRAIL_BURST_MS = 1500;
 interface OrbiterState {
   angleOffsetDeg: number;
   rehitCooldowns: Map<string, number>; // enemyId -> ms remaining
+  /** Fixed post-launch bug: orbiters dealt damage but drew nothing, so
+   * orbit-archetype weapons (lucky-clover, bee-swarm, firefly-lantern,
+   * glowhive, clover-cascade) were reported live as invisible attacks. */
+  graphic: Phaser.GameObjects.Arc | null;
 }
 
 interface ZoneInstance {
@@ -279,6 +283,7 @@ export class WeaponSystem implements System {
       if (!activeIds.has(key)) {
         const runtime = this.runtimes.get(key);
         runtime?.zones.forEach((z) => z.graphic?.destroy());
+        runtime?.orbiters.forEach((o) => o.graphic?.destroy());
         this.runtimes.delete(key);
       }
     }
@@ -334,7 +339,7 @@ export class WeaponSystem implements System {
         this.fireProjectile(playerPos, stats, data, damage, crit, area, enemies, facing, active.evolved);
         break;
       case "orbit":
-        this.setupOrbiters(runtime, stats, area);
+        this.setupOrbiters(runtime, stats, area, data, active.evolved);
         break;
       case "trail":
         this.startTrailBurst(runtime, damage, crit, area, stats.durationMs ?? 1000, data, playerPos, facing, active.evolved);
@@ -568,14 +573,26 @@ export class WeaponSystem implements System {
   }
 
   // ---- orbit ----
-  private setupOrbiters(runtime: WeaponRuntime, stats: WeaponLevelStats, area: number): void {
+  private setupOrbiters(
+    runtime: WeaponRuntime,
+    stats: WeaponLevelStats,
+    area: number,
+    data: WeaponData,
+    evolved: boolean
+  ): void {
     const count = stats.count ?? 1;
     if (runtime.orbiters.length !== count) {
+      for (const old of runtime.orbiters) old.graphic?.destroy();
       runtime.orbiters = [];
+      const color = evolved ? this.weaponGradeTint(data) : 0xf4f0e8;
       for (let i = 0; i < count; i++) {
+        const g = this.scene.add.circle(0, 0, 8, color, 0.9);
+        g.setStrokeStyle(1.5, 0x1a1423, 0.8);
+        g.setDepth(950);
         runtime.orbiters.push({
           angleOffsetDeg: (360 / count) * i,
           rehitCooldowns: new Map(),
+          graphic: g,
         });
       }
     }
@@ -613,6 +630,7 @@ export class WeaponSystem implements System {
       const angleRad = Phaser.Math.DegToRad(angleDeg);
       const ox = playerPos.x + Math.cos(angleRad) * area;
       const oy = playerPos.y + Math.sin(angleRad) * area;
+      orb.graphic?.setPosition(ox, oy);
 
       for (const [enemyId, msLeft] of Array.from(orb.rehitCooldowns.entries())) {
         const next = msLeft - deltaMs;
