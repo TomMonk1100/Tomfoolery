@@ -417,7 +417,7 @@
     "isStarting": true,
     "rarity": "common",
     "pattern": "arc",
-    "arcDeg": 90,
+    "arcDeg": 150,
     "levels": [
       {
         "damage": 8,

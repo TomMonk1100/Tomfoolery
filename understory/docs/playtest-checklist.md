@@ -92,3 +92,17 @@ since the sandboxed browser tab throttles real-time rAF when backgrounded.
    `wrapDeltaVec` so it always takes the shorter, wrapped path.
 3. Both fixes verified live post-redeploy: fresh instinct run no longer
    crashes or stalls at the seam; kill count climbs steadily throughout.
+
+### Update 3 Phase 4 — cat kill-rate lever applied (2026-07-07)
+
+- **Applied the plan's "first lever"**: widened `pounce-slash.arcDeg` from
+  90° to 150° (`src/data/weapons.json`). Per-level damage/cooldown/area were
+  left untouched — arcDeg only changes how many enemies a single swing's
+  cone catches, so it raises pack throughput without moving the L1 DPS band
+  `tests/content.test.ts` already pins (5–9 DPS).
+- **Could not verify live.** This session has no browser/JS-execution tool
+  available (the headless-playtest technique in plan §10 needs
+  `window.__understory` in a real page) — see docs/update-3-deviations.md
+  #22. The ≥50 kills/2min target from Gate 4 is therefore **unverified**,
+  not confirmed. Recommend a follow-up live playtest (the technique in §10
+  still applies) before treating the cat kill-rate gap as closed.
