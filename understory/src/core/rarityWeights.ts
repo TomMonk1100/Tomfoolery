@@ -77,3 +77,60 @@ export function pickRarity(
   }
   return "common";
 }
+
+// ---------------------------------------------------------------------------
+// Update 3 (D9) — combo-aware draft weighting. Cards that progress an owned
+// weapon's evolution requirement or an owned synergy tag get 2x weight in
+// DraftSystem.weightedPick. Pure + tested (antidote to draft-pool dilution,
+// plan §8 R1). Phase 4's kill criterion may raise COMBO_WEIGHT_MULT.
+// ---------------------------------------------------------------------------
+import type {
+  ActivePassive,
+  ActiveWeapon,
+  PassiveData,
+  WeaponData,
+} from "./types";
+
+export const COMBO_WEIGHT_MULT = 2;
+
+export function comboWeightMultiplier(
+  cardId: string,
+  activeWeapons: ActiveWeapon[],
+  activePassives: ActivePassive[],
+  weapons: WeaponData[],
+  passives: PassiveData[]
+): number {
+  // Synthesized evolution-branch cards ARE combo progress by definition.
+  if (cardId.includes("::")) return COMBO_WEIGHT_MULT;
+
+  // A passive that gates an owned, un-evolved weapon's evolution branch.
+  const passive = passives.find((p) => p.id === cardId);
+  if (passive) {
+    const gatesOwned = activeWeapons.some((aw) => {
+      if (aw.evolved) return false;
+      const data = weapons.find((w) => w.id === aw.weaponId);
+      return !!data?.evolutions.some((e) => e.requiresPassiveId === cardId);
+    });
+    if (gatesOwned) return COMBO_WEIGHT_MULT;
+  }
+
+  // Any card whose tags overlap a tag the player already owns an item of.
+  const ownedTags = new Set<string>();
+  for (const aw of activeWeapons) {
+    for (const t of weapons.find((w) => w.id === aw.weaponId)?.tags ?? []) {
+      ownedTags.add(t);
+    }
+  }
+  for (const ap of activePassives) {
+    for (const t of passives.find((p) => p.id === ap.passiveId)?.tags ?? []) {
+      ownedTags.add(t);
+    }
+  }
+  const cardTags =
+    weapons.find((w) => w.id === cardId)?.tags ??
+    passives.find((p) => p.id === cardId)?.tags ??
+    [];
+  if (cardTags.some((t) => ownedTags.has(t))) return COMBO_WEIGHT_MULT;
+
+  return 1;
+}

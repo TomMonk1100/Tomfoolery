@@ -361,6 +361,9 @@ export const EV = {
   bossDefeated: "bossDefeated", // ({enemyId, name})
   companionRecruited: "companionRecruited", // ({companionId})
   screenShake: "screenShake", // ({intensity:number 0..1, durationMs})
+  // ---- Update 3: Symbiosis combo events ----
+  synergyChanged: "synergyChanged", // (ActiveSynergy[]) — active tag set changed
+  weaponFused: "weaponFused", // ({fusionId, resultWeaponId, inputs:[string,string]})
 } as const;
 
 export type VerbEvent = { verb: Verb; x: number; y: number; success?: boolean };
@@ -468,14 +471,15 @@ export interface PassiveData {
 // Update 3 — Symbiosis: fusions, synergies, evolution helpers
 // ----------------------------------------------------------------------------
 
-/** Stat-only bonus payload (percent values) merged into statBonus() lookups. */
+/** Stat-only bonus payload (percent values) merged into statBonus() lookups.
+ * Keys are existing statBonus() stat types only (D6: no new stat plumbing).
+ * cooldown: negative = faster (computeCooldown convention). */
 export interface StatBonus {
   damage?: number;
   cooldown?: number;
   area?: number;
   moveSpeed?: number;
-  xpGain?: number;
-  knockback?: number;
+  pickupRadius?: number;
 }
 
 export interface FusionData {

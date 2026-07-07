@@ -22,14 +22,16 @@
  *   "never crash on missing texture" standing order.
  */
 import Phaser from "phaser";
-import { SCENE, CardData, Rarity, PlayerState, PassiveData, resolveEvolution } from "../core/types";
+import { SCENE, CardData, FusionData, Rarity, PlayerState, PassiveData, resolveEvolution } from "../core/types";
 import { normalizeWeapons } from "../core/weaponCatalog";
 import { PALETTE, iconKey, frameKey } from "../gfx/spriteRegistry";
 import weaponsJson from "../data/weapons.json";
+import fusionsJson from "../data/fusions.json";
 import passivesJson from "../data/passives.json";
 
 const WEAPONS = normalizeWeapons(weaponsJson);
 const PASSIVES = passivesJson as unknown as PassiveData[];
+const FUSIONS = fusionsJson as unknown as FusionData[];
 
 export interface DraftSceneData {
   cards: CardData[];
@@ -107,7 +109,9 @@ export class DraftScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(1);
 
-    const cardW = 130;
+    // Update 3: a guaranteed fusion card can make this a 4-card offer —
+    // shrink card width so 4 fit the 480px viewport (4x108 + 3x8 = 456).
+    const cardW = this.cards.length >= 4 ? 108 : 130;
     const cardH = 290;
     const gap = 8;
     const totalW = this.cards.length * cardW + (this.cards.length - 1) * gap;
@@ -224,8 +228,14 @@ export class DraftScene extends Phaser.Scene {
     return container;
   }
 
+  /** Update 3: synthesized ids ("<weaponId>::<evolutionId>") resolve weapon
+   * lookups via the part before "::". */
+  private baseCardId(card: CardData): string {
+    return card.id.includes("::") ? card.id.split("::")[0] : card.id;
+  }
+
   private isNeutralCard(card: CardData): boolean {
-    const weapon = WEAPONS.find((w) => w.id === card.id);
+    const weapon = WEAPONS.find((w) => w.id === this.baseCardId(card));
     if (weapon) return weapon.animal === "any";
     const passive = PASSIVES.find((p) => p.id === card.id);
     return passive?.animal === "any";
@@ -249,7 +259,31 @@ export class DraftScene extends Phaser.Scene {
 
   private buildIcon(card: CardData, x: number, y: number, size: number): Phaser.GameObjects.Container {
     const c = this.add.container(x, y);
-    const key = frameKey(iconKey(card.id), 0);
+    // Update 3: fusion cards render BOTH input icons side by side.
+    if (card.id.startsWith("fuse::")) {
+      const fusion = FUSIONS.find((f) => f.id === card.id.slice("fuse::".length));
+      if (fusion) {
+        const half = size * 0.72;
+        fusion.inputs.forEach((inputId, i) => {
+          const k = frameKey(iconKey(inputId), 0);
+          if (this.textures.exists(k)) {
+            const img = this.add.image(i === 0 ? -size / 3 : size / 3, 0, k);
+            img.setDisplaySize(half, half);
+            c.add(img);
+          }
+        });
+        const plus = this.add
+          .text(0, 0, "+", {
+            fontFamily: "monospace",
+            fontSize: "14px",
+            color: PALETTE.gold,
+          })
+          .setOrigin(0.5);
+        c.add(plus);
+        return c;
+      }
+    }
+    const key = frameKey(iconKey(this.baseCardId(card)), 0);
     if (this.textures.exists(key)) {
       const img = this.add.image(0, 0, key);
       img.setDisplaySize(size, size);
@@ -277,6 +311,29 @@ export class DraftScene extends Phaser.Scene {
 
   /** Look up the weapon/passive record for a card and build display copy. */
   private describeCard(card: CardData): { statusLine: string; bodyLines: string } {
+    // Update 3: guaranteed fusion card — "⚡ FUSE" + recipe flavor.
+    if (card.id.startsWith("fuse::")) {
+      const fusion = FUSIONS.find((f) => f.id === card.id.slice("fuse::".length));
+      if (fusion) {
+        return {
+          statusLine: "⚡ FUSE",
+          bodyLines: truncateTwoLines(fusion.description),
+        };
+      }
+    }
+    // Update 3: synthesized evolution-branch card — title stays the weapon
+    // name, status line names the branch (plan: "EVOLVE -> Guard Bark").
+    if (card.id.includes("::")) {
+      const [weaponId, evolutionId] = card.id.split("::");
+      const w = WEAPONS.find((x) => x.id === weaponId);
+      const branch = w?.evolutions.find((e) => e.id === evolutionId);
+      if (w && branch) {
+        return {
+          statusLine: `EVOLVE -> ${branch.name}`,
+          bodyLines: truncateTwoLines(branch.description),
+        };
+      }
+    }
     const weapon = WEAPONS.find((w) => w.id === card.id);
     if (weapon) {
       const owned = this.player?.activeWeapons.find((w) => w.weaponId === weapon.id);

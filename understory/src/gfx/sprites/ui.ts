@@ -580,3 +580,119 @@ icon(
     10: ".....oo.........",
   })
 );
+
+// ---------------------------------------------------------------------------
+// Update 3 — fused weapon icons (8). Dual-nature emblems: each hints at both
+// input weapons. Same 16x16 withRows format as everything above.
+// ---------------------------------------------------------------------------
+icon(
+  "thunder-fetch",
+  { o: P.outline, b: P.brown, g: P.gold },
+  withRows({
+    3: "......bb........",
+    4: ".....bbbb.......",
+    5: ".....bbbb.......",
+    6: "......bb...g....",
+    7: ".........gg.....",
+    8: "........gg......",
+    9: ".......ggg......",
+    10: "......gg........",
+    11: ".....g..........",
+  })
+);
+icon(
+  "slip-n-blitz",
+  { o: P.outline, w: P.waterLight, c: P.cream },
+  withRows({
+    4: "..w.............",
+    5: "..ww....w.......",
+    6: "...www..ww......",
+    7: "....wwwwww......",
+    8: "......wwwwcc....",
+    9: ".......wwwwcc...",
+    10: "........ww..cc..",
+    11: ".............c..",
+  })
+);
+icon(
+  "wildcat-cyclone",
+  { o: P.outline, p: P.purple, w: P.white },
+  withRows({
+    3: ".....ppp........",
+    4: "...pp...pp......",
+    5: "..p...ww..p.....",
+    6: "..p..w..w..p....",
+    7: "..p..w.ww..p....",
+    8: "...p..ww..p.....",
+    9: "....pp...pp.....",
+    10: "......ppp.......",
+  })
+);
+icon(
+  "tangle-storm",
+  { o: P.outline, p: P.purple, c: P.cream },
+  withRows({
+    4: "...cc...cc......",
+    5: "..cppc.cppc.....",
+    6: "..cppccppc......",
+    7: "...ccppcc.......",
+    8: "....cppc........",
+    9: "...cc..cc.......",
+    10: "..c......c......",
+  })
+);
+icon(
+  "seismic-kick",
+  { o: P.outline, b: P.brown, g: P.gold },
+  withRows({
+    4: "......gg........",
+    5: ".....g..g.......",
+    6: "....g....g......",
+    7: "...g..bb..g.....",
+    8: "......bb........",
+    9: "....bbbbbb......",
+    10: "..bbb....bbb....",
+    11: ".bb........bb...",
+  })
+);
+icon(
+  "clover-cascade",
+  { o: P.outline, l: P.grassLight, g: P.gold },
+  withRows({
+    3: "...ll...........",
+    4: "..llll..........",
+    5: "...ll....ll.....",
+    6: ".........llll...",
+    7: "..........ll....",
+    8: "....g...........",
+    9: "...ggg....ll....",
+    10: "....g....llll...",
+    11: "..........ll....",
+  })
+);
+icon(
+  "glowhive",
+  { o: P.outline, g: P.gold, s: P.slime },
+  withRows({
+    3: ".....gggg.......",
+    4: "....g....g......",
+    5: "...g..ss..g.....",
+    6: "...g.s..s.g.....",
+    7: "...g..ss..g.....",
+    8: "....g....g......",
+    9: ".....gggg.......",
+    11: "..s....s....s...",
+  })
+);
+icon(
+  "cannonade",
+  { o: P.outline, d: P.darkBrown, g: P.gold },
+  withRows({
+    3: "....g...g...g...",
+    4: "...g...g...g....",
+    6: "..dd...dd...dd..",
+    7: ".dddd.dddd.dddd.",
+    8: ".dddd.dddd.dddd.",
+    9: "..dd...dd...dd..",
+  })
+);

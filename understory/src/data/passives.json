@@ -10,7 +10,10 @@
     },
     "description": "A steady heartbeat that mends wounds over time.",
     "icon": "icon_loyal_heart",
-    "maxStacks": 5
+    "maxStacks": 5,
+    "tags": [
+      "pack"
+    ]
   },
   {
     "id": "thick-fur",
@@ -23,7 +26,10 @@
     },
     "description": "Thick fur blunts incoming blows.",
     "icon": "icon_thick_fur",
-    "maxStacks": 5
+    "maxStacks": 5,
+    "tags": [
+      "pack"
+    ]
   },
   {
     "id": "keen-nose",
@@ -36,7 +42,10 @@
     },
     "description": "Sniffs out XP and food from farther away.",
     "icon": "icon_keen_nose",
-    "maxStacks": 4
+    "maxStacks": 4,
+    "tags": [
+      "pack"
+    ]
   },
   {
     "id": "big-appetite",
@@ -49,7 +58,10 @@
     },
     "description": "Every meal heals for much more.",
     "icon": "icon_big_appetite",
-    "maxStacks": 4
+    "maxStacks": 4,
+    "tags": [
+      "verdant"
+    ]
   },
   {
     "id": "feline-grace",
@@ -62,7 +74,10 @@
     },
     "description": "Uncanny grace lets you slip past danger.",
     "icon": "icon_feline_grace",
-    "maxStacks": 5
+    "maxStacks": 5,
+    "tags": [
+      "swift"
+    ]
   },
   {
     "id": "predator-eye",
@@ -75,7 +90,10 @@
     },
     "description": "A predator's eye finds every weak spot.",
     "icon": "icon_predator_eye",
-    "maxStacks": 5
+    "maxStacks": 5,
+    "tags": [
+      "feral"
+    ]
   },
   {
     "id": "soft-paws",
@@ -88,7 +106,10 @@
     },
     "description": "Silent paws move faster than they should.",
     "icon": "icon_soft_paws",
-    "maxStacks": 4
+    "maxStacks": 4,
+    "tags": [
+      "pack"
+    ]
   },
   {
     "id": "picky-eater",
@@ -101,7 +122,10 @@
     },
     "description": "Picky eating makes each meal count double.",
     "icon": "icon_picky_eater",
-    "maxStacks": 3
+    "maxStacks": 3,
+    "tags": [
+      "lucky"
+    ]
   },
   {
     "id": "lucky-foot",
@@ -114,7 +138,10 @@
     },
     "description": "A lucky foot tilts the odds in your favor.",
     "icon": "icon_lucky_foot",
-    "maxStacks": 5
+    "maxStacks": 5,
+    "tags": [
+      "lucky"
+    ]
   },
   {
     "id": "spring-legs",
@@ -127,7 +154,10 @@
     },
     "description": "Springy legs cover ground in a hurry.",
     "icon": "icon_spring_legs",
-    "maxStacks": 5
+    "maxStacks": 5,
+    "tags": [
+      "swift"
+    ]
   },
   {
     "id": "litter-of-friends",
@@ -140,7 +170,10 @@
     },
     "description": "A litter of friends joins the fight.",
     "icon": "icon_litter_of_friends",
-    "maxStacks": 1
+    "maxStacks": 1,
+    "tags": [
+      "pack"
+    ]
   },
   {
     "id": "nibbler",
@@ -153,7 +186,10 @@
     },
     "description": "A nibbler's habit speeds up every forage.",
     "icon": "icon_nibbler",
-    "maxStacks": 4
+    "maxStacks": 4,
+    "tags": [
+      "verdant"
+    ]
   },
   {
     "id": "magnet-collar",
@@ -166,7 +202,10 @@
     },
     "description": "Draws XP and food toward you from further away. At 3 stacks, sweeps everything on screen every 20s.",
     "icon": "icon_magnet_collar",
-    "maxStacks": 3
+    "maxStacks": 3,
+    "tags": [
+      "pack"
+    ]
   },
   {
     "id": "wild-heart",
@@ -177,9 +216,12 @@
       "type": "maxHp",
       "magnitude": 15
     },
-    "description": "A bigger heart for a bigger fight — raises max HP and heals the gain immediately.",
+    "description": "A bigger heart for a bigger fight \u2014 raises max HP and heals the gain immediately.",
     "icon": "icon_wild_heart",
-    "maxStacks": 5
+    "maxStacks": 5,
+    "tags": [
+      "feral"
+    ]
   },
   {
     "id": "alpha-scent",
@@ -192,7 +234,10 @@
     },
     "description": "The unmistakable scent of the biggest animal in the yard.",
     "icon": "icon_alpha_scent",
-    "maxStacks": 5
+    "maxStacks": 5,
+    "tags": [
+      "sonic"
+    ]
   },
   {
     "id": "four-leaf",
@@ -205,6 +250,9 @@
     },
     "description": "A little extra luck, shared by every creature in the wild.",
     "icon": "icon_four_leaf",
-    "maxStacks": 5
+    "maxStacks": 5,
+    "tags": [
+      "lucky"
+    ]
   }
 ]

@@ -48,6 +48,7 @@ import fusionsJson from "../data/fusions.json";
 import synergiesJson from "../data/synergies.json";
 import type { WeaponData, PassiveData, EnemyData, FusionData, SynergyData } from "../core/types";
 import { normalizeWeapons } from "../core/weaponCatalog";
+import { SynergySystem } from "../systems/SynergySystem";
 import { MAX_LEVEL, WELL_FED_THRESHOLD, EV as EVX } from "../core/types";
 import type { CombatProvider, EnemyView } from "../core/context";
 
@@ -64,6 +65,8 @@ const SYNERGY_DEFS = synergiesJson as unknown as SynergyData[];
  * system. This is the integration seam between the independently-built systems.
  */
 export class WorldScene extends Phaser.Scene {
+  /** Update 3: synergy bonuses merged into ctx.statBonus. */
+  private synergy?: SynergySystem;
   private ctx!: GameContext;
   private emitter!: Phaser.Events.EventEmitter;
   private playerContainer!: Phaser.GameObjects.Container;
@@ -202,6 +205,8 @@ export class WorldScene extends Phaser.Scene {
             total += def.effect.magnitude * ap.stacks;
           }
         }
+        // Update 3: active tag synergies merge at this exact seam (plan §4b).
+        total += scene.synergy?.bonusFor(statType) ?? 0;
         return total;
       },
       audio,
@@ -243,6 +248,7 @@ export class WorldScene extends Phaser.Scene {
     const movement = new MovementSystem(this, this.ctx);
     const verbs = new VerbSystem(this, this.ctx);
     const draft = new DraftSystem(this, this.ctx);
+    this.synergy = new SynergySystem(this, this.ctx);
     const composer = new SpriteComposer(this, this.ctx, this.playerContainer);
 
     // ---- Nest & Fang combat/survival systems ----
@@ -275,6 +281,7 @@ export class WorldScene extends Phaser.Scene {
       nest,
       companions,
       draft,
+      this.synergy,
       composer,
     ];
 

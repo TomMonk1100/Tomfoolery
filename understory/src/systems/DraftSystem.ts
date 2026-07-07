@@ -9,6 +9,7 @@ import Phaser from "phaser";
 import { System, GameContext } from "../core/context";
 import {
   CardData,
+  FusionData,
   Rarity,
   RARITY_ORDER,
   EV,
@@ -16,7 +17,7 @@ import {
   WEAPON_SLOTS,
   PASSIVE_SLOTS,
 } from "../core/types";
-import { pickRarity } from "../core/rarityWeights";
+import { comboWeightMultiplier, pickRarity } from "../core/rarityWeights";
 import { applyCard, logCardValue } from "../core/playerState";
 
 /** Consecutive no-epic+ drafts before pity forces an epic+ slot. */
@@ -56,8 +57,10 @@ export class DraftSystem implements System {
    */
   buildOffer(level: number): CardData[] {
     const player = this.ctx.player;
-    const pool = this.ctx.cards.filter(
-      (c) => (player.instinctMode ? !c.isUnique : true) && this.isDraftable(c)
+    const pool = this.expandEvolutionBranches(
+      this.ctx.cards.filter(
+        (c) => (player.instinctMode ? !c.isUnique : true) && this.isDraftable(c)
+      )
     );
 
     const picked: CardData[] = [];
@@ -96,7 +99,72 @@ export class DraftSystem implements System {
     const containsEpicPlus = picked.some((c) => EPIC_PLUS.includes(c.rarity));
     this.pityCounter = containsEpicPlus ? 0 : this.pityCounter + 1;
 
+    // Update 3 (D3): if a fusion recipe is satisfied (both inputs owned at
+    // max level, result not owned), PREPEND one guaranteed fusion card.
+    const fusion = this.availableFusion();
+    if (fusion) picked.unshift(this.makeFusionCard(fusion));
+
     return picked;
+  }
+
+  /** First satisfied fusion recipe, or null. Max one fusion card per offer. */
+  private availableFusion(): FusionData | null {
+    const p = this.ctx.player;
+    for (const f of this.ctx.fusions) {
+      if (p.activeWeapons.some((w) => w.weaponId === f.resultWeaponId)) continue;
+      const ready = f.inputs.every((id) => {
+        const owned = p.activeWeapons.find((w) => w.weaponId === id);
+        const data = this.ctx.weapons.find((w) => w.id === id);
+        return (
+          !!owned && !!data && (owned.evolved || owned.level >= data.levels.length)
+        );
+      });
+      if (ready) return f;
+    }
+    return null;
+  }
+
+  /** Synthesized mythic-styled card, id "fuse::<fusionId>". */
+  private makeFusionCard(fusion: FusionData): CardData {
+    return {
+      id: `fuse::${fusion.id}`,
+      name: fusion.name,
+      rarity: "mythic",
+      isUnique: false,
+      weightsByLevel: { "1": 1 },
+      effect: { type: "weapon", magnitude: 0 },
+      tradeoff: { type: "none", magnitude: 0 },
+      spriteSlot: "none",
+      stacking: false,
+    };
+  }
+
+  /** Consume both inputs, grant the fused weapon at level 1 (frees a slot). */
+  private applyFusion(fusionId: string): void {
+    const p = this.ctx.player;
+    const fusion = this.ctx.fusions.find((f) => f.id === fusionId);
+    if (!fusion) return;
+    if (p.activeWeapons.some((w) => w.weaponId === fusion.resultWeaponId)) return;
+    if (!fusion.inputs.every((id) => p.activeWeapons.some((w) => w.weaponId === id)))
+      return;
+    for (const id of fusion.inputs) {
+      const idx = p.activeWeapons.findIndex((w) => w.weaponId === id);
+      if (idx >= 0) p.activeWeapons.splice(idx, 1); // in place: systems hold refs
+    }
+    p.activeWeapons.push({
+      weaponId: fusion.resultWeaponId,
+      level: 1,
+      evolved: false,
+    });
+    // Stale WeaponSystem runtimes for the consumed inputs are removed by its
+    // own syncRuntimes() pass (runtimes keyed by weaponId; grep-verified).
+    this.ctx.audio.blip("evolve");
+    this.ctx.events.emit(EV.weaponFused, {
+      fusionId,
+      resultWeaponId: fusion.resultWeaponId,
+      inputs: fusion.inputs,
+    });
+    this.ctx.events.emit(EV.spriteDirty);
   }
 
   private onLevelUp(level: number): void {
@@ -104,13 +172,23 @@ export class DraftSystem implements System {
 
     const onPick = (cardId: string | null): void => {
       if (cardId) {
-        const card = this.ctx.cards.find((c) => c.id === cardId);
-        if (card) {
-          applyCard(this.ctx.player, card);
-          logCardValue(this.ctx.player, card.id, 0, 0); // seed the per-card record
+        // Update 3: synthesized combo cards ("<weaponId>::<evolutionId>",
+        // "fuse::<fusionId>") carry no legacy stat payload — route them
+        // BEFORE the ctx.cards.find lookup (§1 coupling gotcha), skipping
+        // applyCard/logCardValue entirely.
+        if (cardId.includes("::")) {
           this.applyWeaponOrPassive(cardId);
           this.ctx.events.emit(EV.cardChosen, cardId);
           this.ctx.events.emit(EV.spriteDirty);
+        } else {
+          const card = this.ctx.cards.find((c) => c.id === cardId);
+          if (card) {
+            applyCard(this.ctx.player, card);
+            logCardValue(this.ctx.player, card.id, 0, 0); // seed the per-card record
+            this.applyWeaponOrPassive(cardId);
+            this.ctx.events.emit(EV.cardChosen, cardId);
+            this.ctx.events.emit(EV.spriteDirty);
+          }
         }
       } else {
         // Skip: grant a small XP refund.
@@ -142,6 +220,10 @@ export class DraftSystem implements System {
       // Update 2: animal "any" = neutral weapon, legal for every species.
       if (weapon.animal !== "any" && weapon.animal !== p.animalId) return false;
       const owned = p.activeWeapons.find((w) => w.weaponId === weapon.id);
+      // Update 3: fusion-only weapons can never be ACQUIRED through the
+      // normal draft; once owned (via fusion) their upgrade cards flow
+      // through the standard leveling rules below.
+      if (weapon.fusionOnly && !owned) return false;
       if (!owned) return p.activeWeapons.length < WEAPON_SLOTS;
       if (owned.evolved) return false;
       if (owned.level < weapon.levels.length) return true;
@@ -164,9 +246,65 @@ export class DraftSystem implements System {
     return true;
   }
 
+  /** Update 3: expand max-level weapon cards into one synthesized card per
+   * passive-satisfied evolution branch, id "<weaponId>::<evolutionId>" (two
+   * satisfied branches = two distinct cards may appear in one offer). The
+   * synthesized card inherits the base card's rarity/weights; its title stays
+   * the weapon name while DraftScene's status line shows the branch. */
+  private expandEvolutionBranches(pool: CardData[]): CardData[] {
+    const p = this.ctx.player;
+    const out: CardData[] = [];
+    for (const c of pool) {
+      const weapon = this.ctx.weapons.find((w) => w.id === c.id);
+      const owned = weapon
+        ? p.activeWeapons.find((w) => w.weaponId === weapon.id)
+        : undefined;
+      const atEvolveGate =
+        weapon &&
+        owned &&
+        !owned.evolved &&
+        owned.level >= weapon.levels.length;
+      if (!weapon || !atEvolveGate) {
+        out.push(c);
+        continue;
+      }
+      const satisfied = weapon.evolutions.filter((evo) =>
+        p.activePassives.some((ap) => ap.passiveId === evo.requiresPassiveId)
+      );
+      for (const evo of satisfied) {
+        out.push({ ...c, id: `${weapon.id}::${evo.id}` });
+      }
+      if (satisfied.length === 0) out.push(c); // defensive; isDraftable filtered
+    }
+    return out;
+  }
+
   /** Mutate activeWeapons/activePassives for a chosen weapon/passive card. */
   private applyWeaponOrPassive(cardId: string): void {
     const p = this.ctx.player;
+    // Update 3: "fuse::<fusionId>" = resolve a fusion (checked before the
+    // generic "::" branch route since it shares the separator).
+    if (cardId.startsWith("fuse::")) {
+      this.applyFusion(cardId.slice("fuse::".length));
+      return;
+    }
+    // Update 3: "<weaponId>::<evolutionId>" = take a specific evolution branch.
+    if (cardId.includes("::")) {
+      const [weaponId, evolutionId] = cardId.split("::");
+      const weapon = this.ctx.weapons.find((w) => w.id === weaponId);
+      const owned = p.activeWeapons.find((w) => w.weaponId === weaponId);
+      if (!weapon || !owned || owned.evolved) return;
+      if (!weapon.evolutions.some((e) => e.id === evolutionId)) return;
+      owned.evolved = true;
+      owned.evolutionId = evolutionId;
+      this.ctx.audio.blip("evolve");
+      this.ctx.events.emit(EV.weaponUpgraded, {
+        weaponId,
+        level: owned.level,
+        evolved: true,
+      });
+      return;
+    }
     const weapon = this.ctx.weapons.find((w) => w.id === cardId);
     if (weapon) {
       const owned = p.activeWeapons.find((w) => w.weaponId === weapon.id);
@@ -282,7 +420,18 @@ export class DraftSystem implements System {
 
     const weights = candidates.map((c) => {
       const w = c.weightsByLevel[levelKey];
-      return typeof w === "number" && w > 0 ? w : 0;
+      const base = typeof w === "number" && w > 0 ? w : 0;
+      // Update 3 (D9): combo-aware 2x weighting.
+      return (
+        base *
+        comboWeightMultiplier(
+          c.id,
+          this.ctx.player.activeWeapons,
+          this.ctx.player.activePassives,
+          this.ctx.weapons,
+          this.ctx.passives
+        )
+      );
     });
 
     const total = weights.reduce((s, w) => s + w, 0);

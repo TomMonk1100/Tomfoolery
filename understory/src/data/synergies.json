@@ -1,1 +1,133 @@
-[]
+[
+  {
+    "id": "syn-sonic",
+    "name": "Resonance",
+    "tag": "sonic",
+    "thresholds": [
+      {
+        "count": 2,
+        "bonus": {
+          "area": 10
+        }
+      },
+      {
+        "count": 3,
+        "bonus": {
+          "area": 30
+        }
+      }
+    ],
+    "description": "Sound carries. 2: +10% area. 3: +30% area.",
+    "icon": "tag_sonic"
+  },
+  {
+    "id": "syn-feral",
+    "name": "Bloodlust",
+    "tag": "feral",
+    "thresholds": [
+      {
+        "count": 2,
+        "bonus": {
+          "damage": 8
+        }
+      },
+      {
+        "count": 3,
+        "bonus": {
+          "damage": 18
+        }
+      }
+    ],
+    "description": "Claws out. 2: +8% damage. 3: +18% damage.",
+    "icon": "tag_feral"
+  },
+  {
+    "id": "syn-verdant",
+    "name": "Forager's Boon",
+    "tag": "verdant",
+    "thresholds": [
+      {
+        "count": 2,
+        "bonus": {
+          "pickupRadius": 10
+        }
+      },
+      {
+        "count": 3,
+        "bonus": {
+          "pickupRadius": 20,
+          "area": 5
+        }
+      }
+    ],
+    "description": "The land provides. 2: +10% pickup radius. 3: +20% pickup, +5% area.",
+    "icon": "tag_verdant"
+  },
+  {
+    "id": "syn-swift",
+    "name": "Slipstream",
+    "tag": "swift",
+    "thresholds": [
+      {
+        "count": 2,
+        "bonus": {
+          "moveSpeed": 6
+        }
+      },
+      {
+        "count": 3,
+        "bonus": {
+          "moveSpeed": 12,
+          "cooldown": -8
+        }
+      }
+    ],
+    "description": "Can't catch me. 2: +6% speed. 3: +12% speed, -8% cooldowns.",
+    "icon": "tag_swift"
+  },
+  {
+    "id": "syn-lucky",
+    "name": "Windfall",
+    "tag": "lucky",
+    "thresholds": [
+      {
+        "count": 2,
+        "bonus": {
+          "pickupRadius": 8
+        }
+      },
+      {
+        "count": 3,
+        "bonus": {
+          "cooldown": -10,
+          "damage": 8
+        }
+      }
+    ],
+    "description": "Fortune favors. 2: +8% pickup radius. 3: -10% cooldowns, +8% damage.",
+    "icon": "tag_lucky"
+  },
+  {
+    "id": "syn-pack",
+    "name": "Pack Tactics",
+    "tag": "pack",
+    "thresholds": [
+      {
+        "count": 2,
+        "bonus": {
+          "damage": 5,
+          "area": 5
+        }
+      },
+      {
+        "count": 3,
+        "bonus": {
+          "damage": 12,
+          "area": 10
+        }
+      }
+    ],
+    "description": "Stronger together. 2: +5% damage/area. 3: +12% damage, +10% area.",
+    "icon": "tag_pack"
+  }
+]

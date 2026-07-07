@@ -1,1 +1,90 @@
-[]
+[
+  {
+    "id": "thunder-fetch",
+    "name": "Thunder Fetch",
+    "inputs": [
+      "bark-blast",
+      "fetch"
+    ],
+    "resultWeaponId": "thunder-fetch",
+    "description": "Bark Blast + Fetch: the ball comes back with the storm.",
+    "icon": "icon_thunder_fetch"
+  },
+  {
+    "id": "slip-n-blitz",
+    "name": "Slip 'n' Blitz",
+    "inputs": [
+      "zoomies",
+      "slobber-shot"
+    ],
+    "resultWeaponId": "slip-n-blitz",
+    "description": "Zoomies + Slobber Shot: leave a slick, punishing wake.",
+    "icon": "icon_slip_n_blitz"
+  },
+  {
+    "id": "wildcat-cyclone",
+    "name": "Wildcat Cyclone",
+    "inputs": [
+      "pounce-slash",
+      "claw-flurry"
+    ],
+    "resultWeaponId": "wildcat-cyclone",
+    "description": "Pounce Slash + Claw Flurry: become the blender.",
+    "icon": "icon_wildcat_cyclone"
+  },
+  {
+    "id": "tangle-storm",
+    "name": "Tangle Storm",
+    "inputs": [
+      "hairball-lob",
+      "yarn-whip"
+    ],
+    "resultWeaponId": "tangle-storm",
+    "description": "Hairball Lob + Yarn Whip: everything gets tangled.",
+    "icon": "icon_tangle_storm"
+  },
+  {
+    "id": "seismic-kick",
+    "name": "Seismic Kick",
+    "inputs": [
+      "scissor-kick",
+      "thumper-quake"
+    ],
+    "resultWeaponId": "seismic-kick",
+    "description": "Scissor Kick + Thumper Quake: kick so hard the ground answers.",
+    "icon": "icon_seismic_kick"
+  },
+  {
+    "id": "clover-cascade",
+    "name": "Clover Cascade",
+    "inputs": [
+      "lucky-clover",
+      "bunny-barrage"
+    ],
+    "resultWeaponId": "clover-cascade",
+    "description": "Lucky Clover + Bunny Barrage: luck rains sideways.",
+    "icon": "icon_clover_cascade"
+  },
+  {
+    "id": "glowhive",
+    "name": "Glowhive",
+    "inputs": [
+      "bee-swarm",
+      "firefly-lantern"
+    ],
+    "resultWeaponId": "glowhive",
+    "description": "Bee Swarm + Firefly Lantern: the hive lights up.",
+    "icon": "icon_glowhive"
+  },
+  {
+    "id": "cannonade",
+    "name": "Cannonade",
+    "inputs": [
+      "tennis-ball",
+      "acorn-mortar"
+    ],
+    "resultWeaponId": "cannonade",
+    "description": "Tennis Ball + Acorn Mortar: serve, lob, repeat.",
+    "icon": "icon_cannonade"
+  }
+]

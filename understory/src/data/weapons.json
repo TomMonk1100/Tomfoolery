@@ -50,10 +50,25 @@
           "knockback": 59
         },
         "description": "A screen-shaking roar that scatters everything."
+      },
+      {
+        "id": "bark-blast-evo-b",
+        "name": "Guard Bark",
+        "requiresPassiveId": "thick-fur",
+        "stats": {
+          "damage": 40,
+          "cooldownMs": 554,
+          "area": 120,
+          "knockback": 110
+        },
+        "description": "A protective bark that hurls foes back. Smaller ring, brutal push."
       }
     ],
     "description": "A shockwave ring of pure WOOF.",
-    "icon": "icon_bark_blast"
+    "icon": "icon_bark_blast",
+    "tags": [
+      "sonic"
+    ]
   },
   {
     "id": "tail-wag-strike",
@@ -109,7 +124,10 @@
       }
     ],
     "description": "A wide tail sweep that smacks everything nearby.",
-    "icon": "icon_tail_wag_strike"
+    "icon": "icon_tail_wag_strike",
+    "tags": [
+      "feral"
+    ]
   },
   {
     "id": "fetch",
@@ -180,7 +198,10 @@
     "icon": "icon_fetch",
     "projectile": {
       "kind": "boomerang"
-    }
+    },
+    "tags": [
+      "pack"
+    ]
   },
   {
     "id": "zoomies",
@@ -240,10 +261,26 @@
         },
         "description": "Leaves a scorching path that lingers as a damage zone.",
         "archetype": "zone"
+      },
+      {
+        "id": "zoomies-evo-b",
+        "name": "Perpetual Motion",
+        "requiresPassiveId": "keen-nose",
+        "stats": {
+          "damage": 30,
+          "cooldownMs": 580,
+          "area": 100,
+          "count": 7,
+          "durationMs": 1400
+        },
+        "description": "Never stop moving. Shorter, quicker burn trails."
       }
     ],
     "description": "A burst of sprinting speed that damages everything you brush past.",
-    "icon": "icon_zoomies"
+    "icon": "icon_zoomies",
+    "tags": [
+      "swift"
+    ]
   },
   {
     "id": "dig",
@@ -299,7 +336,10 @@
       }
     ],
     "description": "Digs an eruption of dirt and rocks beneath enemies.",
-    "icon": "icon_dig"
+    "icon": "icon_dig",
+    "tags": [
+      "verdant"
+    ]
   },
   {
     "id": "slobber-shot",
@@ -364,7 +404,10 @@
     "icon": "icon_slobber_shot",
     "projectile": {
       "kind": "arc"
-    }
+    },
+    "tags": [
+      "pack"
+    ]
   },
   {
     "id": "pounce-slash",
@@ -426,10 +469,26 @@
         },
         "description": "A flurry of pounces that seem to defy death itself.",
         "pattern": "arc"
+      },
+      {
+        "id": "pounce-slash-evo-b",
+        "name": "Ambush Leap",
+        "requiresPassiveId": "predator-eye",
+        "stats": {
+          "damage": 36,
+          "cooldownMs": 470,
+          "area": 190,
+          "knockback": 45
+        },
+        "description": "A wide predatory lunge that scatters the pack.",
+        "pattern": "arc"
       }
     ],
     "description": "A quick 90\u00b0 front-slashing pounce \u2014 narrower reach, sharper bite.",
-    "icon": "icon_pounce_slash"
+    "icon": "icon_pounce_slash",
+    "tags": [
+      "feral"
+    ]
   },
   {
     "id": "claw-flurry",
@@ -491,7 +550,10 @@
       }
     ],
     "description": "Rapid claw swipes, chance to crit.",
-    "icon": "icon_claw_flurry"
+    "icon": "icon_claw_flurry",
+    "tags": [
+      "feral"
+    ]
   },
   {
     "id": "hairball-lob",
@@ -556,7 +618,10 @@
     "icon": "icon_hairball_lob",
     "projectile": {
       "kind": "arc"
-    }
+    },
+    "tags": [
+      "pack"
+    ]
   },
   {
     "id": "purr-aura",
@@ -612,7 +677,10 @@
       }
     ],
     "description": "A constant vibrating purr-field that damages nearby enemies.",
-    "icon": "icon_purr_aura"
+    "icon": "icon_purr_aura",
+    "tags": [
+      "sonic"
+    ]
   },
   {
     "id": "midnight-prowl",
@@ -672,10 +740,26 @@
         },
         "description": "Vanishes into shadow, leaving a trail of lingering dark.",
         "archetype": "zone"
+      },
+      {
+        "id": "midnight-prowl-evo-b",
+        "name": "Phantom Streak",
+        "requiresPassiveId": "soft-paws",
+        "stats": {
+          "damage": 34,
+          "cooldownMs": 520,
+          "area": 110,
+          "count": 6,
+          "durationMs": 900
+        },
+        "description": "Quick shadow steps that sting and fade."
       }
     ],
     "description": "A shadowy dash that slices through anything in its path.",
-    "icon": "icon_midnight_prowl"
+    "icon": "icon_midnight_prowl",
+    "tags": [
+      "swift"
+    ]
   },
   {
     "id": "yarn-whip",
@@ -741,7 +825,10 @@
     "projectile": {
       "kind": "straight",
       "pierce": 3
-    }
+    },
+    "tags": [
+      "swift"
+    ]
   },
   {
     "id": "thumper-quake",
@@ -803,7 +890,10 @@
       }
     ],
     "description": "Thumps the ground in a rippling shockwave.",
-    "icon": "icon_thumper_quake"
+    "icon": "icon_thumper_quake",
+    "tags": [
+      "sonic"
+    ]
   },
   {
     "id": "scissor-kick",
@@ -858,10 +948,26 @@
         },
         "description": "A four-way scissoring strike \u2014 front, back, and both sides at once.",
         "pattern": "cross"
+      },
+      {
+        "id": "scissor-kick-evo-b",
+        "name": "Fortune Kick",
+        "requiresPassiveId": "lucky-foot",
+        "stats": {
+          "damage": 38,
+          "cooldownMs": 470,
+          "area": 150,
+          "knockback": 70
+        },
+        "description": "A lucky double kick with longer reach and real kick.",
+        "pattern": "line-both"
       }
     ],
     "description": "A sharp scissoring kick that cuts front and behind simultaneously.",
-    "icon": "icon_scissor_kick"
+    "icon": "icon_scissor_kick",
+    "tags": [
+      "feral"
+    ]
   },
   {
     "id": "bunny-barrage",
@@ -923,7 +1029,10 @@
       }
     ],
     "description": "A rapid zig-zag hop-attack leaving damage in its wake.",
-    "icon": "icon_bunny_barrage"
+    "icon": "icon_bunny_barrage",
+    "tags": [
+      "swift"
+    ]
   },
   {
     "id": "carrot-toss",
@@ -989,7 +1098,10 @@
     "projectile": {
       "kind": "split",
       "splitCount": 3
-    }
+    },
+    "tags": [
+      "verdant"
+    ]
   },
   {
     "id": "lucky-clover",
@@ -1048,10 +1160,27 @@
           "count": 6
         },
         "description": "A rotating wall of four-leaf clovers."
+      },
+      {
+        "id": "lucky-clover-evo-b",
+        "name": "Clover Crown",
+        "requiresPassiveId": "litter-of-friends",
+        "stats": {
+          "damage": 96,
+          "cooldownMs": 900,
+          "area": 210,
+          "speed": 220,
+          "count": 3,
+          "knockback": 30
+        },
+        "description": "Three great petals orbit wide and hit like horseshoes."
       }
     ],
     "description": "Orbiting clovers that shred anything they touch.",
-    "icon": "icon_lucky_clover"
+    "icon": "icon_lucky_clover",
+    "tags": [
+      "lucky"
+    ]
   },
   {
     "id": "burrow-network",
@@ -1107,7 +1236,10 @@
       }
     ],
     "description": "Erupts a network of burrow tunnels beneath enemies.",
-    "icon": "icon_burrow_network"
+    "icon": "icon_burrow_network",
+    "tags": [
+      "verdant"
+    ]
   },
   {
     "id": "cottontail-decoy",
@@ -1169,7 +1301,10 @@
       }
     ],
     "description": "Plants a decoy that lures and damages nearby enemies.",
-    "icon": "icon_cottontail_decoy"
+    "icon": "icon_cottontail_decoy",
+    "tags": [
+      "pack"
+    ]
   },
   {
     "id": "tennis-ball",
@@ -1234,6 +1369,20 @@
           "knockback": 14
         },
         "description": "An unreturnable smash that bounces off every enemy it meets."
+      },
+      {
+        "id": "tennis-ball-evo-b",
+        "name": "Ball Machine",
+        "requiresPassiveId": "magnet-collar",
+        "stats": {
+          "damage": 26,
+          "cooldownMs": 360,
+          "area": 500,
+          "speed": 280,
+          "count": 1,
+          "knockback": 8
+        },
+        "description": "Rapid-fire serves. Small hits, relentless pace."
       }
     ],
     "description": "A bouncy ball that ricochets off up to 3 enemies.",
@@ -1241,7 +1390,10 @@
     "projectile": {
       "kind": "straight",
       "pierce": 2
-    }
+    },
+    "tags": [
+      "lucky"
+    ]
   },
   {
     "id": "skunk-cloud",
@@ -1300,10 +1452,26 @@
           "knockback": 7
         },
         "description": "A billowing toxic fog that fills the whole battlefield."
+      },
+      {
+        "id": "skunk-cloud-evo-b",
+        "name": "Musk Bomb",
+        "requiresPassiveId": "wild-heart",
+        "stats": {
+          "damage": 30,
+          "cooldownMs": 260,
+          "area": 200,
+          "durationMs": 4000,
+          "knockback": 20
+        },
+        "description": "Short-lived stink bursts that clear a big space."
       }
     ],
     "description": "A stinky aura that follows you, ticking damage and gently repelling foes.",
-    "icon": "icon_skunk_cloud"
+    "icon": "icon_skunk_cloud",
+    "tags": [
+      "verdant"
+    ]
   },
   {
     "id": "bee-swarm",
@@ -1362,10 +1530,27 @@
           "count": 6
         },
         "description": "An erratic, furious swarm too dense to escape."
+      },
+      {
+        "id": "bee-swarm-evo-b",
+        "name": "Queen's Guard",
+        "requiresPassiveId": "alpha-scent",
+        "stats": {
+          "damage": 24,
+          "cooldownMs": 400,
+          "area": 170,
+          "speed": 200,
+          "count": 8,
+          "slowPct": 15
+        },
+        "description": "A wider, heavier swarm that bogs enemies down."
       }
     ],
     "description": "A jittery swarm of bees orbiting the player, stinging rapidly.",
-    "icon": "icon_bee_swarm"
+    "icon": "icon_bee_swarm",
+    "tags": [
+      "pack"
+    ]
   },
   {
     "id": "acorn-mortar",
@@ -1424,13 +1609,29 @@
           "count": 2
         },
         "description": "A relentless barrage of lobbed acorns."
+      },
+      {
+        "id": "acorn-mortar-evo-b",
+        "name": "Acorn Rain",
+        "requiresPassiveId": "four-leaf",
+        "stats": {
+          "damage": 55,
+          "cooldownMs": 560,
+          "area": 500,
+          "speed": 210,
+          "count": 3
+        },
+        "description": "More shells, lighter payloads, constant bombardment."
       }
     ],
     "description": "Lobs an acorn that detonates in a 60px blast.",
     "icon": "icon_acorn_mortar",
     "projectile": {
       "kind": "arc"
-    }
+    },
+    "tags": [
+      "verdant"
+    ]
   },
   {
     "id": "firefly-lantern",
@@ -1492,7 +1693,10 @@
       }
     ],
     "description": "Two slow, bright orbs that deal heavy hits and cast a warm halo of light.",
-    "icon": "icon_firefly_lantern"
+    "icon": "icon_firefly_lantern",
+    "tags": [
+      "lucky"
+    ]
   },
   {
     "id": "echo-screech",
@@ -1551,6 +1755,19 @@
           "count": 1
         },
         "description": "A world-shaking boom that pierces everything in its path."
+      },
+      {
+        "id": "echo-screech-evo-b",
+        "name": "Piercing Wail",
+        "requiresPassiveId": "magnet-collar",
+        "stats": {
+          "damage": 62,
+          "cooldownMs": 520,
+          "area": 620,
+          "speed": 350,
+          "count": 2
+        },
+        "description": "Twin needling shrieks, faster and meaner."
       }
     ],
     "description": "A piercing sonic wave that fires straight at the nearest foe.",
@@ -1558,7 +1775,10 @@
     "projectile": {
       "kind": "straight",
       "pierce": 999
-    }
+    },
+    "tags": [
+      "sonic"
+    ]
   },
   {
     "id": "laser-pointer",
@@ -1611,9 +1831,352 @@
           "durationMs": 730
         },
         "description": "Three dots wander the field at once, each calling down its own beam."
+      },
+      {
+        "id": "laser-pointer-evo-b",
+        "name": "Strobe Beam",
+        "requiresPassiveId": "alpha-scent",
+        "stats": {
+          "damage": 66,
+          "cooldownMs": 780,
+          "area": 150,
+          "durationMs": 300
+        },
+        "description": "The dot never rests. Rapid pinpoint zaps."
       }
     ],
     "description": "A red dot wanders toward the densest cluster of enemies, then a beam zaps it from off-screen.",
-    "icon": "icon_laser_pointer"
+    "icon": "icon_laser_pointer",
+    "tags": [
+      "lucky"
+    ]
+  },
+  {
+    "id": "thunder-fetch",
+    "name": "Thunder Fetch",
+    "animal": "dog",
+    "archetype": "projectile",
+    "isStarting": false,
+    "rarity": "mythic",
+    "levels": [
+      {
+        "damage": 40,
+        "cooldownMs": 700,
+        "area": 420,
+        "speed": 250,
+        "count": 1,
+        "knockback": 30
+      },
+      {
+        "damage": 52,
+        "cooldownMs": 650,
+        "area": 440,
+        "speed": 255,
+        "count": 1,
+        "knockback": 32
+      },
+      {
+        "damage": 61,
+        "cooldownMs": 650,
+        "area": 460,
+        "speed": 260,
+        "count": 1,
+        "knockback": 35
+      }
+    ],
+    "evolutions": [],
+    "description": "A crackling boomerang that detonates a thunderous pulse on the catch.",
+    "icon": "icon_thunder_fetch",
+    "tags": [
+      "sonic",
+      "pack"
+    ],
+    "fusionOnly": true,
+    "projectile": {
+      "kind": "boomerang"
+    }
+  },
+  {
+    "id": "slip-n-blitz",
+    "name": "Slip 'n' Blitz",
+    "animal": "dog",
+    "archetype": "trail",
+    "isStarting": false,
+    "rarity": "mythic",
+    "levels": [
+      {
+        "damage": 26,
+        "cooldownMs": 580,
+        "area": 90,
+        "count": 6,
+        "durationMs": 1500,
+        "slowPct": 25
+      },
+      {
+        "damage": 33,
+        "cooldownMs": 560,
+        "area": 95,
+        "count": 6,
+        "durationMs": 1600,
+        "slowPct": 25
+      },
+      {
+        "damage": 39,
+        "cooldownMs": 560,
+        "area": 100,
+        "count": 7,
+        "durationMs": 1700,
+        "slowPct": 25
+      }
+    ],
+    "evolutions": [],
+    "description": "A slick drool-streaked sprint trail that slows and scorches.",
+    "icon": "icon_slip_n_blitz",
+    "tags": [
+      "swift",
+      "pack"
+    ],
+    "fusionOnly": true
+  },
+  {
+    "id": "wildcat-cyclone",
+    "name": "Wildcat Cyclone",
+    "animal": "cat",
+    "archetype": "melee-sweep",
+    "isStarting": false,
+    "rarity": "mythic",
+    "levels": [
+      {
+        "damage": 34,
+        "cooldownMs": 480,
+        "area": 130,
+        "knockback": 20,
+        "critPct": 20
+      },
+      {
+        "damage": 44,
+        "cooldownMs": 470,
+        "area": 140,
+        "knockback": 22,
+        "critPct": 20
+      },
+      {
+        "damage": 49,
+        "cooldownMs": 470,
+        "area": 150,
+        "knockback": 25,
+        "critPct": 22
+      }
+    ],
+    "evolutions": [],
+    "description": "A full-circle shredding whirlwind of claws.",
+    "icon": "icon_wildcat_cyclone",
+    "tags": [
+      "feral"
+    ],
+    "fusionOnly": true,
+    "pattern": "ring"
+  },
+  {
+    "id": "tangle-storm",
+    "name": "Tangle Storm",
+    "animal": "cat",
+    "archetype": "projectile",
+    "isStarting": false,
+    "rarity": "mythic",
+    "levels": [
+      {
+        "damage": 33,
+        "cooldownMs": 500,
+        "area": 450,
+        "speed": 280,
+        "count": 3
+      },
+      {
+        "damage": 42,
+        "cooldownMs": 480,
+        "area": 470,
+        "speed": 285,
+        "count": 3
+      },
+      {
+        "damage": 48,
+        "cooldownMs": 475,
+        "area": 490,
+        "speed": 290,
+        "count": 3
+      }
+    ],
+    "evolutions": [],
+    "description": "A piercing volley of yarn-bound hairballs.",
+    "icon": "icon_tangle_storm",
+    "tags": [
+      "pack",
+      "swift"
+    ],
+    "fusionOnly": true,
+    "projectile": {
+      "kind": "straight",
+      "pierce": 2
+    }
+  },
+  {
+    "id": "seismic-kick",
+    "name": "Seismic Kick",
+    "animal": "rabbit",
+    "archetype": "aoe-pulse",
+    "isStarting": false,
+    "rarity": "mythic",
+    "levels": [
+      {
+        "damage": 30,
+        "cooldownMs": 650,
+        "area": 140,
+        "knockback": 60,
+        "slowPct": 12
+      },
+      {
+        "damage": 38,
+        "cooldownMs": 600,
+        "area": 150,
+        "knockback": 65,
+        "slowPct": 12
+      },
+      {
+        "damage": 41,
+        "cooldownMs": 590,
+        "area": 160,
+        "knockback": 70,
+        "slowPct": 14
+      }
+    ],
+    "evolutions": [],
+    "description": "A thunderous line kick that ripples out in a quake ring.",
+    "icon": "icon_seismic_kick",
+    "tags": [
+      "feral",
+      "sonic"
+    ],
+    "fusionOnly": true
+  },
+  {
+    "id": "clover-cascade",
+    "name": "Clover Cascade",
+    "animal": "rabbit",
+    "archetype": "orbit",
+    "isStarting": false,
+    "rarity": "mythic",
+    "levels": [
+      {
+        "damage": 36,
+        "cooldownMs": 700,
+        "area": 170,
+        "speed": 180,
+        "count": 4
+      },
+      {
+        "damage": 45,
+        "cooldownMs": 680,
+        "area": 180,
+        "speed": 190,
+        "count": 4
+      },
+      {
+        "damage": 51,
+        "cooldownMs": 675,
+        "area": 190,
+        "speed": 200,
+        "count": 4
+      }
+    ],
+    "evolutions": [],
+    "description": "Orbiting clovers that shed bursting petals in their wake.",
+    "icon": "icon_clover_cascade",
+    "tags": [
+      "lucky",
+      "swift"
+    ],
+    "fusionOnly": true
+  },
+  {
+    "id": "glowhive",
+    "name": "Glowhive",
+    "animal": "any",
+    "archetype": "orbit",
+    "isStarting": false,
+    "rarity": "mythic",
+    "levels": [
+      {
+        "damage": 24,
+        "cooldownMs": 420,
+        "area": 150,
+        "speed": 240,
+        "count": 8
+      },
+      {
+        "damage": 31,
+        "cooldownMs": 400,
+        "area": 155,
+        "speed": 250,
+        "count": 8
+      },
+      {
+        "damage": 35,
+        "cooldownMs": 398,
+        "area": 160,
+        "speed": 260,
+        "count": 10
+      }
+    ],
+    "evolutions": [],
+    "description": "A double ring of lantern-lit bees stinging at a furious tick.",
+    "icon": "icon_glowhive",
+    "tags": [
+      "pack",
+      "lucky"
+    ],
+    "fusionOnly": true
+  },
+  {
+    "id": "cannonade",
+    "name": "Cannonade",
+    "animal": "any",
+    "archetype": "projectile",
+    "isStarting": false,
+    "rarity": "mythic",
+    "levels": [
+      {
+        "damage": 33,
+        "cooldownMs": 620,
+        "area": 480,
+        "speed": 220,
+        "count": 3
+      },
+      {
+        "damage": 41,
+        "cooldownMs": 600,
+        "area": 500,
+        "speed": 225,
+        "count": 3
+      },
+      {
+        "damage": 47,
+        "cooldownMs": 600,
+        "area": 520,
+        "speed": 230,
+        "count": 3
+      }
+    ],
+    "evolutions": [],
+    "description": "An arcing volley of three shells lobbed downrange.",
+    "icon": "icon_cannonade",
+    "tags": [
+      "lucky",
+      "verdant"
+    ],
+    "fusionOnly": true,
+    "projectile": {
+      "kind": "arc"
+    }
   }
 ]

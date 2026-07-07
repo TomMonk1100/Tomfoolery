@@ -17,6 +17,7 @@ import passivesJson from "../src/data/passives.json";
 import enemiesJson from "../src/data/enemies.json";
 import wavesJson from "../src/data/waves.json";
 import cardsJson from "../src/data/cards.json";
+import fusionsJson from "../src/data/fusions.json";
 import animalsJson from "../src/data/animals.json";
 import metaTreesJson from "../src/data/metaTrees.json";
 import {
@@ -62,15 +63,15 @@ const NEUTRAL_PASSIVE_IDS = ["magnet-collar", "wild-heart", "alpha-scent", "four
 const RARITIES = RARITY_ORDER as string[];
 
 describe("weapons.json", () => {
-  it("has exactly 19 species weapons (18 original + Update 2 scissor-kick) with unique ids", () => {
-    const species = weapons.filter((w) => w.animal !== "any");
+  it("has exactly 19 draftable species weapons (Update 3: fused excluded) with unique ids", () => {
+    const species = weapons.filter((w) => w.animal !== "any" && !w.fusionOnly);
     expect(species).toHaveLength(19);
     const ids = weapons.map((w) => w.id);
     expect(new Set(ids).size).toBe(weapons.length);
   });
 
-  it("has exactly 7 neutral (animal:any) weapons with unique ids", () => {
-    const neutral = weapons.filter((w) => w.animal === "any");
+  it("has exactly 7 draftable neutral (animal:any) weapons with unique ids", () => {
+    const neutral = weapons.filter((w) => w.animal === "any" && !w.fusionOnly);
     expect(neutral).toHaveLength(7);
     expect(new Set(neutral.map((w) => w.id))).toEqual(new Set(NEUTRAL_WEAPON_IDS));
   });
@@ -83,14 +84,15 @@ describe("weapons.json", () => {
       expect(ARCHETYPES).toContain(w.archetype);
       expect(typeof w.isStarting).toBe("boolean");
       expect(RARITIES).toContain(w.rarity);
-      expect(w.levels).toHaveLength(5);
+      expect(w.levels).toHaveLength(w.fusionOnly ? 3 : 5);
       for (const lvl of w.levels) {
         expect(typeof lvl.damage).toBe("number");
         expect(typeof lvl.cooldownMs).toBe("number");
         expect(typeof lvl.area).toBe("number");
       }
       expect(Array.isArray(w.evolutions)).toBe(true);
-      expect(w.evolutions.length).toBeGreaterThan(0);
+      if (w.fusionOnly) expect(w.evolutions).toHaveLength(0);
+      else expect(w.evolutions.length).toBeGreaterThan(0);
       for (const evo of w.evolutions) {
         expect(typeof evo.id).toBe("string");
         expect(typeof evo.name).toBe("string");
@@ -133,16 +135,63 @@ describe("weapons.json", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("damage grows across levels 1..5 (meaningful growth)", () => {
+  it("damage grows across levels (meaningful growth)", () => {
     for (const w of weapons) {
-      for (let i = 1; i < 5; i++) {
+      for (let i = 1; i < w.levels.length; i++) {
         expect(w.levels[i].damage).toBeGreaterThan(w.levels[i - 1].damage);
       }
     }
   });
 
+  it("Update 3: 12 designated weapons have a second branch with a different gate", () => {
+    const dual = weapons.filter((w) => w.evolutions.length === 2);
+    expect(new Set(dual.map((w) => w.id))).toEqual(
+      new Set([
+        "bark-blast", "zoomies", "pounce-slash", "midnight-prowl",
+        "scissor-kick", "lucky-clover", "tennis-ball", "bee-swarm",
+        "skunk-cloud", "acorn-mortar", "echo-screech", "laser-pointer",
+      ])
+    );
+    for (const w of dual) {
+      expect(w.evolutions[0].requiresPassiveId).not.toBe(w.evolutions[1].requiresPassiveId);
+      // DPS budget (D2): branch B within +-10% of branch A
+      const dps = (s: { damage: number; cooldownMs: number }): number => s.damage / s.cooldownMs;
+      const a = dps(w.evolutions[0].stats);
+      const b = dps(w.evolutions[1].stats);
+      expect(Math.abs(b - a) / a, w.id).toBeLessThanOrEqual(0.101);
+    }
+  });
+
+  it("Update 3: 8 fusion-only weapons — mythic, 3 levels, union tags, DPS cap", () => {
+    const fused = weapons.filter((w) => w.fusionOnly);
+    expect(fused).toHaveLength(8);
+    const byId = new Map(weapons.map((w) => [w.id, w]));
+    const fusions = fusionsJson as unknown as {
+      id: string; inputs: [string, string]; resultWeaponId: string;
+    }[];
+    expect(fusions).toHaveLength(8);
+    for (const f of fusions) {
+      const result = byId.get(f.resultWeaponId)!;
+      expect(result, f.id).toBeDefined();
+      expect(result.fusionOnly).toBe(true);
+      expect(result.rarity).toBe("mythic");
+      const inputs = f.inputs.map((i) => byId.get(i)!);
+      for (const inp of inputs) expect(inp, f.id).toBeDefined();
+      // D5: within-species or neutral only
+      const species = new Set(inputs.map((i) => i.animal).filter((a) => a !== "any"));
+      expect(species.size, f.id).toBeLessThanOrEqual(1);
+      // tags = union of inputs' tags
+      const union = new Set(inputs.flatMap((i) => i.tags ?? []));
+      expect(new Set(result.tags), f.id).toEqual(union);
+      // D3 DPS budget: fused L3 <= 1.3x sum of inputs' max-level DPS
+      const dps = (s: { damage: number; cooldownMs: number }): number => s.damage / s.cooldownMs;
+      const cap = 1.3 * inputs.reduce((t, i) => t + dps(i.levels[i.levels.length - 1]), 0);
+      expect(dps(result.levels[2]), f.id).toBeLessThanOrEqual(cap);
+    }
+  });
+
   it("every evolution branch is meaningfully stronger than L5 (DPS-wise)", () => {
-    for (const w of weapons) {
+    for (const w of weapons.filter((x) => !x.fusionOnly)) {
       const l5 = w.levels[4];
       for (const evo of w.evolutions) {
         const ev = evo.stats;

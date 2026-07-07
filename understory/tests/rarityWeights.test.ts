@@ -46,3 +46,51 @@ describe("rarity weights", () => {
     expect(rawWeight("common", 30, false)).toBe(10);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Update 3 (D9) — combo-aware weighting
+// ---------------------------------------------------------------------------
+import weaponsJsonD9 from "../src/data/weapons.json";
+import passivesJsonD9 from "../src/data/passives.json";
+import { comboWeightMultiplier, COMBO_WEIGHT_MULT } from "../src/core/rarityWeights";
+import type { PassiveData as PD9, WeaponData as WD9 } from "../src/core/types";
+
+const W9 = weaponsJsonD9 as unknown as WD9[];
+const P9 = passivesJsonD9 as unknown as PD9[];
+
+describe("comboWeightMultiplier (D9)", () => {
+  const aw = (weaponId: string, level = 1, evolved = false) => ({ weaponId, level, evolved });
+  const ap = (passiveId: string) => ({ passiveId, stacks: 1 });
+
+  it("2x for a passive that gates an owned un-evolved weapon's branch", () => {
+    // bark-blast branch A requires loyal-heart.
+    expect(comboWeightMultiplier("loyal-heart", [aw("bark-blast")], [], W9, P9)).toBe(
+      COMBO_WEIGHT_MULT
+    );
+    // Already evolved: no longer progress.
+    // (loyal-heart is tagged pack; bark-blast is sonic — no tag overlap.)
+    expect(
+      comboWeightMultiplier("loyal-heart", [aw("bark-blast", 5, true)], [], W9, P9)
+    ).toBe(1);
+  });
+
+  it("2x for a card sharing an owned synergy tag", () => {
+    // echo-screech is sonic; bark-blast (owned) is sonic.
+    expect(comboWeightMultiplier("echo-screech", [aw("bark-blast")], [], W9, P9)).toBe(
+      COMBO_WEIGHT_MULT
+    );
+  });
+
+  it("1x for unrelated cards; 2x for synthesized branch cards", () => {
+    // yarn-whip is swift; owned bark-blast is sonic, no gate relation.
+    expect(comboWeightMultiplier("yarn-whip", [aw("bark-blast")], [], W9, P9)).toBe(1);
+    expect(
+      comboWeightMultiplier("bark-blast::bark-blast-evo-a", [aw("bark-blast", 5)], [], W9, P9)
+    ).toBe(COMBO_WEIGHT_MULT);
+  });
+
+  it("nothing owned: everything stays 1x", () => {
+    expect(comboWeightMultiplier("bark-blast", [], [], W9, P9)).toBe(1);
+    expect(comboWeightMultiplier("loyal-heart", [], [], W9, P9)).toBe(1);
+  });
+});
