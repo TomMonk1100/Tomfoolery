@@ -96,6 +96,12 @@ const ZONE_TINT_BY_WEAPON: Record<string, number> = {
 };
 const DEFAULT_ZONE_TINT = 0x8b5fbf;
 const GOLD_TINT = 0xe8b23d;
+/** Update 3 (D8, scoped): fused weapons alternate between GOLD_TINT and this
+ * purple each fire, approximating "dual-hue: tint alternates between both
+ * input weapons' colors" (plan §6.4) without needing a per-weapon canonical
+ * color, which doesn't exist in the data model -- see
+ * docs/update-3-deviations.md. */
+const FUSED_TINT_B = 0x8b5fbf;
 
 interface TrailBurstState {
   active: boolean;
@@ -145,17 +151,37 @@ export class WeaponSystem implements System {
   }
 
   /** Update 2 §2: evolved weapons get a gold tint on their fx, whatever kind of display object it is. */
-  private tintIfEvolved(obj: Phaser.GameObjects.GameObject, evolved: boolean): void {
+  /** Update 3: per-weapon-id fire parity counter driving the fused dual-hue
+   * alternation (§6.4). Keyed by weaponId, not by ActiveWeapon instance --
+   * a slot only ever holds one weapon at a time so this is equivalent and
+   * needs no cleanup on weapon removal (stale entries are harmless). */
+  private fusedTintParity = new Map<string, number>();
+
+  /** Grade-aware tint: base (undefined, caller's own color) / evolved (gold,
+   * unchanged from Update 2) / fused (alternates gold <-> purple per fire). */
+  private weaponGradeTint(data: WeaponData): number {
+    if (!data.fusionOnly) return GOLD_TINT;
+    const n = (this.fusedTintParity.get(data.id) ?? 0) + 1;
+    this.fusedTintParity.set(data.id, n);
+    return n % 2 === 0 ? FUSED_TINT_B : GOLD_TINT;
+  }
+
+  private tintIfEvolved(
+    obj: Phaser.GameObjects.GameObject,
+    evolved: boolean,
+    data?: WeaponData
+  ): void {
     if (!evolved) return;
+    const tint = data ? this.weaponGradeTint(data) : GOLD_TINT;
     const anyObj = obj as unknown as {
       setTint?: (c: number) => unknown;
       setFillStyle?: (c: number, a?: number) => unknown;
       setStrokeStyle?: (w: number, c: number, a?: number) => unknown;
       fillAlpha?: number;
     };
-    if (typeof anyObj.setTint === "function") anyObj.setTint(GOLD_TINT);
-    else if (typeof anyObj.setFillStyle === "function") anyObj.setFillStyle(GOLD_TINT, anyObj.fillAlpha ?? 0.4);
-    else if (typeof anyObj.setStrokeStyle === "function") anyObj.setStrokeStyle(2, GOLD_TINT, 0.9);
+    if (typeof anyObj.setTint === "function") anyObj.setTint(tint);
+    else if (typeof anyObj.setFillStyle === "function") anyObj.setFillStyle(tint, anyObj.fillAlpha ?? 0.4);
+    else if (typeof anyObj.setStrokeStyle === "function") anyObj.setStrokeStyle(2, tint, 0.9);
   }
 
   /** Public per CONTRACTS: WorldScene/DraftSystem may call to force a resync (no-op here since update() syncs every frame anyway; kept as a stable stub). */
@@ -363,7 +389,7 @@ export class WeaponSystem implements System {
       s.setDepth(950);
       const scale = area / 32;
       s.setScale(scale);
-      this.tintIfEvolved(s, evolved);
+      this.tintIfEvolved(s, evolved, data);
       this.scene.tweens.add({
         targets: s,
         alpha: 0,
@@ -372,7 +398,7 @@ export class WeaponSystem implements System {
       });
     } else {
       const ring = this.scene.add.circle(playerPos.x, playerPos.y, area, 0xffffff, 0);
-      ring.setStrokeStyle(2, evolved ? GOLD_TINT : 0xe8b23d, 0.8);
+      ring.setStrokeStyle(2, evolved ? this.weaponGradeTint(data) : 0xe8b23d, 0.8);
       ring.setDepth(950);
       this.scene.tweens.add({
         targets: ring,
@@ -426,13 +452,13 @@ export class WeaponSystem implements System {
       const s = this.scene.add.sprite(playerPos.x, playerPos.y, fk);
       s.setDepth(950);
       s.setRotation(facingAngle);
-      this.tintIfEvolved(s, evolved);
+      this.tintIfEvolved(s, evolved, data);
       this.scene.tweens.add({ targets: s, alpha: 0, duration: 200, onComplete: () => s.destroy() });
       return;
     }
 
     if (pattern === "line-both" || pattern === "cross") {
-      this.playLineFx(playerPos, range, halfWidth, facingAngle, pattern === "cross", evolved);
+      this.playLineFx(playerPos, range, halfWidth, facingAngle, pattern === "cross", evolved, data);
       return;
     }
 
@@ -444,7 +470,7 @@ export class WeaponSystem implements System {
       Phaser.Math.RadToDeg(facingAngle - halfArcRad),
       Phaser.Math.RadToDeg(facingAngle + halfArcRad),
       false,
-      evolved ? GOLD_TINT : 0xf4f0e8,
+      evolved ? this.weaponGradeTint(data) : 0xf4f0e8,
       0.4
     );
     arc.setDepth(950);
@@ -458,7 +484,8 @@ export class WeaponSystem implements System {
     halfWidth: number,
     facingAngle: number,
     cross: boolean,
-    evolved: boolean
+    evolved: boolean,
+    data: WeaponData
   ): void {
     const fk = frameKey(SPRITE_KEYS.fxScissor);
     const angles = cross
@@ -470,7 +497,7 @@ export class WeaponSystem implements System {
         s.setDepth(950);
         s.setRotation(angle);
         s.setDisplaySize(length * 2, halfWidth * 2);
-        this.tintIfEvolved(s, evolved);
+        this.tintIfEvolved(s, evolved, data);
         this.scene.tweens.add({ targets: s, alpha: 0, duration: 150, onComplete: () => s.destroy() });
       } else {
         const rect = this.scene.add.rectangle(
@@ -523,7 +550,7 @@ export class WeaponSystem implements System {
       pierce,
       splitCount,
       spriteKey: this.projectileSpriteFor(data),
-      tint: evolved ? GOLD_TINT : undefined,
+      tint: evolved ? this.weaponGradeTint(data) : undefined,
     });
   }
 
@@ -639,7 +666,7 @@ export class WeaponSystem implements System {
   ): void {
     const angle = Math.atan2(facing.y, facing.x);
     const length = Math.max(40, area);
-    const tint = evolved ? GOLD_TINT : ZONE_TINT_BY_WEAPON[data.id] ?? DEFAULT_ZONE_TINT;
+    const tint = evolved ? this.weaponGradeTint(data) : ZONE_TINT_BY_WEAPON[data.id] ?? DEFAULT_ZONE_TINT;
     const streak = this.scene.add.rectangle(
       playerPos.x + facing.x * length * 0.3,
       playerPos.y + facing.y * length * 0.3,
@@ -717,7 +744,7 @@ export class WeaponSystem implements System {
     evolved: boolean
   ): void {
     const fk = frameKey(SPRITE_KEYS.fxAura);
-    const tint = evolved ? GOLD_TINT : ZONE_TINT_BY_WEAPON[data.id] ?? DEFAULT_ZONE_TINT;
+    const tint = evolved ? this.weaponGradeTint(data) : ZONE_TINT_BY_WEAPON[data.id] ?? DEFAULT_ZONE_TINT;
     let graphic: Phaser.GameObjects.Arc | Phaser.GameObjects.Sprite;
     if (this.scene.textures.exists(fk)) {
       const s = this.scene.add.sprite(pos.x, pos.y, fk);

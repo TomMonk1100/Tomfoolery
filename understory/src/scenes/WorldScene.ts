@@ -50,6 +50,8 @@ import type { WeaponData, PassiveData, EnemyData, FusionData, SynergyData } from
 import { normalizeWeapons } from "../core/weaponCatalog";
 import { SynergySystem } from "../systems/SynergySystem";
 import { CodexSystem } from "../systems/CodexSystem";
+import { SeasonAmbience } from "../systems/SeasonAmbience";
+import { Quality } from "../core/Quality";
 import type { SaveManager } from "../core/SaveManager";
 import { MAX_LEVEL, WELL_FED_THRESHOLD, EV as EVX } from "../core/types";
 import type { CombatProvider, EnemyView } from "../core/context";
@@ -72,6 +74,7 @@ export class WorldScene extends Phaser.Scene {
   private ctx!: GameContext;
   private emitter!: Phaser.Events.EventEmitter;
   private playerContainer!: Phaser.GameObjects.Container;
+  private playerShadow?: Phaser.GameObjects.Image;
   private systems: System[] = [];
   private inputSource!: InputSource & Partial<System>;
   private season!: SeasonSystem;
@@ -129,6 +132,23 @@ export class WorldScene extends Phaser.Scene {
       this.playerContainer.add(body);
     }
     this.playerContainer.setDepth(1000);
+
+    // Update 3 Phase 3.2: shared procedural shadow (~12x5px, black, alpha
+    // 0.25) under the player. Bob the sprite, not the shadow (cheap depth
+    // cue) -- the shadow tracks playerContainer's x/y at a fixed y-offset,
+    // synced once per frame at the end of update() after movement/wrap have
+    // already repositioned the container this frame. Full enemy/companion
+    // shadow coverage deferred -- see docs/update-3-deviations.md (no live
+    // browser in this sandbox to visually verify pooled-instance wiring).
+    if (!this.textures.exists("shadow_ellipse")) {
+      const g = this.make.graphics({ x: 0, y: 0 }, false);
+      g.fillStyle(0x000000, 0.25);
+      g.fillEllipse(6, 2.5, 12, 5);
+      g.generateTexture("shadow_ellipse", 12, 5);
+      g.destroy();
+    }
+    this.playerShadow = this.add.image(cx, cy + 14, "shadow_ellipse");
+    this.playerShadow.setDepth(999);
 
     // Build the shared context. `world` is filled in immediately after we
     // construct WorldGenSystem below.
@@ -273,6 +293,7 @@ export class WorldScene extends Phaser.Scene {
     const companions = new CompanionSystem(this, this.ctx);
     const juice = new JuiceSystem(this, this.ctx);
     const hudSystem = new HUD(this, this.ctx);
+    const seasonAmbience = new SeasonAmbience(this, this.ctx);
 
     this.systems = [
       juice,
@@ -293,6 +314,7 @@ export class WorldScene extends Phaser.Scene {
       draft,
       this.synergy,
       composer,
+      seasonAmbience,
     ];
     if (codex) this.systems.push(codex);
 
@@ -305,6 +327,21 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, this.worldBounds.width, this.worldBounds.height);
     this.cameras.main.startFollow(this.playerContainer, true, 0.12, 0.12);
     this.cameras.main.setBackgroundColor(0x14261a);
+
+    // Update 3 Phase 3.5: postFX, WebGL + Quality.high only, behind the
+    // ENABLE_POSTFX kill-switch (Quality.ts). Subtle so pixel art reads
+    // crisp; glowy things (fireflies, evolved/fused VFX, XP motes) pop
+    // without edges smearing. No live browser in this sandbox to visually
+    // tune it further -- see docs/update-3-deviations.md (plan §6.6: "if
+    // bloom looks bad, flip the kill-switch and ship without it").
+    if (Quality.current.postFX && this.renderer.type === Phaser.WEBGL) {
+      try {
+        this.cameras.main.postFX.addVignette(0.5, 0.5, 0.85, 0.35);
+        this.cameras.main.postFX.addBloom(0xffffff, 1, 1, 0.6, 0.6, 1);
+      } catch (err) {
+        console.warn("[WorldScene] postFX unavailable, skipping", err);
+      }
+    }
 
     // Unlock audio on first gesture.
     this.input.once("pointerdown", () => {
@@ -395,6 +432,7 @@ export class WorldScene extends Phaser.Scene {
       const moving = this.time.now - this.lastMoveAt < 130;
       playAnim(this.playerSprite, this.playerSpriteKey, moving ? "walk" : "idle");
     }
+    this.playerShadow?.setPosition(this.playerContainer.x, this.playerContainer.y + 14);
   }
 
   // Convenience for potential external/testing use.
