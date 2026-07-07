@@ -106,3 +106,27 @@ since the sandboxed browser tab throttles real-time rAF when backgrounded.
   #22. The ≥50 kills/2min target from Gate 4 is therefore **unverified**,
   not confirmed. Recommend a follow-up live playtest (the technique in §10
   still applies) before treating the cat kill-rate gap as closed.
+
+### Update 3 deploy verification (2026-07-07)
+
+- **Deploy method changed from the plan's default.** Netlify's remote
+  `npm run build` failed 3x with no accessible log (see
+  docs/update-3-deviations.md #24); the identical source built cleanly every
+  time in this session's own sandbox. Worked around by building locally and
+  deploying the verified `dist/` output directly (no remote build step).
+- [x] Deploy permalink `https://6a4d5d7ad03ea25991ef733c--understory-life.netlify.app`
+      → 200, `<title>Understory</title>`.
+- [x] Production `https://understory-life.netlify.app` → 200, same title.
+- [x] JS bundle (`/assets/index-Db0gOdLu.js`) → 200, reachable.
+- [ ] **In-browser gameplay verification: NOT DONE.** No browser/JS-execution
+      tool was available this session (see docs/update-3-deviations.md
+      #22/#23/#26) — branching evolutions, fusions, codex discovery,
+      shadows/season-ambience/postFX, and the cat kill-rate fix are all
+      unverified live. Recommend a live playtest (plan §10's
+      `window.__understory` technique) before treating Update 3 as fully
+      shipped.
+- **Follow-up for Adam**: `netlify.toml` still specifies a remote build
+  (`npm run build`); the next deploy through the normal flow may hit the
+  same unexplained failure. The Netlify dashboard's build log (not
+  accessible through this session's tools) is the fastest way to diagnose
+  it if it recurs.
