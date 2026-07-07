@@ -89,9 +89,14 @@ describe("weapons.json", () => {
         expect(typeof lvl.cooldownMs).toBe("number");
         expect(typeof lvl.area).toBe("number");
       }
-      expect(typeof w.evolution.name).toBe("string");
-      expect(typeof w.evolution.requiresPassiveId).toBe("string");
-      expect(typeof w.evolution.stats.damage).toBe("number");
+      expect(Array.isArray(w.evolutions)).toBe(true);
+      expect(w.evolutions.length).toBeGreaterThan(0);
+      for (const evo of w.evolutions) {
+        expect(typeof evo.id).toBe("string");
+        expect(typeof evo.name).toBe("string");
+        expect(typeof evo.requiresPassiveId).toBe("string");
+        expect(typeof evo.stats.damage).toBe("number");
+      }
       expect(typeof w.description).toBe("string");
       expect(w.icon).toBe(`icon_${w.id.replace(/-/g, "_")}`);
       if (w.archetype === "projectile") {
@@ -111,14 +116,21 @@ describe("weapons.json", () => {
     for (const w of starting) expect(w.rarity).toBe("common");
   });
 
-  it("every evolution.requiresPassiveId exists in passives.json and matches the weapon's animal", () => {
+  it("every evolution requiresPassiveId exists in passives.json and matches the weapon's animal", () => {
     const passiveById = new Map(passives.map((p) => [p.id, p]));
     for (const w of weapons) {
-      const req = w.evolution.requiresPassiveId;
-      const passive = passiveById.get(req);
-      expect(passive, `${w.id} requires missing passive ${req}`).toBeDefined();
-      expect(passive!.animal).toBe(w.animal);
+      for (const evo of w.evolutions) {
+        const req = evo.requiresPassiveId;
+        const passive = passiveById.get(req);
+        expect(passive, `${w.id}/${evo.id} requires missing passive ${req}`).toBeDefined();
+        expect(passive!.animal).toBe(w.animal);
+      }
     }
+  });
+
+  it("evolution branch ids are globally unique", () => {
+    const ids = weapons.flatMap((w) => w.evolutions.map((e) => e.id));
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("damage grows across levels 1..5 (meaningful growth)", () => {
@@ -129,13 +141,15 @@ describe("weapons.json", () => {
     }
   });
 
-  it("evolution is meaningfully stronger than L5 (DPS-wise)", () => {
+  it("every evolution branch is meaningfully stronger than L5 (DPS-wise)", () => {
     for (const w of weapons) {
       const l5 = w.levels[4];
-      const ev = w.evolution.stats;
-      const dpsL5 = l5.damage / l5.cooldownMs;
-      const dpsEv = ev.damage / ev.cooldownMs;
-      expect(dpsEv).toBeGreaterThan(dpsL5 * 1.5);
+      for (const evo of w.evolutions) {
+        const ev = evo.stats;
+        const dpsL5 = l5.damage / l5.cooldownMs;
+        const dpsEv = ev.damage / ev.cooldownMs;
+        expect(dpsEv).toBeGreaterThan(dpsL5 * 1.5);
+      }
     }
   });
 

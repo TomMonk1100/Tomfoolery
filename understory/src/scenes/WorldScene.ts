@@ -44,15 +44,20 @@ import cardsJson from "../data/cards.json";
 import weaponsJson from "../data/weapons.json";
 import passivesJson from "../data/passives.json";
 import enemiesJson from "../data/enemies.json";
-import type { WeaponData, PassiveData, EnemyData } from "../core/types";
+import fusionsJson from "../data/fusions.json";
+import synergiesJson from "../data/synergies.json";
+import type { WeaponData, PassiveData, EnemyData, FusionData, SynergyData } from "../core/types";
+import { normalizeWeapons } from "../core/weaponCatalog";
 import { MAX_LEVEL, WELL_FED_THRESHOLD, EV as EVX } from "../core/types";
 import type { CombatProvider, EnemyView } from "../core/context";
 
 const ANIMALS = animalsJson as unknown as Record<string, AnimalData>;
 const CARDS = cardsJson as unknown as CardData[];
-const WEAPONS = weaponsJson as unknown as WeaponData[];
+const WEAPONS = normalizeWeapons(weaponsJson);
 const PASSIVES = passivesJson as unknown as PassiveData[];
 const ENEMIES = enemiesJson as unknown as EnemyData[];
+const FUSIONS = fusionsJson as unknown as FusionData[];
+const SYNERGY_DEFS = synergiesJson as unknown as SynergyData[];
 
 /**
  * WorldScene — owns the GameContext and constructs/updates every gameplay
@@ -208,6 +213,8 @@ export class WorldScene extends Phaser.Scene {
       weapons: WEAPONS,
       passives: PASSIVES,
       enemyCatalog: ENEMIES,
+      fusions: FUSIONS,
+      synergyDefs: SYNERGY_DEFS,
       getEnemies: (): EnemyView[] => scene.combat.getEnemies?.() ?? [],
       damageEnemy: (id: string, amount: number, crit?: boolean): boolean =>
         scene.combat.damageEnemy?.(id, amount, crit) ?? false,

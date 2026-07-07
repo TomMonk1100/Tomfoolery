@@ -20,6 +20,8 @@ import {
   WeaponData,
   PassiveData,
   EnemyData,
+  FusionData,
+  SynergyData,
   NestState,
 } from "./types";
 
@@ -106,6 +108,10 @@ export interface GameContext {
   weapons: WeaponData[];
   passives: PassiveData[];
   enemyCatalog: EnemyData[];
+  /** Update 3: fusion recipes (fusions.json). Empty until Phase 1 content lands. */
+  fusions: FusionData[];
+  /** Update 3: synergy definitions (synergies.json). Empty until Phase 1 content lands. */
+  synergyDefs: SynergyData[];
 
   /** Live enemies (empty until EnemySystem registers). */
   getEnemies(): EnemyView[];

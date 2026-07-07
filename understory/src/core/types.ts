@@ -152,6 +152,9 @@ export interface ActiveWeapon {
   weaponId: string;
   level: number;
   evolved: boolean;
+  /** Update 3: which evolution branch was taken (WeaponEvolution.id).
+   * Absent on pre-Update-3 saves/runs; resolveEvolution falls back to [0]. */
+  evolutionId?: string;
 }
 
 export interface ActivePassive {
@@ -237,14 +240,38 @@ export function makeRunStats(): RunStats {
 // Meta / save
 // ----------------------------------------------------------------------------
 
+export type QualityPref = "auto" | "high" | "low";
+
+/** Update 3: codex discovery state — ids the player has triggered live. */
+export interface CodexState {
+  evolutions: string[];
+  fusions: string[];
+  synergies: string[];
+}
+
+/** Bump when MetaSave's shape changes; SaveManager.migrateMeta upgrades old saves. */
+export const META_SAVE_VERSION = 2;
+
 export interface MetaSave {
+  version: number;
   sunseeds: number;
   keepsakes: Record<string, number>;
   unlockedNodes: string[];
+  /** Update 3: discovered combo ids for the codex. */
+  codex: CodexState;
+  /** Update 3: graphics quality preference; "auto" probes at boot. */
+  quality?: QualityPref;
 }
 
 export function defaultMeta(): MetaSave {
-  return { sunseeds: 0, keepsakes: {}, unlockedNodes: [] };
+  return {
+    version: META_SAVE_VERSION,
+    sunseeds: 0,
+    keepsakes: {},
+    unlockedNodes: [],
+    codex: { evolutions: [], fusions: [], synergies: [] },
+    quality: "auto",
+  };
 }
 
 // ----------------------------------------------------------------------------
@@ -253,15 +280,22 @@ export function defaultMeta(): MetaSave {
 
 export type TileType = "grass" | "obstacle" | "forage" | "nest" | "water";
 
+/** Update 3: procedurally generated regions with distinct look/density (see src/systems/biomes.ts). */
+export type Biome = "meadow" | "forest" | "wetland" | "scrub";
+
 export interface WorldTile {
   type: TileType;
   revealed: boolean;
   /** For forage nodes: whether already harvested. */
   harvested?: boolean;
+  /** Update 3: biome this tile belongs to, precomputed at generation time so
+   * renderers/consumers never need to re-run the noise function per-frame. */
+  biome?: Biome;
 }
 
-/** Update 2: world grows to 48x48 and wraps Pac-Man style (toroidal). */
-export const WORLD_SIZE = 48;
+/** Update 3: world grows to 128x128 (was 48x48) with procedural biomes; still
+ * wraps Pac-Man style (toroidal). */
+export const WORLD_SIZE = 128;
 export const TILE_PX = 32;
 
 // ----------------------------------------------------------------------------
@@ -370,6 +404,8 @@ export interface WeaponLevelStats {
 }
 
 export interface WeaponEvolution {
+  /** Update 3: unique branch id, e.g. "bark-blast-evo-a". */
+  id: string;
   /** Evolved display name, e.g. "Sonic Howl". */
   name: string;
   /** Passive that must be owned (any stacks) for evolution to be offered at weapon L5. */
@@ -392,7 +428,9 @@ export interface WeaponData {
   rarity: Rarity; // draft weighting bucket
   /** Exactly 5 entries, level 1..5. */
   levels: WeaponLevelStats[];
-  evolution: WeaponEvolution;
+  /** Update 3: evolution branches (was single `evolution`). Most weapons have
+   * one; designated weapons gain a second branch. Fusion-only weapons: []. */
+  evolutions: WeaponEvolution[];
   description: string;
   /** Atlas frame key for the draft card / HUD icon, e.g. "icon_bark_blast". */
   icon: string;
@@ -406,6 +444,10 @@ export interface WeaponData {
   pattern?: WeaponPattern;
   /** Update 2: cone half-angle in degrees for pattern "arc". Defaults to 100. */
   arcDeg?: number;
+  /** Update 3: synergy tags (1-2 per weapon). */
+  tags?: string[];
+  /** Update 3: obtainable only via fusion — never in the normal draft pool. */
+  fusionOnly?: boolean;
 }
 
 export interface PassiveData {
@@ -418,6 +460,57 @@ export interface PassiveData {
   description: string;
   icon: string;
   maxStacks: number;
+  /** Update 3: synergy tags (1-2 per passive). */
+  tags?: string[];
+}
+
+// ----------------------------------------------------------------------------
+// Update 3 — Symbiosis: fusions, synergies, evolution helpers
+// ----------------------------------------------------------------------------
+
+/** Stat-only bonus payload (percent values) merged into statBonus() lookups. */
+export interface StatBonus {
+  damage?: number;
+  cooldown?: number;
+  area?: number;
+  moveSpeed?: number;
+  xpGain?: number;
+  knockback?: number;
+}
+
+export interface FusionData {
+  id: string;
+  name: string;
+  /** The two input weapon ids; both must be owned at max level. */
+  inputs: [string, string];
+  resultWeaponId: string;
+  description: string;
+  icon: string;
+}
+
+export interface SynergyData {
+  id: string;
+  name: string;
+  tag: string;
+  thresholds: { count: number; bonus: StatBonus }[];
+  description: string;
+  icon: string;
+}
+
+/** Resolve which evolution branch applies for an active weapon: the branch
+ * recorded on ActiveWeapon.evolutionId, falling back to the first branch
+ * (single-path weapons and pre-Update-3 saves). Undefined for fusion-only
+ * weapons, which have no evolutions. */
+export function resolveEvolution(
+  data: WeaponData,
+  active?: { evolutionId?: string }
+): WeaponEvolution | undefined {
+  if (!data.evolutions || data.evolutions.length === 0) return undefined;
+  if (active?.evolutionId) {
+    const match = data.evolutions.find((e) => e.id === active.evolutionId);
+    if (match) return match;
+  }
+  return data.evolutions[0];
 }
 
 export type EnemyBehavior =

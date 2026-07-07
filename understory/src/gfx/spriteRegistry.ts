@@ -101,6 +101,7 @@ export const SPRITE_KEYS = {
   tileGrassC: "tile_grass_c",
   tileGrassSeamless: "tile_grass_seamless", // 64 — Update 2: single tileable background, replaces the per-tile grass checkerboard
   tileWater: "tile_water", // anim: shimmer loop (2 frames)
+  tileShoreRim: "tile_shore_rim", // Update 3: shore-edge strip drawn on pond border tiles
   tileObstacleTree: "tile_obstacle_tree",
   tileObstacleRock: "tile_obstacle_rock",
   propFlower: "prop_flower",

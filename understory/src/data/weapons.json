@@ -38,17 +38,20 @@
         "knockback": 59
       }
     ],
-    "evolution": {
-      "name": "Sonic Howl",
-      "requiresPassiveId": "loyal-heart",
-      "stats": {
-        "damage": 57,
-        "cooldownMs": 791,
-        "area": 163,
-        "knockback": 59
-      },
-      "description": "A screen-shaking roar that scatters everything."
-    },
+    "evolutions": [
+      {
+        "id": "bark-blast-evo-a",
+        "name": "Sonic Howl",
+        "requiresPassiveId": "loyal-heart",
+        "stats": {
+          "damage": 57,
+          "cooldownMs": 791,
+          "area": 163,
+          "knockback": 59
+        },
+        "description": "A screen-shaking roar that scatters everything."
+      }
+    ],
     "description": "A shockwave ring of pure WOOF.",
     "icon": "icon_bark_blast"
   },
@@ -91,17 +94,20 @@
         "knockback": 34
       }
     ],
-    "evolution": {
-      "name": "Wag Tornado",
-      "requiresPassiveId": "thick-fur",
-      "stats": {
-        "damage": 68,
-        "cooldownMs": 518,
-        "area": 146,
-        "knockback": 34
-      },
-      "description": "A spinning frenzy of tail-powered destruction."
-    },
+    "evolutions": [
+      {
+        "id": "tail-wag-strike-evo-a",
+        "name": "Wag Tornado",
+        "requiresPassiveId": "thick-fur",
+        "stats": {
+          "damage": 68,
+          "cooldownMs": 518,
+          "area": 146,
+          "knockback": 34
+        },
+        "description": "A spinning frenzy of tail-powered destruction."
+      }
+    ],
     "description": "A wide tail sweep that smacks everything nearby.",
     "icon": "icon_tail_wag_strike"
   },
@@ -154,19 +160,22 @@
         "knockback": 18
       }
     ],
-    "evolution": {
-      "name": "Double Fetch",
-      "requiresPassiveId": "keen-nose",
-      "stats": {
-        "damage": 88,
-        "cooldownMs": 670,
-        "area": 610,
-        "speed": 265,
-        "count": 2,
-        "knockback": 18
-      },
-      "description": "Two sticks, zero returns unfetched."
-    },
+    "evolutions": [
+      {
+        "id": "fetch-evo-a",
+        "name": "Double Fetch",
+        "requiresPassiveId": "keen-nose",
+        "stats": {
+          "damage": 88,
+          "cooldownMs": 670,
+          "area": 610,
+          "speed": 265,
+          "count": 2,
+          "knockback": 18
+        },
+        "description": "Two sticks, zero returns unfetched."
+      }
+    ],
     "description": "Throws a stick that boomerangs back through enemies.",
     "icon": "icon_fetch",
     "projectile": {
@@ -217,19 +226,22 @@
         "durationMs": 1094
       }
     ],
-    "evolution": {
-      "name": "Mach Zoomies",
-      "requiresPassiveId": "big-appetite",
-      "stats": {
-        "damage": 51,
-        "cooldownMs": 974,
-        "area": 140,
-        "count": 5,
-        "durationMs": 1094
-      },
-      "description": "Leaves a scorching path that lingers as a damage zone.",
-      "archetype": "zone"
-    },
+    "evolutions": [
+      {
+        "id": "zoomies-evo-a",
+        "name": "Mach Zoomies",
+        "requiresPassiveId": "big-appetite",
+        "stats": {
+          "damage": 51,
+          "cooldownMs": 974,
+          "area": 140,
+          "count": 5,
+          "durationMs": 1094
+        },
+        "description": "Leaves a scorching path that lingers as a damage zone.",
+        "archetype": "zone"
+      }
+    ],
     "description": "A burst of sprinting speed that damages everything you brush past.",
     "icon": "icon_zoomies"
   },
@@ -272,17 +284,20 @@
         "durationMs": 1633
       }
     ],
-    "evolution": {
-      "name": "Ambush Den",
-      "requiresPassiveId": "thick-fur",
-      "stats": {
-        "damage": 101,
-        "cooldownMs": 1340,
-        "area": 163,
-        "durationMs": 1633
-      },
-      "description": "Buries multiple eruption traps that chain together."
-    },
+    "evolutions": [
+      {
+        "id": "dig-evo-a",
+        "name": "Ambush Den",
+        "requiresPassiveId": "thick-fur",
+        "stats": {
+          "damage": 101,
+          "cooldownMs": 1340,
+          "area": 163,
+          "durationMs": 1633
+        },
+        "description": "Buries multiple eruption traps that chain together."
+      }
+    ],
     "description": "Digs an eruption of dirt and rocks beneath enemies.",
     "icon": "icon_dig"
   },
@@ -330,18 +345,21 @@
         "count": 1
       }
     ],
-    "evolution": {
-      "name": "Drool Flood",
-      "requiresPassiveId": "big-appetite",
-      "stats": {
-        "damage": 81,
-        "cooldownMs": 822,
-        "area": 562,
-        "speed": 231,
-        "count": 3
-      },
-      "description": "A relentless flood of slobber arcs."
-    },
+    "evolutions": [
+      {
+        "id": "slobber-shot-evo-a",
+        "name": "Drool Flood",
+        "requiresPassiveId": "big-appetite",
+        "stats": {
+          "damage": 81,
+          "cooldownMs": 822,
+          "area": 562,
+          "speed": 231,
+          "count": 3
+        },
+        "description": "A relentless flood of slobber arcs."
+      }
+    ],
     "description": "Lobs a gross glob of slobber in an arc.",
     "icon": "icon_slobber_shot",
     "projectile": {
@@ -394,20 +412,23 @@
         "critPct": 20.0
       }
     ],
-    "evolution": {
-      "name": "Nine Lives Pounce",
-      "requiresPassiveId": "feline-grace",
-      "stats": {
-        "damage": 44,
-        "cooldownMs": 548,
-        "area": 141,
-        "knockback": 27,
-        "critPct": 25.0
-      },
-      "description": "A flurry of pounces that seem to defy death itself.",
-      "pattern": "arc"
-    },
-    "description": "A quick 90° front-slashing pounce — narrower reach, sharper bite.",
+    "evolutions": [
+      {
+        "id": "pounce-slash-evo-a",
+        "name": "Nine Lives Pounce",
+        "requiresPassiveId": "feline-grace",
+        "stats": {
+          "damage": 44,
+          "cooldownMs": 548,
+          "area": 141,
+          "knockback": 27,
+          "critPct": 25.0
+        },
+        "description": "A flurry of pounces that seem to defy death itself.",
+        "pattern": "arc"
+      }
+    ],
+    "description": "A quick 90\u00b0 front-slashing pounce \u2014 narrower reach, sharper bite.",
     "icon": "icon_pounce_slash"
   },
   {
@@ -454,18 +475,21 @@
         "critPct": 12.16
       }
     ],
-    "evolution": {
-      "name": "Shredder",
-      "requiresPassiveId": "predator-eye",
-      "stats": {
-        "damage": 57,
-        "cooldownMs": 426,
-        "area": 117,
-        "count": 4,
-        "critPct": 18.24
-      },
-      "description": "Claws so fast they blur into a shredding storm."
-    },
+    "evolutions": [
+      {
+        "id": "claw-flurry-evo-a",
+        "name": "Shredder",
+        "requiresPassiveId": "predator-eye",
+        "stats": {
+          "damage": 57,
+          "cooldownMs": 426,
+          "area": 117,
+          "count": 4,
+          "critPct": 18.24
+        },
+        "description": "Claws so fast they blur into a shredding storm."
+      }
+    ],
     "description": "Rapid claw swipes, chance to crit.",
     "icon": "icon_claw_flurry"
   },
@@ -513,18 +537,21 @@
         "count": 1
       }
     ],
-    "evolution": {
-      "name": "Triple Hairball",
-      "requiresPassiveId": "picky-eater",
-      "stats": {
-        "damage": 75,
-        "cooldownMs": 791,
-        "area": 539,
-        "speed": 219,
-        "count": 3
-      },
-      "description": "Three hairballs of pure disgust, launched in sequence."
-    },
+    "evolutions": [
+      {
+        "id": "hairball-lob-evo-a",
+        "name": "Triple Hairball",
+        "requiresPassiveId": "picky-eater",
+        "stats": {
+          "damage": 75,
+          "cooldownMs": 791,
+          "area": 539,
+          "speed": 219,
+          "count": 3
+        },
+        "description": "Three hairballs of pure disgust, launched in sequence."
+      }
+    ],
     "description": "Coughs up a hairball in a lobbed arc.",
     "icon": "icon_hairball_lob",
     "projectile": {
@@ -570,17 +597,20 @@
         "durationMs": 99999
       }
     ],
-    "evolution": {
-      "name": "Thunder Purr",
-      "requiresPassiveId": "soft-paws",
-      "stats": {
-        "damage": 37,
-        "cooldownMs": 304,
-        "area": 157,
-        "durationMs": 99999
-      },
-      "description": "A resonant purr that shakes the whole battlefield."
-    },
+    "evolutions": [
+      {
+        "id": "purr-aura-evo-a",
+        "name": "Thunder Purr",
+        "requiresPassiveId": "soft-paws",
+        "stats": {
+          "damage": 37,
+          "cooldownMs": 304,
+          "area": 157,
+          "durationMs": 99999
+        },
+        "description": "A resonant purr that shakes the whole battlefield."
+      }
+    ],
     "description": "A constant vibrating purr-field that damages nearby enemies.",
     "icon": "icon_purr_aura"
   },
@@ -628,19 +658,22 @@
         "durationMs": 972
       }
     ],
-    "evolution": {
-      "name": "Shadow Dance",
-      "requiresPassiveId": "feline-grace",
-      "stats": {
-        "damage": 57,
-        "cooldownMs": 914,
-        "area": 158,
-        "count": 5,
-        "durationMs": 972
-      },
-      "description": "Vanishes into shadow, leaving a trail of lingering dark.",
-      "archetype": "zone"
-    },
+    "evolutions": [
+      {
+        "id": "midnight-prowl-evo-a",
+        "name": "Shadow Dance",
+        "requiresPassiveId": "feline-grace",
+        "stats": {
+          "damage": 57,
+          "cooldownMs": 914,
+          "area": 158,
+          "count": 5,
+          "durationMs": 972
+        },
+        "description": "Vanishes into shadow, leaving a trail of lingering dark.",
+        "archetype": "zone"
+      }
+    ],
     "description": "A shadowy dash that slices through anything in its path.",
     "icon": "icon_midnight_prowl"
   },
@@ -688,18 +721,21 @@
         "count": 1
       }
     ],
-    "evolution": {
-      "name": "Yarn Storm",
-      "requiresPassiveId": "predator-eye",
-      "stats": {
-        "damage": 95,
-        "cooldownMs": 761,
-        "area": 656,
-        "speed": 267,
-        "count": 3
-      },
-      "description": "An endless tangle of whipping yarn."
-    },
+    "evolutions": [
+      {
+        "id": "yarn-whip-evo-a",
+        "name": "Yarn Storm",
+        "requiresPassiveId": "predator-eye",
+        "stats": {
+          "damage": 95,
+          "cooldownMs": 761,
+          "area": 656,
+          "speed": 267,
+          "count": 3
+        },
+        "description": "An endless tangle of whipping yarn."
+      }
+    ],
     "description": "Cracks a taut yarn-whip straight through the line, piercing foes.",
     "icon": "icon_yarn_whip",
     "projectile": {
@@ -751,18 +787,21 @@
         "slowPct": 18.23
       }
     ],
-    "evolution": {
-      "name": "Seismic Thump",
-      "requiresPassiveId": "spring-legs",
-      "stats": {
-        "damage": 64,
-        "cooldownMs": 914,
-        "area": 176,
-        "knockback": 73,
-        "slowPct": 18.23
-      },
-      "description": "A ground-splitting thump that levels the field."
-    },
+    "evolutions": [
+      {
+        "id": "thumper-quake-evo-a",
+        "name": "Seismic Thump",
+        "requiresPassiveId": "spring-legs",
+        "stats": {
+          "damage": 64,
+          "cooldownMs": 914,
+          "area": 176,
+          "knockback": 73,
+          "slowPct": 18.23
+        },
+        "description": "A ground-splitting thump that levels the field."
+      }
+    ],
     "description": "Thumps the ground in a rippling shockwave.",
     "icon": "icon_thumper_quake"
   },
@@ -806,18 +845,21 @@
         "knockback": 27
       }
     ],
-    "evolution": {
-      "name": "Guillotine Hop",
-      "requiresPassiveId": "spring-legs",
-      "stats": {
-        "damage": 45,
-        "cooldownMs": 550,
-        "area": 120,
-        "knockback": 27
-      },
-      "description": "A four-way scissoring strike — front, back, and both sides at once.",
-      "pattern": "cross"
-    },
+    "evolutions": [
+      {
+        "id": "scissor-kick-evo-a",
+        "name": "Guillotine Hop",
+        "requiresPassiveId": "spring-legs",
+        "stats": {
+          "damage": 45,
+          "cooldownMs": 550,
+          "area": 120,
+          "knockback": 27
+        },
+        "description": "A four-way scissoring strike \u2014 front, back, and both sides at once.",
+        "pattern": "cross"
+      }
+    ],
     "description": "A sharp scissoring kick that cuts front and behind simultaneously.",
     "icon": "icon_scissor_kick"
   },
@@ -865,18 +907,21 @@
         "durationMs": 1033
       }
     ],
-    "evolution": {
-      "name": "Zig-Zag Blitz",
-      "requiresPassiveId": "lucky-foot",
-      "stats": {
-        "damage": 51,
-        "cooldownMs": 853,
-        "area": 133,
-        "count": 5,
-        "durationMs": 1033
-      },
-      "description": "An erratic zig-zag blitz too fast to track."
-    },
+    "evolutions": [
+      {
+        "id": "bunny-barrage-evo-a",
+        "name": "Zig-Zag Blitz",
+        "requiresPassiveId": "lucky-foot",
+        "stats": {
+          "damage": 51,
+          "cooldownMs": 853,
+          "area": 133,
+          "count": 5,
+          "durationMs": 1033
+        },
+        "description": "An erratic zig-zag blitz too fast to track."
+      }
+    ],
     "description": "A rapid zig-zag hop-attack leaving damage in its wake.",
     "icon": "icon_bunny_barrage"
   },
@@ -924,18 +969,21 @@
         "count": 1
       }
     ],
-    "evolution": {
-      "name": "Carrot Volley",
-      "requiresPassiveId": "nibbler",
-      "stats": {
-        "damage": 68,
-        "cooldownMs": 700,
-        "area": 586,
-        "speed": 243,
-        "count": 2
-      },
-      "description": "A volley of carrots splitting again and again."
-    },
+    "evolutions": [
+      {
+        "id": "carrot-toss-evo-a",
+        "name": "Carrot Volley",
+        "requiresPassiveId": "nibbler",
+        "stats": {
+          "damage": 68,
+          "cooldownMs": 700,
+          "area": 586,
+          "speed": 243,
+          "count": 2
+        },
+        "description": "A volley of carrots splitting again and again."
+      }
+    ],
     "description": "Tosses a carrot that splits into fragments on impact.",
     "icon": "icon_carrot_toss",
     "projectile": {
@@ -987,18 +1035,21 @@
         "count": 3
       }
     ],
-    "evolution": {
-      "name": "Four-Leaf Wall",
-      "requiresPassiveId": "lucky-foot",
-      "stats": {
-        "damage": 64,
-        "cooldownMs": 609,
-        "area": 185,
-        "speed": 164,
-        "count": 6
-      },
-      "description": "A rotating wall of four-leaf clovers."
-    },
+    "evolutions": [
+      {
+        "id": "lucky-clover-evo-a",
+        "name": "Four-Leaf Wall",
+        "requiresPassiveId": "lucky-foot",
+        "stats": {
+          "damage": 64,
+          "cooldownMs": 609,
+          "area": 185,
+          "speed": 164,
+          "count": 6
+        },
+        "description": "A rotating wall of four-leaf clovers."
+      }
+    ],
     "description": "Orbiting clovers that shred anything they touch.",
     "icon": "icon_lucky_clover"
   },
@@ -1041,17 +1092,20 @@
         "durationMs": 1769
       }
     ],
-    "evolution": {
-      "name": "Warren Web",
-      "requiresPassiveId": "spring-legs",
-      "stats": {
-        "damage": 108,
-        "cooldownMs": 1401,
-        "area": 176,
-        "durationMs": 1769
-      },
-      "description": "An interconnected warren of eruptions across the field."
-    },
+    "evolutions": [
+      {
+        "id": "burrow-network-evo-a",
+        "name": "Warren Web",
+        "requiresPassiveId": "spring-legs",
+        "stats": {
+          "damage": 108,
+          "cooldownMs": 1401,
+          "area": 176,
+          "durationMs": 1769
+        },
+        "description": "An interconnected warren of eruptions across the field."
+      }
+    ],
     "description": "Erupts a network of burrow tunnels beneath enemies.",
     "icon": "icon_burrow_network"
   },
@@ -1099,18 +1153,21 @@
         "durationMs": 3039
       }
     ],
-    "evolution": {
-      "name": "Decoy Swarm",
-      "requiresPassiveId": "litter-of-friends",
-      "stats": {
-        "damage": 57,
-        "cooldownMs": 1096,
-        "area": 150,
-        "count": 4,
-        "durationMs": 3039
-      },
-      "description": "A swarm of decoys drawing fire and dealing it back."
-    },
+    "evolutions": [
+      {
+        "id": "cottontail-decoy-evo-a",
+        "name": "Decoy Swarm",
+        "requiresPassiveId": "litter-of-friends",
+        "stats": {
+          "damage": 57,
+          "cooldownMs": 1096,
+          "area": 150,
+          "count": 4,
+          "durationMs": 3039
+        },
+        "description": "A swarm of decoys drawing fire and dealing it back."
+      }
+    ],
     "description": "Plants a decoy that lures and damages nearby enemies.",
     "icon": "icon_cottontail_decoy"
   },
@@ -1122,21 +1179,69 @@
     "isStarting": false,
     "rarity": "common",
     "levels": [
-      { "damage": 7, "cooldownMs": 1000, "area": 260, "speed": 200, "count": 1, "knockback": 10 },
-      { "damage": 9, "cooldownMs": 920, "area": 286, "speed": 210, "count": 1, "knockback": 11 },
-      { "damage": 12, "cooldownMs": 846, "area": 315, "speed": 220, "count": 1, "knockback": 12 },
-      { "damage": 15, "cooldownMs": 779, "area": 346, "speed": 232, "count": 1, "knockback": 13 },
-      { "damage": 20, "cooldownMs": 716, "area": 381, "speed": 243, "count": 1, "knockback": 14 }
+      {
+        "damage": 7,
+        "cooldownMs": 1000,
+        "area": 260,
+        "speed": 200,
+        "count": 1,
+        "knockback": 10
+      },
+      {
+        "damage": 9,
+        "cooldownMs": 920,
+        "area": 286,
+        "speed": 210,
+        "count": 1,
+        "knockback": 11
+      },
+      {
+        "damage": 12,
+        "cooldownMs": 846,
+        "area": 315,
+        "speed": 220,
+        "count": 1,
+        "knockback": 12
+      },
+      {
+        "damage": 15,
+        "cooldownMs": 779,
+        "area": 346,
+        "speed": 232,
+        "count": 1,
+        "knockback": 13
+      },
+      {
+        "damage": 20,
+        "cooldownMs": 716,
+        "area": 381,
+        "speed": 243,
+        "count": 1,
+        "knockback": 14
+      }
     ],
-    "evolution": {
-      "name": "Topspin Smash",
-      "requiresPassiveId": "wild-heart",
-      "stats": { "damage": 44, "cooldownMs": 600, "area": 600, "speed": 243, "count": 1, "knockback": 14 },
-      "description": "An unreturnable smash that bounces off every enemy it meets."
-    },
+    "evolutions": [
+      {
+        "id": "tennis-ball-evo-a",
+        "name": "Topspin Smash",
+        "requiresPassiveId": "wild-heart",
+        "stats": {
+          "damage": 44,
+          "cooldownMs": 600,
+          "area": 600,
+          "speed": 243,
+          "count": 1,
+          "knockback": 14
+        },
+        "description": "An unreturnable smash that bounces off every enemy it meets."
+      }
+    ],
     "description": "A bouncy ball that ricochets off up to 3 enemies.",
     "icon": "icon_tennis_ball",
-    "projectile": { "kind": "straight", "pierce": 2 }
+    "projectile": {
+      "kind": "straight",
+      "pierce": 2
+    }
   },
   {
     "id": "skunk-cloud",
@@ -1146,18 +1251,57 @@
     "isStarting": false,
     "rarity": "uncommon",
     "levels": [
-      { "damage": 6, "cooldownMs": 500, "area": 60, "durationMs": 99999, "knockback": 5 },
-      { "damage": 8, "cooldownMs": 460, "area": 67, "durationMs": 99999, "knockback": 5 },
-      { "damage": 10, "cooldownMs": 423, "area": 74, "durationMs": 99999, "knockback": 6 },
-      { "damage": 13, "cooldownMs": 389, "area": 82, "durationMs": 99999, "knockback": 6 },
-      { "damage": 17, "cooldownMs": 358, "area": 91, "durationMs": 99999, "knockback": 7 }
+      {
+        "damage": 6,
+        "cooldownMs": 500,
+        "area": 60,
+        "durationMs": 99999,
+        "knockback": 5
+      },
+      {
+        "damage": 8,
+        "cooldownMs": 460,
+        "area": 67,
+        "durationMs": 99999,
+        "knockback": 5
+      },
+      {
+        "damage": 10,
+        "cooldownMs": 423,
+        "area": 74,
+        "durationMs": 99999,
+        "knockback": 6
+      },
+      {
+        "damage": 13,
+        "cooldownMs": 389,
+        "area": 82,
+        "durationMs": 99999,
+        "knockback": 6
+      },
+      {
+        "damage": 17,
+        "cooldownMs": 358,
+        "area": 91,
+        "durationMs": 99999,
+        "knockback": 7
+      }
     ],
-    "evolution": {
-      "name": "Toxic Fog",
-      "requiresPassiveId": "alpha-scent",
-      "stats": { "damage": 37, "cooldownMs": 300, "area": 150, "durationMs": 99999, "knockback": 7 },
-      "description": "A billowing toxic fog that fills the whole battlefield."
-    },
+    "evolutions": [
+      {
+        "id": "skunk-cloud-evo-a",
+        "name": "Toxic Fog",
+        "requiresPassiveId": "alpha-scent",
+        "stats": {
+          "damage": 37,
+          "cooldownMs": 300,
+          "area": 150,
+          "durationMs": 99999,
+          "knockback": 7
+        },
+        "description": "A billowing toxic fog that fills the whole battlefield."
+      }
+    ],
     "description": "A stinky aura that follows you, ticking damage and gently repelling foes.",
     "icon": "icon_skunk_cloud"
   },
@@ -1169,18 +1313,57 @@
     "isStarting": false,
     "rarity": "uncommon",
     "levels": [
-      { "damage": 5, "cooldownMs": 900, "area": 70, "speed": 220, "count": 3 },
-      { "damage": 7, "cooldownMs": 828, "area": 77, "speed": 230, "count": 3 },
-      { "damage": 9, "cooldownMs": 762, "area": 85, "speed": 240, "count": 4 },
-      { "damage": 12, "cooldownMs": 701, "area": 93, "speed": 250, "count": 4 },
-      { "damage": 16, "cooldownMs": 645, "area": 103, "speed": 260, "count": 5 }
+      {
+        "damage": 5,
+        "cooldownMs": 900,
+        "area": 70,
+        "speed": 220,
+        "count": 3
+      },
+      {
+        "damage": 7,
+        "cooldownMs": 828,
+        "area": 77,
+        "speed": 230,
+        "count": 3
+      },
+      {
+        "damage": 9,
+        "cooldownMs": 762,
+        "area": 85,
+        "speed": 240,
+        "count": 4
+      },
+      {
+        "damage": 12,
+        "cooldownMs": 701,
+        "area": 93,
+        "speed": 250,
+        "count": 4
+      },
+      {
+        "damage": 16,
+        "cooldownMs": 645,
+        "area": 103,
+        "speed": 260,
+        "count": 5
+      }
     ],
-    "evolution": {
-      "name": "Hornet Storm",
-      "requiresPassiveId": "four-leaf",
-      "stats": { "damage": 35, "cooldownMs": 548, "area": 140, "speed": 260, "count": 6 },
-      "description": "An erratic, furious swarm too dense to escape."
-    },
+    "evolutions": [
+      {
+        "id": "bee-swarm-evo-a",
+        "name": "Hornet Storm",
+        "requiresPassiveId": "four-leaf",
+        "stats": {
+          "damage": 35,
+          "cooldownMs": 548,
+          "area": 140,
+          "speed": 260,
+          "count": 6
+        },
+        "description": "An erratic, furious swarm too dense to escape."
+      }
+    ],
     "description": "A jittery swarm of bees orbiting the player, stinging rapidly.",
     "icon": "icon_bee_swarm"
   },
@@ -1192,21 +1375,62 @@
     "isStarting": false,
     "rarity": "rare",
     "levels": [
-      { "damage": 13, "cooldownMs": 1400, "area": 240, "speed": 185, "count": 1 },
-      { "damage": 17, "cooldownMs": 1288, "area": 264, "speed": 194, "count": 1 },
-      { "damage": 22, "cooldownMs": 1185, "area": 290, "speed": 204, "count": 1 },
-      { "damage": 29, "cooldownMs": 1090, "area": 319, "speed": 214, "count": 1 },
-      { "damage": 38, "cooldownMs": 1003, "area": 351, "speed": 225, "count": 1 }
+      {
+        "damage": 13,
+        "cooldownMs": 1400,
+        "area": 240,
+        "speed": 185,
+        "count": 1
+      },
+      {
+        "damage": 17,
+        "cooldownMs": 1288,
+        "area": 264,
+        "speed": 194,
+        "count": 1
+      },
+      {
+        "damage": 22,
+        "cooldownMs": 1185,
+        "area": 290,
+        "speed": 204,
+        "count": 1
+      },
+      {
+        "damage": 29,
+        "cooldownMs": 1090,
+        "area": 319,
+        "speed": 214,
+        "count": 1
+      },
+      {
+        "damage": 38,
+        "cooldownMs": 1003,
+        "area": 351,
+        "speed": 225,
+        "count": 1
+      }
     ],
-    "evolution": {
-      "name": "Barrage Mortar",
-      "requiresPassiveId": "wild-heart",
-      "stats": { "damage": 84, "cooldownMs": 852, "area": 562, "speed": 225, "count": 2 },
-      "description": "A relentless barrage of lobbed acorns."
-    },
+    "evolutions": [
+      {
+        "id": "acorn-mortar-evo-a",
+        "name": "Barrage Mortar",
+        "requiresPassiveId": "wild-heart",
+        "stats": {
+          "damage": 84,
+          "cooldownMs": 852,
+          "area": 562,
+          "speed": 225,
+          "count": 2
+        },
+        "description": "A relentless barrage of lobbed acorns."
+      }
+    ],
     "description": "Lobs an acorn that detonates in a 60px blast.",
     "icon": "icon_acorn_mortar",
-    "projectile": { "kind": "arc" }
+    "projectile": {
+      "kind": "arc"
+    }
   },
   {
     "id": "firefly-lantern",
@@ -1216,18 +1440,57 @@
     "isStarting": false,
     "rarity": "rare",
     "levels": [
-      { "damage": 12, "cooldownMs": 1000, "area": 100, "speed": 70, "count": 2 },
-      { "damage": 16, "cooldownMs": 920, "area": 110, "speed": 73, "count": 2 },
-      { "damage": 21, "cooldownMs": 846, "area": 121, "speed": 77, "count": 2 },
-      { "damage": 27, "cooldownMs": 779, "area": 133, "speed": 80, "count": 2 },
-      { "damage": 35, "cooldownMs": 716, "area": 146, "speed": 84, "count": 2 }
+      {
+        "damage": 12,
+        "cooldownMs": 1000,
+        "area": 100,
+        "speed": 70,
+        "count": 2
+      },
+      {
+        "damage": 16,
+        "cooldownMs": 920,
+        "area": 110,
+        "speed": 73,
+        "count": 2
+      },
+      {
+        "damage": 21,
+        "cooldownMs": 846,
+        "area": 121,
+        "speed": 77,
+        "count": 2
+      },
+      {
+        "damage": 27,
+        "cooldownMs": 779,
+        "area": 133,
+        "speed": 80,
+        "count": 2
+      },
+      {
+        "damage": 35,
+        "cooldownMs": 716,
+        "area": 146,
+        "speed": 84,
+        "count": 2
+      }
     ],
-    "evolution": {
-      "name": "Solar Flare",
-      "requiresPassiveId": "alpha-scent",
-      "stats": { "damage": 77, "cooldownMs": 609, "area": 200, "speed": 84, "count": 3 },
-      "description": "Two orbs erupt into a blinding solar flare."
-    },
+    "evolutions": [
+      {
+        "id": "firefly-lantern-evo-a",
+        "name": "Solar Flare",
+        "requiresPassiveId": "alpha-scent",
+        "stats": {
+          "damage": 77,
+          "cooldownMs": 609,
+          "area": 200,
+          "speed": 84,
+          "count": 3
+        },
+        "description": "Two orbs erupt into a blinding solar flare."
+      }
+    ],
     "description": "Two slow, bright orbs that deal heavy hits and cast a warm halo of light.",
     "icon": "icon_firefly_lantern"
   },
@@ -1239,21 +1502,63 @@
     "isStarting": false,
     "rarity": "epic",
     "levels": [
-      { "damage": 16, "cooldownMs": 1400, "area": 500, "speed": 260, "count": 1 },
-      { "damage": 21, "cooldownMs": 1288, "area": 550, "speed": 273, "count": 1 },
-      { "damage": 27, "cooldownMs": 1185, "area": 605, "speed": 286, "count": 1 },
-      { "damage": 35, "cooldownMs": 1090, "area": 665, "speed": 300, "count": 1 },
-      { "damage": 46, "cooldownMs": 1003, "area": 730, "speed": 315, "count": 1 }
+      {
+        "damage": 16,
+        "cooldownMs": 1400,
+        "area": 500,
+        "speed": 260,
+        "count": 1
+      },
+      {
+        "damage": 21,
+        "cooldownMs": 1288,
+        "area": 550,
+        "speed": 273,
+        "count": 1
+      },
+      {
+        "damage": 27,
+        "cooldownMs": 1185,
+        "area": 605,
+        "speed": 286,
+        "count": 1
+      },
+      {
+        "damage": 35,
+        "cooldownMs": 1090,
+        "area": 665,
+        "speed": 300,
+        "count": 1
+      },
+      {
+        "damage": 46,
+        "cooldownMs": 1003,
+        "area": 730,
+        "speed": 315,
+        "count": 1
+      }
     ],
-    "evolution": {
-      "name": "Sonic Boom",
-      "requiresPassiveId": "four-leaf",
-      "stats": { "damage": 101, "cooldownMs": 852, "area": 900, "speed": 315, "count": 1 },
-      "description": "A world-shaking boom that pierces everything in its path."
-    },
+    "evolutions": [
+      {
+        "id": "echo-screech-evo-a",
+        "name": "Sonic Boom",
+        "requiresPassiveId": "four-leaf",
+        "stats": {
+          "damage": 101,
+          "cooldownMs": 852,
+          "area": 900,
+          "speed": 315,
+          "count": 1
+        },
+        "description": "A world-shaking boom that pierces everything in its path."
+      }
+    ],
     "description": "A piercing sonic wave that fires straight at the nearest foe.",
     "icon": "icon_echo_screech",
-    "projectile": { "kind": "straight", "pierce": 999 }
+    "projectile": {
+      "kind": "straight",
+      "pierce": 999
+    }
   },
   {
     "id": "laser-pointer",
@@ -1263,18 +1568,51 @@
     "isStarting": false,
     "rarity": "mythic",
     "levels": [
-      { "damage": 20, "cooldownMs": 2500, "area": 90, "durationMs": 600 },
-      { "damage": 26, "cooldownMs": 2300, "area": 99, "durationMs": 630 },
-      { "damage": 34, "cooldownMs": 2116, "area": 109, "durationMs": 662 },
-      { "damage": 44, "cooldownMs": 1947, "area": 120, "durationMs": 695 },
-      { "damage": 58, "cooldownMs": 1791, "area": 132, "durationMs": 730 }
+      {
+        "damage": 20,
+        "cooldownMs": 2500,
+        "area": 90,
+        "durationMs": 600
+      },
+      {
+        "damage": 26,
+        "cooldownMs": 2300,
+        "area": 99,
+        "durationMs": 630
+      },
+      {
+        "damage": 34,
+        "cooldownMs": 2116,
+        "area": 109,
+        "durationMs": 662
+      },
+      {
+        "damage": 44,
+        "cooldownMs": 1947,
+        "area": 120,
+        "durationMs": 695
+      },
+      {
+        "damage": 58,
+        "cooldownMs": 1791,
+        "area": 132,
+        "durationMs": 730
+      }
     ],
-    "evolution": {
-      "name": "Disco Laser",
-      "requiresPassiveId": "magnet-collar",
-      "stats": { "damage": 128, "cooldownMs": 1522, "area": 211, "durationMs": 730 },
-      "description": "Three dots wander the field at once, each calling down its own beam."
-    },
+    "evolutions": [
+      {
+        "id": "laser-pointer-evo-a",
+        "name": "Disco Laser",
+        "requiresPassiveId": "magnet-collar",
+        "stats": {
+          "damage": 128,
+          "cooldownMs": 1522,
+          "area": 211,
+          "durationMs": 730
+        },
+        "description": "Three dots wander the field at once, each calling down its own beam."
+      }
+    ],
     "description": "A red dot wanders toward the densest cluster of enemies, then a beam zaps it from off-screen.",
     "icon": "icon_laser_pointer"
   }

@@ -22,12 +22,13 @@
  *   "never crash on missing texture" standing order.
  */
 import Phaser from "phaser";
-import { SCENE, CardData, Rarity, PlayerState, WeaponData, PassiveData } from "../core/types";
+import { SCENE, CardData, Rarity, PlayerState, PassiveData, resolveEvolution } from "../core/types";
+import { normalizeWeapons } from "../core/weaponCatalog";
 import { PALETTE, iconKey, frameKey } from "../gfx/spriteRegistry";
 import weaponsJson from "../data/weapons.json";
 import passivesJson from "../data/passives.json";
 
-const WEAPONS = weaponsJson as unknown as WeaponData[];
+const WEAPONS = normalizeWeapons(weaponsJson);
 const PASSIVES = passivesJson as unknown as PassiveData[];
 
 export interface DraftSceneData {
@@ -279,23 +280,28 @@ export class DraftScene extends Phaser.Scene {
     const weapon = WEAPONS.find((w) => w.id === card.id);
     if (weapon) {
       const owned = this.player?.activeWeapons.find((w) => w.weaponId === weapon.id);
+      // Update 3: branch-aware evolution copy — the first passive-satisfied
+      // branch drives the "EVOLVE ->" offer; the taken branch once evolved.
+      const satisfiedBranch = weapon.evolutions.find((evo) =>
+        this.player?.activePassives.some((p) => p.passiveId === evo.requiresPassiveId)
+      );
       let statusLine: string;
       if (!owned) {
         statusLine = "NEW!";
       } else if (owned.level >= weapon.levels.length) {
-        const canEvolve =
-          !owned.evolved &&
-          (this.player?.activePassives.some(
-            (p) => p.passiveId === weapon.evolution.requiresPassiveId
-          ) ??
-            false);
-        statusLine = canEvolve ? `EVOLVE -> ${weapon.evolution.name}` : `Max Lv ${owned.level}`;
+        const canEvolve = !owned.evolved && !!satisfiedBranch;
+        statusLine = canEvolve
+          ? `EVOLVE -> ${satisfiedBranch!.name}`
+          : `Max Lv ${owned.level}`;
       } else {
         statusLine = `Lv ${owned.level} -> ${owned.level + 1}`;
       }
+      const evoCopy = owned?.evolved
+        ? resolveEvolution(weapon, owned)
+        : satisfiedBranch ?? weapon.evolutions[0];
       const desc =
-        owned && owned.level >= weapon.levels.length
-          ? weapon.evolution.description
+        owned && owned.level >= weapon.levels.length && evoCopy
+          ? evoCopy.description
           : weapon.description;
       return { statusLine, bodyLines: truncateTwoLines(desc) };
     }

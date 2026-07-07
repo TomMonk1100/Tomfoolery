@@ -145,9 +145,11 @@ export class DraftSystem implements System {
       if (!owned) return p.activeWeapons.length < WEAPON_SLOTS;
       if (owned.evolved) return false;
       if (owned.level < weapon.levels.length) return true;
-      // At max level: draftable only as an evolution (required passive owned).
-      return p.activePassives.some(
-        (ap) => ap.passiveId === weapon.evolution.requiresPassiveId
+      // At max level: draftable only as an evolution — any branch whose
+      // required passive is owned (Update 3: evolutions is an array; fusion-
+      // only weapons have none and are never draftable this way).
+      return weapon.evolutions.some((evo) =>
+        p.activePassives.some((ap) => ap.passiveId === evo.requiresPassiveId)
       );
     }
     const passive = this.ctx.passives.find((ps) => ps.id === card.id);
@@ -184,6 +186,13 @@ export class DraftSystem implements System {
         });
       } else if (!owned.evolved) {
         owned.evolved = true;
+        // Update 3: record which branch was taken (first satisfied branch;
+        // Phase 1 replaces this with explicit per-branch draft cards).
+        const branch =
+          weapon.evolutions.find((evo) =>
+            p.activePassives.some((ap) => ap.passiveId === evo.requiresPassiveId)
+          ) ?? weapon.evolutions[0];
+        owned.evolutionId = branch?.id;
         this.ctx.audio.blip("evolve");
         this.ctx.events.emit(EV.weaponUpgraded, {
           weaponId: weapon.id,

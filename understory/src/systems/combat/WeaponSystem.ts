@@ -37,6 +37,7 @@ import {
   ActiveWeapon,
   WeaponLevelStats,
   WeaponArchetype,
+  resolveEvolution,
 } from "../../core/types";
 import { SPRITE_KEYS, frameKey, playAnim } from "../../gfx/PixelArt";
 import {
@@ -181,14 +182,17 @@ export class WeaponSystem implements System {
       this.updateOrbiters(runtime, data, active, enemies, deltaMs, playerPos);
       this.updateTrailBurst(runtime, deltaMs, playerPos, data, active.evolved);
 
+      // Update 3: resolve the taken evolution branch (fallback: first branch;
+      // fusion-only weapons have none — evolved stats then never apply).
+      const evo = resolveEvolution(data, active);
       const stats = resolveWeaponStats(
         data.levels,
-        data.evolution.stats,
+        evo?.stats ?? data.levels[data.levels.length - 1],
         active.level,
         active.evolved
       );
-      const archetype = active.evolved && data.evolution.archetype
-        ? data.evolution.archetype
+      const archetype = active.evolved && evo?.archetype
+        ? evo.archetype
         : data.archetype;
 
       const elapsed = tickCooldown(runtime.cooldown, deltaMs);
@@ -219,7 +223,13 @@ export class WeaponSystem implements System {
       if (!this.runtimes.has(active.weaponId)) {
         const data = this.findWeaponData(active.weaponId);
         const stats = data
-          ? resolveWeaponStats(data.levels, data.evolution.stats, active.level, active.evolved)
+          ? resolveWeaponStats(
+              data.levels,
+              resolveEvolution(data, active)?.stats ??
+                data.levels[data.levels.length - 1],
+              active.level,
+              active.evolved
+            )
           : null;
         this.runtimes.set(active.weaponId, {
           weaponId: active.weaponId,
@@ -249,8 +259,10 @@ export class WeaponSystem implements System {
   }
 
   /** Effective pattern for this fire: evolution override (if evolved) else base, defaulting per-archetype for backward compatibility. */
-  private resolvePattern(data: WeaponData, evolved: boolean): WeaponPattern {
-    const explicit = evolved ? data.evolution.pattern ?? data.pattern : data.pattern;
+  private resolvePattern(data: WeaponData, active: ActiveWeapon): WeaponPattern {
+    const explicit = active.evolved
+      ? resolveEvolution(data, active)?.pattern ?? data.pattern
+      : data.pattern;
     if (explicit) return explicit;
     // No explicit pattern: preserve pre-Update-2 behavior per archetype.
     return data.archetype === "melee-sweep" ? "arc" : "ring";
@@ -282,7 +294,7 @@ export class WeaponSystem implements System {
       critChancePct: critChance,
     });
 
-    const pattern = this.resolvePattern(data, active.evolved);
+    const pattern = this.resolvePattern(data, active);
     const arcDeg = this.resolveArcDeg(data);
 
     switch (archetype) {
@@ -551,7 +563,12 @@ export class WeaponSystem implements System {
     playerPos: { x: number; y: number }
   ): void {
     if (runtime.orbiters.length === 0) return;
-    const stats = resolveWeaponStats(data.levels, data.evolution.stats, active.level, active.evolved);
+    const stats = resolveWeaponStats(
+      data.levels,
+      resolveEvolution(data, active)?.stats ?? data.levels[data.levels.length - 1],
+      active.level,
+      active.evolved
+    );
     const area = computeArea(stats.area, this.ctx.statBonus("area"));
     const speedDegPerSec = stats.speed ?? 90;
     const damage = computeDamage({

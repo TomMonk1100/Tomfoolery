@@ -30,7 +30,10 @@ import {
   MetaSave,
   AnimalData,
   WeaponData,
+  QualityPref,
 } from "../core/types";
+import { Quality } from "../core/Quality";
+import { normalizeWeapons } from "../core/weaponCatalog";
 import metaTreesJson from "../data/metaTrees.json";
 import animalsJson from "../data/animals.json";
 import weaponsJson from "../data/weapons.json";
@@ -42,7 +45,7 @@ import { registerAllSprites } from "../gfx/sprites";
 type MetaTrees = Record<string, MetaNode[]>;
 const metaTreesData = metaTreesJson as MetaTrees;
 const ANIMALS = animalsJson as unknown as Record<string, AnimalData>;
-const WEAPONS = weaponsJson as unknown as WeaponData[];
+const WEAPONS = normalizeWeapons(weaponsJson);
 
 const ANIMAL_IDS = ["dog", "cat", "rabbit"] as const;
 type AnimalId = (typeof ANIMAL_IDS)[number];
@@ -106,6 +109,7 @@ export class MetaHubScene extends Phaser.Scene {
 
     this.buildTitle(width);
     this.buildSunseedsDisplay(width);
+    this.buildQualityToggle(width);
     this.buildAnimalSelect(width);
     this.buildMetaTree(width, height);
     this.buildButtons(width, height);
@@ -145,6 +149,31 @@ export class MetaHubScene extends Phaser.Scene {
 
   private refreshSunseedsDisplay(): void {
     this.sunseedsText?.setText(`Sunseeds: ${this.meta.sunseeds}`);
+  }
+
+  /** Update 3 (D10): cycle graphics quality auto -> high -> low, persisted. */
+  private buildQualityToggle(width: number): void {
+    const label = (): string =>
+      `GFX: ${(this.meta.quality ?? "auto").toUpperCase()}`;
+    const txt = this.add
+      .text(width - 10, 16, label(), {
+        fontFamily: "monospace",
+        fontSize: "12px",
+        color: PALETTE.cream,
+      })
+      .setOrigin(1, 0)
+      .setInteractive({ useHandCursor: true });
+    txt.on("pointerover", () => txt.setColor(PALETTE.gold));
+    txt.on("pointerout", () => txt.setColor(PALETTE.cream));
+    txt.on("pointerdown", () => {
+      const order: QualityPref[] = ["auto", "high", "low"];
+      const next =
+        order[(order.indexOf(this.meta.quality ?? "auto") + 1) % order.length];
+      this.meta.quality = next;
+      this.saveManager.save(this.meta);
+      Quality.setPref(next);
+      txt.setText(label());
+    });
   }
 
   // --------------------------------------------------------------------

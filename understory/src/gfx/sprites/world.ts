@@ -125,6 +125,34 @@ registerSprite({
 } satisfies PixelSpriteDef);
 
 // ===========================================================================
+// SHORE RIM (32x32) — Update 3: sandy/reed edge strip drawn on ground tiles
+// that border a pond, so pond edges read as a shoreline rather than water
+// tiles just abutting bare grass. A single asymmetric strip along the top
+// edge of the 32x32 canvas; the renderer rotates/positions per which side(s)
+// of the tile touch water (kept as one authored frame, oriented via the
+// consumer's rotation, to avoid authoring 4-8 near-duplicate variants here).
+// ===========================================================================
+function shoreRimTile(): string[] {
+  const rows: string[] = [];
+  for (let y = 0; y < 32; y++) {
+    let row = "";
+    for (let x = 0; x < 32; x++) {
+      if (y < 4) row += "s"; // sandy band along the top edge
+      else if (y < 7 && (x + y) % 5 === 0) row += "r"; // sparse reed flecks just below
+      else row += ".";
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+registerSprite({
+  key: SPRITE_KEYS.tileShoreRim,
+  palette: { s: P.cream, r: P.grassDark },
+  frames: [pad(shoreRimTile(), 32)],
+  anims: {},
+} satisfies PixelSpriteDef);
+
+// ===========================================================================
 // OBSTACLE TREE (32x32) — trunk + round canopy, solid silhouette.
 // ===========================================================================
 function treeTile(): string[] {

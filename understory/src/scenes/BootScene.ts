@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { SCENE, REG } from "../core/types";
 import { SaveManager } from "../core/SaveManager";
+import { startQualityProbe } from "../core/Quality";
 import { AudioManager } from "../audio/AudioManager";
 
 /**
@@ -20,6 +21,9 @@ export class BootScene extends Phaser.Scene {
     if (!this.registry.get(REG.audio)) {
       this.registry.set(REG.audio, new AudioManager());
     }
+    // Update 3: one-per-boot quality tier detection (MetaSave override wins).
+    const sm = this.registry.get(REG.saveManager) as SaveManager;
+    startQualityProbe(this.game, sm.load().quality);
     this.scene.start(SCENE.Meta);
   }
 }

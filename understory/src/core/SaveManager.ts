@@ -4,12 +4,19 @@
  * is unavailable (private browsing, disabled storage, etc.) so callers
  * never need to know the difference.
  */
-import { MetaSave, defaultMeta } from "./types";
+import {
+  CodexState,
+  META_SAVE_VERSION,
+  MetaSave,
+  QualityPref,
+  defaultMeta,
+} from "./types";
 
 const STORAGE_KEY = "understory:meta:v1";
 
-/** Narrow shape check — only verifies the fields SaveManager depends on. */
-function isValidMetaSave(value: unknown): value is MetaSave {
+/** Narrow shape check — verifies only the v1 core fields, so that pre-
+ * Update-3 saves (no version/codex/quality) still validate and get migrated. */
+function isValidMetaSave(value: unknown): boolean {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
   return (
@@ -18,6 +25,39 @@ function isValidMetaSave(value: unknown): value is MetaSave {
     v.keepsakes !== null &&
     Array.isArray(v.unlockedNodes)
   );
+}
+
+function isValidCodex(value: unknown): value is CodexState {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    Array.isArray(v.evolutions) &&
+    Array.isArray(v.fusions) &&
+    Array.isArray(v.synergies)
+  );
+}
+
+/**
+ * Update 3 migration: upgrades any older valid save to META_SAVE_VERSION by
+ * filling missing fields with defaults. Returns null if `parsed` isn't a
+ * MetaSave shape at all (caller falls back to defaultMeta()).
+ */
+export function migrateMeta(parsed: unknown): MetaSave | null {
+  if (!isValidMetaSave(parsed)) return null;
+  const v = parsed as MetaSave & Record<string, unknown>;
+  return {
+    version: META_SAVE_VERSION,
+    sunseeds: v.sunseeds,
+    keepsakes: v.keepsakes,
+    unlockedNodes: v.unlockedNodes,
+    codex: isValidCodex(v.codex)
+      ? v.codex
+      : { evolutions: [], fusions: [], synergies: [] },
+    quality:
+      v.quality === "auto" || v.quality === "high" || v.quality === "low"
+        ? (v.quality as QualityPref)
+        : "auto",
+  };
 }
 
 export class SaveManager {
@@ -69,9 +109,8 @@ export class SaveManager {
     if (!raw) return defaultMeta();
 
     try {
-      const parsed = JSON.parse(raw);
-      if (!isValidMetaSave(parsed)) return defaultMeta();
-      return parsed;
+      const migrated = migrateMeta(JSON.parse(raw));
+      return migrated ?? defaultMeta();
     } catch {
       return defaultMeta();
     }

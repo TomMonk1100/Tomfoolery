@@ -1,43 +1,55 @@
 /**
- * WorldGenSystem — generates the fixed 40x40 tile grid, renders it as simple
- * Phaser rectangles, maintains a fog-of-war RenderTexture revealed around the
- * player, and implements WorldView so other systems can query tiles/nodes.
+ * WorldGenSystem — generates the (now 128x128, Update 3) tile grid with
+ * procedural biomes, renders it as simple Phaser rectangles/sprites,
+ * maintains a fog-of-war RenderTexture revealed around the player, and
+ * implements WorldView so other systems can query tiles/nodes.
  *
- * Validation (per dev-plan Step 6 resolution #3): a grid is valid iff it has
- * >= 8 forage nodes AND >= 1 nest zone, each >= 3 tiles from any other node
- * of the SAME type. On failure, regenerate once with a new seed; if the
- * second attempt also fails, load the static src/data/fallback-layout.json.
+ * Validation (per dev-plan Step 6 resolution #3, scaled for Update 3's
+ * larger map — see MIN_FORAGE_NODES below): a grid is valid iff it has
+ * >= MIN_FORAGE_NODES forage nodes AND >= MIN_NEST_ZONES nest zone(s), each
+ * >= 3 tiles from any other node of the SAME type. On failure, regenerate
+ * once with a new seed; if the second attempt also fails, load the static
+ * src/data/fallback-layout.json.
+ *
+ * Update 3 water strategy: water is no longer an independent per-tile roll
+ * (which used to produce ~all-orphan single-tile "water" that a since-
+ * removed cullOrphanWater pass then erased almost entirely — the player-
+ * reported "no water visible anywhere" bug). Water is now grown as coherent
+ * blob ponds (growPondBlob in worldGenSim.ts) seeded mostly inside wetland
+ * biome regions, with rare small ponds allowed elsewhere. findOrphanWater is
+ * kept as a post-generation assertion, exercised by tests/worldGen.test.ts,
+ * rather than a runtime cull — by construction by the blob grower, orphan
+ * water should never occur.
+ *
+ * Update 3 invisible-wall fix: every obstacle/water tile must draw SOMETHING
+ * even if its feature texture isn't loaded (e.g. headless/test contexts, or a
+ * missing atlas frame) — see tileDrawDecision()/TILE_COLORS fallback below.
  */
 import Phaser from "phaser";
 import { GameContext, System, WorldView, Vec2 } from "../core/context";
 import { TileType, WorldTile, WORLD_SIZE, TILE_PX } from "../core/types";
 import fallbackLayout from "../data/fallback-layout.json";
 import { SPRITE_KEYS, frameKey } from "../gfx/spriteRegistry";
-import { Grid, carveToConnect, guaranteeWalkableRing } from "./worldGenSim";
+import {
+  Grid,
+  carveToConnect,
+  guaranteeWalkableRing,
+  generateWorldGrid,
+  mulberry32,
+  decideTileDraw,
+  TILE_COLORS,
+} from "./worldGenSim";
+import { biomeAt } from "./biomes";
 
-const MIN_FORAGE_NODES = 8;
-const MIN_NEST_ZONES = 1;
+// Update 3: scale minimums with map area rather than a flat count, so a
+// bigger world still guarantees proportionally the same forage density as
+// the old 48x48 (8 nodes / 2304 tiles ≈ 1 per 288 tiles), floored at the old
+// literal minimum so a hypothetically small/degenerate grid still validates.
+const FORAGE_NODES_PER_TILE = 8 / (48 * 48);
+const MIN_FORAGE_NODES_FLOOR = 8;
+const MIN_NEST_ZONES = 4;
+const MAX_NEST_ZONES = 6;
 const MIN_SAME_TYPE_SPACING = 3;
-
-const TILE_COLORS: Record<TileType, number> = {
-  grass: 0x4a7c3f,
-  obstacle: 0x5b4636,
-  forage: 0xd9a441,
-  nest: 0xc76b4a,
-  water: 0x3a6ea5,
-};
-
-/** Simple seeded PRNG (mulberry32) so regeneration attempts are reproducible per seed. */
-function mulberry32(seed: number): () => number {
-  let a = seed;
-  return function () {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 interface Placement {
   col: number;
@@ -54,6 +66,11 @@ export class WorldGenSystem implements System, WorldView {
   private container!: Phaser.GameObjects.Container;
   private fogTexture!: Phaser.GameObjects.RenderTexture;
   private fogGraphics!: Phaser.GameObjects.Graphics;
+  /** Screen-locked seamless ground TileSprite (undefined if the atlas frame
+   * isn't loaded and renderTiles fell back to per-tile rects). Exposed via
+   * getRenderRefs() for WrapRenderSystem (Update 3 §WS-C) to scroll via
+   * tilePosition instead of wrapping it like a world-space object. */
+  private groundSprite?: Phaser.GameObjects.TileSprite;
 
   constructor(scene: Phaser.Scene, ctx: GameContext) {
     this.scene = scene;
@@ -104,7 +121,8 @@ export class WorldGenSystem implements System, WorldView {
     for (const [col, row] of [...forcedWalkable, ...carved]) {
       const tile = this.tiles[row]?.[col];
       if (tile && !isWalkableType(tile.type)) {
-        this.tiles[row][col] = { type: "grass", revealed: false };
+        // Preserve biome (ground tint) — only the tile TYPE flips to grass.
+        this.tiles[row][col] = { type: "grass", revealed: false, biome: tile.biome };
       }
     }
   }
@@ -134,56 +152,25 @@ export class WorldGenSystem implements System, WorldView {
     return this.loadFallbackGrid();
   }
 
+  /**
+   * Update 3: delegates to worldGenSim.generateWorldGrid — the single pure
+   * implementation of "biome assign -> blob-pond water -> biome-driven
+   * obstacle/forage rolls -> spaced nest placement -> connectivity carve",
+   * shared verbatim with tests/worldGen.test.ts so the test suite exercises
+   * exactly what ships (no parallel logic to drift out of sync). The
+   * constructor's separate `ensureConnectivity()` call afterward is a cheap,
+   * idempotent no-op safety net for this path (the grid is already connected
+   * coming out of generateWorldGrid) and the ONLY connectivity pass for the
+   * fallback-layout.json path, which has no such guarantee baked in.
+   */
   private generateGrid(seed: number): WorldTile[][] {
-    const rng = mulberry32(seed);
-    const grid: WorldTile[][] = [];
-    for (let row = 0; row < this.size; row++) {
-      const rowTiles: WorldTile[] = [];
-      for (let col = 0; col < this.size; col++) {
-        const roll = rng();
-        let type: TileType = "grass";
-        if (roll < 0.08) type = "obstacle";
-        else if (roll < 0.2) type = "forage";
-        else if (roll < 0.23) type = "water";
-        rowTiles.push({ type, revealed: false, harvested: false });
-      }
-      grid.push(rowTiles);
-    }
-
-    // Scatter a handful of nest zones (aim for 2-3), spaced apart, on grass tiles.
-    let nestsPlaced = 0;
-    let attempts = 0;
-    const targetNests = 2;
-    while (nestsPlaced < targetNests && attempts < 500) {
-      attempts++;
-      const col = Math.floor(rng() * this.size);
-      const row = Math.floor(rng() * this.size);
-      if (grid[row][col].type !== "grass") continue;
-      if (this.tooCloseToSameType(grid, col, row, "nest", MIN_SAME_TYPE_SPACING)) {
-        continue;
-      }
-      grid[row][col] = { type: "nest", revealed: false };
-      nestsPlaced++;
-    }
-
-    return grid;
-  }
-
-  private tooCloseToSameType(
-    grid: WorldTile[][],
-    col: number,
-    row: number,
-    type: TileType,
-    minSpacing: number
-  ): boolean {
-    for (let r = 0; r < grid.length; r++) {
-      for (let c = 0; c < grid[r].length; c++) {
-        if (grid[r][c].type !== type) continue;
-        const dist = Math.max(Math.abs(r - row), Math.abs(c - col));
-        if (dist < minSpacing) return true;
-      }
-    }
-    return false;
+    return generateWorldGrid({
+      seed,
+      size: this.size,
+      minNestZones: MIN_NEST_ZONES,
+      maxNestZones: MAX_NEST_ZONES,
+      minSameTypeSpacing: MIN_SAME_TYPE_SPACING,
+    });
   }
 
   private validateGrid(grid: WorldTile[][]): boolean {
@@ -197,7 +184,11 @@ export class WorldGenSystem implements System, WorldView {
       }
     }
 
-    if (forageNodes.length < MIN_FORAGE_NODES) return false;
+    const minForageNodes = Math.max(
+      MIN_FORAGE_NODES_FLOOR,
+      Math.round(FORAGE_NODES_PER_TILE * this.size * this.size)
+    );
+    if (forageNodes.length < minForageNodes) return false;
     if (nestNodes.length < MIN_NEST_ZONES) return false;
 
     if (!this.allSpacedApart(forageNodes, MIN_SAME_TYPE_SPACING)) return false;
@@ -219,6 +210,12 @@ export class WorldGenSystem implements System, WorldView {
     return true;
   }
 
+  /** Fixed seed used only to derive biome/ground-tint data for the static
+   * fallback layout (which has no generation seed of its own — the tile
+   * TYPES come from fallback-layout.json verbatim, but renderers still need
+   * a `biome` per tile for ground tinting, so we compute one deterministically). */
+  private static readonly FALLBACK_BIOME_SEED = 0xfa11b4c;
+
   private loadFallbackGrid(): WorldTile[][] {
     const rawTiles = (fallbackLayout as { tiles: string[][] }).tiles;
     const letterToType: Record<string, TileType> = {
@@ -234,7 +231,8 @@ export class WorldGenSystem implements System, WorldView {
       for (let col = 0; col < rawTiles[row].length; col++) {
         const letter = rawTiles[row][col];
         const type = letterToType[letter] ?? "grass";
-        rowTiles.push({ type, revealed: false, harvested: false });
+        const biome = biomeAt(WorldGenSystem.FALLBACK_BIOME_SEED, col, row);
+        rowTiles.push({ type, revealed: false, harvested: false, biome });
       }
       grid.push(rowTiles);
     }
@@ -252,18 +250,28 @@ export class WorldGenSystem implements System, WorldView {
    * call). Obstacles/water/forage/nest still render as individual feature
    * sprites on top, and props (flowers/pebbles) are scattered individually
    * at ~1-per-12-tiles, seeded so it's stable across reloads.
+   *
+   * Update 3: per-tile draw choice is delegated to the pure, exported
+   * `decideTileDraw()` helper (see below this class) so it's unit-testable
+   * without Phaser AND so the next agent's chunked-rendering rework can call
+   * the exact same decision logic per chunk instead of this whole-grid loop.
+   * NOTE (for the rendering agent): this loop still builds every tile every
+   * time (perf problem is explicitly out of scope for this pass) — only the
+   * "what should this tile draw" decision was extracted.
    */
   private renderTiles(): void {
     this.container = this.scene.add.container(0, 0);
     const rng = mulberry32(0x5eed);
     const usesAtlas = this.scene.textures.exists(frameKey(SPRITE_KEYS.tileGrassSeamless));
     const { width, height } = this.bounds();
+    const textureExists = (key: string) => this.scene.textures.exists(frameKey(key));
 
     if (usesAtlas) {
       const bg = this.scene.add.tileSprite(0, 0, width, height, frameKey(SPRITE_KEYS.tileGrassSeamless));
       bg.setOrigin(0, 0);
       bg.setDepth(0);
       this.container.add(bg);
+      this.groundSprite = bg;
     }
 
     for (let row = 0; row < this.tiles.length; row++) {
@@ -285,36 +293,54 @@ export class WorldGenSystem implements System, WorldView {
           continue;
         }
 
-        // Water still gets its own full tile (feature, not part of the
-        // shared grass background).
-        if (tile.type === "water") {
-          const water = this.scene.add.image(cxp, cyp, frameKey(SPRITE_KEYS.tileWater));
-          water.setDisplaySize(this.tilePx, this.tilePx);
-          this.container.add(water);
-          continue;
-        }
+        const decision = decideTileDraw(tile, roll, textureExists);
 
-        // Feature layer (obstacles/forage sit directly on the shared grass
-        // background now; no separate per-tile ground image underneath).
-        let featureKey: string | null = null;
-        if (tile.type === "obstacle") {
-          featureKey =
-            roll < 0.6 ? SPRITE_KEYS.tileObstacleTree : SPRITE_KEYS.tileObstacleRock;
-        } else if (tile.type === "forage") {
-          featureKey = SPRITE_KEYS.forageBush;
-        } else if (tile.type === "grass" && roll > 0.9167) {
-          // ~1 prop per 12 tiles.
-          featureKey = roll > 0.958 ? SPRITE_KEYS.propFlower : SPRITE_KEYS.propPebble;
-        }
-        if (featureKey && this.scene.textures.exists(frameKey(featureKey))) {
-          const feat = this.scene.add.image(cxp, cyp, frameKey(featureKey));
+        if (decision.kind === "rect") {
+          const rect = this.scene.add.rectangle(
+            cxp,
+            cyp,
+            this.tilePx - 1,
+            this.tilePx - 1,
+            decision.color
+          );
+          rect.setDepth(tile.type === "obstacle" || tile.type === "water" ? 600 : 10);
+          this.container.add(rect);
+        } else if (decision.kind === "sprite" && decision.spriteKey) {
+          const feat = this.scene.add.image(cxp, cyp, frameKey(decision.spriteKey));
           feat.setDisplaySize(this.tilePx, this.tilePx);
-          feat.setDepth(tile.type === "obstacle" ? 600 : 10);
+          feat.setDepth(tile.type === "obstacle" || tile.type === "water" ? 600 : 10);
           this.container.add(feat);
+        }
+        // decision.kind === "none": nothing drawn (bare grass tile, no prop
+        // rolled this tick) — the shared seamless background is enough.
+
+        // Shore-rim strip: draw on non-water tiles that border at least one
+        // water tile, so pond edges read as a shoreline. Drawn UNDER the
+        // tile's own feature/rect (depth 5, below obstacle/water's 600 and
+        // forage/prop's 10) so it never occludes a feature sprite.
+        if (tile.type !== "water" && textureExists(SPRITE_KEYS.tileShoreRim) && this.bordersWater(col, row)) {
+          const rim = this.scene.add.image(cxp, cyp, frameKey(SPRITE_KEYS.tileShoreRim));
+          rim.setDisplaySize(this.tilePx, this.tilePx);
+          rim.setDepth(5);
+          this.container.add(rim);
         }
         // Nest tile ground only — NestSystem renders the nest itself.
       }
     }
+  }
+
+  /** True if any of the 4 orthogonal (wrap-aware) neighbors is water. */
+  private bordersWater(col: number, row: number): boolean {
+    const neighbors: [number, number][] = [
+      [col - 1, row],
+      [col + 1, row],
+      [col, row - 1],
+      [col, row + 1],
+    ];
+    for (const [nc, nr] of neighbors) {
+      if (this.tileAt(nc, nr)?.type === "water") return true;
+    }
+    return false;
   }
 
   private setupFog(): void {
@@ -330,6 +356,32 @@ export class WorldGenSystem implements System, WorldView {
     // softened so combat stays readable (Nest & Fang).
     this.fogTexture.setDepth(850);
     this.fogTexture.fill(0x000000, 0.55);
+  }
+
+  /**
+   * Update 3 §WS-C contract: WrapRenderSystem (owned by the rendering agent)
+   * wraps world-space display objects to their nearest copy around the
+   * toroidal camera, and needs to know which of WorldGenSystem's objects are
+   * "statics" (the feature container — wrapped per-child, nothing reads
+   * their positions so no restore needed) vs the screen-locked ground
+   * TileSprite (scrolled via tilePosition instead, since it's infinite and
+   * never wrapped) vs the fog RenderTexture (world-sized, ghost-copied by
+   * WrapRenderSystem itself). Returns whichever of these exist yet — this is
+   * called once during WorldScene setup, after the constructor has already
+   * run generation + rendering, so all three are populated by the time
+   * WorldScene reads them (ground may be undefined if the atlas texture
+   * wasn't loaded and rendering fell back to per-tile rects).
+   */
+  getRenderRefs(): {
+    worldContainer?: Phaser.GameObjects.Container;
+    ground?: Phaser.GameObjects.TileSprite;
+    fog?: Phaser.GameObjects.RenderTexture;
+  } {
+    return {
+      worldContainer: this.container,
+      ground: this.groundSprite,
+      fog: this.fogTexture,
+    };
   }
 
   // --------------------------------------------------------------------
