@@ -50,6 +50,21 @@ export class InputController implements InputSource {
   private extraHandlers: Array<(e: InputEvent) => void> = [];
   private gesture: GestureState | null = null;
   private currentDrag: { dragX: number; dragY: number } | null = null;
+  private keys: Record<"up" | "down" | "left" | "right", boolean> = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+  };
+  private keyboardActive = false;
+
+  private onKeyDown = (event: KeyboardEvent) => {
+    if (this.setKey(event.code, true)) event.preventDefault();
+  };
+
+  private onKeyUp = (event: KeyboardEvent) => {
+    if (this.setKey(event.code, false)) event.preventDefault();
+  };
 
   private onPointerDown = (pointer: Phaser.Input.Pointer) => {
     this.gesture = {
@@ -186,6 +201,8 @@ export class InputController implements InputSource {
     scene.input.on("pointermove", this.onPointerMove);
     scene.input.on("pointerup", this.onPointerUp);
     scene.input.on("pointerupoutside", this.onPointerUp);
+    window.addEventListener("keydown", this.onKeyDown, { passive: false });
+    window.addEventListener("keyup", this.onKeyUp, { passive: false });
   }
 
   private emit(event: InputEvent): void {
@@ -201,7 +218,64 @@ export class InputController implements InputSource {
     this.extraHandlers.push(handler);
   }
 
+  private setKey(code: string, down: boolean): boolean {
+    switch (code) {
+      case "KeyW":
+      case "ArrowUp":
+        this.keys.up = down;
+        return true;
+      case "KeyS":
+      case "ArrowDown":
+        this.keys.down = down;
+        return true;
+      case "KeyA":
+      case "ArrowLeft":
+        this.keys.left = down;
+        return true;
+      case "KeyD":
+      case "ArrowRight":
+        this.keys.right = down;
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private keyboardVector(): { dragX: number; dragY: number } | null {
+    const x = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
+    const y = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
+    if (x === 0 && y === 0) return null;
+    const len = Math.sqrt(x * x + y * y);
+    return { dragX: x / len, dragY: y / len };
+  }
+
   update(_deltaMs: number): { dragX: number; dragY: number } | null {
+    const keyboard = this.keyboardVector();
+    if (keyboard) {
+      this.keyboardActive = true;
+      this.emit({
+        type: "drag",
+        x: this.scene.scale.width / 2,
+        y: this.scene.scale.height / 2,
+        dx: keyboard.dragX,
+        dy: keyboard.dragY,
+        magnitude: 1,
+      });
+      return keyboard;
+    }
+
+    if (this.keyboardActive) {
+      this.keyboardActive = false;
+      this.emit({
+        type: "drag",
+        x: this.scene.scale.width / 2,
+        y: this.scene.scale.height / 2,
+        dx: 0,
+        dy: 0,
+        magnitude: 0,
+      });
+    }
+
     return this.currentDrag;
   }
 
@@ -210,6 +284,8 @@ export class InputController implements InputSource {
     this.scene.input.off("pointermove", this.onPointerMove);
     this.scene.input.off("pointerup", this.onPointerUp);
     this.scene.input.off("pointerupoutside", this.onPointerUp);
+    window.removeEventListener("keydown", this.onKeyDown);
+    window.removeEventListener("keyup", this.onKeyUp);
     this.extraHandlers = [];
     this.gesture = null;
     this.currentDrag = null;

@@ -120,10 +120,13 @@ export class WorldScene extends Phaser.Scene {
     const cx = this.worldBounds.width / 2;
     const cy = this.worldBounds.height / 2;
     this.playerContainer = this.add.container(cx, cy);
+    const playerGlow = this.add.circle(0, 0, 28, 0xf0c95a, 0.16);
+    playerGlow.setStrokeStyle(2, 0xf0c95a, 0.42);
+    this.playerContainer.add(playerGlow);
     const animalKey = animal.spriteKey ?? `animal_${animalId}`;
     if (this.textures.exists(frameKey(animalKey))) {
       const body = this.add.sprite(0, 0, frameKey(animalKey));
-      body.setDisplaySize(40, 40); // 24px map baked at 3x, shown at ~1.25 tiles
+      body.setDisplaySize(48, 48); // Slightly larger so the player reads instantly
       playAnim(body, animalKey, "idle");
       this.playerSprite = body;
       this.playerSpriteKey = animalKey;

@@ -15,7 +15,7 @@ const config: Phaser.Types.Core.GameConfig = {
   height: GAME_HEIGHT,
   scale: {
     mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
+    autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
   },
   // Chunky pixel-art rendering: nearest-neighbor everywhere, no smoothing.
   pixelArt: true,

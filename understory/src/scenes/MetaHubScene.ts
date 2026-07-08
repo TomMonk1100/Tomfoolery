@@ -56,6 +56,15 @@ const ANIMAL_BLURB: Record<AnimalId, string> = {
   rabbit: "Lucky swarm-clearer — thumps & clovers",
 };
 
+const UI = {
+  bg: 0x101d14,
+  panel: 0x203520,
+  panelDark: 0x172619,
+  panelSoft: 0x2d4628,
+  dimLine: 0x42573a,
+  gold: 0xf0c95a,
+};
+
 function hex(n: string): number {
   return parseInt(n.replace("#", ""), 16);
 }
@@ -105,7 +114,7 @@ export class MetaHubScene extends Phaser.Scene {
     const width = this.scale.width;
     const height = this.scale.height;
 
-    this.add.rectangle(0, 0, width, height, hex(PALETTE.outline), 1).setOrigin(0, 0);
+    this.buildBackdrop(width, height);
 
     this.buildTitle(width);
     this.buildSunseedsDisplay(width);
@@ -115,33 +124,55 @@ export class MetaHubScene extends Phaser.Scene {
     this.buildButtons(width, height);
   }
 
+  private buildBackdrop(width: number, height: number): void {
+    this.add.rectangle(0, 0, width, height, UI.bg, 1).setOrigin(0, 0);
+    this.add.circle(84, 112, 150, 0x315936, 0.22);
+    this.add.circle(width - 56, height - 128, 190, 0x4f3f1e, 0.28);
+    this.add.rectangle(12, 12, width - 24, height - 24, UI.panelDark, 0.26)
+      .setStrokeStyle(1, UI.dimLine, 0.75);
+    for (let y = 120; y < height - 110; y += 36) {
+      this.add.line(0, 0, 24, y, width - 24, y, 0x2b3c2c, 0.22).setOrigin(0, 0);
+    }
+  }
+
   // --------------------------------------------------------------------
   // Header
   // --------------------------------------------------------------------
 
   private buildTitle(width: number): void {
     this.add
-      .text(width / 2, 16, "UNDERSTORY", {
+      .text(width / 2, 12, "A SMALL WILD LIFE", {
         fontFamily: "monospace",
-        fontSize: "26px",
-        color: PALETTE.white,
+        fontSize: "10px",
+        color: PALETTE.gold,
       })
       .setOrigin(0.5, 0);
 
     this.add
-      .text(width / 2, 44, "Nest & Fang", {
+      .text(width / 2, 28, "UNDERSTORY", {
         fontFamily: "monospace",
-        fontSize: "13px",
-        color: PALETTE.gold,
+        fontSize: "34px",
+        color: PALETTE.white,
+      })
+      .setOrigin(0.5, 0)
+      .setShadow(0, 3, "#000000", 4);
+
+    this.add
+      .text(width / 2, 67, "Choose a creature. Grow a tree. Begin a life.", {
+        fontFamily: "monospace",
+        fontSize: "12px",
+        color: PALETTE.cream,
       })
       .setOrigin(0.5, 0);
   }
 
   private buildSunseedsDisplay(width: number): void {
+    this.add.rectangle(width / 2, 94, 172, 28, UI.panel, 0.92)
+      .setStrokeStyle(1, UI.gold, 0.65);
     this.sunseedsText = this.add
-      .text(width / 2, 66, `Sunseeds: ${this.meta.sunseeds}`, {
+      .text(width / 2, 86, `Sunseeds: ${this.meta.sunseeds}`, {
         fontFamily: "monospace",
-        fontSize: "14px",
+        fontSize: "15px",
         color: PALETTE.gold,
       })
       .setOrigin(0.5, 0);
@@ -182,8 +213,8 @@ export class MetaHubScene extends Phaser.Scene {
 
   private buildAnimalSelect(width: number): void {
     const panelW = Math.floor((width - 24 - 16) / 3); // 12px margins + 8px gaps x2
-    const panelH = 118;
-    const y = 94;
+    const panelH = 132;
+    const y = 126;
     const marginX = 12;
     const gap = 8;
 
@@ -206,15 +237,15 @@ export class MetaHubScene extends Phaser.Scene {
     const animal = ANIMALS[id];
     const container = this.add.container(x + w / 2, y + h / 2);
 
-    const bg = this.add.rectangle(0, 0, w, h, hex(PALETTE.darkBrown), 0.9);
-    bg.setStrokeStyle(2, hex(PALETTE.brown), 1);
+    const bg = this.add.rectangle(0, 0, w, h, UI.panel, 0.96);
+    bg.setStrokeStyle(2, UI.dimLine, 1);
     this.animalPanelBgs[id] = bg;
 
     const spriteKey = animal.spriteKey ?? `animal_${id}`;
     let sprite: Phaser.GameObjects.GameObject;
     if (this.textures.exists(frameKey(spriteKey))) {
       const s = this.add.sprite(0, -h / 2 + 34, frameKey(spriteKey));
-      s.setDisplaySize(24 * 3, 24 * 3);
+      s.setDisplaySize(24 * 3.2, 24 * 3.2);
       playAnim(s, spriteKey, "idle");
       sprite = s;
     } else {
@@ -224,7 +255,7 @@ export class MetaHubScene extends Phaser.Scene {
     }
 
     const nameText = this.add
-      .text(0, 4, animal.name, {
+      .text(0, 6, animal.name, {
         fontFamily: "monospace",
         fontSize: "13px",
         color: PALETTE.white,
@@ -232,10 +263,10 @@ export class MetaHubScene extends Phaser.Scene {
       .setOrigin(0.5, 0);
 
     const blurb = this.add
-      .text(0, 20, ANIMAL_BLURB[id], {
+      .text(0, 27, ANIMAL_BLURB[id], {
         fontFamily: "monospace",
-        fontSize: "8px",
-        color: PALETTE.cream,
+        fontSize: "9px",
+        color: "#dce7c9",
         align: "center",
         wordWrap: { width: w - 10 },
       })
@@ -253,7 +284,7 @@ export class MetaHubScene extends Phaser.Scene {
       const label = this.add
         .text(0, h / 2 - 18, startWeapon?.name ?? "", {
           fontFamily: "monospace",
-          fontSize: "8px",
+          fontSize: "9px",
           color: PALETTE.grassLight,
         })
         .setOrigin(0.5, 0);
@@ -291,7 +322,7 @@ export class MetaHubScene extends Phaser.Scene {
     const nodes = metaTreesData[this.selectedAnimalId] ?? [];
 
     this.treeHeading = this.add
-      .text(width / 2, 222, this.treeHeadingText(), {
+      .text(width / 2, 274, this.treeHeadingText(), {
         fontFamily: "monospace",
         fontSize: "14px",
         color: PALETTE.leaf,
@@ -300,8 +331,8 @@ export class MetaHubScene extends Phaser.Scene {
 
     this.treeContainer = this.add.container(0, 0);
 
-    const topY = 250;
-    const rowHeight = 50;
+    const topY = 304;
+    const rowHeight = 52;
     const marginX = 16;
     const btnWidth = width - marginX * 2;
 
@@ -340,14 +371,14 @@ export class MetaHubScene extends Phaser.Scene {
 
     const state = this.nodeState(node);
     const colors: Record<string, number> = {
-      locked: hex(PALETTE.outline),
-      unlockable: hex(PALETTE.grass),
-      unlocked: hex(PALETTE.grassDark),
+      locked: UI.panelDark,
+      unlockable: UI.panelSoft,
+      unlocked: 0x254529,
     };
     const strokeColors: Record<string, number> = {
-      locked: hex(PALETTE.brown),
-      unlockable: hex(PALETTE.grassLight),
-      unlocked: hex(PALETTE.gold),
+      locked: UI.dimLine,
+      unlockable: UI.gold,
+      unlocked: hex(PALETTE.grassLight),
     };
 
     const bg = this.add.rectangle(0, 0, w, h, colors[state], 1);
@@ -443,18 +474,18 @@ export class MetaHubScene extends Phaser.Scene {
 
   private buildButtons(width: number, height: number): void {
     const bigW = Math.min(280, width * 0.8);
-    const bigH = 52;
+    const bigH = 56;
     const x = width / 2;
-    const bigY = height - 76;
+    const bigY = height - 82;
 
-    const bigBg = this.add.rectangle(x, bigY, bigW, bigH, hex(PALETTE.grass), 1);
-    bigBg.setStrokeStyle(3, hex(PALETTE.gold), 1);
+    const bigBg = this.add.rectangle(x, bigY, bigW, bigH, UI.panelSoft, 1);
+    bigBg.setStrokeStyle(3, UI.gold, 1);
     bigBg.setInteractive({ useHandCursor: true });
 
     const bigLabel = this.add
       .text(x, bigY, "Begin Life", {
         fontFamily: "monospace",
-        fontSize: "18px",
+        fontSize: "19px",
         color: PALETTE.white,
       })
       .setOrigin(0.5);
@@ -478,7 +509,7 @@ export class MetaHubScene extends Phaser.Scene {
     smallBg.setInteractive({ useHandCursor: true });
 
     const smallLabel = this.add
-      .text(x, smallY, "Instinct Mode", {
+      .text(x, smallY, "Instinct Mode: Auto-run", {
         fontFamily: "monospace",
         fontSize: "13px",
         color: PALETTE.cream,

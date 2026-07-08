@@ -42,6 +42,8 @@ import { PALETTE, iconKey, frameKey } from "../gfx/spriteRegistry";
 
 const HUD_DEPTH = 4000;
 const POLL_MS = 500;
+const UI_PANEL = 0x18291d;
+const UI_GOLD = 0xf0c95a;
 
 function hex(n: string): number {
   return parseInt(n.replace("#", ""), 16);
@@ -79,6 +81,8 @@ export class HUD implements System {
   private killLabel!: Phaser.GameObjects.Text;
   private carriedLabel!: Phaser.GameObjects.Text;
   private bankedLabel!: Phaser.GameObjects.Text;
+  private helpText!: Phaser.GameObjects.Text;
+  private helpBg!: Phaser.GameObjects.Rectangle;
   private killCount = 0;
   private bankedTotal = 0;
 
@@ -118,6 +122,7 @@ export class HUD implements System {
     this.buildWeaponRack();
     this.buildBossBar();
     this.buildSynergyChips();
+    this.buildHelpCue();
 
     this.bindEvents();
     this.refreshAll();
@@ -464,6 +469,33 @@ export class HUD implements System {
     this.bossBarFill.setOrigin(0, 0);
 
     this.bossContainer.add([this.bossNameText, this.bossBarBg, this.bossBarFill]);
+  }
+
+  private buildHelpCue(): void {
+    const width = this.scene.scale.width;
+    const y = this.scene.scale.height - 112;
+    this.helpBg = this.scene.add.rectangle(width / 2, y, width - 48, 34, UI_PANEL, 0.86);
+    this.helpBg.setStrokeStyle(1, UI_GOLD, 0.45);
+    this.helpBg.setScrollFactor(0);
+    this.helpBg.setDepth(HUD_DEPTH);
+
+    this.helpText = this.scene.add
+      .text(width / 2, y, "WASD / arrows or drag to move  ·  auto-attacks fire for you", {
+        fontFamily: "monospace",
+        fontSize: "11px",
+        color: PALETTE.cream,
+      })
+      .setOrigin(0.5);
+    this.helpText.setScrollFactor(0);
+    this.helpText.setDepth(HUD_DEPTH + 1);
+
+    this.scene.tweens.add({
+      targets: [this.helpBg, this.helpText],
+      alpha: 0,
+      delay: 7000,
+      duration: 900,
+      ease: "Sine.easeInOut",
+    });
   }
 
   // ------------------------------------------------------------------

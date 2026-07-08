@@ -64,6 +64,12 @@ const RARITY_LABEL: Record<Rarity, string> = {
 };
 
 const PULSE_RARITIES: Rarity[] = ["epic", "legendary", "mythic"];
+const UI = {
+  overlay: 0x08100b,
+  card: 0x18291d,
+  cardHi: 0x233924,
+  line: 0x6f8f54,
+};
 
 /** Update 3 (Phase 2.4): 6 fixed synergy-tag colors, defined once. */
 const TAG_COLORS: Record<string, string> = {
@@ -114,27 +120,36 @@ export class DraftScene extends Phaser.Scene {
     const width = this.scale.width;
     const height = this.scale.height;
 
-    this.overlay = this.add.rectangle(0, 0, width, height, hex(PALETTE.outline), 0.72);
+    this.overlay = this.add.rectangle(0, 0, width, height, UI.overlay, 0.82);
     this.overlay.setOrigin(0, 0);
     this.overlay.setDepth(0);
 
     this.title = this.add
-      .text(width / 2, 48, "Choose a Path", {
+      .text(width / 2, 28, "Choose a Path", {
         fontFamily: "monospace",
-        fontSize: "18px",
+        fontSize: "23px",
         color: PALETTE.white,
+      })
+      .setOrigin(0.5)
+      .setDepth(1);
+
+    this.add
+      .text(width / 2, 56, "Pick one upgrade. Weapons level up, passives stack.", {
+        fontFamily: "monospace",
+        fontSize: "10px",
+        color: PALETTE.cream,
       })
       .setOrigin(0.5)
       .setDepth(1);
 
     // Update 3: a guaranteed fusion card can make this a 4-card offer —
     // shrink card width so 4 fit the 480px viewport (4x108 + 3x8 = 456).
-    const cardW = this.cards.length >= 4 ? 108 : 130;
-    const cardH = 290;
+    const cardW = this.cards.length >= 4 ? 112 : 138;
+    const cardH = 320;
     const gap = 8;
     const totalW = this.cards.length * cardW + (this.cards.length - 1) * gap;
     const startX = width / 2 - totalW / 2 + cardW / 2;
-    const y = height / 2 - 10;
+    const y = height / 2 + 4;
 
     this.cards.forEach((card, i) => {
       const x = startX + i * (cardW + gap);
@@ -155,7 +170,7 @@ export class DraftScene extends Phaser.Scene {
       this.cardContainers.push(container);
     });
 
-    this.skipButton = this.buildSkipButton(width / 2, height - 40);
+    this.skipButton = this.buildSkipButton(width / 2, height - 42);
   }
 
   private buildCard(
@@ -172,7 +187,7 @@ export class DraftScene extends Phaser.Scene {
     const borderColorStr = RARITY_COLOR[card.rarity];
     const borderColor = hex(borderColorStr);
 
-    const bg = this.add.rectangle(0, 0, w, h, hex(PALETTE.outline), 0.95);
+    const bg = this.add.rectangle(0, 0, w, h, UI.card, 0.98);
     bg.setStrokeStyle(3, borderColor, 1);
 
     if (PULSE_RARITIES.includes(card.rarity)) {
@@ -194,10 +209,10 @@ export class DraftScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0);
 
-    const iconArea = this.buildIcon(card, 0, -h / 2 + 56, 48);
+    const iconArea = this.buildIcon(card, 0, -h / 2 + 62, 54);
 
     const nameText = this.add
-      .text(0, -h / 2 + 92, card.name, {
+      .text(0, -h / 2 + 102, card.name, {
         fontFamily: "monospace",
         fontSize: "13px",
         color: PALETTE.white,
@@ -209,7 +224,7 @@ export class DraftScene extends Phaser.Scene {
     const { statusLine, bodyLines } = this.describeCard(card);
 
     const statusText = this.add
-      .text(0, -h / 2 + 128, statusLine, {
+      .text(0, -h / 2 + 138, statusLine, {
         fontFamily: "monospace",
         fontSize: "11px",
         color: PALETTE.gold,
@@ -219,7 +234,7 @@ export class DraftScene extends Phaser.Scene {
       .setOrigin(0.5, 0);
 
     const bodyText = this.add
-      .text(0, -h / 2 + 150, bodyLines, {
+      .text(0, -h / 2 + 160, bodyLines, {
         fontFamily: "monospace",
         fontSize: "10px",
         color: PALETTE.cream,
@@ -231,7 +246,7 @@ export class DraftScene extends Phaser.Scene {
 
     const footer = this.footerHint(card);
     const footerText = this.add
-      .text(0, -h / 2 + 190, footer, {
+      .text(0, -h / 2 + 206, footer, {
         fontFamily: "monospace",
         fontSize: "9px",
         color: PALETTE.grassLight,
@@ -253,8 +268,14 @@ export class DraftScene extends Phaser.Scene {
     }
 
     bg.setInteractive({ useHandCursor: true });
-    bg.on("pointerover", () => container.setScale(1.04));
-    bg.on("pointerout", () => container.setScale(1.0));
+    bg.on("pointerover", () => {
+      bg.setFillStyle(UI.cardHi, 1);
+      container.setScale(1.04);
+    });
+    bg.on("pointerout", () => {
+      bg.setFillStyle(UI.card, 0.98);
+      container.setScale(1.0);
+    });
     bg.on("pointerdown", () => this.pick(card.id, container));
 
     return container;
@@ -513,8 +534,8 @@ export class DraftScene extends Phaser.Scene {
     const w = 140;
     const h = 36;
 
-    const bg = this.add.rectangle(0, 0, w, h, hex(PALETTE.outline), 0.9);
-    bg.setStrokeStyle(2, hex(PALETTE.cream), 1);
+    const bg = this.add.rectangle(0, 0, w, h, UI.card, 0.94);
+    bg.setStrokeStyle(2, UI.line, 1);
 
     const label = this.add
       .text(0, 0, "Skip (+5 XP)", {
