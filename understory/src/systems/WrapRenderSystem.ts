@@ -140,6 +140,11 @@ export class WrapRenderSystem {
     // display; nothing reads them back, safe to leave wrapped).
     if (this.worldContainer) {
       for (const child of this.worldContainer.list) {
+        // Defensive: the screen-locked ground TileSprite must never be
+        // treated as a per-child static (it isn't a container child in the
+        // current WorldGenSystem, but this guard keeps that invariant
+        // explicit in case that ever changes again).
+        if (child === (this.ground as unknown as Phaser.GameObjects.GameObject)) continue;
         const c = child as XY;
         if (typeof c.x !== "number") continue;
         c.x = nearestWrappedCoord(wrapMod(c.x, this.size), this.center.x, this.size);

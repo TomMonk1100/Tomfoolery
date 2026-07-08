@@ -263,14 +263,36 @@ export class WorldGenSystem implements System, WorldView {
     this.container = this.scene.add.container(0, 0);
     const rng = mulberry32(0x5eed);
     const usesAtlas = this.scene.textures.exists(frameKey(SPRITE_KEYS.tileGrassSeamless));
-    const { width, height } = this.bounds();
     const textureExists = (key: string) => this.scene.textures.exists(frameKey(key));
 
     if (usesAtlas) {
-      const bg = this.scene.add.tileSprite(0, 0, width, height, frameKey(SPRITE_KEYS.tileGrassSeamless));
+      // Post-launch fix (camera-wrap follow-up): this must be a genuinely
+      // screen-locked, viewport-sized TileSprite (scrollFactor 0, sized to
+      // the canvas, NOT the world) so it always fully covers the camera's
+      // view no matter where the now-unbounded toroidal camera sits.
+      // Previously this was a world-sized (size*tilePx) quad fixed at world
+      // (0,0) and parented under the wrapped statics container -- that
+      // worked only while the camera was clamped inside the world rect. Once
+      // WrapRenderSystem made the camera unbounded (to smooth-follow across
+      // the seam), the camera could show area outside that fixed quad
+      // (visible as black), AND being a child of the statics container meant
+      // WrapRenderSystem's per-child wrap loop was also repositioning its
+      // x/y every frame on top of the tilePosition scroll, making it drift
+      // oddly. A screen-locked sprite sized to the canvas needs neither: it
+      // always exactly covers the view, and staying OUTSIDE the statics
+      // container means the wrap loop never touches it. Kept as a scene
+      // top-level object (not added to `this.container`) and given a low
+      // depth so it still draws behind every terrain feature.
+      const bg = this.scene.add.tileSprite(
+        0,
+        0,
+        this.scene.scale.width,
+        this.scene.scale.height,
+        frameKey(SPRITE_KEYS.tileGrassSeamless)
+      );
       bg.setOrigin(0, 0);
-      bg.setDepth(0);
-      this.container.add(bg);
+      bg.setScrollFactor(0);
+      bg.setDepth(-1);
       this.groundSprite = bg;
     }
 
