@@ -59,6 +59,16 @@ import { ProjectilePool } from "./ProjectilePool";
 const PLAYER_RADIUS = 14;
 const ORBIT_REHIT_MS = 300;
 const ZONE_TICK_MS = 400;
+/** Post-launch fix (skunk-smudge-stacking bug): hard cap on simultaneous
+ * zone instances per weapon runtime, independent of durationMs. Root cause
+ * of the reported "screen-covering rings" was a data bug (skunk-cloud/
+ * purr-aura shipped with durationMs:99999 -- effectively permanent -- while
+ * firing a brand-new stationary zone every ~400-500ms), now fixed at the
+ * source in weapons.json. This cap is defense-in-depth so a future
+ * mis-tuned duration/cooldown pair on ANY zone weapon can't blanket the
+ * screen again: oldest zone is force-expired (graphic destroyed) before a
+ * new one is allowed to spawn. */
+const MAX_ZONES_PER_WEAPON = 20;
 const TRAIL_SEGMENT_SPACING_PX = 60;
 const TRAIL_BURST_MS = 1500;
 
@@ -776,6 +786,14 @@ export class WeaponSystem implements System {
       const c = this.scene.add.circle(pos.x, pos.y, radius, tint, oneShot ? 0.35 : 0.25);
       c.setDepth(940);
       graphic = c;
+    }
+
+    // Defense-in-depth: force-expire the oldest zone(s) before exceeding the
+    // cap, regardless of how this one got here (bad data, a future evolution
+    // with a too-short cooldown relative to durationMs, etc).
+    while (runtime.zones.length >= MAX_ZONES_PER_WEAPON) {
+      const oldest = runtime.zones.shift();
+      oldest?.graphic?.destroy();
     }
 
     runtime.zones.push({

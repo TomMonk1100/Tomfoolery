@@ -635,31 +635,31 @@
         "damage": 6,
         "cooldownMs": 500,
         "area": 55,
-        "durationMs": 99999
+        "durationMs": 6000
       },
       {
         "damage": 8,
         "cooldownMs": 460,
         "area": 62,
-        "durationMs": 99999
+        "durationMs": 6000
       },
       {
         "damage": 10,
         "cooldownMs": 423,
         "area": 69,
-        "durationMs": 99999
+        "durationMs": 6000
       },
       {
         "damage": 13,
         "cooldownMs": 389,
         "area": 77,
-        "durationMs": 99999
+        "durationMs": 6000
       },
       {
         "damage": 17,
         "cooldownMs": 358,
         "area": 87,
-        "durationMs": 99999
+        "durationMs": 6000
       }
     ],
     "evolutions": [
@@ -671,7 +671,7 @@
           "damage": 37,
           "cooldownMs": 304,
           "area": 157,
-          "durationMs": 99999
+          "durationMs": 6000
         },
         "description": "A resonant purr that shakes the whole battlefield."
       }
@@ -1407,35 +1407,35 @@
         "damage": 6,
         "cooldownMs": 500,
         "area": 60,
-        "durationMs": 99999,
+        "durationMs": 6000,
         "knockback": 5
       },
       {
         "damage": 8,
         "cooldownMs": 460,
         "area": 67,
-        "durationMs": 99999,
+        "durationMs": 6000,
         "knockback": 5
       },
       {
         "damage": 10,
         "cooldownMs": 423,
         "area": 74,
-        "durationMs": 99999,
+        "durationMs": 6000,
         "knockback": 6
       },
       {
         "damage": 13,
         "cooldownMs": 389,
         "area": 82,
-        "durationMs": 99999,
+        "durationMs": 6000,
         "knockback": 6
       },
       {
         "damage": 17,
         "cooldownMs": 358,
         "area": 91,
-        "durationMs": 99999,
+        "durationMs": 6000,
         "knockback": 7
       }
     ],
@@ -1448,7 +1448,7 @@
           "damage": 37,
           "cooldownMs": 300,
           "area": 150,
-          "durationMs": 99999,
+          "durationMs": 6000,
           "knockback": 7
         },
         "description": "A billowing toxic fog that fills the whole battlefield."
