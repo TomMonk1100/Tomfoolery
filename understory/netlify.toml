@@ -1,8 +1,13 @@
 # Understory — deployed as a static Vite build.
 # Explicit build command + publish dir to avoid the sitewide-404 failure mode
 # from an unset build config in the Netlify dashboard.
+# NO `command` here on purpose. Netlify's remote builder fails on this project
+# with a bare "Build script returned non-zero exit code: 2" and no retrievable
+# log, while the identical source builds clean locally every time (root cause
+# never found; NODE_VERSION=20 made no difference). Until that's diagnosed from
+# the Netlify dashboard build log, deploy by building locally
+# (`npm run build`) and publishing the resulting `dist/` directly.
 [build]
-  command = "npm run build"
   publish = "dist"
 
 [[headers]]

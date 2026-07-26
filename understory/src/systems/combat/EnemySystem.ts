@@ -62,6 +62,16 @@ import { ProjectilePool } from "./ProjectilePool";
 
 const PLAYER_RADIUS = 14;
 
+/** Post-launch balance fix (elder-gloomcap "mushroom mom" instakill bug): how
+ * long the spore-ring's warning telegraph is shown before the projectiles
+ * actually spawn, giving the player a window to move away. Previously the
+ * ring fired instantly the moment bossPhaseCheck crossed a HP threshold, with
+ * zero advance warning. */
+const SPORE_RING_TELEGRAPH_MS = 550;
+
+/** Monotonic id source for spore-ring bursts (see ProjectilePool.burstId). */
+let sporeRingBurstCounter = 0;
+
 const SIZE_RADIUS: Record<EnemyData["size"], number> = {
   small: 8,
   medium: 12,
@@ -570,22 +580,7 @@ export class EnemySystem implements System {
         break;
       }
       case "spore-ring": {
-        for (let i = 0; i < action.count; i++) {
-          const angle = (i / action.count) * Math.PI * 2;
-          this.projectiles.spawn({
-            owner: "enemy",
-            kind: "straight",
-            x: inst.x,
-            y: inst.y,
-            dirX: Math.cos(angle),
-            dirY: Math.sin(angle),
-            speed: 140,
-            damage: inst.data.damage,
-            crit: false,
-            area: 500,
-            pierce: 0,
-          });
-        }
+        this.telegraphSporeRing(inst, action.count);
         break;
       }
       case "rapid-charges": {
@@ -610,6 +605,75 @@ export class EnemySystem implements System {
         break;
       }
     }
+  }
+
+  /**
+   * Post-launch balance fix ("purple mushroom mom" instakill bug): root
+   * cause was two-fold. (1) All 8 spore-ring projectiles spawned exactly at
+   * the boss's position with zero warning, and since players are typically
+   * standing at melee range from a boss they're fighting, most/all 8 could
+   * overlap the player's hitbox in the very first frame(s) before dispersing
+   * -- 8 x inst.data.damage (elder-gloomcap's 12 contact damage, reused for
+   * the ring) = up to 96 near-simultaneous damage against a 100 max-HP
+   * animal, i.e. an effective instakill with no way to react. (2) There was
+   * no telegraph at all -- the burst was edge-triggered directly off a HP
+   * threshold with no windup.
+   *
+   * Fix: show an expanding warning ring at the boss's position for
+   * SPORE_RING_TELEGRAPH_MS before any projectile spawns (giving the player
+   * time to move away), and tag every projectile in the burst with a shared
+   * burstId so ProjectilePool only lets ONE of them actually damage the
+   * player -- the rest despawn harmlessly if they also connect. Combined
+   * with the tuned per-hit damage (see elder-gloomcap's `projectile.damage`
+   * in weapons... enemies.json, repurposed from previously-dead data since
+   * `behavior: "boss"` never fires the normal shooter path), a player who
+   * fails to dodge entirely now takes exactly one hit for ~50% of a 100
+   * max-HP animal's health -- dangerous, not lethal.
+   */
+  private telegraphSporeRing(inst: EnemyInstance, count: number): void {
+    const x = inst.x;
+    const y = inst.y;
+
+    // Matches the existing scale+alpha tween idiom used elsewhere for hit/fx
+    // flashes (e.g. ProjectilePool.playSpawnFlash) rather than tweening the
+    // Arc's `radius` property directly.
+    const warn = this.scene.add.circle(x, y, 18, 0xd94f4f, 0.3);
+    warn.setStrokeStyle(2, 0xd94f4f, 0.9);
+    warn.setDepth(945);
+    this.scene.tweens.add({
+      targets: warn,
+      scale: 5,
+      alpha: 0,
+      duration: SPORE_RING_TELEGRAPH_MS,
+      onComplete: () => warn.destroy(),
+    });
+
+    const burstId = `spore-ring-${sporeRingBurstCounter++}`;
+    const damage = inst.data.projectile?.damage ?? inst.data.damage;
+
+    this.scene.time.delayedCall(SPORE_RING_TELEGRAPH_MS, () => {
+      // Boss may have died (or the scene may have moved on) during the
+      // telegraph window -- bail out rather than firing from a stale/dead
+      // pooled instance.
+      if (!inst.active || this.ctx.isPaused()) return;
+      for (let i = 0; i < count; i++) {
+        const angle = (i / count) * Math.PI * 2;
+        this.projectiles.spawn({
+          owner: "enemy",
+          kind: "straight",
+          x: inst.x,
+          y: inst.y,
+          dirX: Math.cos(angle),
+          dirY: Math.sin(angle),
+          speed: 140,
+          damage,
+          crit: false,
+          area: 500,
+          pierce: 0,
+          burstId,
+        });
+      }
+    });
   }
 
   destroy(): void {

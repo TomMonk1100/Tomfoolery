@@ -54,6 +54,12 @@ export interface ProjectileSpawnParams {
   splitGeneration?: number;
   /** Update 2 §2: evolved weapons get a gold tint on their fx (incl. projectiles). */
   tint?: number;
+  /** Post-launch balance fix (spore-ring instakill bug): shared id across a
+   * group of projectiles spawned as one "burst" (e.g. elder-gloomcap's 8-way
+   * spore ring). At most one projectile per burstId is allowed to actually
+   * damage the player -- see checkCollisions -- so a player standing at
+   * melee range when the burst fires can't take 8 near-simultaneous hits. */
+  burstId?: string;
 }
 
 interface ProjectileInstance {
@@ -79,6 +85,7 @@ interface ProjectileInstance {
   hitEnemyIds: Set<string>;
   sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Arc | null;
   usingFallback: boolean;
+  burstId?: string;
 }
 
 const DEFAULT_FALLBACK_RADIUS = 4;
@@ -89,6 +96,11 @@ export class ProjectilePool {
   private scene: Phaser.Scene;
   private ctx: GameContext;
   private pool: ProjectileInstance[] = [];
+  /** Post-launch balance fix: burstIds that have already dealt damage to the
+   * player once. A whole boss encounter fires at most 2 spore-rings (66%/33%
+   * HP thresholds), so this grows by a handful of entries per run -- no
+   * cleanup needed. */
+  private consumedBursts = new Set<string>();
 
   constructor(scene: Phaser.Scene, ctx: GameContext) {
     this.scene = scene;
@@ -129,6 +141,9 @@ export class ProjectilePool {
     inst.travelled = 0;
     inst.boomerangReturning = false;
     inst.hitEnemyIds.clear();
+    // Reset every spawn (pooled instances are reused) -- a stale burstId from
+    // a prior, unrelated projectile must never leak into this one.
+    inst.burstId = params.burstId;
 
     this.attachVisual(inst, params.spriteKey, params.tint);
 
@@ -272,7 +287,16 @@ export class ProjectilePool {
       const projRadius = inst.usingFallback ? DEFAULT_FALLBACK_RADIUS : 6;
       const PLAYER_RADIUS = 14;
       if (distance({ x: inst.x, y: inst.y }, playerPos) <= projRadius + PLAYER_RADIUS) {
-        this.ctx.damagePlayer(inst.damage, "projectile");
+        // Post-launch balance fix: if this projectile is part of a burst
+        // (e.g. elder-gloomcap's spore-ring) that has already landed a hit,
+        // this one despawns quietly instead of stacking more damage --
+        // otherwise a player at melee range when the ring fires could take
+        // all N projectiles' damage almost simultaneously.
+        const alreadyConsumed = inst.burstId !== undefined && this.consumedBursts.has(inst.burstId);
+        if (!alreadyConsumed) {
+          this.ctx.damagePlayer(inst.damage, "projectile");
+          if (inst.burstId !== undefined) this.consumedBursts.add(inst.burstId);
+        }
         this.despawn(inst);
       }
     }

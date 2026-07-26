@@ -120,7 +120,7 @@
     "spriteKey": "boss_elder_gloomcap",
     "projectile": {
       "speed": 100,
-      "damage": 10,
+      "damage": 50,
       "cooldownMs": 1800
     },
     "foodDropChance": 1.0
