@@ -71,11 +71,11 @@ const tiles = [
     </div>
   </section>
 
-  <!-- Outside widget lives OUTSIDE the tile grid on purpose: its content
-       height varies (location button, wrapping status text, geolocation
-       state), and it's promoted to its own highlighted surface directly
-       under the hero. -->
-  <div class="mb-4">
+  <!-- Outside is a full-bleed band: it breaks the max-w-6xl column itself
+       (see .full-bleed) and re-establishes that column for its own content,
+       so no wrapper here can constrain it. Still lives outside the tile grid
+       because its height varies with content and geolocation state. -->
+  <div class="mb-6">
     <Outside />
   </div>
 

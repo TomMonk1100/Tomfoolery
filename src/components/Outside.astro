@@ -1,462 +1,515 @@
 ---
-// Live "what's happening outside" widget: weather, sun arc, moon phase,
-// and the next visible ISS pass — fetched/computed client-side, no API
-// keys. Defaults to Breckenridge, TX; visitors can opt in to their own
-// location via the browser Geolocation API (button-gated, graceful
-// fallback).
+// Live "what's happening outside" band — full-bleed, and the sky is the point.
 //
-// v7 redesign: structured like a proper instrument panel — one header
-// row, one current-conditions row with a hairline-divided stat strip,
-// then two matching sky charts (sun + ISS). The ISS chart is now a
-// static plot of the actual predicted pass (trajectory height scaled to
-// peak elevation) instead of the old decorative bouncing dot, which
-// read as noise rather than information.
+// The gradient, sun position, star opacity and text colour are all driven by
+// real solar altitude computed locally (src/scripts/sky/astro.ts), so the band
+// renders correctly with no network at all and keeps working if every API
+// below fails. Weather, ISS passes and reverse geocoding are enhancement only.
+//
+// Layout: this breaks out of the max-w-6xl column via .full-bleed, then
+// re-establishes that column for its own content, so the sky runs edge to edge
+// while the copy stays aligned with the rest of the page.
+//
+// Motion rule (v7): animate transform/opacity only, never paint properties
+// under a filter. The sky's `background` transition is the one exception — it
+// runs once a minute, not per frame, and nothing above it is filtered.
 ---
 
-<div class="outside-panel reveal" id="outside-widget">
-  <!-- Header -->
-  <div class="flex items-center justify-between flex-wrap gap-3">
+<section class="outside-band full-bleed" id="outside-band" aria-labelledby="outside-heading">
+  <div class="outside-band__sky" data-sky></div>
+  <!-- The sun sits BELOW the scrim: it crosses the same space the copy
+       occupies, and letting the scrim knock it back is what keeps the
+       temperature readable when the sun passes behind it. -->
+  <div class="outside-band__sun" data-sun aria-hidden="true" style="opacity:0"></div>
+  <div class="outside-band__scrim"></div>
+  <div class="outside-band__stars" data-stars aria-hidden="true"></div>
+  <div class="outside-band__fx" data-fx aria-hidden="true"></div>
+  <svg class="outside-band__ridge" data-ridge viewBox="0 0 1440 104" preserveAspectRatio="none"
+       height="104" aria-hidden="true" focusable="false"></svg>
+
+  <div class="max-w-6xl mx-auto w-full px-6 pt-6 flex items-start justify-between gap-4 flex-wrap">
     <div class="flex items-center gap-2.5">
       <span class="w-1.5 h-1.5 bg-signal live-pulse shrink-0" aria-hidden="true"></span>
-      <span class="badge">outside</span>
-      <span class="font-display text-sm font-semibold text-ink" data-field="location-label">Breckenridge, TX</span>
+      <h2 id="outside-heading" class="badge" style="color:var(--on-sky-dim)">outside</h2>
+      <span class="font-display text-sm font-semibold" data-field="location-label">Breckenridge, TX</span>
     </div>
     <button
       id="use-location-btn"
       type="button"
-      class="badge border border-line px-2.5 py-1.5 hover:text-ink hover:border-accent transition-colors cursor-pointer"
-    >
-      use my location
-    </button>
+      class="badge px-2.5 py-1.5 cursor-pointer transition-colors"
+      style="border:1px solid var(--on-sky-line); color:var(--on-sky-dim)"
+    >use my location</button>
   </div>
-  <p class="text-xs text-muted mt-2" data-field="location-status" hidden></p>
+  <p class="max-w-6xl mx-auto w-full px-6 text-xs mt-2" style="color:var(--on-sky-dim)"
+     data-field="location-status" hidden></p>
 
-  <!-- Current conditions -->
-  <div class="mt-4 grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-x-10 gap-y-5 items-center">
-    <div class="flex items-center gap-4 min-w-[180px]">
-      <p class="font-display text-5xl font-semibold tracking-tight tabular-nums leading-none" data-field="weather-temp">—</p>
-      <div>
-        <p class="text-sm text-ink" data-field="weather-desc">Loading…</p>
-        <p class="text-xs text-muted mt-1 font-mono">
-          feels <span class="text-ink" data-field="weather-feelslike">—</span>
-          · H <span class="text-ink" data-field="weather-hi">—</span>
-          · L <span class="text-ink" data-field="weather-lo">—</span>
-        </p>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-3 sm:grid-cols-6 gap-px bg-line border border-line">
-      <div class="bg-surface px-3 py-2.5">
-        <p class="badge">humidity</p>
-        <p class="text-sm font-mono mt-1 tabular-nums" data-field="weather-humidity">—</p>
-      </div>
-      <div class="bg-surface px-3 py-2.5">
-        <p class="badge">wind</p>
-        <p class="text-sm font-mono mt-1 tabular-nums" data-field="weather-wind">—</p>
-      </div>
-      <div class="bg-surface px-3 py-2.5">
-        <p class="badge">uv index</p>
-        <p class="text-sm font-mono mt-1 tabular-nums" data-field="weather-uv">—</p>
-      </div>
-      <div class="bg-surface px-3 py-2.5">
-        <p class="badge">rain</p>
-        <p class="text-sm font-mono mt-1 tabular-nums" data-field="weather-precip">—</p>
-      </div>
-      <div class="bg-surface px-3 py-2.5">
-        <p class="badge">clouds</p>
-        <p class="text-sm font-mono mt-1 tabular-nums" data-field="weather-cloud">—</p>
-      </div>
-      <div class="bg-surface px-3 py-2.5">
-        <p class="badge">moon</p>
-        <p class="text-sm font-mono mt-1 tabular-nums" data-field="moon-phase" data-moon-title>—</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Sky charts: sun + next ISS pass, same horizon geometry side by side -->
-  <div class="mt-5 pt-4 border-t border-line grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
+  <div class="max-w-6xl mx-auto w-full px-6 pt-7 flex items-end justify-between gap-8 flex-wrap">
     <div>
-      <div class="flex items-baseline justify-between">
-        <p class="badge">sun</p>
-        <p class="text-xs font-mono text-muted">sets <span class="text-ink" data-field="sunset-time">—</span></p>
-      </div>
-      <svg class="sun-arc mt-2 w-full max-w-[330px] h-auto" viewBox="0 0 300 140" aria-hidden="true">
-        <line x1="20" y1="112" x2="280" y2="112" stroke="var(--color-line)" stroke-width="1.5" />
-        <path d="M 54 112 A 96 96 0 0 1 246 112" fill="none" stroke="var(--color-line)" stroke-width="1.5" stroke-dasharray="2 5" />
-        <path data-field="sun-golden-rise" fill="none" stroke="rgba(var(--color-accent-rgb), 0.55)" stroke-width="4" stroke-linecap="round" />
-        <path data-field="sun-golden-set" fill="none" stroke="rgba(var(--color-accent-rgb), 0.55)" stroke-width="4" stroke-linecap="round" />
-        <circle data-field="sun-dot" cx="54" cy="112" r="6" fill="var(--color-accent-mid)" />
-        <text x="54" y="126" font-size="9" fill="var(--color-muted)" font-family="var(--font-mono)" text-anchor="middle">sunrise</text>
-        <text data-field="sunrise-time-label" x="54" y="137" font-size="9" fill="var(--color-ink)" font-family="var(--font-mono)" text-anchor="middle">—</text>
-        <text x="246" y="126" font-size="9" fill="var(--color-muted)" font-family="var(--font-mono)" text-anchor="middle">sunset</text>
-        <text data-field="sunset-time-label" x="246" y="137" font-size="9" fill="var(--color-ink)" font-family="var(--font-mono)" text-anchor="middle">—</text>
-      </svg>
-      <p class="text-xs text-muted mt-1.5" data-field="sunset-quality">Loading forecast…</p>
+      <p class="font-display font-semibold tracking-tight tabular-nums leading-none text-6xl md:text-7xl"
+         data-field="weather-temp">—</p>
+      <p class="text-lg mt-3" data-field="weather-desc">Reading the sky…</p>
+      <p class="font-mono text-xs mt-1.5" style="color:var(--on-sky-dim)">
+        feels <span data-field="weather-feelslike">—</span>
+        · H <span data-field="weather-hi">—</span>
+        · L <span data-field="weather-lo">—</span>
+      </p>
     </div>
-
-    <div>
-      <div class="flex items-baseline justify-between">
-        <p class="badge">next ISS pass</p>
-        <p class="text-xs font-mono text-ink" data-field="iss-when">—</p>
+    <div class="flex items-end gap-7">
+      <div class="text-right">
+        <p class="badge" style="color:var(--on-sky-dim)" data-field="daylight-label">daylight left</p>
+        <p class="font-display text-2xl font-semibold mt-1.5 tabular-nums" data-field="daylight-value">—</p>
       </div>
-      <svg class="iss-arc mt-2 w-full max-w-[330px] h-auto" viewBox="0 0 300 140" aria-hidden="true">
-        <line x1="20" y1="112" x2="280" y2="112" stroke="var(--color-line)" stroke-width="1.5" />
-        <path d="M 54 112 A 96 96 0 0 1 246 112" fill="none" stroke="var(--color-line)" stroke-width="1.5" stroke-dasharray="2 5" />
-        <path data-field="iss-path" fill="none" stroke="var(--color-signal)" stroke-width="2" stroke-linecap="round" />
-        <circle data-field="iss-apex-dot" cx="150" cy="16" r="3.5" fill="var(--color-signal)" style="display:none" />
-        <text data-field="iss-apex-label" x="150" y="10" font-size="9" fill="var(--color-muted)" font-family="var(--font-mono)" text-anchor="middle"></text>
-        <circle cx="54" cy="112" r="2.5" fill="var(--color-muted)" />
-        <circle cx="246" cy="112" r="2.5" fill="var(--color-muted)" />
-        <text x="54" y="126" font-size="9" fill="var(--color-muted)" font-family="var(--font-mono)" text-anchor="middle">rises</text>
-        <text data-field="iss-rise-label" x="54" y="137" font-size="9" fill="var(--color-ink)" font-family="var(--font-mono)" text-anchor="middle">—</text>
-        <text x="246" y="126" font-size="9" fill="var(--color-muted)" font-family="var(--font-mono)" text-anchor="middle">sets</text>
-        <text data-field="iss-set-label" x="246" y="137" font-size="9" fill="var(--color-ink)" font-family="var(--font-mono)" text-anchor="middle">—</text>
-      </svg>
-      <p class="text-xs text-muted mt-1.5" data-field="iss-pass-summary">Loading pass predictions…</p>
+      <div class="text-center">
+        <svg width="58" height="58" viewBox="0 0 58 58" data-moon-svg aria-hidden="true" focusable="false"></svg>
+        <p class="font-mono text-[11px] mt-1.5" style="color:var(--on-sky-dim)" data-field="moon-phase">—</p>
+      </div>
     </div>
   </div>
-</div>
+
+  <div class="max-w-6xl mx-auto w-full px-6 pt-6">
+    <svg class="w-full block" data-ribbon viewBox="-30 -10 1160 236"
+         role="img" aria-label="The day at a glance: sun and moon altitude, twilight bands, and the next ISS pass"></svg>
+  </div>
+
+  <div class="max-w-6xl mx-auto w-full px-6 pt-5 pb-7">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px"
+         style="background:var(--on-sky-line)" data-cells></div>
+    <p class="font-mono text-xs mt-3" style="color:var(--on-sky-dim)" data-field="iss-summary">
+      Loading pass predictions…</p>
+  </div>
+</section>
 
 <script>
-  const BRECKENRIDGE = { lat: 32.7557, lon: -98.9023, label: 'Breckenridge, TX' };
-  let current = { ...BRECKENRIDGE };
+  import { sunPosition, moonIllumination, moonPhaseName, moonDarkPath } from '../scripts/sky/astro';
+  import { skyColors, cssRGB, skyTheme, starOpacity, ridgePath, ridgeColors, uvColor, uvLabel } from '../scripts/sky/sky';
+  import { buildRibbon, timeToX, altToY, hourLabel, type RibbonGeometry } from '../scripts/sky/ribbon';
 
-  // Shared geometry for both horizon-to-horizon sky charts.
-  const ARC = { cx: 150, cy: 112, r: 96 };
-
-  function arcPoint(cx: number, cy: number, r: number, progress: number) {
-    const p = Math.max(0, Math.min(1, progress));
-    const angle = Math.PI * (1 - p); // PI at progress=0 (left horizon) -> 0 at progress=1 (right horizon)
-    return { x: cx + r * Math.cos(angle), y: cy - r * Math.sin(angle) };
-  }
-
-  function arcSegmentPath(cx: number, cy: number, r: number, pFrom: number, pTo: number) {
-    const a = arcPoint(cx, cy, r, pFrom);
-    const b = arcPoint(cx, cy, r, pTo);
-    return `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} A ${r} ${r} 0 0 1 ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
-  }
-
-  function setField(name: string, value: string) {
-    document.querySelectorAll(`[data-field="${name}"]`).forEach((el) => {
-      el.textContent = value;
-    });
-  }
-
-  function setStatus(msg: string) {
-    const el = document.querySelector('[data-field="location-status"]') as HTMLElement | null;
-    if (!el) return;
-    if (!msg) {
-      el.hidden = true;
-      el.textContent = '';
-    } else {
-      el.hidden = false;
-      el.textContent = msg;
-    }
-  }
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const DEFAULT = { lat: 32.7557, lon: -98.9023, label: 'Breckenridge, TX' };
+  const RIBBON: RibbonGeometry = { width: 1100, height: 190, baseline: 152, maxAltitude: 90 };
 
   const WEATHER_CODES: Record<number, string> = {
-    0: 'Clear sky', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Overcast',
-    45: 'Fog', 48: 'Freezing fog',
-    51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle',
-    61: 'Light rain', 63: 'Rain', 65: 'Heavy rain',
-    71: 'Light snow', 73: 'Snow', 75: 'Heavy snow',
-    80: 'Rain showers', 81: 'Rain showers', 82: 'Violent showers',
-    95: 'Thunderstorm', 96: 'Thunderstorm w/ hail', 99: 'Severe thunderstorm',
+    0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+    45: 'Fog', 48: 'Rime fog', 51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle',
+    61: 'Light rain', 63: 'Rain', 65: 'Heavy rain', 71: 'Light snow', 73: 'Snow',
+    75: 'Heavy snow', 80: 'Rain showers', 81: 'Rain showers', 82: 'Violent showers',
+    95: 'Thunderstorm', 96: 'Thunderstorm with hail', 99: 'Thunderstorm with hail',
   };
 
-  const COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-  function compassFromDegrees(deg: number): string {
-    return COMPASS[Math.round(deg / 22.5) % 16];
+  interface Conditions {
+    temp: number; feels: number; hi: number; lo: number; code: number;
+    humidity: number; windSpeed: number; windDeg: number; uv: number;
+    precip: number; cloud: number;
   }
 
-  function sunsetQuality(cloudPct: number): string {
-    if (cloudPct < 15) return 'Clear — simple gold, minimal color';
-    if (cloudPct < 45) return 'Vibrant — good chance of color';
-    if (cloudPct < 70) return 'Painted — clouds catching light';
-    if (cloudPct < 90) return 'Muted — heavy cloud, soft glow at best';
-    return 'Socked in — sunset likely hidden';
-  }
+  let place = { ...DEFAULT };
+  let conditions: Conditions | null = null;
+  let issPassMinutes: number | null = null;
+  let root: HTMLElement | null = null;
+  let tick: number | undefined;
 
-  // --- Sun chart: position updates on a slow interval (data itself only
-  // needs to be fetched once per location — sunrise/sunset don't move
-  // minute to minute, only the sun's rendered position along the arc does). ---
-  let sunTimes: { sunrise: Date; sunset: Date } | null = null;
-  let sunArcInterval: ReturnType<typeof setInterval> | null = null;
+  const q = <T extends Element>(sel: string) => root?.querySelector<T>(sel) ?? null;
+  const setField = (name: string, value: string) => {
+    root?.querySelectorAll<HTMLElement>(`[data-field="${name}"]`).forEach((el) => { el.textContent = value; });
+  };
+  const compass = (deg: number) =>
+    ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][
+      Math.round(((deg % 360) / 22.5)) % 16
+    ];
+  const reducedMotion = () =>
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
-  function updateSunArc() {
-    if (!sunTimes) return;
-    const svg = document.querySelector('.sun-arc');
+  /* ---------------- static scenery ---------------- */
+
+  // Cached so the silhouette never reflows; only the fill colour changes.
+  const RIDGE_FAR = ridgePath(1440, 104, 7, 30, 44);
+  const RIDGE_NEAR = ridgePath(1440, 104, 23, 20, 68);
+
+  function drawRidge(altitude: number) {
+    const svg = q<SVGSVGElement>('[data-ridge]');
     if (!svg) return;
-    const { sunrise, sunset } = sunTimes;
-    const total = sunset.getTime() - sunrise.getTime();
-    const progress = (Date.now() - sunrise.getTime()) / total;
-    const isDaytime = progress >= 0 && progress <= 1;
+    const { near, far } = ridgeColors(altitude);
+    svg.innerHTML =
+      `<path d="${RIDGE_FAR}" fill="${far}"/>` +
+      `<path d="${RIDGE_NEAR}" fill="${near}"/>`;
+  }
 
-    const dot = svg.querySelector('[data-field="sun-dot"]') as SVGElement | null;
-    if (dot) {
-      if (isDaytime) {
-        const p = arcPoint(ARC.cx, ARC.cy, ARC.r, progress);
-        dot.setAttribute('cx', p.x.toFixed(1));
-        dot.setAttribute('cy', p.y.toFixed(1));
-        dot.style.display = '';
-      } else {
-        dot.style.display = 'none';
+  function drawStars() {
+    const host = q<HTMLElement>('[data-stars]');
+    if (!host || host.childElementCount) return;
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < 110; i++) {
+      const s = document.createElement('div');
+      s.className = 'outside-band__star';
+      const size = Math.random() < 0.85 ? 1 : 2;
+      s.style.cssText = `left:${(Math.random() * 100).toFixed(2)}%;top:${(Math.random() * 58).toFixed(2)}%;` +
+        `width:${size}px;height:${size}px;opacity:${(0.35 + Math.random() * 0.65).toFixed(2)}`;
+      frag.appendChild(s);
+    }
+    host.appendChild(frag);
+  }
+
+  /** Wind streaks and cloud puffs generated from the real readings. */
+  function drawWeatherFx(c: Conditions) {
+    const host = q<HTMLElement>('[data-fx]');
+    if (!host || reducedMotion()) return;
+    host.innerHTML = '';
+    const frag = document.createDocumentFragment();
+
+    const puffs = Math.round((c.cloud / 100) * 12);
+    for (let i = 0; i < puffs; i++) {
+      const p = document.createElement('div');
+      p.className = 'outside-band__puff';
+      const w = 140 + Math.random() * 260;
+      p.style.cssText = `left:${(Math.random() * 100).toFixed(1)}%;top:${(4 + Math.random() * 42).toFixed(1)}%;` +
+        `width:${w.toFixed(0)}px;height:${(w * 0.34).toFixed(0)}px;` +
+        `animation-duration:${(70 - Math.min(40, c.windSpeed)).toFixed(0)}s;` +
+        `animation-delay:-${(Math.random() * 50).toFixed(1)}s`;
+      frag.appendChild(p);
+    }
+
+    const streaks = Math.min(18, Math.round(c.windSpeed * 1.1));
+    for (let i = 0; i < streaks; i++) {
+      const s = document.createElement('div');
+      s.className = 'outside-band__streak';
+      // Confined to the upper sky and kept faint: at full strength these read
+      // as scan lines drawn across the temperature rather than as moving air.
+      s.style.cssText = `top:${(5 + Math.random() * 30).toFixed(1)}%;` +
+        `width:${(50 + Math.random() * 130).toFixed(0)}px;` +
+        `opacity:${(0.07 + Math.random() * 0.13).toFixed(2)};` +
+        `animation-duration:${Math.max(3.5, 13 - c.windSpeed * 0.35).toFixed(1)}s;` +
+        `animation-delay:-${(Math.random() * 12).toFixed(1)}s`;
+      frag.appendChild(s);
+    }
+    host.appendChild(frag);
+  }
+
+  /* ---------------- the shared 24-hour ribbon ---------------- */
+
+  function drawRibbon(now: Date) {
+    const svg = q<SVGSVGElement>('[data-ribbon]');
+    if (!svg) return;
+    const dayStart = new Date(now);
+    dayStart.setHours(0, 0, 0, 0);
+    const m = buildRibbon(dayStart, place.lat, place.lon, RIBBON);
+    const X = (mins: number) => timeToX(mins, RIBBON);
+    const parts: string[] = [];
+
+    // The SVG scales to its container, so on a 390px phone a 1100-unit viewBox
+    // shrinks 11-unit text to about 4 real pixels. Scale type and strokes by
+    // how far the viewBox is being squeezed, and thin out the hour ticks.
+    const rendered = svg.clientWidth || RIBBON.width;
+    const k = Math.min(3, Math.max(1, RIBBON.width / rendered));
+    const fs = (base: number) => (base * k).toFixed(1);
+    const sw = (base: number) => (base * Math.min(k, 1.8)).toFixed(2);
+    const tickStep = k > 1.8 ? 6 : 3;
+
+    // The ribbon's own background is the day's colour progression, sampled from
+    // the same sky model that drives the band. This replaced hard-edged
+    // twilight rectangles, which read as grey UI blocks rather than as sky.
+    const stops: string[] = [];
+    for (let h = 0; h <= 24; h++) {
+      const t = new Date(dayStart.valueOf() + h * 3600000);
+      const c = skyColors(sunPosition(t, place.lat, place.lon).altitude).bottom;
+      stops.push(`<stop offset="${((h / 24) * 100).toFixed(2)}%" stop-color="${cssRGB(c)}"/>`);
+    }
+    parts.push(`<defs><linearGradient id="ribbon-day" x1="0" y1="0" x2="1" y2="0">${stops.join('')}</linearGradient></defs>`);
+    parts.push(`<rect x="0" y="6" width="${RIBBON.width}" height="${RIBBON.baseline - 6}" ` +
+      `fill="url(#ribbon-day)" opacity=".55"/>`);
+    for (const s of m.goldenSpans) {
+      parts.push(`<rect x="${X(s.from).toFixed(1)}" y="6" width="${(X(s.to) - X(s.from)).toFixed(1)}" ` +
+        `height="${RIBBON.baseline - 6}" fill="rgba(var(--color-accent-rgb),.14)"/>`);
+    }
+
+    parts.push(`<line x1="0" y1="${RIBBON.baseline}" x2="${RIBBON.width}" y2="${RIBBON.baseline}" ` +
+      `stroke="var(--on-sky-line)" stroke-width="${sw(1.5)}"/>`);
+    for (let h = 0; h <= 24; h += tickStep) {
+      const x = X(h * 60);
+      parts.push(`<line x1="${x.toFixed(1)}" y1="${RIBBON.baseline}" x2="${x.toFixed(1)}" ` +
+        `y2="${RIBBON.baseline + 5}" stroke="var(--on-sky-line)" stroke-width="${sw(1)}"/>`);
+      parts.push(`<text x="${x.toFixed(1)}" y="${RIBBON.baseline + 8 + Number(fs(11))}" font-size="${fs(11)}" ` +
+        `font-family="var(--font-mono)" fill="var(--on-sky-dim)" text-anchor="middle">${hourLabel(h)}</text>`);
+    }
+
+    if (m.moonPath) {
+      parts.push(`<path d="${m.moonPath}" fill="none" stroke="var(--on-sky-dim)" stroke-width="${sw(1.6)}" ` +
+        `stroke-dasharray="3 4" stroke-linecap="round" opacity=".75"/>`);
+    }
+    if (m.sunPath) {
+      parts.push(`<path d="${m.sunPath}" fill="none" stroke="var(--color-accent-mid)" stroke-width="${sw(2.6)}" ` +
+        `stroke-linecap="round"/>`);
+    }
+
+    if (issPassMinutes != null) {
+      const x = X(issPassMinutes);
+      parts.push(`<line x1="${x.toFixed(1)}" y1="${RIBBON.baseline}" x2="${x.toFixed(1)}" y2="${RIBBON.baseline - 66}" ` +
+        `stroke="var(--color-signal)" stroke-width="${sw(1.5)}"/>`);
+      parts.push(`<circle cx="${x.toFixed(1)}" cy="${RIBBON.baseline - 66}" r="${sw(4)}" fill="var(--color-signal)"/>`);
+      parts.push(`<text x="${x.toFixed(1)}" y="${RIBBON.baseline - 76}" font-size="${fs(11)}" ` +
+        `font-family="var(--font-mono)" fill="var(--color-signal)" ` +
+        `text-anchor="${issPassMinutes > 1150 ? 'end' : 'middle'}">ISS</text>`);
+    }
+
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    const alt = sunPosition(now, place.lat, place.lon).altitude;
+    const nx = X(nowMins);
+    parts.push(`<line x1="${nx.toFixed(1)}" y1="6" x2="${nx.toFixed(1)}" y2="${RIBBON.baseline}" ` +
+      `stroke="var(--on-sky)" stroke-width="${sw(1)}" stroke-dasharray="2 3" opacity=".45"/>`);
+    if (alt > 0) {
+      parts.push(`<circle cx="${nx.toFixed(1)}" cy="${altToY(alt, RIBBON).toFixed(1)}" r="${sw(6)}" ` +
+        `fill="var(--color-accent-mid)"/>`);
+    }
+
+    svg.innerHTML = parts.join('');
+  }
+
+  /* ---------------- stat cells ---------------- */
+
+  function compassNeedle(deg: number) {
+    return `<svg width="17" height="17" viewBox="0 0 17 17" style="flex:none" aria-hidden="true">
+      <circle cx="8.5" cy="8.5" r="7.5" fill="none" stroke="var(--on-sky-line)" stroke-width="1"/>
+      <g transform="rotate(${deg.toFixed(0)} 8.5 8.5)">
+        <path d="M8.5 2 L11 10 L8.5 8.6 L6 10 Z" fill="var(--color-accent)"/>
+      </g></svg>`;
+  }
+
+  function drawMoon(fraction: number, waxing: boolean) {
+    const svg = q<SVGSVGElement>('[data-moon-svg]');
+    if (!svg) return;
+    svg.innerHTML =
+      `<circle cx="29" cy="29" r="24" fill="#F4E7C4" stroke="var(--on-sky-line)" stroke-width="1"/>` +
+      `<path d="${moonDarkPath(29, 29, 24, fraction, waxing)}" fill="rgba(26,20,14,.42)"/>`;
+  }
+
+  function drawCells(c: Conditions | null, fraction: number, waxing: boolean) {
+    const host = q<HTMLElement>('[data-cells]');
+    if (!host) return;
+    const pct = (n: number) => Math.max(0, Math.min(1, n));
+    const cells = [
+      { k: 'humidity', v: c ? `${Math.round(c.humidity)}%` : '—', f: c ? pct(c.humidity / 100) : 0, c: 'var(--color-accent-2)' },
+      { k: 'wind', v: c ? `${compassNeedle(c.windDeg)}<span>${Math.round(c.windSpeed)} ${compass(c.windDeg)}</span>` : '—',
+        f: c ? pct(c.windSpeed / 40) : 0, c: 'var(--color-accent)' },
+      { k: 'uv index', v: c ? `${c.uv.toFixed(1)} <span style="opacity:.62;font-size:11px">${uvLabel(c.uv)}</span>` : '—',
+        f: c ? pct(c.uv / 11) : 0, c: c ? uvColor(c.uv) : 'var(--color-muted)' },
+      { k: 'rain', v: c ? `${Math.round(c.precip)}%` : '—', f: c ? pct(c.precip / 100) : 0, c: 'var(--color-accent-2)' },
+      { k: 'clouds', v: c ? `${Math.round(c.cloud)}%` : '—', f: c ? pct(c.cloud / 100) : 0, c: 'var(--on-sky-dim)' },
+      { k: 'moon', v: `${Math.round(fraction * 100)}% <span style="opacity:.62;font-size:11px">${waxing ? 'waxing' : 'waning'}</span>`,
+        f: fraction, c: '#C9B98F' },
+    ];
+    host.innerHTML = cells.map((cell) => `
+      <div class="outside-band__cell">
+        <p class="badge" style="color:var(--on-sky-dim)">${cell.k}</p>
+        <p class="font-mono text-sm mt-1.5 tabular-nums flex items-center gap-2">${cell.v}</p>
+        <div class="outside-band__meter mt-2"><i style="background:${cell.c};transform:scaleX(${cell.f.toFixed(3)})"></i></div>
+      </div>`).join('');
+  }
+
+  /* ---------------- the frame ---------------- */
+
+  function renderSky(now = new Date()) {
+    if (!root) return;
+    const alt = sunPosition(now, place.lat, place.lon).altitude;
+    const colors = skyColors(alt);
+    const theme = skyTheme(alt);
+
+    root.style.setProperty('--sky-top', cssRGB(colors.top));
+    root.style.setProperty('--sky-bottom', cssRGB(colors.bottom));
+    root.style.setProperty('--sky-scrim', theme.scrim);
+    root.style.setProperty('--on-sky', theme.ink);
+    root.style.setProperty('--on-sky-dim', theme.dim);
+    root.style.setProperty('--on-sky-line', theme.line);
+    root.style.setProperty('--on-sky-panel', theme.panel);
+
+    drawRidge(alt);
+
+    const stars = q<HTMLElement>('[data-stars]');
+    if (stars) stars.style.opacity = String(starOpacity(alt));
+
+    // Sun disc rides its true arc across the band.
+    const sun = q<HTMLElement>('[data-sun]');
+    if (sun) {
+      const up = alt > -1;
+      if (!up) sun.style.opacity = '0';
+      if (up) {
+        const dayStart = new Date(now);
+        dayStart.setHours(0, 0, 0, 0);
+        const mins = now.getHours() * 60 + now.getMinutes();
+        // Travels across the sky but stays in the upper band, above the copy
+        // and clear of the ribbon below it.
+        sun.style.opacity = '1';
+        sun.style.left = `${(8 + (mins / 1440) * 84).toFixed(2)}%`;
+        // Kept in the upper band so it never sinks into the stat strip.
+        const ceiling = 34, floor = 158;
+        sun.style.top = `${(floor - (Math.max(0, alt) / 80) * (floor - ceiling)).toFixed(0)}px`;
       }
     }
 
-    const goldenFrac = Math.min(0.18, 3600000 / total);
-    svg.querySelector('[data-field="sun-golden-rise"]')?.setAttribute('d', arcSegmentPath(ARC.cx, ARC.cy, ARC.r, 0, goldenFrac));
-    svg.querySelector('[data-field="sun-golden-set"]')?.setAttribute('d', arcSegmentPath(ARC.cx, ARC.cy, ARC.r, 1 - goldenFrac, 1));
+    const { fraction, waxing } = moonIllumination(now);
+    drawMoon(fraction, waxing);
+    setField('moon-phase', moonPhaseName(fraction, waxing));
+    drawCells(conditions, fraction, waxing);
+    drawRibbon(now);
+    updateDaylight(now, alt);
   }
 
-  function fmtTime(d: Date): string {
-    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  function updateDaylight(now: Date, alt: number) {
+    const dayStart = new Date(now);
+    dayStart.setHours(0, 0, 0, 0);
+    const m = buildRibbon(dayStart, place.lat, place.lon, RIBBON);
+    const mins = now.getHours() * 60 + now.getMinutes();
+    const span = m.sunUp.find((s) => mins >= s.from && mins <= s.to);
+    const fmt = (n: number) => `${Math.floor(n / 60)}h ${String(Math.round(n % 60)).padStart(2, '0')}m`;
+
+    if (span) {
+      setField('daylight-label', 'daylight left');
+      setField('daylight-value', fmt(span.to - mins));
+    } else {
+      const next = m.sunUp.find((s) => s.from > mins);
+      setField('daylight-label', alt < -6 ? 'sunrise in' : 'twilight');
+      setField('daylight-value', next ? fmt(next.from - mins) : '—');
+    }
   }
+
+  /* ---------------- data ---------------- */
 
   async function loadWeather(lat: number, lon: number) {
     try {
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
         `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m` +
-        `&hourly=cloud_cover` +
-        `&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_probability_max` +
+        `&daily=temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_probability_max` +
         `&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=1`;
       const res = await fetch(url);
+      if (!res.ok) throw new Error(String(res.status));
       const data = await res.json();
-      const cur = data.current;
-      const daily = data.daily;
-
-      setField('weather-temp', `${Math.round(cur.temperature_2m)}°`);
-      setField('weather-desc', WEATHER_CODES[cur.weather_code] ?? 'Weather unavailable');
-      setField('weather-feelslike', `${Math.round(cur.apparent_temperature)}°`);
-      setField('weather-hi', `${Math.round(daily.temperature_2m_max[0])}°`);
-      setField('weather-lo', `${Math.round(daily.temperature_2m_min[0])}°`);
-      setField('weather-humidity', `${Math.round(cur.relative_humidity_2m)}%`);
-      setField('weather-wind', `${Math.round(cur.wind_speed_10m)} ${compassFromDegrees(cur.wind_direction_10m)}`);
-      setField('weather-uv', daily.uv_index_max?.[0] != null ? `${Math.round(daily.uv_index_max[0] * 10) / 10}` : '—');
-      setField('weather-precip', `${Math.round(daily.precipitation_probability_max?.[0] ?? 0)}%`);
-      setField('weather-cloud', `${Math.round(cur.cloud_cover)}%`);
-
-      const sunriseDate = new Date(daily.sunrise[0]);
-      const sunsetDate = new Date(daily.sunset[0]);
-      setField('sunset-time', fmtTime(sunsetDate));
-      setField('sunrise-time-label', fmtTime(sunriseDate));
-      setField('sunset-time-label', fmtTime(sunsetDate));
-
-      const hourlyTimes: string[] = data.hourly.time;
-      const hourlyClouds: number[] = data.hourly.cloud_cover;
-      let closestIdx = 0;
-      let closestDiff = Infinity;
-      hourlyTimes.forEach((t, i) => {
-        const diff = Math.abs(new Date(t).getTime() - sunsetDate.getTime());
-        if (diff < closestDiff) {
-          closestDiff = diff;
-          closestIdx = i;
-        }
-      });
-      const cloudAtSunset = hourlyClouds[closestIdx] ?? cur.cloud_cover;
-      setField('sunset-quality', sunsetQuality(cloudAtSunset));
-
-      sunTimes = { sunrise: sunriseDate, sunset: sunsetDate };
-      updateSunArc();
-      if (!sunArcInterval) sunArcInterval = setInterval(updateSunArc, 120000);
-    } catch (e) {
-      setField('weather-desc', "Couldn't load weather");
-      ['weather-temp', 'weather-feelslike', 'weather-hi', 'weather-lo', 'weather-humidity',
-        'weather-wind', 'weather-uv', 'weather-precip', 'weather-cloud'].forEach((f) => setField(f, '—'));
-      setField('sunset-quality', "Couldn't load forecast");
+      const cur = data.current, daily = data.daily;
+      conditions = {
+        temp: cur.temperature_2m, feels: cur.apparent_temperature, hi: daily.temperature_2m_max[0],
+        lo: daily.temperature_2m_min[0], code: cur.weather_code, humidity: cur.relative_humidity_2m,
+        windSpeed: cur.wind_speed_10m, windDeg: cur.wind_direction_10m,
+        uv: daily.uv_index_max?.[0] ?? 0, precip: daily.precipitation_probability_max?.[0] ?? 0,
+        cloud: cur.cloud_cover,
+      };
+      setField('weather-temp', `${Math.round(conditions.temp)}°`);
+      setField('weather-desc', WEATHER_CODES[conditions.code] ?? 'Weather unavailable');
+      setField('weather-feelslike', `${Math.round(conditions.feels)}°`);
+      setField('weather-hi', `${Math.round(conditions.hi)}°`);
+      setField('weather-lo', `${Math.round(conditions.lo)}°`);
+      drawWeatherFx(conditions);
+      renderSky();
+    } catch {
+      // The sky, ribbon and moon are all computed locally and stay correct.
+      setField('weather-desc', "Couldn't reach the weather service");
+      setField('weather-temp', '—');
     }
-  }
-
-  function moonPhase(date: Date) {
-    const synodic = 29.53058867;
-    const knownNewMoon = Date.UTC(2000, 0, 6, 18, 14, 0);
-    const daysSince = (date.getTime() - knownNewMoon) / 86400000;
-    let phase = (daysSince % synodic) / synodic;
-    if (phase < 0) phase += 1;
-    return phase;
-  }
-
-  function loadMoon() {
-    // Moon phase is the same everywhere on Earth (give or take a day near
-    // the terminator), so this doesn't depend on location.
-    const phase = moonPhase(new Date());
-    const illum = Math.round((1 - Math.cos(2 * Math.PI * phase)) / 2 * 100);
-
-    let name = 'New Moon';
-    let emoji = '🌑';
-    if (phase < 0.033 || phase >= 0.967) { name = 'New Moon'; emoji = '🌑'; }
-    else if (phase < 0.216) { name = 'Waxing Crescent'; emoji = '🌒'; }
-    else if (phase < 0.284) { name = 'First Quarter'; emoji = '🌓'; }
-    else if (phase < 0.466) { name = 'Waxing Gibbous'; emoji = '🌔'; }
-    else if (phase < 0.534) { name = 'Full Moon'; emoji = '🌕'; }
-    else if (phase < 0.716) { name = 'Waning Gibbous'; emoji = '🌖'; }
-    else if (phase < 0.784) { name = 'Last Quarter'; emoji = '🌗'; }
-    else { name = 'Waning Crescent'; emoji = '🌘'; }
-
-    setField('moon-phase', `${emoji} ${illum}%`);
-    const cell = document.querySelector('[data-moon-title]') as HTMLElement | null;
-    if (cell) cell.title = `${name} — ${illum}% illuminated`;
-  }
-
-  // --- ISS next-pass prediction (Pollux Labs — free, no key, CORS-enabled,
-  // SGP4/Skyfield against fresh Celestrak TLEs; superseded Open Notify,
-  // which was retired). The chart is a static plot of the real predicted
-  // pass: trajectory height is scaled to the pass's peak elevation
-  // (90° = zenith = top of the reference dome). ---
-  interface IssPass {
-    rise: { time: string; azimuth_deg: number; compass: string };
-    culmination: { time: string; elevation_deg: number };
-    set: { time: string; azimuth_deg: number; compass: string };
-    duration_sec: number;
-  }
-
-  function formatPassWhen(d: Date): string {
-    const now = new Date();
-    const time = fmtTime(d);
-    if (d.toDateString() === now.toDateString()) return `Today, ${time}`;
-    const tomorrow = new Date(now);
-    tomorrow.setDate(now.getDate() + 1);
-    if (d.toDateString() === tomorrow.toDateString()) return `Tomorrow, ${time}`;
-    return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${time}`;
-  }
-
-  function formatDuration(sec: number): string {
-    const m = Math.floor(sec / 60);
-    const s = Math.round(sec % 60);
-    return m > 0 ? `${m}m ${s}s` : `${s}s`;
-  }
-
-  function renderIssPass(pass: IssPass | null) {
-    const svg = document.querySelector('.iss-arc');
-    if (!svg) return;
-    const path = svg.querySelector('[data-field="iss-path"]');
-    const dot = svg.querySelector('[data-field="iss-apex-dot"]') as SVGElement | null;
-    const apexLabel = svg.querySelector('[data-field="iss-apex-label"]');
-
-    if (!pass) {
-      path?.removeAttribute('d');
-      if (dot) dot.style.display = 'none';
-      if (apexLabel) apexLabel.textContent = '';
-      setField('iss-rise-label', '—');
-      setField('iss-set-label', '—');
-      return;
-    }
-
-    // Quadratic curve horizon-to-horizon; apex height maps peak elevation
-    // onto the same scale as the dashed reference dome (90° = dome top).
-    const elev = Math.min(90, Math.max(0, pass.culmination.elevation_deg));
-    const apexY = ARC.cy - (elev / 90) * ARC.r;
-    const ctrlY = 2 * apexY - ARC.cy;
-    path?.setAttribute('d', `M 54 ${ARC.cy} Q ${ARC.cx} ${ctrlY.toFixed(1)} 246 ${ARC.cy}`);
-    if (dot) {
-      dot.setAttribute('cx', String(ARC.cx));
-      dot.setAttribute('cy', apexY.toFixed(1));
-      dot.style.display = '';
-    }
-    if (apexLabel) {
-      apexLabel.setAttribute('y', Math.max(9, apexY - 8).toFixed(1));
-      apexLabel.textContent = `${Math.round(pass.culmination.elevation_deg)}° max`;
-    }
-    setField('iss-rise-label', pass.rise.compass);
-    setField('iss-set-label', pass.set.compass);
   }
 
   async function loadIssPass(lat: number, lon: number) {
-    const svg = document.querySelector('.iss-arc');
     try {
-      const url = `https://iss-api.polluxlabs.io/iss-pass?lat=${lat}&lon=${lon}&visible_only=true&n=3&days_ahead=10&min_elevation=10`;
+      const url = `https://iss-api.polluxlabs.io/iss-pass?lat=${lat}&lon=${lon}` +
+        `&visible_only=true&n=3&days_ahead=10&min_elevation=10`;
       const res = await fetch(url);
-      const data = await res.json();
-      const passes: IssPass[] = data.passes ?? [];
-
-      if (passes.length === 0) {
-        setField('iss-when', '—');
-        setField('iss-pass-summary', 'No visible passes in the next 10 days');
-        renderIssPass(null);
-        svg?.classList.add('opacity-40');
+      if (!res.ok) throw new Error(String(res.status));
+      const passes = (await res.json()).passes ?? [];
+      if (!passes.length) {
+        issPassMinutes = null;
+        setField('iss-summary', 'No visible ISS passes in the next 10 days');
+        renderSky();
         return;
       }
-
-      svg?.classList.remove('opacity-40');
-      const nextPass = passes[0];
-      const riseDate = new Date(nextPass.rise.time);
-      setField('iss-when', formatPassWhen(riseDate));
-      setField('iss-pass-summary',
-        `Crosses ${nextPass.rise.compass} → ${nextPass.set.compass} · visible ${formatDuration(nextPass.duration_sec)}`);
-      renderIssPass(nextPass);
-    } catch (e) {
-      setField('iss-when', '—');
-      setField('iss-pass-summary', "Couldn't load ISS pass predictions");
-      renderIssPass(null);
+      const p = passes[0];
+      const rise = new Date(p.rise.time);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const sameDay = rise >= today && rise.valueOf() < today.valueOf() + 86400000;
+      issPassMinutes = sameDay ? rise.getHours() * 60 + rise.getMinutes() : null;
+      const when = rise.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      const day = sameDay ? 'Tonight' : rise.toLocaleDateString('en-US', { weekday: 'long' });
+      const mins = Math.floor((p.duration_sec ?? 0) / 60), secs = Math.round((p.duration_sec ?? 0) % 60);
+      // Peak elevation is nested under `culmination`, not a flat `max_elevation`.
+      const peak = Math.round(p.culmination?.elevation_deg ?? 0);
+      setField('iss-summary',
+        `ISS · ${day} ${when} — crosses ${p.rise.compass} → ${p.set.compass}` +
+        `${peak ? `, ${peak}° up` : ''}, visible ${mins}m ${secs}s`);
+      renderSky();
+    } catch {
+      issPassMinutes = null;
+      setField('iss-summary', "Couldn't load ISS pass predictions");
     }
   }
 
-  async function reverseGeocodeLabel(lat: number, lon: number): Promise<string> {
+  async function reverseGeocode(lat: number, lon: number): Promise<string> {
     try {
       const res = await fetch(
         `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
       );
-      const data = await res.json();
-      const city = data.city || data.locality;
-      const region = data.principalSubdivisionCode?.split('-')[1] || data.principalSubdivision;
-      if (city && region) return `${city}, ${region}`;
-      if (data.locality) return data.locality;
-    } catch (e) {
-      // fall through to coordinate label
+      const d = await res.json();
+      const city = d.city || d.locality;
+      return city ? `${city}${d.principalSubdivisionCode ? ', ' + String(d.principalSubdivisionCode).replace(/^US-/, '') : ''}` : 'Your location';
+    } catch {
+      return 'Your location';
     }
-    return `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
   }
 
-  async function refreshFor(lat: number, lon: number, label: string) {
-    setField('location-label', label);
-    await Promise.all([loadWeather(lat, lon), loadIssPass(lat, lon)]);
+  function wireLocationButton() {
+    const btn = q<HTMLButtonElement>('#use-location-btn');
+    const status = q<HTMLElement>('[data-field="location-status"]');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        if (status) { status.hidden = false; status.textContent = 'Your browser will not share a location.'; }
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = 'locating…';
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          place = { lat: pos.coords.latitude, lon: pos.coords.longitude, label: 'Locating…' };
+          place.label = await reverseGeocode(place.lat, place.lon);
+          setField('location-label', place.label);
+          btn.disabled = false;
+          btn.textContent = 'use my location';
+          if (status) status.hidden = true;
+          renderSky();
+          loadWeather(place.lat, place.lon);
+          loadIssPass(place.lat, place.lon);
+        },
+        () => {
+          btn.disabled = false;
+          btn.textContent = 'use my location';
+          if (status) { status.hidden = false; status.textContent = `Location declined — still showing ${DEFAULT.label}.`; }
+        },
+        { timeout: 10000, maximumAge: 600000 }
+      );
+    });
   }
 
-  function useMyLocation() {
-    const btn = document.getElementById('use-location-btn');
-    if (!('geolocation' in navigator)) {
-      setStatus("Your browser doesn't support geolocation — showing Breckenridge, TX.");
-      return;
-    }
-    setStatus('Requesting your location…');
-    if (btn) (btn as HTMLButtonElement).disabled = true;
+  function init() {
+    root = document.getElementById('outside-band');
+    if (!root) return;
+    place = { ...DEFAULT };
+    conditions = null;
+    issPassMinutes = null;
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        current = { lat: latitude, lon: longitude, label: 'your location' };
-        setStatus('Got it — updating…');
-        const label = await reverseGeocodeLabel(latitude, longitude);
-        await refreshFor(latitude, longitude, label);
-        setStatus('');
-        if (btn) (btn as HTMLButtonElement).disabled = false;
-      },
-      () => {
-        // Declined or failed — graceful fallback, stay on Breckenridge data.
-        setStatus("Couldn't get your location — showing Breckenridge, TX instead.");
-        if (btn) (btn as HTMLButtonElement).disabled = false;
-      },
-      { timeout: 8000 }
-    );
+    drawStars();
+    renderSky();
+    wireLocationButton();
+    loadWeather(place.lat, place.lon);
+    loadIssPass(place.lat, place.lon);
+
+    // The sun visibly moves. Once a minute is plenty and costs nothing.
+    window.clearInterval(tick);
+    tick = window.setInterval(() => renderSky(), 60000);
+
+    // The ribbon's type scales off its rendered width, so it needs redrawing
+    // when that changes.
+    let resizeTimer: number | undefined;
+    window.addEventListener('resize', () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => renderSky(), 180);
+    });
   }
 
-  function initOutsideWidget() {
-    current = { ...BRECKENRIDGE };
-    setField('location-label', BRECKENRIDGE.label);
-    setStatus('');
-    loadWeather(BRECKENRIDGE.lat, BRECKENRIDGE.lon);
-    loadMoon();
-    loadIssPass(BRECKENRIDGE.lat, BRECKENRIDGE.lon);
-
-    const btn = document.getElementById('use-location-btn');
-    btn?.addEventListener('click', useMyLocation);
-  }
-
-  document.addEventListener('astro:page-load', initOutsideWidget);
-  document.addEventListener('astro:before-swap', () => {
-    if (sunArcInterval) {
-      clearInterval(sunArcInterval);
-      sunArcInterval = null;
-    }
-  }, { once: true });
+  init();
+  // Astro view transitions swap the DOM without a full reload.
+  document.addEventListener('astro:page-load', init);
+  document.addEventListener('astro:before-swap', () => window.clearInterval(tick));
 </script>
