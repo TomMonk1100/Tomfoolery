@@ -28,3 +28,14 @@ pnpm-debug.log*
 # won't let them be unlinked, so they pile up untracked
 vite.config.ts.timestamp-*.mjs
 **/vite.config.ts.timestamp-*.mjs
+
+# personal handoff doc — contains a live GitHub token, never commit
+HANDOFF.md
+
+# Netlify CLI local state
+.netlify
+**/.netlify
+
+# leftover CMS uploads: multi-MB unoptimised phone originals, not referenced
+# by any page and not served on the live site. Kept on disk, out of git.
+public/uploads/
