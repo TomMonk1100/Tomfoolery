@@ -1,0 +1,46 @@
+---
+// Custom 404. Netlify serves this automatically for a static build — the
+// default was Netlify's own generic branded "Page not found", which reads as
+// "this site is broken" rather than "that page moved".
+//
+// The suggestion list doubles as a recovery path for the two sections that
+// have moved before: /photos and /retreats were folded into /now (301s live
+// in netlify.toml), and /coffee briefly redirected away during the July IA
+// prune before coming back as a real page.
+import Layout from '../layouts/Layout.astro';
+
+const suggestions = [
+  { href: '/', label: 'the hub', blurb: 'Everything, in one grid.' },
+  { href: '/now', label: 'now', blurb: 'What I am up to lately — photos and retreats live here now.' },
+  { href: '/coffee', label: 'coffee', blurb: 'The latte gallery.' },
+  { href: '/archive', label: 'the archive', blurb: 'Old blog posts and a decade of tweets.' },
+  { href: '/game', label: 'moon lander', blurb: 'Since you are already lost, you may as well crash a ship.' },
+];
+---
+
+<Layout
+  title="Page not found — Tomfoolery"
+  description="That page does not exist. Here is the way back."
+>
+  <section class="py-6 md:py-12">
+    <span class="badge">404</span>
+    <h1 class="font-display text-3xl md:text-5xl font-semibold tracking-tight mt-3">
+      Nothing here.
+    </h1>
+    <p class="mt-4 max-w-xl text-muted text-lg">
+      Either that page never existed or it moved somewhere better. No harm done —
+      here is where everything actually lives.
+    </p>
+
+    <ul class="mt-9 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl">
+      {suggestions.map((s) => (
+        <li>
+          <a href={s.href} class="tile reveal is-visible flex flex-col justify-between min-h-[110px]">
+            <h2 class="font-display text-lg font-semibold">{s.label}</h2>
+            <p class="mt-1 text-sm text-muted">{s.blurb}</p>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+</Layout>

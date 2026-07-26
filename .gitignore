@@ -23,3 +23,8 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# vite writes these next to the config on every run and the synced mount
+# won't let them be unlinked, so they pile up untracked
+vite.config.ts.timestamp-*.mjs
+**/vite.config.ts.timestamp-*.mjs

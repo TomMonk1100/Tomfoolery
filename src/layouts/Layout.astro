@@ -5,12 +5,21 @@ import { ClientRouter } from 'astro:transitions';
 interface Props {
   title?: string;
   description?: string;
+  /** Page-specific social share image, as a site-root path. */
+  image?: string;
 }
 
 const {
   title = "Tomfoolery",
   description = "Tom's personal hub — photos, collections, coffee, and whatever else.",
+  image = "/images/og-card.png",
 } = Astro.props;
+
+// Absolute URLs for canonical + Open Graph. `Astro.site` comes from the `site`
+// key in astro.config.mjs — if that's ever unset these fall back to relative
+// paths rather than throwing at build time.
+const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin);
+const imageURL = new URL(image, Astro.site ?? Astro.url.origin);
 ---
 
 <!doctype html>
@@ -21,6 +30,24 @@ const {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="description" content={description} />
     <title>{title}</title>
+    <link rel="canonical" href={canonicalURL} />
+
+    <!-- Open Graph / Twitter. Without these, sharing any page anywhere
+         produced a bare link with no title card or image. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tomfoolery" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={imageURL} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Tomfoolery — a personal site" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={imageURL} />
+    <meta name="theme-color" content="#FAF6EE" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -36,8 +63,11 @@ const {
         <a href="/" class="font-display font-semibold tracking-tight text-lg flicker-hover">
           Tom<span class="gradient-text">foolery</span>
         </a>
-        <nav class="flex items-center gap-5 text-sm text-muted font-mono">
+        <nav class="flex items-center gap-4 sm:gap-5 text-sm text-muted font-mono">
           <a href="/now" class="hover:text-ink transition-colors">now</a>
+          <a href="/coffee" class="hidden sm:inline hover:text-ink transition-colors">coffee</a>
+          <a href="/archive" class="hidden sm:inline hover:text-ink transition-colors">archive</a>
+          <a href="/game" class="hover:text-ink transition-colors">play</a>
           <a href="/about" class="hover:text-ink transition-colors">about</a>
         </nav>
       </div>
@@ -45,8 +75,26 @@ const {
     <main class="max-w-6xl mx-auto px-6 py-10 relative z-10" transition:name="main-content" transition:animate="fade">
       <slot />
     </main>
-    <footer class="max-w-6xl mx-auto px-6 py-12 text-xs text-muted font-mono relative z-10">
-      built with a little help from an AI, tended by hand
+    <footer class="max-w-6xl mx-auto px-6 py-12 relative z-10">
+      <nav class="flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted font-mono border-t border-line pt-6">
+        <a href="/" class="hover:text-ink transition-colors">home</a>
+        <a href="/now" class="hover:text-ink transition-colors">now</a>
+        <a href="/coffee" class="hover:text-ink transition-colors">coffee</a>
+        <a href="/pokemon" class="hover:text-ink transition-colors">pok&eacute;mon</a>
+        <a href="/art" class="hover:text-ink transition-colors">art</a>
+        <a href="/archive" class="hover:text-ink transition-colors">archive</a>
+        <a href="/game" class="hover:text-ink transition-colors">moon lander</a>
+        <a
+          href="https://understory-life.netlify.app"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hover:text-ink transition-colors">understory &#8599;</a
+        >
+        <a href="/about" class="hover:text-ink transition-colors">about</a>
+      </nav>
+      <p class="mt-5 text-xs text-muted font-mono">
+        built with a little help from an AI, tended by hand
+      </p>
     </footer>
 
     <script>
