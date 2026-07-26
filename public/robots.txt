@@ -2,4 +2,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://radiant-ganache-56c528.netlify.app/sitemap-index.xml
+Sitemap: https://tommuncie.com/sitemap-index.xml
