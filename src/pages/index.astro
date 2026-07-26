@@ -46,16 +46,6 @@ const tiles = [
     blurb: 'An endless roguelite lander — every level harder, every upgrade a tradeoff.',
     featured: true,
   },
-  {
-    // Understory is its own Netlify site, not part of this Astro build, so it
-    // opens in a new tab. It had no entry point from here at all before.
-    href: 'https://understory-life.netlify.app',
-    title: 'Understory',
-    tag: 'play',
-    blurb: 'A one-handed nature roguelite. Be the dog, the cat, or the rabbit.',
-    featured: true,
-    external: true,
-  },
 ];
 ---
 
@@ -95,12 +85,10 @@ const tiles = [
     {tiles.map((tile, i) => (
       <a
         href={tile.href}
-        target={tile.external ? '_blank' : undefined}
-        rel={tile.external ? 'noopener noreferrer' : undefined}
         class={`tile reveal flex flex-col justify-between min-h-[180px]${tile.featured ? ' tile-featured' : ''}`}
         style={`transition-delay: ${Math.min(i * 60, 300)}ms`}
       >
-        <span class="badge">{tile.tag}{tile.external ? ' \u2197' : ''}</span>
+        <span class="badge">{tile.tag}</span>
         <div>
           <h2 class="font-display text-xl font-semibold">{tile.title}</h2>
           <p class={`mt-1 text-sm ${tile.featured ? 'tile-blurb' : 'text-muted'}`}>{tile.blurb}</p>
