@@ -9,7 +9,10 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test": "vitest run src/scripts",
+    "typecheck": "astro sync && tsc --noEmit",
+    "verify": "npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
