@@ -3,30 +3,64 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout title="About — Tomfoolery" description="A little about Tom.">
-  <div class="max-w-2xl reveal is-visible">
+  <section class="max-w-5xl reveal is-visible">
     <span class="badge">about</span>
     <h1 class="font-display text-3xl md:text-4xl font-semibold mt-2">
-      What I do, roughly
+      A little about me
     </h1>
-    <div class="mt-6 space-y-4 text-muted text-lg leading-relaxed">
-      <p>
-        <em>Placeholder — tell me what you want here and I'll rewrite it.</em>
-        For now: I'm into electric vehicles (currently driving an IONIQ 5),
-        specialty coffee, Pokémon TCG and blind-box figures, and dragging
-        friends and family out on outdoor retreats I plan myself. Sci-fi
-        fan — Star Wars, Star Trek — and I like experimenting with
-        psychedelic-leaning AI art.
-      </p>
-      <p>
-        This site is where all of that lives in one place, instead of
-        scattered across apps.
-      </p>
+
+    <div class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)] lg:items-start">
+      <figure class="lg:order-2 lg:sticky lg:top-28">
+        <div class="overflow-hidden border border-line bg-surface p-1">
+          <img
+            src="/images/about-tom.webp"
+            srcset="/images/about-tom-480.webp 480w, /images/about-tom.webp 768w"
+            sizes="(min-width: 1024px) 36vw, calc(100vw - 3rem)"
+            width="768"
+            height="1024"
+            alt="Tom standing outdoors in warm evening light, wearing a suit and tie."
+            class="block h-auto w-full"
+            loading="eager"
+            decoding="async"
+            fetchpriority="high"
+          />
+        </div>
+      </figure>
+
+      <div class="space-y-5 text-muted text-lg leading-relaxed lg:order-1">
+        <p>
+          Most days, I work from home for a medical supply company. I handle
+          revenue cycle work, mainly Medicare and Humana billing and
+          collections, using FinThrive. There is a lot of detail to keep
+          straight, but I enjoy taking a messy problem and finding a clear way
+          through it.
+        </p>
+        <p>
+          One of my biggest goals is to become a better supervisor. I want to
+          communicate clearly, help people do their best work, and stay
+          organized enough that I am not adding chaos to anyone else's day. I am
+          also trying to build better routines for my own time, because that is
+          still a work in progress.
+        </p>
+        <p>
+          I have always been the person who wants to try the newest piece of
+          technology and understand how it works. Lately that has meant spending
+          a lot of time with LLMs, AI, automation, and small hands on projects.
+          I am less interested in the hype than I am in finding out what these
+          tools can actually make easier.
+        </p>
+        <p>
+          When I am not working or tinkering with something, I am usually taking
+          care of Scout, my fourteen year old dog, and Theo, my new cat. I love
+          making coffee and collecting Pokémon cards. I also love to bake,
+          although I have not made enough time for it lately. I would like to
+          get back to it.
+        </p>
+        <p class="border-l-2 border-accent pl-5 text-ink">
+          This site is a place for all of it. The things I am learning, the
+          things I collect, and the projects I keep convincing myself to start.
+        </p>
+      </div>
     </div>
-    <div class="mt-10 tile inline-block">
-      <span class="badge">say hi</span>
-      <p class="mt-2 text-sm">
-        <em>Add your preferred contact link/email here.</em>
-      </p>
-    </div>
-  </div>
+  </section>
 </Layout>

@@ -1,0 +1,119 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+// Portrait gallery photos. `wide` is the lead image and is rendered
+// separately above the masonry columns.
+const photos = [
+  {
+    src: '/images/coffee/latte-with-scout.webp',
+    srcset: '/images/coffee/latte-with-scout-480.webp 480w, /images/coffee/latte-with-scout.webp 768w',
+    width: 768,
+    height: 1024,
+    alt: 'A hand holding a latte with leaf shaped foam art while Scout walks through the living room in the background.',
+  },
+  {
+    src: '/images/coffee/latte-desk-rosetta.webp',
+    srcset: '/images/coffee/latte-desk-rosetta-480.webp 480w, /images/coffee/latte-desk-rosetta.webp 665w',
+    width: 665,
+    height: 1182,
+    alt: 'A brown ceramic cup with leaf shaped latte art on a desk beside a keyboard and a white plush toy.',
+  },
+  {
+    src: '/images/coffee/latte-with-flowers.webp',
+    srcset: '/images/coffee/latte-with-flowers-480.webp 480w, /images/coffee/latte-with-flowers.webp 768w',
+    width: 768,
+    height: 1024,
+    alt: 'A latte with an animal face drawn in the foam, held in front of a bouquet of coral roses.',
+  },
+  {
+    src: '/images/coffee/latte-doodle-flower.webp',
+    srcset: null,
+    width: 360,
+    height: 480,
+    alt: 'A latte with a small dog holding a flower and a heart drawn in the foam, sitting in front of a keyboard.',
+  },
+  {
+    src: '/images/coffee/latte-rosetta.webp',
+    srcset: '/images/coffee/latte-rosetta-480.webp 480w, /images/coffee/latte-rosetta.webp 768w',
+    width: 768,
+    height: 1024,
+    alt: 'A hand holding a gray ceramic cup with a leaf pattern poured into the latte foam.',
+  },
+  {
+    src: '/images/coffee/latte-doodle-hi.webp',
+    srcset: '/images/coffee/latte-doodle-hi-480.webp 480w, /images/coffee/latte-doodle-hi.webp 768w',
+    width: 768,
+    height: 1024,
+    alt: 'A latte with a smiling dog, a heart, and the word Hi drawn in the foam on a desk with Pokémon collectibles.',
+  },
+  {
+    src: '/images/coffee/latte-avocado-toast.webp',
+    srcset: '/images/coffee/latte-avocado-toast-480.webp 480w, /images/coffee/latte-avocado-toast.webp 768w',
+    width: 768,
+    height: 1024,
+    alt: 'A smiling latte beside avocado toast on a desk scattered with Pokémon cards, glasses, and collectibles.',
+  },
+  {
+    src: '/images/coffee/latte-doodle-heart.webp',
+    srcset: '/images/coffee/latte-doodle-heart-480.webp 480w, /images/coffee/latte-doodle-heart.webp 768w',
+    width: 768,
+    height: 1024,
+    alt: 'A latte with a small dog holding a flower and a heart drawn in the foam on a desk with Pokémon cards and collectibles.',
+  },
+];
+
+const gallerySizes = '(min-width: 1024px) 23vw, (min-width: 640px) 46vw, calc(100vw - 3rem)';
+---
+
+<Layout
+  title="Coffee — Tomfoolery"
+  description="A growing gallery of lattes, foam doodles, and good coffee."
+>
+  <section class="max-w-5xl reveal is-visible">
+    <span class="badge">latte gallery</span>
+    <h1 class="font-display text-3xl md:text-4xl font-semibold mt-2">
+      Coffee, mostly in pictures
+    </h1>
+    <p class="text-muted mt-3 max-w-2xl text-lg leading-relaxed">
+      Coffee is one of my favorite little rituals. Most mornings I make a latte,
+      see what shows up in the foam, and take a picture before I drink it.
+    </p>
+
+    <figure class="mt-8 reveal is-visible">
+      <div class="overflow-hidden border border-line bg-surface p-1">
+        <img
+          src="/images/coffee/latte-breakfast.webp"
+          srcset="/images/coffee/latte-breakfast-480.webp 480w, /images/coffee/latte-breakfast.webp 1024w"
+          sizes="(min-width: 1152px) 1024px, calc(100vw - 3rem)"
+          width="1024"
+          height="768"
+          alt="A latte with a smiling face in the foam beside two slices of toast on a desk filled with collectibles."
+          class="block h-auto w-full"
+          loading="eager"
+          decoding="async"
+          fetchpriority="high"
+        />
+      </div>
+    </figure>
+
+    <div class="mt-4 columns-1 sm:columns-2 lg:columns-4 gap-4">
+      {photos.map((photo, i) => (
+        <figure class="mb-4 break-inside-avoid reveal" style={`transition-delay: ${Math.min(i * 50, 250)}ms`}>
+          <div class="overflow-hidden border border-line bg-surface p-1">
+            <img
+              src={photo.src}
+              srcset={photo.srcset ?? undefined}
+              sizes={gallerySizes}
+              width={photo.width}
+              height={photo.height}
+              alt={photo.alt}
+              class="block h-auto w-full"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        </figure>
+      ))}
+    </div>
+  </section>
+</Layout>

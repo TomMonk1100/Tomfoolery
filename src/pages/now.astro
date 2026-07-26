@@ -2,16 +2,40 @@
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-// Edit this list whenever something changes — ask Claude to update it,
-// use the /admin portal, or edit directly once you're comfortable.
-const nowItems = [
-  { label: 'brewing', value: 'placeholder — current beans go here' },
-  { label: 'collecting', value: 'placeholder — latest Pokémon/figure pull' },
-  { label: 'driving', value: 'IONIQ 5' },
-  { label: 'watching', value: 'placeholder' },
-];
+const lastUpdated = 'July 26, 2026';
 
-const lastUpdated = 'June 30, 2026';
+const attention = [
+  {
+    badge: 'in the cup',
+    title: 'Coffee',
+    body: 'Lavazza Super Crema is in the hopper, and my Rocket Appartamento is doing the work. It is the cup I keep coming back to.',
+  },
+  {
+    badge: 'in the binder',
+    title: 'Pokémon',
+    body: 'The current goal is a master set of Mega Evolution: Chaos Rising. I like having a binder with a mission.',
+  },
+  {
+    badge: 'on the nightstand',
+    title: 'Reading',
+    body: null,
+  },
+  {
+    badge: 'around the house',
+    title: 'Scout and Theo',
+    body: 'Between the two of them, mail carriers get barked at and someone is always coming inside covered in stickers.',
+  },
+  {
+    badge: 'back in the kitchen',
+    title: 'Baking',
+    body: 'I miss baking. I want to stop saying I have not had time for it and actually make something.',
+  },
+  {
+    badge: 'on the horizon',
+    title: 'Japan in 2027',
+    body: 'Right now it is equal parts research, wish list, and something great to look forward to.',
+  },
+];
 
 const posts = (await getCollection('now')).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
@@ -22,51 +46,96 @@ function fmt(date: Date) {
 }
 ---
 
-<Layout title="Now — Tomfoolery" description="What Tom is into right now — a running log of coffee, retreats, and whatever else.">
-  <div class="max-w-2xl reveal is-visible">
+<Layout title="Now — Tomfoolery" description="What Tom is into right now — coffee, cards, books, and what's next.">
+  <section class="max-w-5xl reveal is-visible">
     <div class="flex items-center gap-2">
-      <span class="w-2 h-2 rounded-full bg-signal live-pulse"></span>
-      <span class="badge badge-signal">live</span>
+      <span class="w-2 h-2 rounded-full bg-signal live-pulse" aria-hidden="true"></span>
+      <span class="badge badge-signal">current</span>
     </div>
     <h1 class="font-display text-3xl md:text-4xl font-semibold mt-2">
       Right now
     </h1>
     <p class="text-muted text-sm font-mono mt-1">last updated {lastUpdated}</p>
-    <p class="text-muted text-sm mt-3">
-      Looking for weather, sunset, moon phase, and the ISS? That live widget
-      lives on the <a href="/" class="gradient-text font-medium">home page</a> now.
-    </p>
-  </div>
 
-  <ul class="mt-6 max-w-2xl space-y-3">
-    {nowItems.map((item, i) => (
-      <li class="tile reveal flex flex-col sm:flex-row sm:items-baseline sm:gap-4" style={`transition-delay: ${i * 60}ms`}>
-        <span class="badge shrink-0 w-28">{item.label}</span>
-        <span class="text-ink">{item.value}</span>
-      </li>
-    ))}
-  </ul>
+    <div class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center">
+      <div class="space-y-5 text-muted text-lg leading-relaxed">
+        <p class="text-xl text-ink">
+          Health is the thing I am putting first right now. Nothing
+          complicated, just trying to make better choices consistently and take
+          better care of myself.
+        </p>
+        <p>
+          This site is my current tech project. I am learning by making it,
+          breaking it, and figuring out how to make it feel like me.
+        </p>
+      </div>
 
-  <div class="mt-12 max-w-2xl">
-    <h2 class="font-display text-xl font-semibold">The log</h2>
-    <p class="text-muted text-sm mt-1">Coffee, retreats, life — whatever's current, roughly in order.</p>
-
-    <div class="mt-6 space-y-4">
-      {posts.map((post, i) => (
-        <a href={`/now/${post.id}`} class="tile reveal flex gap-4 items-start" style={`transition-delay: ${Math.min(i * 60, 300)}ms`}>
-          {post.data.image && (
-            <img src={post.data.image} alt={post.data.title} class="w-20 h-20 object-cover rounded-sm border border-line shrink-0" loading="lazy" />
-          )}
-          <div>
-            <p class="flex flex-wrap items-center gap-2 text-xs font-mono text-muted">
-              <span>{fmt(post.data.date)}</span>
-              {post.data.tag && <span class="badge">{post.data.tag}</span>}
-              {post.data.location && <span>{post.data.location}</span>}
-            </p>
-            <h3 class="font-display font-semibold mt-1">{post.data.title}</h3>
-          </div>
-        </a>
-      ))}
+      <figure>
+        <div class="overflow-hidden border border-line bg-surface p-1">
+          <img
+            src="/images/now-bats.webp"
+            srcset="/images/now-bats-640.webp 640w, /images/now-bats.webp 1400w"
+            sizes="(min-width: 1024px) 56vw, calc(100vw - 3rem)"
+            width="1400"
+            height="1051"
+            alt="Tom looking up at a sky filled with bats at dusk."
+            class="block h-auto w-full"
+            loading="eager"
+            decoding="async"
+            fetchpriority="high"
+          />
+        </div>
+        <figcaption class="mt-2 text-xs text-muted font-mono">
+          A good reminder to look up once in a while.
+        </figcaption>
+      </figure>
     </div>
-  </div>
+  </section>
+
+  <section class="mt-10 max-w-5xl grid gap-4 md:grid-cols-2" aria-label="What has my attention">
+    {attention.map((item, i) => (
+      <article class="tile reveal" style={`transition-delay: ${Math.min(i * 60, 300)}ms`}>
+        <span class="badge">{item.badge}</span>
+        <h2 class="mt-2 text-xl text-ink">{item.title}</h2>
+        {item.body ? (
+          <p class="mt-3 text-muted leading-relaxed">{item.body}</p>
+        ) : (
+          <p class="mt-3 text-muted leading-relaxed">
+            I am working my way through James Islington's Hierarchy series,
+            which starts with <cite>The Will of the Many</cite>.
+          </p>
+        )}
+      </article>
+    ))}
+  </section>
+
+  {posts.length > 0 && (
+    <section class="mt-12 max-w-5xl">
+      <h2 class="font-display text-xl font-semibold">The log</h2>
+      <p class="text-muted text-sm mt-1">Older notes, roughly in order.</p>
+
+      <div class="mt-6 space-y-4">
+        {posts.map((post, i) => (
+          <a href={`/now/${post.id}`} class="tile reveal flex gap-4 items-start" style={`transition-delay: ${Math.min(i * 60, 300)}ms`}>
+            {post.data.image && (
+              <img src={post.data.image} alt={post.data.title} class="w-20 h-20 object-cover rounded-sm border border-line shrink-0" loading="lazy" />
+            )}
+            <div>
+              <p class="flex flex-wrap items-center gap-2 text-xs font-mono text-muted">
+                <span>{fmt(post.data.date)}</span>
+                {post.data.tag && <span class="badge">{post.data.tag}</span>}
+                {post.data.location && <span>{post.data.location}</span>}
+              </p>
+              <h3 class="font-display font-semibold mt-1">{post.data.title}</h3>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <p class="mt-8 max-w-5xl text-sm text-muted">
+    Looking for the weather, sunset, moon phase, or the ISS? The live view is on
+    the <a href="/" class="gradient-text font-medium">home page</a>.
+  </p>
 </Layout>
