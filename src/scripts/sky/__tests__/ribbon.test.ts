@@ -69,6 +69,17 @@ describe('buildRibbon in midsummer', () => {
   });
 });
 
+describe('wall-clock sampling', () => {
+  it('uses a location clock when one is supplied for DST-aware days', () => {
+    const samples: number[] = [];
+    buildRibbon(JULY, LAT, LON, G, 360, (minutes) => {
+      samples.push(minutes);
+      return new Date(JULY.valueOf() + minutes * 60_000);
+    });
+    expect(samples).toEqual([0, 360, 720, 1080, 1440]);
+  });
+});
+
 describe('buildRibbon at the winter solstice', () => {
   const m = buildRibbon(DEC, LAT, LON, G);
 

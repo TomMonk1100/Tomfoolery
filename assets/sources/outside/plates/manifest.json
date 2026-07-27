@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "location": {
+    "name": "Breckenridge, TX",
+    "latitude": 32.7557,
+    "longitude": -98.9023,
+    "timeZone": "America/Chicago"
+  },
+  "master": "../anchors/breckenridge-noon-clear.png",
+  "dimensions": {
+    "width": 1983,
+    "height": 793
+  },
+  "conditions": [
+    "clear",
+    "scattered",
+    "overcast",
+    "storm"
+  ],
+  "solarMoments": [
+    "night",
+    "predawn",
+    "sunrise",
+    "morning",
+    "noon",
+    "golden",
+    "sunset",
+    "blue-hour"
+  ],
+  "pathPattern": "{condition}/{solarMoment}.png",
+  "celestialBodiesBakedIn": false,
+  "intendedUse": "Sky-region source plates for an astronomical-time and live-weather compositor"
+}

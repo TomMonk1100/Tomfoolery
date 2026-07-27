@@ -2,7 +2,7 @@
 # Netlify dashboard. Missing build command/publish dir caused the
 # 2026-07-02 sitewide 404.
 [build]
-  command = "npm run build"
+  command = "npm run verify"
   publish = "dist"
 
 # Moon Lander leaderboard function (/api/scores). Bundled by esbuild at

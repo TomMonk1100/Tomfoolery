@@ -58,12 +58,14 @@ ceases to exist in production.
 ### Before every push, run
 
 ```bash
-npm run verify      # typecheck + 177 tests + production build
+npm run verify      # atlas gate + typecheck + 202 tests + production build
 ```
 
-All three must pass. `verify` is `typecheck && test && build`; if any step
-fails, fix it before pushing — a broken build means Netlify publishes nothing
-and the site silently keeps serving the previous version.
+All four gates must pass. `verify` checks the complete photographic atlas,
+then runs `typecheck && test && build`; if any step fails, fix it before
+pushing — a broken build means Netlify publishes nothing and the site silently
+keeps serving the previous version. `netlify.toml` runs the same `verify`
+command so the production build cannot bypass the atlas/test gates.
 
 ### After every push, verify live
 
@@ -97,8 +99,9 @@ src/
   layouts/Layout.astro          shell: head/meta, nav, footer
   pages/                        index, about, now, coffee, art, pokemon,
                                 archive/, game, 404
-  scripts/sky/                  solar + lunar math, sky colours, ribbon
-    astro.ts  sky.ts  ribbon.ts  __tests__/
+  scripts/sky/                  astronomy, plate selection/compositor, ribbon
+    astro.ts  plates.ts  plate-compositor.ts  outside-controller.ts
+    sky.ts  ribbon.ts  __tests__/
   scripts/lander/               the Moon Lander game  ← second work area
     main.ts physics.ts entities.ts levels.ts upgrades.ts abilities.ts
     render/  audio/  ui/  __tests__/
@@ -114,41 +117,61 @@ Commands:
 |---|---|
 | `npm run dev` | Local dev server |
 | `npm run build` | Production build to `dist/` |
-| `npm test` | 177 tests (`src/scripts` only) |
+| `npm run build:sky-plates` | Rebuild and budget-check the photographic atlas |
+| `npm run check:sky-plates` | Verify every plate path, hash, dimension, and budget |
+| `npm test` | 202 tests (`src/scripts` only) |
 | `npm run typecheck` | `astro sync && tsc --noEmit` |
-| `npm run verify` | All three. Run before pushing. |
+| `npm run verify` | Atlas gate + typecheck + tests + build. Run before pushing. |
 
 ---
 
 ## 3. Work area A — the Outside band (the priority)
 
-`src/components/Outside.astro` plus `src/scripts/sky/*`. Rebuilt today from
-scratch. It is a **full-bleed band whose sky is computed from real solar
-altitude** — the gradient, sun position, star opacity, horizon colour and text
-colour all follow the actual sun for the viewer's location.
+`src/components/Outside.astro` plus `src/scripts/sky/*`. It is a **full-bleed
+living almanac fixed to Breckenridge, Texas**. A 32-frame photographic atlas
+(four weather families × eight astronomical moments) supplies the scene while
+local astronomy drives slice selection, the daylight countdown, the textured
+Moon-phase portrait, and the shared sun/Moon chart.
 
 ### Architecture
 
 - `scripts/sky/astro.ts` — sun/moon altitude & azimuth, moon illuminated
   fraction, moon terminator path. Standard low-precision astronomy (Meeus
   ch. 25/47). **No API, no key.**
-- `scripts/sky/sky.ts` — gradient stops by altitude, ridge colours, text
-  theme + scrim, UV colour ramp.
+- `scripts/sky/plates.ts` — pure Breckenridge solar schedule, weather-family
+  classification, stable atlas keys, and short slice boundaries.
+- `scripts/sky/plate-compositor.ts` — two decoded raster slots, current/next
+  preloading, race cancellation, graceful retention, and reduced-motion
+  handling.
 - `scripts/sky/ribbon.ts` — geometry for the shared 24-hour axis.
-- `components/Outside.astro` — markup and all DOM work, in one `<script>`.
+- `scripts/sky/outside-controller.ts` — DOM/data lifecycle, local astronomical
+  frame, lunar portrait, chart, Open-Meteo, and ISS enhancement.
+- `components/Outside.astro` — semantic editorial markup only.
+- `assets/sources/outside/` — full-resolution masters, prompts, anchors, and
+  contact sheet. `npm run build:sky-plates` deterministically writes the
+  budgeted AVIF/WebP delivery matrix to `public/images/outside/plates/`.
 
-Everything visual is computed locally. Weather (Open-Meteo), ISS passes
-(polluxlabs) and reverse geocoding (bigdatacloud) are **progressive
-enhancement only** — with no network the sky, sun, moon and ribbon are all
-still correct. Keep it that way; do not move that math behind a fetch.
+The atlas is intentionally Breckenridge-only for now. Do not relabel these
+Texas images as another city or restore the old geolocation button until a
+second location atlas exists. Weather (Open-Meteo) and ISS passes are
+**progressive enhancement only** — with no network the current photographic
+moment, Moon phase, daylight countdown, and ribbon remain correct. Keep the
+astronomy local; do not move it behind a fetch. The fixed-camera plates have no
+calibrated bearing or field of view, so do not project a free-moving sun or Moon
+into the photograph; the live celestial truth belongs in the readouts and chart.
 
 ### Load-bearing constraints — do not "simplify" these
 
-**The 0.35 scrim is not decoration.** No single text colour clears WCAG AA
-against every sky: around +5° solar altitude the zenith sits at mid-luminance
-and *both* dark and light text bottom out near 3.9:1. 0.35 is the smallest
-alpha that holds 4.5:1 at every sun angle (worst case 5.3:1). There is a test
-asserting that floor. **If it fails, fix the scrim — do not relax the test.**
+**Do not continuously blend the generated landscapes.** Small authored
+vegetation and cloud differences double-expose if two frames overlap for
+minutes. `plateFrameAt()` chooses a sharp nearest slice; the compositor only
+makes a short decoded photographic handoff near the astronomical boundary.
+It preloads the current and next frame only.
+
+**The photographic wash is functional.** The scene uses localized warm or
+dark washes behind copy and a ruled translucent ledger. Do not replace them
+with one global gray film, and do not remove them without checking contrast
+against all 32 plates.
 
 **The moon terminator direction.** The dark path bows toward the dark limb when
 gibbous and toward the lit limb when crescent. Backwards renders a 91% moon as
@@ -163,17 +186,15 @@ label renders at ~4 real pixels. Font sizes and stroke widths multiply by
 `RIBBON.width / svg.clientWidth`, and hour ticks thin from every 3h to every
 6h. If you add anything textual to the ribbon, scale it the same way.
 
-**Band reserves `padding-bottom: 104px`** so no content lands on the dark
-horizon ridge, where neither the ink colour nor the scrim can guarantee
-contrast.
+**Mobile is a split composition.** The image stage is 460px tall; the chart,
+four field-note chapters, and ISS line continue on warm paper below it. The
+mobile plate crops are real art-direction variants, not browser crops of the
+panoramic desktop file: 720×960 for narrow phones and 960×768 for wider mobile.
 
 **Motion rule (site-wide, learned from a real bug): animate only `transform`
 and `opacity`. Never animate paint properties under a `filter`.** Doing so
-caused a hero-flashing bug that took a full redesign pass to find. The sky's
-`background` transition is the single sanctioned exception — it runs once a
-minute, not per frame, and nothing above it is filtered. Wind and cloud
-density derive from real readings and are dropped entirely under
-`prefers-reduced-motion`.
+caused a hero-flashing bug that took a full redesign pass to find. Plate
+handoffs follow this rule and become immediate under `prefers-reduced-motion`.
 
 ### Known API gotcha
 

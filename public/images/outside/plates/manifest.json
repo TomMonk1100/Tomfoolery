@@ -1,0 +1,2413 @@
+{
+  "version": 1,
+  "location": {
+    "name": "Breckenridge, TX",
+    "latitude": 32.7557,
+    "longitude": -98.9023,
+    "timeZone": "America/Chicago"
+  },
+  "conditions": [
+    "clear",
+    "scattered",
+    "overcast",
+    "storm"
+  ],
+  "solarMoments": [
+    "night",
+    "predawn",
+    "sunrise",
+    "morning",
+    "noon",
+    "golden",
+    "sunset",
+    "blue-hour"
+  ],
+  "variants": {
+    "desktop": {
+      "width": 1983,
+      "height": 793,
+      "crop": "none"
+    },
+    "mobile": {
+      "width": 960,
+      "height": 768,
+      "crop": {
+        "sourceWidth": 991,
+        "sourceHeight": 793,
+        "leftByCondition": {
+          "clear": 675,
+          "scattered": 620,
+          "overcast": 650,
+          "storm": 760
+        }
+      }
+    },
+    "narrow": {
+      "width": 720,
+      "height": 960,
+      "crop": {
+        "sourceWidth": 595,
+        "sourceHeight": 793,
+        "leftByCondition": {
+          "clear": 873,
+          "scattered": 818,
+          "overcast": 848,
+          "storm": 958
+        }
+      }
+    }
+  },
+  "encoders": {
+    "desktop": {
+      "avif": {
+        "quality": 58,
+        "effort": 6,
+        "chromaSubsampling": "4:2:0",
+        "bitdepth": 8
+      },
+      "webp": {
+        "quality": 76,
+        "effort": 6,
+        "smartSubsample": true,
+        "preset": "photo"
+      }
+    },
+    "mobile": {
+      "avif": {
+        "quality": 57,
+        "effort": 6,
+        "chromaSubsampling": "4:2:0",
+        "bitdepth": 8
+      },
+      "webp": {
+        "quality": 74,
+        "effort": 6,
+        "smartSubsample": true,
+        "preset": "photo"
+      }
+    },
+    "narrow": {
+      "avif": {
+        "quality": 57,
+        "effort": 6,
+        "chromaSubsampling": "4:2:0",
+        "bitdepth": 8
+      },
+      "webp": {
+        "quality": 74,
+        "effort": 6,
+        "smartSubsample": true,
+        "preset": "photo"
+      }
+    }
+  },
+  "budgets": {
+    "perFileBytes": {
+      "desktop": {
+        "avif": 163840,
+        "webp": 184320
+      },
+      "mobile": {
+        "avif": 92160,
+        "webp": 122880
+      },
+      "narrow": {
+        "avif": 92160,
+        "webp": 122880
+      }
+    },
+    "totalBytes": 8388608
+  },
+  "assets": [
+    {
+      "condition": "clear",
+      "moment": "night",
+      "source": {
+        "path": "assets/sources/outside/plates/clear/night.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1553812,
+        "sha256": "822d6168ab25cb56fd1dd195cb564ed075ea23e5811c3582cc2cf398b6e9df3b"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/clear/night-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 33369,
+          "sha256": "36e4704ba8d01fd99ba16636c275b470f379d305e04113c4717d6b622ca52558"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/night-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 25254,
+          "sha256": "93f15cd2830d821f0ce2a7a601844ed7206f302ae39359945681e76a529ebb8a"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 675,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/clear/night-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 16242,
+          "sha256": "0d9efad1124fc16b325743d5c5b404ea6aea3138f28ca531dd4c5b1632984965"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/night-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 11790,
+          "sha256": "987a462423b09a68673a35ca5d25694a2f414db815eaa95cab0264df81eef8ba"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 873,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/clear/night-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 12557,
+          "sha256": "0e3aa5f57e984ab675afba40c1aa45b78ebe49cdbf44c4c374a16ad07a48a7e8"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/night-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 9714,
+          "sha256": "74cda4ed25279a99c1047a7701017cd544a3bfbd2788ea2257b268a6bcc230e5"
+        }
+      }
+    },
+    {
+      "condition": "clear",
+      "moment": "predawn",
+      "source": {
+        "path": "assets/sources/outside/plates/clear/predawn.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1650479,
+        "sha256": "b3252988338057117abc3986e110745b891dcca8f94fda4bc50312b6e0f42113"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/clear/predawn-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 34920,
+          "sha256": "36b39416e582df8d18232e3b9077cc3d49fda717a0b2e0858cc4771cb37d7c17"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/predawn-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 34408,
+          "sha256": "034b514828da23f88100d5e64f7b61c1be4c5bbf567f786d7f06875cf557a0a7"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 675,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/clear/predawn-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 17076,
+          "sha256": "2374c1c1400870e4b9663aca75c0c437dad4eb76262c89d8ae988f2316b011bb"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/predawn-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 16086,
+          "sha256": "2c718811600785fb7b01b17c3d559f3a12a26b17dd479433ab6d3e02544ab64c"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 873,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/clear/predawn-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 12979,
+          "sha256": "e9f764ab566f1abb3159ac07ff8302d00fb98c5b0478d54662ef4207c1ad7166"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/predawn-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 11776,
+          "sha256": "5e0438996c5742ff92cbe79991501dcd4545022d7ccbb0d8c518d4c475369a62"
+        }
+      }
+    },
+    {
+      "condition": "clear",
+      "moment": "sunrise",
+      "source": {
+        "path": "assets/sources/outside/plates/clear/sunrise.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1810440,
+        "sha256": "5c3977e04ed60c7fd6e10e5e027653dcb42a5c17969f5c3aaa646a90ac250a5b"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/clear/sunrise-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 53164,
+          "sha256": "ca6819419013b6f0a9838c4e09dec902c4541e5b9dd4e1ce3069c5f0e941ccad"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/sunrise-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 55518,
+          "sha256": "f25469361f1877bc0f03131c44626079a064c1dcec1ea32a6996027a6fe3d9c2"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 675,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/clear/sunrise-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 25764,
+          "sha256": "1e1dc8ddeca8d92dba3528628f3997db448924c1f35bd1e575d6941e22655988"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/sunrise-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 26078,
+          "sha256": "016ede54c1b882a0342306f2df6ba7d6889207f783792091d41f95f53a4f363d"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 873,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/clear/sunrise-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 19572,
+          "sha256": "d645118f3688b7b7d328a388302e43b716135bf1d83e823802af6c422c8a96f6"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/sunrise-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 19630,
+          "sha256": "c3c48b52f257f6bfcef7ed59dfc273aff93e50fb85de6067f3c956db08e9cb85"
+        }
+      }
+    },
+    {
+      "condition": "clear",
+      "moment": "morning",
+      "source": {
+        "path": "assets/sources/outside/plates/clear/morning.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1825122,
+        "sha256": "65216570c9e311c9188b9954e15f4d579e0293c1b70eeb656a3298ab80dbda67"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/clear/morning-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 59887,
+          "sha256": "3899d1db3a09527b0a9671714de8ad7ad8484927f4adcf32c1f0f9ffa1f7e87c"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/morning-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 63522,
+          "sha256": "b6af8e1e2aff65cb22a8ed2a9bcdc6058b40a8600ac3afaa96f7a86f210f592a"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 675,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/clear/morning-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 28622,
+          "sha256": "d31390a3c3b57711c86f7e05e7e4d3254c0123ef8e8bb0c78cb1427535bddfb0"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/morning-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 29990,
+          "sha256": "6ec20bd5af6286fa523a50020b01afbd02cb1cc3d208d060f18f15a9aa016c6b"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 873,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/clear/morning-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 21539,
+          "sha256": "cb628c54d593a3996becdcc64c0b2031caa17a52f9f01a536aaf5b90cc388f80"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/morning-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 22392,
+          "sha256": "11cfe0050ed26b5d8df122ac884e142ec04a862dc4f12021fbde0804bda8f92b"
+        }
+      }
+    },
+    {
+      "condition": "clear",
+      "moment": "noon",
+      "source": {
+        "path": "assets/sources/outside/plates/clear/noon.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1832939,
+        "sha256": "45a08c348d2c3c4846f1e0ba628b30c4ada175edb5424a9171c881d78c5797f9"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/clear/noon-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 62782,
+          "sha256": "f5008770791de7f86a5278a0dc3e4beae1ffdc757503cec4479aa65d1cd90aaf"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/noon-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 67596,
+          "sha256": "be4f8586c71ebc6534853911cec1f95e82dc7219aa7d04747a4465ea99711d5a"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 675,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/clear/noon-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 29600,
+          "sha256": "a3d54b2c8aa66385a962a4b99d57f298207911f34f8993d17ba325351397553a"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/noon-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 31446,
+          "sha256": "884ef352c8c4a1c80af59b24cda87f0e477d45d8bcf254489055579bfee5934f"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 873,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/clear/noon-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 22725,
+          "sha256": "74172832fcbf6ff7b7a81d20d4da2ff971b3ff87f7ac7dc1b77311bd640a3cee"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/noon-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 23370,
+          "sha256": "8661eb4d33a76a0f26210fba902022b3aeb5417450d4d390a6995d11388b04a0"
+        }
+      }
+    },
+    {
+      "condition": "clear",
+      "moment": "golden",
+      "source": {
+        "path": "assets/sources/outside/plates/clear/golden.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1762711,
+        "sha256": "ca1b1c99c95ed93f49e873ff5d12454cec3dfb83f82a9423432004442744d1a7"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/clear/golden-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 52901,
+          "sha256": "b1cdcf4db5d4d0cbc7c63ee3be2a3ecab1511088bfc8ec196bfcaafb19cc2086"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/golden-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 56550,
+          "sha256": "333be0c0a6165c2884a85d46e49cdb0cac0b92ba9c84dd19c4498f4e46962b32"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 675,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/clear/golden-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 25464,
+          "sha256": "5ad6bf57ab1f1b829e6a66db73a69f03bedb090e34e79fd83a5906c656fff219"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/golden-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 27328,
+          "sha256": "126bbcff2a66851a7520c884b26a6682004373997a34f78d0bbf0d9c1d3faac0"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 873,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/clear/golden-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 19334,
+          "sha256": "e727c5205aec72e38a44a209859494b05596762f06162a033518a1665c3ec4f1"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/golden-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 20836,
+          "sha256": "2f7d40bde4c32ae48cc2726605a571c512a5b1f81a13ee7af551910e438d99b0"
+        }
+      }
+    },
+    {
+      "condition": "clear",
+      "moment": "sunset",
+      "source": {
+        "path": "assets/sources/outside/plates/clear/sunset.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1796277,
+        "sha256": "a5ce200a3a614d5351316cd6443155b2c0e78c186376b403f9ae332d3509ff97"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/clear/sunset-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 48670,
+          "sha256": "3d322a1053a60849fb7017ee82af509648f18998bbeb4fb23ed1fb06c7622d0e"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/sunset-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 46252,
+          "sha256": "4249eaeaa277ca7b4f61a478468ccec82351d6cf26ff490f00a0a54bc0a68de5"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 675,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/clear/sunset-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 23400,
+          "sha256": "fdf4951678612546e53767914a72422839c7dd486f4b13f6dad190d7e7a38a3f"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/sunset-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 21740,
+          "sha256": "d2b726dada5f4f1dfb5d22794f029751d17880b96ee8c634674195af1b21d3c1"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 873,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/clear/sunset-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 17795,
+          "sha256": "5e69b5d1849ff66eeb6da8045b626d8c4478bc4d5bd5317f284423c50824578d"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/sunset-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 16710,
+          "sha256": "15c711d825837a456aad9f3272fe84791f5df715f1787572484529fd62b51802"
+        }
+      }
+    },
+    {
+      "condition": "clear",
+      "moment": "blue-hour",
+      "source": {
+        "path": "assets/sources/outside/plates/clear/blue-hour.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1729831,
+        "sha256": "ee08e7a632a333a61a5a8fb3e60f507ea69ea5b98a3ccd4d1515777ebd12baa9"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/clear/blue-hour-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 47542,
+          "sha256": "b2194cb3420930d9042fd253689c5cd7bd2b6f3d15028b411054e2e06f2e6638"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/blue-hour-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 42720,
+          "sha256": "224e56b09f138c2de7943776fc2afd00644a18e52ecff5f44a9c2fd73c981bcf"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 675,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/clear/blue-hour-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 22993,
+          "sha256": "84141ff167aa42f3e0bf637e25694508f870f4c1bc0c5060813c86e7564b65ce"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/blue-hour-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 20636,
+          "sha256": "e17f7cb72bab6984ccb8408da1b4e03d42b1090848132e1306bb110b344b637f"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 873,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/clear/blue-hour-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 17168,
+          "sha256": "f65e358064787ba1449c0725915fceffc80e2b2367197c826aee2efeaf018b30"
+        },
+        "webp": {
+          "path": "/images/outside/plates/clear/blue-hour-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 15428,
+          "sha256": "edf41e61a491b09eadbe860f11a83e2b80a4beff151f9c8fc438c3b4796a3b07"
+        }
+      }
+    },
+    {
+      "condition": "scattered",
+      "moment": "night",
+      "source": {
+        "path": "assets/sources/outside/plates/scattered/night.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1672573,
+        "sha256": "d2a1c34e2a6686efc36af2d5bb32f5d5e10d57f39f94e7af80ebf9861415a907"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/scattered/night-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 28136,
+          "sha256": "8b5e467a62b7c3ec2e0c1575c3db3fe40e187e58dc00bde782451f6daa1b2693"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/night-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 23156,
+          "sha256": "67f8457ff81bd9888a010ab54e833cd5c9cb12bd5e13f9e822d5eab8b4352f2c"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 620,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/scattered/night-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 13818,
+          "sha256": "2c29a0cadb838b7a65601f9816aa5fa7ff214ad0c83462deea245c7146108f1b"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/night-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 10900,
+          "sha256": "fbc74d99d4be18e532fa38c6f25958c7a65835fb9b2e58da418e2022a1d48c56"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 818,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/scattered/night-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 11434,
+          "sha256": "725726858237e950e435830bc607107007e7aa0386c84bcf905b6492870cb605"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/night-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 9228,
+          "sha256": "24da0b06bc69ca8eafbf59311093af9141ef8eb0b4cd1d1bf1c7d45893f443db"
+        }
+      }
+    },
+    {
+      "condition": "scattered",
+      "moment": "predawn",
+      "source": {
+        "path": "assets/sources/outside/plates/scattered/predawn.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1966342,
+        "sha256": "a587ada2c0406e5418c30ad9446dcbcfc48e14a3e82d114e0a949d2696dbebe2"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/scattered/predawn-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 54962,
+          "sha256": "905e644c9963a09c7e24ee66968ff5adc7aa920ce1352817825a07707c0c5f2d"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/predawn-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 54262,
+          "sha256": "4819ea92a4405078f0149628cc1b6be6d11b74a78e7f5b4e9b2270621db7994b"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 620,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/scattered/predawn-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 26821,
+          "sha256": "eb9475e06a1eb18dc54052fe04565adf50a877fbdae4bda64c72f4ee405a2624"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/predawn-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 24978,
+          "sha256": "1af02147d62651cff527026214f2bd0592beb4f5bc99e53c4e623dcfce10af48"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 818,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/scattered/predawn-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 20730,
+          "sha256": "91c34034612a4a41c1bd7d0e4e710eab4374c2c84d35887b4d3bcb7be60db634"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/predawn-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 19470,
+          "sha256": "68960d300784714b4358ad5ba69231e2f29313f94bb2b19cf464151a43585b92"
+        }
+      }
+    },
+    {
+      "condition": "scattered",
+      "moment": "sunrise",
+      "source": {
+        "path": "assets/sources/outside/plates/scattered/sunrise.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1960133,
+        "sha256": "dc819c4b5666651188176c2c17659d08481ae18625740c678b748a38549333a3"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/scattered/sunrise-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 76940,
+          "sha256": "8884f3f9f1b5026b3b4d8f6ca466741955ee2bd7d21c24a55961cfda36d741c8"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/sunrise-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 84886,
+          "sha256": "c6d06f5a0df0adc16da050c3a3f0d303766683f0a5c8325eb000d0ad1e5baf63"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 620,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/scattered/sunrise-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 37727,
+          "sha256": "c70edf3b1e9cdd664b1954c7eecc0653f979d791c820d3aba1b5191e7a7a16c6"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/sunrise-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 42818,
+          "sha256": "45fcf06cca209c5a0c18bd18a861a9b514b70392faf359a33ed5f4c850a13206"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 818,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/scattered/sunrise-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 28599,
+          "sha256": "b380378ae38df011eb74fb8605fa2df2f945ebee2e2473c5dff34017002d3b0b"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/sunrise-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 29538,
+          "sha256": "be94f76ccf2f57af9d520d22d9457732f89d22fc20d50d54c7615ddf3455b0ff"
+        }
+      }
+    },
+    {
+      "condition": "scattered",
+      "moment": "morning",
+      "source": {
+        "path": "assets/sources/outside/plates/scattered/morning.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 2129162,
+        "sha256": "b6939d0f08f495d8becc8b0859f7b31a6e7f24cc3f6eb0931a094150a5d0e4d8"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/scattered/morning-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 73792,
+          "sha256": "9db869462855962f38da2a21244892aa9c3e217a71846dc4e7a96113faf55730"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/morning-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 80184,
+          "sha256": "8eacd6db60e86663ef43cba3aec5c5afb9f85ae0c95e88da4f3b49408b91944f"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 620,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/scattered/morning-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 34587,
+          "sha256": "026ab57da88c12acb3cb42eb7976650972d0c929073f2ad27955efb754b0042a"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/morning-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 38140,
+          "sha256": "5e237ebc19cf420ad539974947bb5b87924aeccb432a3e5156e45909a35b3121"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 818,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/scattered/morning-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 26278,
+          "sha256": "7aa9aed25ed2facc47acb19478756c47133438725c5ba2d30371d6420848c7c4"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/morning-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 27968,
+          "sha256": "b454d9399c308a5d3afee0a70bc55e2fb92c8a95aaa725c4bf3342a6a899a46c"
+        }
+      }
+    },
+    {
+      "condition": "scattered",
+      "moment": "noon",
+      "source": {
+        "path": "assets/sources/outside/plates/scattered/noon.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 2018030,
+        "sha256": "e853fb9ebde6265903a157b523fa1256ac24eef86051690db0e55c8420e2178f"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/scattered/noon-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 79427,
+          "sha256": "21ae0bf902c07a44b3c5aebb95b74548a7cc09dd093f05ed31b44bcbdb5efbdc"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/noon-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 88378,
+          "sha256": "2e4f676ade40152329ca0acf59c68ab1ebb68ded6a8991c94655eb39c702476f"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 620,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/scattered/noon-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 37477,
+          "sha256": "7114cd35acda37605223d68737b1637034070f50293089983d1de50a1af2ee90"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/noon-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 41560,
+          "sha256": "1e97d2adf512f8ab8d905d7294b63a713c1d0ca35bdc519c165660c01660fff8"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 818,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/scattered/noon-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 27631,
+          "sha256": "7addc5cae603ac7dc0a09f54a68eb5dd154a2977e13f4c5310b86c411fa44347"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/noon-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 29502,
+          "sha256": "ef9c4efdac21cfd297e3831ffaec6a2dc9b28c46968b52de5387c258a7dce56e"
+        }
+      }
+    },
+    {
+      "condition": "scattered",
+      "moment": "golden",
+      "source": {
+        "path": "assets/sources/outside/plates/scattered/golden.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1981801,
+        "sha256": "7ae8e85d9239bf5bd48b5ea85ff726df98d6b3ed8b7aa2669ab0a1f5e1369684"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/scattered/golden-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 79642,
+          "sha256": "cc116e45bec0939c959f11ccc96f0e8817dd682b0160e1d474665311b5e81002"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/golden-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 99488,
+          "sha256": "63d9063614d55028b152ea150aa5a93140494f8c90c407f9060588f152d6f311"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 620,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/scattered/golden-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 37960,
+          "sha256": "7fcb06c5d4d43b93b4535e148e0a39a82355ed421b0ba7fe8c049ff6d2acb1f6"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/golden-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 46794,
+          "sha256": "d3517a6500dd42d00964ad8bb6e318c80a7cf0bee22cda4aaac4851442bb36ff"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 818,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/scattered/golden-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 27718,
+          "sha256": "5b56a1d8ff9739422cfd8cd5da055d882299d470d71051bd002406cde524fd0c"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/golden-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 33066,
+          "sha256": "8fe7c3103a0168141b17dd2ebbb9366de363f5e99946a64f386e0cb33836cec6"
+        }
+      }
+    },
+    {
+      "condition": "scattered",
+      "moment": "sunset",
+      "source": {
+        "path": "assets/sources/outside/plates/scattered/sunset.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 2120380,
+        "sha256": "cd233c44ace755638a59139589072a355c2d95fe06c2db39ca7d91957f3d39b4"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/scattered/sunset-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 72377,
+          "sha256": "f8e08cd6a0b168e40d37d872ceeebebb95096130cc96af602bdc647db66bc0f1"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/sunset-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 76850,
+          "sha256": "5510ef14048c613c7a80b1629dea33bb5b0fce1e7f1be6e96f63001a7576dbde"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 620,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/scattered/sunset-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 34288,
+          "sha256": "bd6b145f7042426889c590d6ea10977b4ae8e110ff894d40b3b0d8dc4dca5733"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/sunset-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 35736,
+          "sha256": "e4cd0d1e9467d96333c309975807e123cf091e4503fa326c6a7bb3fc6b0a696f"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 818,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/scattered/sunset-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 26059,
+          "sha256": "bce10b72150d9d079976c8637ab698d22231ddbcf9837619b90103be85768fe7"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/sunset-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 25960,
+          "sha256": "0f5db56bed271296fe5443abae241d88dad5d28374e9a3f7ae1bfcb65e153a0f"
+        }
+      }
+    },
+    {
+      "condition": "scattered",
+      "moment": "blue-hour",
+      "source": {
+        "path": "assets/sources/outside/plates/scattered/blue-hour.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1927262,
+        "sha256": "62a1ca4eefd93174367ced59ef193937ea21c597ed03ce4218187182a64f50d7"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/scattered/blue-hour-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 50184,
+          "sha256": "409d57810919d209f143d70c2d2ebedc3690d6959baa134d99f15ca9e1701a7b"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/blue-hour-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 48674,
+          "sha256": "d5e00e99a245e4db04cb9bde98658eb0e7084949a4a6aa770465f0139ae55675"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 620,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/scattered/blue-hour-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 25542,
+          "sha256": "da1cd9b395b3bde396af096edd8e5960b3f542c3a640b7218b1d342c41f9d823"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/blue-hour-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 23808,
+          "sha256": "cba679ffcff0a9406c7ceeb07e8b5f9e91b75beebf62fdc62cb26fd3f6b99e16"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 818,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/scattered/blue-hour-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 19011,
+          "sha256": "38988ce91b2cf64ed8391e48e8d55b4ff94187a15a3bcc5925b33d3d24fd3bdd"
+        },
+        "webp": {
+          "path": "/images/outside/plates/scattered/blue-hour-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 17792,
+          "sha256": "e9b5af6a563d2014410463166837dbb60103a69b1753afe466cf9e55b168a1ee"
+        }
+      }
+    },
+    {
+      "condition": "overcast",
+      "moment": "night",
+      "source": {
+        "path": "assets/sources/outside/plates/overcast/night.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1703006,
+        "sha256": "f508c99bb1bd1f21101bc71a955d02911084d1ab0cd59176ee30ba9163a52a08"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/overcast/night-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 40488,
+          "sha256": "c4a5fee998b3abf9fe06cb61fc5b40cc0530229cd3536b897162c76d05648fb8"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/night-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 33872,
+          "sha256": "00af1c5c0762e56a57179d6f55d9fc3dfdd73f1b35e7e45a4f86191bce975f33"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 650,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/overcast/night-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 19507,
+          "sha256": "766e7dfa7853cebf89979117dc149cb0bb5acf9e6064e6c578d90089f26c8978"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/night-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 15528,
+          "sha256": "ef2fa544c84d15768eeff0df943215fe62dd936a49832c9bea41f8c62c0e6441"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 848,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/overcast/night-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 15345,
+          "sha256": "9789195d29578aecb75334d0a8f8024107b3d01037f91cc4e4ce2601d0b4d89d"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/night-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 13184,
+          "sha256": "d8b46c3058140f986ececf24652bb942caed7a4d6249d38d49ce8270e4a177dd"
+        }
+      }
+    },
+    {
+      "condition": "overcast",
+      "moment": "predawn",
+      "source": {
+        "path": "assets/sources/outside/plates/overcast/predawn.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1767088,
+        "sha256": "d4c28af0a1b5835e2770eb8c83ea42be2c52f41f9243a715d8973a6e06909862"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/overcast/predawn-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 54759,
+          "sha256": "78714f5bc352d2e1668e7bd932008fa47d2fe252156258fe879ea63b6504b54c"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/predawn-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 51826,
+          "sha256": "69ccddc3e39000d45def75e6027b16aafc82e08b81618e51f62bdb953bdf9316"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 650,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/overcast/predawn-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 25820,
+          "sha256": "fb50bcc90cc0c44e2758b7fd1564775999cb471246582b837d163322020f123b"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/predawn-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 23830,
+          "sha256": "b6a7734a7d4a8819047672d83f5b35bbd436c15f5703a365b79f672a6257873c"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 848,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/overcast/predawn-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 19536,
+          "sha256": "d09552a912255cb508b14ec4141c4a8feca164d17ea0e99f33789c779308dbcf"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/predawn-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 18356,
+          "sha256": "b855e08285a8e8dbf190b1b081e2251cfd3af5141c194a2ad95a90c2a8fbc606"
+        }
+      }
+    },
+    {
+      "condition": "overcast",
+      "moment": "sunrise",
+      "source": {
+        "path": "assets/sources/outside/plates/overcast/sunrise.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 2021239,
+        "sha256": "338e77aae81e946d150bb4b9e9df6126fe16e826c45d3650129fbe699d4d6168"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/overcast/sunrise-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 61948,
+          "sha256": "ec187fd9fa94386c704b40d494360548f6164ef5d916506f98e8dcd8246434ca"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/sunrise-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 67438,
+          "sha256": "c6f5d0bccbd11fcef99f90f9ecd75fecc36966b5f48d4cda5398fc4f9b775e24"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 650,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/overcast/sunrise-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 28863,
+          "sha256": "04757ddf7b1e6b473f1467f1ad59781bf7775bb64c544b2999b8e00c597c2d06"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/sunrise-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 30398,
+          "sha256": "17b36ae584add2823e251fff68e3555c7acb561432dffa77e82f9d8e93ad266f"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 848,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/overcast/sunrise-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 22421,
+          "sha256": "504f6d7ce5ed0e9b263b253734dc7def23f103b8942fe9f4b65d4c6f83bac485"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/sunrise-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 24112,
+          "sha256": "b3a9bb7abbed3658c1c2acdee767b87ff3b2ff74b18818a6ad737cadcabf839e"
+        }
+      }
+    },
+    {
+      "condition": "overcast",
+      "moment": "morning",
+      "source": {
+        "path": "assets/sources/outside/plates/overcast/morning.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1905322,
+        "sha256": "7f2f56db60005c4850d2f0b77f146a31570c115549cfa215e88062fb013aa000"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/overcast/morning-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 65092,
+          "sha256": "ac5001de98f737dbf9f23b7523ef8a4103ffcba7900022bc7dda61ec081cadba"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/morning-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 67934,
+          "sha256": "5a90ca88dc4445d6f979def453b44c5ed5fff9cf22328040a9a031de27343c7c"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 650,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/overcast/morning-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 30357,
+          "sha256": "1247ab541c9670a39a1c44538547919bd5ff88545de4bce5ef41a7b77d4a59c0"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/morning-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 31982,
+          "sha256": "f8938f7aca4ddcf931a357ce902a3317910fa5c721f9df6cc1a3a21de7a1b883"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 848,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/overcast/morning-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 23414,
+          "sha256": "da27d2ded25ed952314fe85f80d9d92a7ad35c987a9d93fb9af013a480e79231"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/morning-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 23886,
+          "sha256": "cd7cdc947520aec3f9c2648c662e988657d806bd15d4c1b264de58495e10b5a5"
+        }
+      }
+    },
+    {
+      "condition": "overcast",
+      "moment": "noon",
+      "source": {
+        "path": "assets/sources/outside/plates/overcast/noon.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1949734,
+        "sha256": "2c0ad5384ebc925ba22e7235f6bc867795f992bd788f964faf7ff229b33713a2"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/overcast/noon-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 54041,
+          "sha256": "612dbba34950a70c4d408a26bd6aeb3eb1504ba33c06d51fd5b46b8e4870c9c5"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/noon-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 56094,
+          "sha256": "eb6b160a14572cf62fba76585954fccee8f3c1697332a9926eae331934480016"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 650,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/overcast/noon-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 25597,
+          "sha256": "d4209841484f5d0a8fadb6f200e9f61b05214dd0b9f1a9fac531e8742bfee7f5"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/noon-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 26326,
+          "sha256": "0348c0677f9cd855306ec933bbc02ffc09a11ffd3a3467353d6aa7da3e0b0c0c"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 848,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/overcast/noon-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 19830,
+          "sha256": "9097db4951621c9cd8ed8ac6cba60da2f09a06c90dd89bceeb14a4dd360d0ebf"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/noon-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 20288,
+          "sha256": "b9db3990b1a22861553f6fccfec303e27470ad9550f82f51d374d774293311cd"
+        }
+      }
+    },
+    {
+      "condition": "overcast",
+      "moment": "golden",
+      "source": {
+        "path": "assets/sources/outside/plates/overcast/golden.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1963572,
+        "sha256": "a171bf9375e2f44605ea627b08f4fd4a1e4e56e6a999e345b4776d3ae8a03ede"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/overcast/golden-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 67665,
+          "sha256": "5d1411d528bc78539fc4554a83fb035120523e47d0711acd2d231ba7f5699422"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/golden-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 77014,
+          "sha256": "c3bc2f1ce423ed1903d97e47ad870c06d7d81a5707425ddbbf5ebdbbb5d6176a"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 650,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/overcast/golden-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 31889,
+          "sha256": "0fd1130c7892c91b785f7702bbdbe87ddcf80bdffb253dab19cb672cf9c28885"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/golden-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 36090,
+          "sha256": "2e0582786744687275073d379188849b9cda3b4b3bf385aef4f732f4c585e796"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 848,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/overcast/golden-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 24615,
+          "sha256": "6a21551364bbc65c8c70fc739ee179737cc82974bbc3a3f5bf437ea41e5da5b0"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/golden-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 27254,
+          "sha256": "50274d76bb917306dda46120dd820aec3ca36e252e1ec1db22b62cc2ce6d9939"
+        }
+      }
+    },
+    {
+      "condition": "overcast",
+      "moment": "sunset",
+      "source": {
+        "path": "assets/sources/outside/plates/overcast/sunset.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1927412,
+        "sha256": "88424e0207242f963e5400a3ca967e0031e1fcce6761f39cb9f83100a3c60a2d"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/overcast/sunset-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 59974,
+          "sha256": "89063bc577468d3feb9247f51c00fa44a7903cc29a33d434328026687e12e5e3"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/sunset-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 64736,
+          "sha256": "c02595f616b44afc5fd38c1d2813f1ba8f2890165d46899a9d2dc5ef26ad45ba"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 650,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/overcast/sunset-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 28639,
+          "sha256": "2914cb202274009ea809a6b71a323f7b1b6142f417035f18753cd99651caaea5"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/sunset-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 30454,
+          "sha256": "309a13bac7b939a9631a370b8e481d2b01d314c2a833dafd6b0686f063b54490"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 848,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/overcast/sunset-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 22218,
+          "sha256": "272e8b92402214fa2bd8cc3ca231fadacd00412a611bfb6d8b60bfd0fc982e92"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/sunset-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 23632,
+          "sha256": "7eccb8d0cef9ad7abe82503310eafb468ceb31853fed3da5a22e51a7e176f64a"
+        }
+      }
+    },
+    {
+      "condition": "overcast",
+      "moment": "blue-hour",
+      "source": {
+        "path": "assets/sources/outside/plates/overcast/blue-hour.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1784938,
+        "sha256": "ebfd90a8db3ab0d051e898b51120a340e5030e15ca78b91f57c1d3f0d2da9d3b"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/overcast/blue-hour-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 48138,
+          "sha256": "59fcd308a92890761c06c10835b98a8641820ed5fbc1b4e59c666ff92fee2bf5"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/blue-hour-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 47810,
+          "sha256": "9141a8067d9b8b88c8f710d40385ba0d5fdaec60e4b7ec91b98cef9fc11b5bb9"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 650,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/overcast/blue-hour-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 23325,
+          "sha256": "0468d207dc03789554f644c837d55923e7dfe35b7c9f281b4dc888b08041c93b"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/blue-hour-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 22270,
+          "sha256": "0d562195e0314b1bcc465e767e37b8795ff0f4115dd997941d0daa4cab9092d0"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 848,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/overcast/blue-hour-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 18043,
+          "sha256": "60431f3e13b79e0e5ee471236ead01e8a84a655c46514828d2626c4c498168b3"
+        },
+        "webp": {
+          "path": "/images/outside/plates/overcast/blue-hour-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 17676,
+          "sha256": "dfffc9723a2e81d838351502ee8dde77a2428439f3e178e669c38707c016fb86"
+        }
+      }
+    },
+    {
+      "condition": "storm",
+      "moment": "night",
+      "source": {
+        "path": "assets/sources/outside/plates/storm/night.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1795402,
+        "sha256": "be17dc99d33d3364bd2794bc908d6b1d12ab6751ce952938e82dbab65804e346"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/storm/night-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 35359,
+          "sha256": "4b94ee10c5026d02d6871017bd9383b2320e200a47e7ce0b57f4b3bab59c094d"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/night-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 30858,
+          "sha256": "3363a38419c1e07aa2ff0754309fb38cb81265ade5c078967655186e67684666"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 760,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/storm/night-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 16502,
+          "sha256": "aaf4f33e9b8a19821c65137a80a895d5faf8020d49c356361a4d38edd7438ecd"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/night-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 13918,
+          "sha256": "3e996263b771cb42a65952c958bed681cb8defd6413df1d6a17715243a89239f"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 958,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/storm/night-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 13662,
+          "sha256": "c6d68cf243e59f148b52a7b2e3c2c6ad91d2bd3d58e6ee4f99be55a45cbd1bfb"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/night-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 11366,
+          "sha256": "238c12449900ab72fe43656f97c91ec7c9a5a380caa3abd6cef13d4325900ad9"
+        }
+      }
+    },
+    {
+      "condition": "storm",
+      "moment": "predawn",
+      "source": {
+        "path": "assets/sources/outside/plates/storm/predawn.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1768945,
+        "sha256": "43b11bfda3d68cd2da2bc0a3805132fbbd45c8b5c3aad7d08f7f08709ff322da"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/storm/predawn-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 49109,
+          "sha256": "d7787f34a8478ab6d904c1475928c1124f85a238d4ea7b458830419d30f75050"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/predawn-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 47210,
+          "sha256": "454230d636263396a914cb7fb805941c0a42f5b91f6a0dd7f191e9538efed1c0"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 760,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/storm/predawn-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 22842,
+          "sha256": "50a8129211b32056449aeee6e65ee46ed84499104a5201263dfb9aa421927209"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/predawn-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 20976,
+          "sha256": "fd30a15e0c96a22a6af384c67a8448d143ae94861241095b1b5d98503beabd9c"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 958,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/storm/predawn-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 18073,
+          "sha256": "34fdac41987c4189868e5a84b082c6195d8f7b2abdfbe39d0269bade86268760"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/predawn-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 17076,
+          "sha256": "b92478eb0edae1ee66ad20164de000cf28d948f185d86fe99d8713f6727689be"
+        }
+      }
+    },
+    {
+      "condition": "storm",
+      "moment": "sunrise",
+      "source": {
+        "path": "assets/sources/outside/plates/storm/sunrise.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1835224,
+        "sha256": "3e4927a878526b85ff9a6ac381951570cd851039e0b6ea14dcc56f60397e0fd0"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/storm/sunrise-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 60313,
+          "sha256": "f94c0f4c2698222259710343847e75a94bad63b6c3ab84603cd75283ea4a1cef"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/sunrise-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 61086,
+          "sha256": "ba23e262e5172541b6da8f87ec7f1e017656e8dd957d531aee7baebc20d565db"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 760,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/storm/sunrise-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 28067,
+          "sha256": "e1130e5abb31c718de2a1162539eca55971d66e93040e22f2111eb850b98151f"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/sunrise-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 26598,
+          "sha256": "5f44f398fba4bd73f041cec951999dfabff06c9a0f49d180b65c4c1422ea423b"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 958,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/storm/sunrise-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 21994,
+          "sha256": "7fd5e103cead6be197f5fe07b71a314d3f321f7a4c613d69da6b65d565aeab01"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/sunrise-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 21786,
+          "sha256": "8391d5b02ed85af65340dcdd280d353b04c5e31e9076c84d32a871ce2bcb2475"
+        }
+      }
+    },
+    {
+      "condition": "storm",
+      "moment": "morning",
+      "source": {
+        "path": "assets/sources/outside/plates/storm/morning.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1893697,
+        "sha256": "83629cba59dd1a202a1fa16098b8c9d46e1561ebf55082d48b54dc0567209651"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/storm/morning-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 61830,
+          "sha256": "a21e3b9880246f031260277e4730d022f1f1144372ab59223c7113ac5c210479"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/morning-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 62324,
+          "sha256": "9177095d9bd10291cae9b550f2212b01a54e01b05d1923a3dbf53374e4200399"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 760,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/storm/morning-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 28618,
+          "sha256": "9867fdb2177583906ffc40300048e3879a7e204aec776498df0ed501488cec09"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/morning-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 27202,
+          "sha256": "bc73f1115003213fbf4a3cbfc52e843f8675a7a6a02fb65ff7e78ad14b003a4b"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 958,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/storm/morning-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 22346,
+          "sha256": "a113ad560bc99d4a26a81e28a5f3e41d3e1fa29cea7311735e0a73f6176c62f4"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/morning-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 21954,
+          "sha256": "2d2b1ad89382bde833a349163f5566f939773a9adc7ea27e19e2152c1da2030b"
+        }
+      }
+    },
+    {
+      "condition": "storm",
+      "moment": "noon",
+      "source": {
+        "path": "assets/sources/outside/plates/storm/noon.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 2042663,
+        "sha256": "9bae7b5d7f6e9f7c133d6de9a3446da808520ab553c5204676a9a85d1205d98e"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/storm/noon-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 67213,
+          "sha256": "2d0fa4db2c83976fd91eeb106667ca7972351f1f991d2c5b93cb0ef1602e8e13"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/noon-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 72430,
+          "sha256": "f3c91261216c9871c9fa6005c4f6c5eb7945729533631ac1d2f7a98735ee45b3"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 760,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/storm/noon-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 31069,
+          "sha256": "565cfd03b4cf22716be6257e9fea53e6fb0ecf2ae3242a77410bc73ea561ceea"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/noon-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 32038,
+          "sha256": "90aa513a44350063c583656abe377ae677b6c22755c07a8a1632ef6400bcf8aa"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 958,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/storm/noon-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 24565,
+          "sha256": "203565fee1f1637cbac9dae2ecf25c34d62a9e800f6db0ddb4c4c6a3a72a63f5"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/noon-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 25220,
+          "sha256": "bb5c017db69cb8a26ecceff1c0943f5e6219b723cdad32536f83cbc91823e2bd"
+        }
+      }
+    },
+    {
+      "condition": "storm",
+      "moment": "golden",
+      "source": {
+        "path": "assets/sources/outside/plates/storm/golden.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1891577,
+        "sha256": "981816382132e0a7e496be720c479548c1a6a9e99cfb4c87b616d95949992787"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/storm/golden-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 65957,
+          "sha256": "8f41801de67f780e7236bafb467a9443323f6ca2477ebf4a8d0c538273784955"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/golden-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 71026,
+          "sha256": "dda1ee26d2a0cbee418f51952f3b6cde883f445d742ce126f37ec0a4f441843e"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 760,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/storm/golden-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 30444,
+          "sha256": "cc9db460978d680e36f5f9d3af2ef12adac1fe2b66b204fd512944ac9b03f05f"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/golden-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 31030,
+          "sha256": "ac6db9d82b4570d794d32e820e54d5f8010cd0dab9242bdfc978ab9f1d203a85"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 958,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/storm/golden-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 24205,
+          "sha256": "d1c68350755ddb8aa0991cac7ce0cbe52f51b52396d7e167078ec15caf12e351"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/golden-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 24592,
+          "sha256": "c8f5895d52cdc154d3d864f1222311469094c36ee1d3672a5588abd6edf9a19c"
+        }
+      }
+    },
+    {
+      "condition": "storm",
+      "moment": "sunset",
+      "source": {
+        "path": "assets/sources/outside/plates/storm/sunset.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1801785,
+        "sha256": "fa1c603c29cdea5c26b14c97db32066ee4edf88f389c0c12e16967874161177d"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/storm/sunset-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 54830,
+          "sha256": "4d51e8dcc1389ace95db145c5bac1044620810a07450e2c89b5543dc245d9135"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/sunset-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 55378,
+          "sha256": "a68d3cf6ec24ee95eb0efd646fe41dab0bffc7e2cef24194729803976bcaceef"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 760,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/storm/sunset-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 24817,
+          "sha256": "ee374e87085faf83be1841af788189ab8658a2e48c2369e5e4c7e656de445e9d"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/sunset-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 22572,
+          "sha256": "f98763a55913be067dede43dae222b6ee06d7c7430824305ed73cd8ad0a6d257"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 958,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/storm/sunset-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 19527,
+          "sha256": "9bae31c951c86da0922ea9c8343a490cecbe8b9bea1736c2fddba91e2eac52a4"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/sunset-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 18418,
+          "sha256": "14977b150cff8d33b81a2d40aa6371383b22711527fcc541852e5dec43b7be75"
+        }
+      }
+    },
+    {
+      "condition": "storm",
+      "moment": "blue-hour",
+      "source": {
+        "path": "assets/sources/outside/plates/storm/blue-hour.png",
+        "width": 1983,
+        "height": 793,
+        "bytes": 1937079,
+        "sha256": "c4a6ab56fff3f4541e3e70e8c74dda4e6cc58162f16e9cf069ebc8b5629ab989"
+      },
+      "desktop": {
+        "avif": {
+          "path": "/images/outside/plates/storm/blue-hour-desktop.avif",
+          "width": 1983,
+          "height": 793,
+          "bytes": 48240,
+          "sha256": "36b9d7316a9f87601c90ed371ad525b729d5106a35d574520a507e9c4ab42c48"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/blue-hour-desktop.webp",
+          "width": 1983,
+          "height": 793,
+          "bytes": 47516,
+          "sha256": "3fe540bf6fdba025ede666a3c8a12064c7527dc1342397d1a793425a18a31b80"
+        }
+      },
+      "mobile": {
+        "crop": {
+          "left": 760,
+          "top": 0,
+          "width": 991,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/storm/blue-hour-mobile.avif",
+          "width": 960,
+          "height": 768,
+          "bytes": 22399,
+          "sha256": "4f2c172e8dd8a8c88600fcda023b9aacb11bdc298b2dd8b5acd1a0c3f8df39b5"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/blue-hour-mobile.webp",
+          "width": 960,
+          "height": 768,
+          "bytes": 20472,
+          "sha256": "3072a34fe8e4376c2c3cfdea4f781ef9bc7b89cfe511ffe3bf9151d2a9e4505d"
+        }
+      },
+      "narrow": {
+        "crop": {
+          "left": 958,
+          "top": 0,
+          "width": 595,
+          "height": 793
+        },
+        "avif": {
+          "path": "/images/outside/plates/storm/blue-hour-narrow.avif",
+          "width": 720,
+          "height": 960,
+          "bytes": 17667,
+          "sha256": "ad4f6977fb9b55cc430c9ca68fcd193ae7433168ba138c0d8510863a5bb605c2"
+        },
+        "webp": {
+          "path": "/images/outside/plates/storm/blue-hour-narrow.webp",
+          "width": 720,
+          "height": 960,
+          "bytes": 16866,
+          "sha256": "fc11aeaf206020cce972306db7f6616fc4770823add75285fd350a39e3605335"
+        }
+      }
+    }
+  ],
+  "totals": {
+    "fileCount": 192,
+    "bytes": 6700185,
+    "byVariantAndFormat": {
+      "desktop": {
+        "avif": 1803651,
+        "webp": 1862250
+      },
+      "mobile": {
+        "avif": 856136,
+        "webp": 861512
+      },
+      "narrow": {
+        "avif": 658590,
+        "webp": 658046
+      }
+    }
+  }
+}

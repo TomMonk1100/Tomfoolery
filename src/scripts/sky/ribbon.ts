@@ -83,19 +83,24 @@ function spansWhere(
 /**
  * Build the day's geometry. `dayStart` must be local midnight for the location.
  * Sampling every 6 minutes is enough for a curve this size and keeps the whole
- * build under a millisecond.
+ * build under a millisecond. Locations with daylight-saving transitions can
+ * provide `instantAtMinutes` so wall-clock x positions remain correct on
+ * 23/25-hour days.
  */
 export function buildRibbon(
   dayStart: Date,
   lat: number,
   lon: number,
   g: RibbonGeometry,
-  stepMinutes = 6
+  stepMinutes = 6,
+  instantAtMinutes: (minutes: number) => Date | null = (minutes: number) =>
+    new Date(dayStart.valueOf() + minutes * 60000),
 ): RibbonModel {
   const sun: { m: number; alt: number }[] = [];
   const moon: { m: number; alt: number }[] = [];
   for (let m = 0; m <= 1440; m += stepMinutes) {
-    const t = new Date(dayStart.valueOf() + m * 60000);
+    const t = instantAtMinutes(m);
+    if (!t || !Number.isFinite(t.valueOf())) continue;
     sun.push({ m, alt: sunPosition(t, lat, lon).altitude });
     moon.push({ m, alt: moonPosition(t, lat, lon).altitude });
   }

@@ -8,11 +8,13 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "build:sky-plates": "node scripts/build-sky-plates.mjs",
+    "check:sky-plates": "node scripts/check-sky-plates.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "test": "vitest run src/scripts",
     "typecheck": "astro sync && tsc --noEmit",
-    "verify": "npm run typecheck && npm run test && npm run build"
+    "verify": "npm run check:sky-plates && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
@@ -22,6 +24,7 @@
     "tailwindcss": "^4.3.2"
   },
   "devDependencies": {
+    "sharp": "^0.35.2",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"
   }

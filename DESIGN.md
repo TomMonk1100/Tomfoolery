@@ -161,29 +161,36 @@ Full site-wide light/dark system, CSS-custom-property driven:
   is the more honest choice, the same way most games don't re-skin their
   viewport to match OS light mode.
 
-## Outside widget — weather, sunset & ISS pass (v6)
-Expanded from a compact 4-stat grid into a fuller "what's happening outside"
-panel, still zero API keys, all client-side `fetch()`:
-- **Weather (Open-Meteo):** current temp as the hero stat; feels-like,
-  humidity, wind speed+direction, UV index, today's high/low, precipitation
-  chance, and cloud cover as a secondary grid.
-- **Sunset arc:** a horizon-to-horizon SVG arc graphic — sun position
-  interpolated between sunrise/sunset (progress-along-arc, not full solar
-  ephemeris — consistent with the widget's existing "good enough, no
-  dependencies" moon-phase math), golden-hour windows highlighted near each
-  horizon end, exact sunset time labeled. Re-renders every 2 minutes.
-- **ISS next-pass arc:** replaced the old "distance/altitude overhead"
-  numbers (removed — not that meaningful without visualizing the actual
-  sky path) with next visible-pass prediction from Pollux Labs'
-  `iss-api.polluxlabs.io` (free, no key, CORS-enabled; SGP4/Skyfield against
-  fresh Celestrak TLEs — the direct successor to Open Notify's `iss-pass`
-  endpoint, which was retired). Shows rise/set compass direction and time,
-  duration, peak elevation, on the same horizon-arc visual language as the
-  sunset graphic for consistency. The ISS icon sweeps gently along the arc
-  on a slow sine loop — illustrative of the pass's path, not a real-time
-  countdown, since the pass itself may be hours or days out.
-- Both arcs use `var()`/`rgba(var(--color-*-rgb), α)` directly in SVG
-  presentation attributes, so they re-theme with light/dark for free.
+## Outside — living almanac (v9)
+
+A cinematic/editorial field report fixed to Breckenridge, Texas. The background
+is a 32-frame photographic atlas: clear, scattered, overcast, and storm weather
+families across night, predawn, sunrise, morning, noon, golden hour, sunset, and
+blue hour. Local solar calculations choose the authored moment; live Open-Meteo
+conditions choose its weather family.
+
+- **Photographic, not synthetic.** No CSS/SVG landscape, procedural cloud
+  volume, or baked celestial object. Two decoded raster slots hold only the
+  current and next plate and make a short opacity handoff near a solar boundary.
+- **Living celestial truth.** Local astronomy updates the daylight countdown,
+  textured Moon-phase portrait, and shared 24-hour chart once a minute. The
+  fixed-camera plate has no calibrated bearing or field of view, so the browser
+  does not pretend to project a free-moving celestial body into it. The shared
+  24-hour SVG is data visualization only.
+- **Editorial hierarchy.** Location masthead → large current conditions →
+  sunset/sunrise countdown and Moon readout → open 24-hour field line → one
+  ruled four-chapter ledger (Exposure, Air, Water, Tonight) → ISS sentence.
+  Local warm/dark washes protect the copy without flattening the whole image.
+- **Truthful location scope.** The old geolocation control is removed until
+  another location has its own atlas; Texas imagery must never be relabeled as
+  New York or another city.
+- **Mobile art direction.** A 460px cinematic scene hands off to the chart and
+  ledger on warm paper. Every plate has real condition-aware crops at 720×960
+  for narrow phones and 960×768 for wider mobile.
+- **Progressive enhancement.** The photographic solar moment, daylight
+  countdown, lunar phase, and chart work with no network. Weather refreshes
+  every 15 minutes and retains only a recent successful condition on failure;
+  ISS remains optional.
 
 ## Moon Lander (`/game`)
 A full canvas-based roguelite mini-game, styled to match Hearthwood rather

@@ -1,515 +1,141 @@
 ---
-// Live "what's happening outside" band — full-bleed, and the sky is the point.
-//
-// The gradient, sun position, star opacity and text colour are all driven by
-// real solar altitude computed locally (src/scripts/sky/astro.ts), so the band
-// renders correctly with no network at all and keeps working if every API
-// below fails. Weather, ISS passes and reverse geocoding are enhancement only.
-//
-// Layout: this breaks out of the max-w-6xl column via .full-bleed, then
-// re-establishes that column for its own content, so the sky runs edge to edge
-// while the copy stays aligned with the rest of the page.
-//
-// Motion rule (v7): animate transform/opacity only, never paint properties
-// under a filter. The sky's `background` transition is the one exception — it
-// runs once a minute, not per frame, and nothing above it is filtered.
+// The living almanac is intentionally fixed to Breckenridge for this atlas.
+// Local astronomy chooses the photographic slice and drives every celestial
+// reading. Open-Meteo and the ISS service progressively enhance the frame.
 ---
 
-<section class="outside-band full-bleed" id="outside-band" aria-labelledby="outside-heading">
-  <div class="outside-band__sky" data-sky></div>
-  <!-- The sun sits BELOW the scrim: it crosses the same space the copy
-       occupies, and letting the scrim knock it back is what keeps the
-       temperature readable when the sun passes behind it. -->
-  <div class="outside-band__sun" data-sun aria-hidden="true" style="opacity:0"></div>
-  <div class="outside-band__scrim"></div>
-  <div class="outside-band__stars" data-stars aria-hidden="true"></div>
-  <div class="outside-band__fx" data-fx aria-hidden="true"></div>
-  <svg class="outside-band__ridge" data-ridge viewBox="0 0 1440 104" preserveAspectRatio="none"
-       height="104" aria-hidden="true" focusable="false"></svg>
-
-  <div class="max-w-6xl mx-auto w-full px-6 pt-6 flex items-start justify-between gap-4 flex-wrap">
-    <div class="flex items-center gap-2.5">
-      <span class="w-1.5 h-1.5 bg-signal live-pulse shrink-0" aria-hidden="true"></span>
-      <h2 id="outside-heading" class="badge" style="color:var(--on-sky-dim)">outside</h2>
-      <span class="font-display text-sm font-semibold" data-field="location-label">Breckenridge, TX</span>
-    </div>
-    <button
-      id="use-location-btn"
-      type="button"
-      class="badge px-2.5 py-1.5 cursor-pointer transition-colors"
-      style="border:1px solid var(--on-sky-line); color:var(--on-sky-dim)"
-    >use my location</button>
+<section
+  class="outside-almanac full-bleed"
+  id="outside-band"
+  data-condition="clear"
+  data-moment="noon"
+  data-tone="light"
+  data-contrast="soft"
+  data-focal="oak-line"
+  data-plate-fallback="solar"
+  data-weather="loading"
+  aria-labelledby="outside-heading"
+>
+  <div class="outside-almanac__scene" aria-hidden="true">
+    <img
+      class="outside-almanac__plate"
+      data-plate-slot="a"
+      alt=""
+      decoding="async"
+      draggable="false"
+    />
+    <img
+      class="outside-almanac__plate"
+      data-plate-slot="b"
+      alt=""
+      decoding="async"
+      draggable="false"
+    />
   </div>
-  <p class="max-w-6xl mx-auto w-full px-6 text-xs mt-2" style="color:var(--on-sky-dim)"
-     data-field="location-status" hidden></p>
 
-  <div class="max-w-6xl mx-auto w-full px-6 pt-7 flex items-end justify-between gap-8 flex-wrap">
-    <div>
-      <p class="font-display font-semibold tracking-tight tabular-nums leading-none text-6xl md:text-7xl"
-         data-field="weather-temp">—</p>
-      <p class="text-lg mt-3" data-field="weather-desc">Reading the sky…</p>
-      <p class="font-mono text-xs mt-1.5" style="color:var(--on-sky-dim)">
-        feels <span data-field="weather-feelslike">—</span>
-        · H <span data-field="weather-hi">—</span>
-        · L <span data-field="weather-lo">—</span>
+  <div class="outside-almanac__content">
+    <header class="outside-almanac__masthead">
+      <div class="outside-almanac__place">
+        <span class="outside-almanac__signal live-pulse" aria-hidden="true"></span>
+        <h2 id="outside-heading">Outside</h2>
+        <span>Breckenridge, TX</span>
+      </div>
+      <p data-field="source-status">weather loading · almanac local</p>
+    </header>
+
+    <div class="outside-almanac__hero">
+      <div class="outside-almanac__weather">
+        <p
+          class="outside-almanac__temperature"
+          data-field="weather-temp"
+          aria-live="polite"
+        >—</p>
+        <p class="outside-almanac__description" data-field="weather-desc">
+          Reading the sky…
+        </p>
+        <p class="outside-almanac__feels">
+          Feels like <span data-field="weather-feelslike">—</span>
+          <span aria-hidden="true">·</span>
+          H <span data-field="weather-high">—</span>
+          <span aria-hidden="true">·</span>
+          L <span data-field="weather-low">—</span>
+        </p>
+      </div>
+
+      <div class="outside-almanac__celestial">
+        <div class="outside-almanac__daylight">
+          <p data-field="daylight-label">sunset in</p>
+          <strong data-field="daylight-value">—</strong>
+        </div>
+        <div class="outside-almanac__moon-readout">
+          <canvas
+            data-moon-portrait
+            width="200"
+            height="200"
+            role="img"
+            aria-label="Current Moon phase"
+          ></canvas>
+          <p>
+            <span data-field="moon-fraction">—</span>
+            <span aria-hidden="true">·</span>
+            <span data-field="moon-phase">—</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="outside-almanac__ledger">
+      <div class="outside-almanac__chart-scroll">
+        <svg
+          class="outside-almanac__chart"
+          data-ribbon
+          viewBox="0 0 1440 214"
+          role="img"
+          aria-label="Twenty-four hour sun and moon chart for Breckenridge"
+          focusable="false"
+        ></svg>
+      </div>
+
+      <dl class="outside-almanac__rail" aria-label="Current field notes">
+        <div>
+          <dt><span>01</span> Exposure</dt>
+          <dd>
+            <strong data-field="exposure-value">UV —</strong>
+            <small data-field="exposure-detail">reading live conditions</small>
+          </dd>
+        </div>
+        <div>
+          <dt><span>02</span> Air</dt>
+          <dd>
+            <strong data-field="air-value">— mph</strong>
+            <small data-field="air-detail">wind and humidity</small>
+          </dd>
+        </div>
+        <div>
+          <dt><span>03</span> Water</dt>
+          <dd>
+            <strong data-field="water-value">—% rain</strong>
+            <small data-field="water-detail">precipitation outlook</small>
+          </dd>
+        </div>
+        <div>
+          <dt><span>04</span> Tonight</dt>
+          <dd>
+            <strong data-field="tonight-value">Evening outlook</strong>
+            <small data-field="tonight-detail">updating with the weather</small>
+          </dd>
+        </div>
+      </dl>
+
+      <p class="outside-almanac__iss" data-field="iss-summary" aria-live="polite">
+        Finding the next visible ISS pass…
       </p>
     </div>
-    <div class="flex items-end gap-7">
-      <div class="text-right">
-        <p class="badge" style="color:var(--on-sky-dim)" data-field="daylight-label">daylight left</p>
-        <p class="font-display text-2xl font-semibold mt-1.5 tabular-nums" data-field="daylight-value">—</p>
-      </div>
-      <div class="text-center">
-        <svg width="58" height="58" viewBox="0 0 58 58" data-moon-svg aria-hidden="true" focusable="false"></svg>
-        <p class="font-mono text-[11px] mt-1.5" style="color:var(--on-sky-dim)" data-field="moon-phase">—</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="max-w-6xl mx-auto w-full px-6 pt-6">
-    <svg class="w-full block" data-ribbon viewBox="-30 -10 1160 236"
-         role="img" aria-label="The day at a glance: sun and moon altitude, twilight bands, and the next ISS pass"></svg>
-  </div>
-
-  <div class="max-w-6xl mx-auto w-full px-6 pt-5 pb-7">
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px"
-         style="background:var(--on-sky-line)" data-cells></div>
-    <p class="font-mono text-xs mt-3" style="color:var(--on-sky-dim)" data-field="iss-summary">
-      Loading pass predictions…</p>
   </div>
 </section>
 
 <script>
-  import { sunPosition, moonIllumination, moonPhaseName, moonDarkPath } from '../scripts/sky/astro';
-  import { skyColors, cssRGB, skyTheme, starOpacity, ridgePath, ridgeColors, uvColor, uvLabel } from '../scripts/sky/sky';
-  import { buildRibbon, timeToX, altToY, hourLabel, type RibbonGeometry } from '../scripts/sky/ribbon';
+  import { installOutsideLifecycle } from '../scripts/sky/outside-controller';
 
-  const SVG_NS = 'http://www.w3.org/2000/svg';
-  const DEFAULT = { lat: 32.7557, lon: -98.9023, label: 'Breckenridge, TX' };
-  const RIBBON: RibbonGeometry = { width: 1100, height: 190, baseline: 152, maxAltitude: 90 };
-
-  const WEATHER_CODES: Record<number, string> = {
-    0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
-    45: 'Fog', 48: 'Rime fog', 51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle',
-    61: 'Light rain', 63: 'Rain', 65: 'Heavy rain', 71: 'Light snow', 73: 'Snow',
-    75: 'Heavy snow', 80: 'Rain showers', 81: 'Rain showers', 82: 'Violent showers',
-    95: 'Thunderstorm', 96: 'Thunderstorm with hail', 99: 'Thunderstorm with hail',
-  };
-
-  interface Conditions {
-    temp: number; feels: number; hi: number; lo: number; code: number;
-    humidity: number; windSpeed: number; windDeg: number; uv: number;
-    precip: number; cloud: number;
-  }
-
-  let place = { ...DEFAULT };
-  let conditions: Conditions | null = null;
-  let issPassMinutes: number | null = null;
-  let root: HTMLElement | null = null;
-  let tick: number | undefined;
-
-  const q = <T extends Element>(sel: string) => root?.querySelector<T>(sel) ?? null;
-  const setField = (name: string, value: string) => {
-    root?.querySelectorAll<HTMLElement>(`[data-field="${name}"]`).forEach((el) => { el.textContent = value; });
-  };
-  const compass = (deg: number) =>
-    ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][
-      Math.round(((deg % 360) / 22.5)) % 16
-    ];
-  const reducedMotion = () =>
-    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-
-  /* ---------------- static scenery ---------------- */
-
-  // Cached so the silhouette never reflows; only the fill colour changes.
-  const RIDGE_FAR = ridgePath(1440, 104, 7, 30, 44);
-  const RIDGE_NEAR = ridgePath(1440, 104, 23, 20, 68);
-
-  function drawRidge(altitude: number) {
-    const svg = q<SVGSVGElement>('[data-ridge]');
-    if (!svg) return;
-    const { near, far } = ridgeColors(altitude);
-    svg.innerHTML =
-      `<path d="${RIDGE_FAR}" fill="${far}"/>` +
-      `<path d="${RIDGE_NEAR}" fill="${near}"/>`;
-  }
-
-  function drawStars() {
-    const host = q<HTMLElement>('[data-stars]');
-    if (!host || host.childElementCount) return;
-    const frag = document.createDocumentFragment();
-    for (let i = 0; i < 110; i++) {
-      const s = document.createElement('div');
-      s.className = 'outside-band__star';
-      const size = Math.random() < 0.85 ? 1 : 2;
-      s.style.cssText = `left:${(Math.random() * 100).toFixed(2)}%;top:${(Math.random() * 58).toFixed(2)}%;` +
-        `width:${size}px;height:${size}px;opacity:${(0.35 + Math.random() * 0.65).toFixed(2)}`;
-      frag.appendChild(s);
-    }
-    host.appendChild(frag);
-  }
-
-  /** Wind streaks and cloud puffs generated from the real readings. */
-  function drawWeatherFx(c: Conditions) {
-    const host = q<HTMLElement>('[data-fx]');
-    if (!host || reducedMotion()) return;
-    host.innerHTML = '';
-    const frag = document.createDocumentFragment();
-
-    const puffs = Math.round((c.cloud / 100) * 12);
-    for (let i = 0; i < puffs; i++) {
-      const p = document.createElement('div');
-      p.className = 'outside-band__puff';
-      const w = 140 + Math.random() * 260;
-      p.style.cssText = `left:${(Math.random() * 100).toFixed(1)}%;top:${(4 + Math.random() * 42).toFixed(1)}%;` +
-        `width:${w.toFixed(0)}px;height:${(w * 0.34).toFixed(0)}px;` +
-        `animation-duration:${(70 - Math.min(40, c.windSpeed)).toFixed(0)}s;` +
-        `animation-delay:-${(Math.random() * 50).toFixed(1)}s`;
-      frag.appendChild(p);
-    }
-
-    const streaks = Math.min(18, Math.round(c.windSpeed * 1.1));
-    for (let i = 0; i < streaks; i++) {
-      const s = document.createElement('div');
-      s.className = 'outside-band__streak';
-      // Confined to the upper sky and kept faint: at full strength these read
-      // as scan lines drawn across the temperature rather than as moving air.
-      s.style.cssText = `top:${(5 + Math.random() * 30).toFixed(1)}%;` +
-        `width:${(50 + Math.random() * 130).toFixed(0)}px;` +
-        `opacity:${(0.07 + Math.random() * 0.13).toFixed(2)};` +
-        `animation-duration:${Math.max(3.5, 13 - c.windSpeed * 0.35).toFixed(1)}s;` +
-        `animation-delay:-${(Math.random() * 12).toFixed(1)}s`;
-      frag.appendChild(s);
-    }
-    host.appendChild(frag);
-  }
-
-  /* ---------------- the shared 24-hour ribbon ---------------- */
-
-  function drawRibbon(now: Date) {
-    const svg = q<SVGSVGElement>('[data-ribbon]');
-    if (!svg) return;
-    const dayStart = new Date(now);
-    dayStart.setHours(0, 0, 0, 0);
-    const m = buildRibbon(dayStart, place.lat, place.lon, RIBBON);
-    const X = (mins: number) => timeToX(mins, RIBBON);
-    const parts: string[] = [];
-
-    // The SVG scales to its container, so on a 390px phone a 1100-unit viewBox
-    // shrinks 11-unit text to about 4 real pixels. Scale type and strokes by
-    // how far the viewBox is being squeezed, and thin out the hour ticks.
-    const rendered = svg.clientWidth || RIBBON.width;
-    const k = Math.min(3, Math.max(1, RIBBON.width / rendered));
-    const fs = (base: number) => (base * k).toFixed(1);
-    const sw = (base: number) => (base * Math.min(k, 1.8)).toFixed(2);
-    const tickStep = k > 1.8 ? 6 : 3;
-
-    // The ribbon's own background is the day's colour progression, sampled from
-    // the same sky model that drives the band. This replaced hard-edged
-    // twilight rectangles, which read as grey UI blocks rather than as sky.
-    const stops: string[] = [];
-    for (let h = 0; h <= 24; h++) {
-      const t = new Date(dayStart.valueOf() + h * 3600000);
-      const c = skyColors(sunPosition(t, place.lat, place.lon).altitude).bottom;
-      stops.push(`<stop offset="${((h / 24) * 100).toFixed(2)}%" stop-color="${cssRGB(c)}"/>`);
-    }
-    parts.push(`<defs><linearGradient id="ribbon-day" x1="0" y1="0" x2="1" y2="0">${stops.join('')}</linearGradient></defs>`);
-    parts.push(`<rect x="0" y="6" width="${RIBBON.width}" height="${RIBBON.baseline - 6}" ` +
-      `fill="url(#ribbon-day)" opacity=".55"/>`);
-    for (const s of m.goldenSpans) {
-      parts.push(`<rect x="${X(s.from).toFixed(1)}" y="6" width="${(X(s.to) - X(s.from)).toFixed(1)}" ` +
-        `height="${RIBBON.baseline - 6}" fill="rgba(var(--color-accent-rgb),.14)"/>`);
-    }
-
-    parts.push(`<line x1="0" y1="${RIBBON.baseline}" x2="${RIBBON.width}" y2="${RIBBON.baseline}" ` +
-      `stroke="var(--on-sky-line)" stroke-width="${sw(1.5)}"/>`);
-    for (let h = 0; h <= 24; h += tickStep) {
-      const x = X(h * 60);
-      parts.push(`<line x1="${x.toFixed(1)}" y1="${RIBBON.baseline}" x2="${x.toFixed(1)}" ` +
-        `y2="${RIBBON.baseline + 5}" stroke="var(--on-sky-line)" stroke-width="${sw(1)}"/>`);
-      parts.push(`<text x="${x.toFixed(1)}" y="${RIBBON.baseline + 8 + Number(fs(11))}" font-size="${fs(11)}" ` +
-        `font-family="var(--font-mono)" fill="var(--on-sky-dim)" text-anchor="middle">${hourLabel(h)}</text>`);
-    }
-
-    if (m.moonPath) {
-      parts.push(`<path d="${m.moonPath}" fill="none" stroke="var(--on-sky-dim)" stroke-width="${sw(1.6)}" ` +
-        `stroke-dasharray="3 4" stroke-linecap="round" opacity=".75"/>`);
-    }
-    if (m.sunPath) {
-      parts.push(`<path d="${m.sunPath}" fill="none" stroke="var(--color-accent-mid)" stroke-width="${sw(2.6)}" ` +
-        `stroke-linecap="round"/>`);
-    }
-
-    if (issPassMinutes != null) {
-      const x = X(issPassMinutes);
-      parts.push(`<line x1="${x.toFixed(1)}" y1="${RIBBON.baseline}" x2="${x.toFixed(1)}" y2="${RIBBON.baseline - 66}" ` +
-        `stroke="var(--color-signal)" stroke-width="${sw(1.5)}"/>`);
-      parts.push(`<circle cx="${x.toFixed(1)}" cy="${RIBBON.baseline - 66}" r="${sw(4)}" fill="var(--color-signal)"/>`);
-      parts.push(`<text x="${x.toFixed(1)}" y="${RIBBON.baseline - 76}" font-size="${fs(11)}" ` +
-        `font-family="var(--font-mono)" fill="var(--color-signal)" ` +
-        `text-anchor="${issPassMinutes > 1150 ? 'end' : 'middle'}">ISS</text>`);
-    }
-
-    const nowMins = now.getHours() * 60 + now.getMinutes();
-    const alt = sunPosition(now, place.lat, place.lon).altitude;
-    const nx = X(nowMins);
-    parts.push(`<line x1="${nx.toFixed(1)}" y1="6" x2="${nx.toFixed(1)}" y2="${RIBBON.baseline}" ` +
-      `stroke="var(--on-sky)" stroke-width="${sw(1)}" stroke-dasharray="2 3" opacity=".45"/>`);
-    if (alt > 0) {
-      parts.push(`<circle cx="${nx.toFixed(1)}" cy="${altToY(alt, RIBBON).toFixed(1)}" r="${sw(6)}" ` +
-        `fill="var(--color-accent-mid)"/>`);
-    }
-
-    svg.innerHTML = parts.join('');
-  }
-
-  /* ---------------- stat cells ---------------- */
-
-  function compassNeedle(deg: number) {
-    return `<svg width="17" height="17" viewBox="0 0 17 17" style="flex:none" aria-hidden="true">
-      <circle cx="8.5" cy="8.5" r="7.5" fill="none" stroke="var(--on-sky-line)" stroke-width="1"/>
-      <g transform="rotate(${deg.toFixed(0)} 8.5 8.5)">
-        <path d="M8.5 2 L11 10 L8.5 8.6 L6 10 Z" fill="var(--color-accent)"/>
-      </g></svg>`;
-  }
-
-  function drawMoon(fraction: number, waxing: boolean) {
-    const svg = q<SVGSVGElement>('[data-moon-svg]');
-    if (!svg) return;
-    svg.innerHTML =
-      `<circle cx="29" cy="29" r="24" fill="#F4E7C4" stroke="var(--on-sky-line)" stroke-width="1"/>` +
-      `<path d="${moonDarkPath(29, 29, 24, fraction, waxing)}" fill="rgba(26,20,14,.42)"/>`;
-  }
-
-  function drawCells(c: Conditions | null, fraction: number, waxing: boolean) {
-    const host = q<HTMLElement>('[data-cells]');
-    if (!host) return;
-    const pct = (n: number) => Math.max(0, Math.min(1, n));
-    const cells = [
-      { k: 'humidity', v: c ? `${Math.round(c.humidity)}%` : '—', f: c ? pct(c.humidity / 100) : 0, c: 'var(--color-accent-2)' },
-      { k: 'wind', v: c ? `${compassNeedle(c.windDeg)}<span>${Math.round(c.windSpeed)} ${compass(c.windDeg)}</span>` : '—',
-        f: c ? pct(c.windSpeed / 40) : 0, c: 'var(--color-accent)' },
-      { k: 'uv index', v: c ? `${c.uv.toFixed(1)} <span style="opacity:.62;font-size:11px">${uvLabel(c.uv)}</span>` : '—',
-        f: c ? pct(c.uv / 11) : 0, c: c ? uvColor(c.uv) : 'var(--color-muted)' },
-      { k: 'rain', v: c ? `${Math.round(c.precip)}%` : '—', f: c ? pct(c.precip / 100) : 0, c: 'var(--color-accent-2)' },
-      { k: 'clouds', v: c ? `${Math.round(c.cloud)}%` : '—', f: c ? pct(c.cloud / 100) : 0, c: 'var(--on-sky-dim)' },
-      { k: 'moon', v: `${Math.round(fraction * 100)}% <span style="opacity:.62;font-size:11px">${waxing ? 'waxing' : 'waning'}</span>`,
-        f: fraction, c: '#C9B98F' },
-    ];
-    host.innerHTML = cells.map((cell) => `
-      <div class="outside-band__cell">
-        <p class="badge" style="color:var(--on-sky-dim)">${cell.k}</p>
-        <p class="font-mono text-sm mt-1.5 tabular-nums flex items-center gap-2">${cell.v}</p>
-        <div class="outside-band__meter mt-2"><i style="background:${cell.c};transform:scaleX(${cell.f.toFixed(3)})"></i></div>
-      </div>`).join('');
-  }
-
-  /* ---------------- the frame ---------------- */
-
-  function renderSky(now = new Date()) {
-    if (!root) return;
-    const alt = sunPosition(now, place.lat, place.lon).altitude;
-    const colors = skyColors(alt);
-    const theme = skyTheme(alt);
-
-    root.style.setProperty('--sky-top', cssRGB(colors.top));
-    root.style.setProperty('--sky-bottom', cssRGB(colors.bottom));
-    root.style.setProperty('--sky-scrim', theme.scrim);
-    root.style.setProperty('--on-sky', theme.ink);
-    root.style.setProperty('--on-sky-dim', theme.dim);
-    root.style.setProperty('--on-sky-line', theme.line);
-    root.style.setProperty('--on-sky-panel', theme.panel);
-
-    drawRidge(alt);
-
-    const stars = q<HTMLElement>('[data-stars]');
-    if (stars) stars.style.opacity = String(starOpacity(alt));
-
-    // Sun disc rides its true arc across the band.
-    const sun = q<HTMLElement>('[data-sun]');
-    if (sun) {
-      const up = alt > -1;
-      if (!up) sun.style.opacity = '0';
-      if (up) {
-        const dayStart = new Date(now);
-        dayStart.setHours(0, 0, 0, 0);
-        const mins = now.getHours() * 60 + now.getMinutes();
-        // Travels across the sky but stays in the upper band, above the copy
-        // and clear of the ribbon below it.
-        sun.style.opacity = '1';
-        sun.style.left = `${(8 + (mins / 1440) * 84).toFixed(2)}%`;
-        // Kept in the upper band so it never sinks into the stat strip.
-        const ceiling = 34, floor = 158;
-        sun.style.top = `${(floor - (Math.max(0, alt) / 80) * (floor - ceiling)).toFixed(0)}px`;
-      }
-    }
-
-    const { fraction, waxing } = moonIllumination(now);
-    drawMoon(fraction, waxing);
-    setField('moon-phase', moonPhaseName(fraction, waxing));
-    drawCells(conditions, fraction, waxing);
-    drawRibbon(now);
-    updateDaylight(now, alt);
-  }
-
-  function updateDaylight(now: Date, alt: number) {
-    const dayStart = new Date(now);
-    dayStart.setHours(0, 0, 0, 0);
-    const m = buildRibbon(dayStart, place.lat, place.lon, RIBBON);
-    const mins = now.getHours() * 60 + now.getMinutes();
-    const span = m.sunUp.find((s) => mins >= s.from && mins <= s.to);
-    const fmt = (n: number) => `${Math.floor(n / 60)}h ${String(Math.round(n % 60)).padStart(2, '0')}m`;
-
-    if (span) {
-      setField('daylight-label', 'daylight left');
-      setField('daylight-value', fmt(span.to - mins));
-    } else {
-      const next = m.sunUp.find((s) => s.from > mins);
-      setField('daylight-label', alt < -6 ? 'sunrise in' : 'twilight');
-      setField('daylight-value', next ? fmt(next.from - mins) : '—');
-    }
-  }
-
-  /* ---------------- data ---------------- */
-
-  async function loadWeather(lat: number, lon: number) {
-    try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-        `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m` +
-        `&daily=temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_probability_max` +
-        `&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=1`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(String(res.status));
-      const data = await res.json();
-      const cur = data.current, daily = data.daily;
-      conditions = {
-        temp: cur.temperature_2m, feels: cur.apparent_temperature, hi: daily.temperature_2m_max[0],
-        lo: daily.temperature_2m_min[0], code: cur.weather_code, humidity: cur.relative_humidity_2m,
-        windSpeed: cur.wind_speed_10m, windDeg: cur.wind_direction_10m,
-        uv: daily.uv_index_max?.[0] ?? 0, precip: daily.precipitation_probability_max?.[0] ?? 0,
-        cloud: cur.cloud_cover,
-      };
-      setField('weather-temp', `${Math.round(conditions.temp)}°`);
-      setField('weather-desc', WEATHER_CODES[conditions.code] ?? 'Weather unavailable');
-      setField('weather-feelslike', `${Math.round(conditions.feels)}°`);
-      setField('weather-hi', `${Math.round(conditions.hi)}°`);
-      setField('weather-lo', `${Math.round(conditions.lo)}°`);
-      drawWeatherFx(conditions);
-      renderSky();
-    } catch {
-      // The sky, ribbon and moon are all computed locally and stay correct.
-      setField('weather-desc', "Couldn't reach the weather service");
-      setField('weather-temp', '—');
-    }
-  }
-
-  async function loadIssPass(lat: number, lon: number) {
-    try {
-      const url = `https://iss-api.polluxlabs.io/iss-pass?lat=${lat}&lon=${lon}` +
-        `&visible_only=true&n=3&days_ahead=10&min_elevation=10`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(String(res.status));
-      const passes = (await res.json()).passes ?? [];
-      if (!passes.length) {
-        issPassMinutes = null;
-        setField('iss-summary', 'No visible ISS passes in the next 10 days');
-        renderSky();
-        return;
-      }
-      const p = passes[0];
-      const rise = new Date(p.rise.time);
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      const sameDay = rise >= today && rise.valueOf() < today.valueOf() + 86400000;
-      issPassMinutes = sameDay ? rise.getHours() * 60 + rise.getMinutes() : null;
-      const when = rise.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-      const day = sameDay ? 'Tonight' : rise.toLocaleDateString('en-US', { weekday: 'long' });
-      const mins = Math.floor((p.duration_sec ?? 0) / 60), secs = Math.round((p.duration_sec ?? 0) % 60);
-      // Peak elevation is nested under `culmination`, not a flat `max_elevation`.
-      const peak = Math.round(p.culmination?.elevation_deg ?? 0);
-      setField('iss-summary',
-        `ISS · ${day} ${when} — crosses ${p.rise.compass} → ${p.set.compass}` +
-        `${peak ? `, ${peak}° up` : ''}, visible ${mins}m ${secs}s`);
-      renderSky();
-    } catch {
-      issPassMinutes = null;
-      setField('iss-summary', "Couldn't load ISS pass predictions");
-    }
-  }
-
-  async function reverseGeocode(lat: number, lon: number): Promise<string> {
-    try {
-      const res = await fetch(
-        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
-      );
-      const d = await res.json();
-      const city = d.city || d.locality;
-      return city ? `${city}${d.principalSubdivisionCode ? ', ' + String(d.principalSubdivisionCode).replace(/^US-/, '') : ''}` : 'Your location';
-    } catch {
-      return 'Your location';
-    }
-  }
-
-  function wireLocationButton() {
-    const btn = q<HTMLButtonElement>('#use-location-btn');
-    const status = q<HTMLElement>('[data-field="location-status"]');
-    if (!btn) return;
-    btn.addEventListener('click', () => {
-      if (!navigator.geolocation) {
-        if (status) { status.hidden = false; status.textContent = 'Your browser will not share a location.'; }
-        return;
-      }
-      btn.disabled = true;
-      btn.textContent = 'locating…';
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          place = { lat: pos.coords.latitude, lon: pos.coords.longitude, label: 'Locating…' };
-          place.label = await reverseGeocode(place.lat, place.lon);
-          setField('location-label', place.label);
-          btn.disabled = false;
-          btn.textContent = 'use my location';
-          if (status) status.hidden = true;
-          renderSky();
-          loadWeather(place.lat, place.lon);
-          loadIssPass(place.lat, place.lon);
-        },
-        () => {
-          btn.disabled = false;
-          btn.textContent = 'use my location';
-          if (status) { status.hidden = false; status.textContent = `Location declined — still showing ${DEFAULT.label}.`; }
-        },
-        { timeout: 10000, maximumAge: 600000 }
-      );
-    });
-  }
-
-  function init() {
-    root = document.getElementById('outside-band');
-    if (!root) return;
-    place = { ...DEFAULT };
-    conditions = null;
-    issPassMinutes = null;
-
-    drawStars();
-    renderSky();
-    wireLocationButton();
-    loadWeather(place.lat, place.lon);
-    loadIssPass(place.lat, place.lon);
-
-    // The sun visibly moves. Once a minute is plenty and costs nothing.
-    window.clearInterval(tick);
-    tick = window.setInterval(() => renderSky(), 60000);
-
-    // The ribbon's type scales off its rendered width, so it needs redrawing
-    // when that changes.
-    let resizeTimer: number | undefined;
-    window.addEventListener('resize', () => {
-      window.clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(() => renderSky(), 180);
-    });
-  }
-
-  init();
-  // Astro view transitions swap the DOM without a full reload.
-  document.addEventListener('astro:page-load', init);
-  document.addEventListener('astro:before-swap', () => window.clearInterval(tick));
+  installOutsideLifecycle();
 </script>
