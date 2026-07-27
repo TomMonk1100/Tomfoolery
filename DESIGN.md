@@ -161,7 +161,7 @@ Full site-wide light/dark system, CSS-custom-property driven:
   is the more honest choice, the same way most games don't re-skin their
   viewport to match OS light mode.
 
-## Outside — living almanac (v9)
+## Outside — living almanac (v10)
 
 A cinematic/editorial field report fixed to Breckenridge, Texas. The background
 is a 32-frame photographic atlas: clear, scattered, overcast, and storm weather
@@ -173,24 +173,28 @@ conditions choose its weather family.
   volume, or baked celestial object. Two decoded raster slots hold only the
   current and next plate and make a short opacity handoff near a solar boundary.
 - **Living celestial truth.** Local astronomy updates the daylight countdown,
-  textured Moon-phase portrait, and shared 24-hour chart once a minute. The
+  textured Moon-phase portrait, and rolling 24-hour chart once a minute. The
   fixed-camera plate has no calibrated bearing or field of view, so the browser
   does not pretend to project a free-moving celestial body into it. The shared
-  24-hour SVG is data visualization only. Its distinct Sun and Moon altitude
-  curves share one clock; an interpolated lunar window below the axis labels
-  local moonrise and moonset while the portrait repeats the next event. The
-  formal language says "above horizon" because weather and daylight still
-  govern real-world visibility.
+  SVG is data visualization only. Its window runs from six hours behind now to
+  eighteen hours ahead; strong above-horizon Sun and Moon curves become quiet
+  dotted continuations below the horizon and pass through a labelled midnight
+  without a calendar-day seam. The formal language says "above horizon"
+  because weather and daylight still govern real-world visibility.
 - **Editorial hierarchy.** Location masthead → large current conditions →
-  sunset/sunrise countdown and Moon readout → open 24-hour field line → one
-  ruled four-chapter ledger (Exposure, Air, Water, Tonight) → ISS sentence.
-  Local warm/dark washes protect the copy without flattening the whole image.
+  sunset/sunrise countdown → paper-ledger Night Watch and fixed chart key →
+  rolling celestial field line → lunar visibility sentence → one ruled
+  four-chapter ledger (Exposure, Air, Water, Tonight) → ISS sentence. The Moon
+  portrait no longer floats over the photographed landscape. Local warm/dark
+  washes protect the copy without flattening the whole image.
 - **Truthful location scope.** The old geolocation control is removed until
   another location has its own atlas; Texas imagery must never be relabeled as
   New York or another city.
-- **Mobile art direction.** A 460px cinematic scene hands off to the chart and
-  ledger on warm paper. Every plate has real condition-aware crops at 720×960
-  for narrow phones and 960×768 for wider mobile.
+- **Mobile art direction.** A 460px cinematic scene hands off to Night Watch,
+  the full-width non-scrolling chart, and the ledger on warm paper. Supporting
+  type stays at least 12px and the chart uses a dedicated 600×240 coordinate
+  system. Every plate has real condition-aware crops at 720×960 for narrow
+  phones and 960×768 for wider mobile.
 - **Progressive enhancement.** The photographic solar moment, daylight
   countdown, lunar phase, and chart work with no network. Weather refreshes
   every 15 minutes and retains only a recent successful condition on failure;

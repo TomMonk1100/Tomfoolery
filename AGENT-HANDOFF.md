@@ -58,7 +58,7 @@ ceases to exist in production.
 ### Before every push, run
 
 ```bash
-npm run verify      # atlas gate + typecheck + 205 tests + production build
+npm run verify      # atlas gate + typecheck + 214 tests + production build
 ```
 
 All four gates must pass. `verify` checks the complete photographic atlas,
@@ -119,7 +119,7 @@ Commands:
 | `npm run build` | Production build to `dist/` |
 | `npm run build:sky-plates` | Rebuild and budget-check the photographic atlas |
 | `npm run check:sky-plates` | Verify every plate path, hash, dimension, and budget |
-| `npm test` | 205 tests (`src/scripts` only) |
+| `npm test` | 214 tests (`src/scripts` only) |
 | `npm run typecheck` | `astro sync && tsc --noEmit` |
 | `npm run verify` | Atlas gate + typecheck + tests + build. Run before pushing. |
 
@@ -131,10 +131,11 @@ Commands:
 living almanac fixed to Breckenridge, Texas**. A 32-frame photographic atlas
 (four weather families × eight astronomical moments) supplies the scene while
 local astronomy drives slice selection, the daylight countdown, the textured
-Moon-phase portrait, and the shared sun/Moon chart. The chart pairs the lunar
-altitude curve with an explicit above-horizon rail and interpolated local
-moonrise/moonset labels; the compact Moon readout repeats the next event so it
-remains useful when the mobile chart is horizontally scrolled.
+Moon-phase portrait, and the shared sun/Moon chart. The plot is a rolling
+24-hour window from six hours behind now through eighteen hours ahead. Solid
+above-horizon curves join faint below-horizon continuations across midnight,
+while the paper-ledger Night Watch row gives the interpolated local lunar
+visibility window without placing a false Moon in the photographed landscape.
 
 ### Architecture
 
@@ -184,20 +185,26 @@ gibbous and toward the lit limb when crescent. Backwards renders a 91% moon as
 `global.css`). `hidden` also stops the overflow but creates a scroll container
 and silently breaks the sticky nav.
 
-**Ribbon type scales by viewBox squeeze.** On a 390px phone an 11-unit SVG
-label renders at ~4 real pixels. Font sizes and stroke widths multiply by
-`RIBBON.width / svg.clientWidth`, and hour ticks thin from every 3h to every
-6h. If you add anything textual to the ribbon, scale it the same way.
+**Ribbon geometry is responsive and rolling.** Desktop uses a 1440×240
+coordinate system; mobile uses 600×240 so the full 24-hour window stays
+full-width and readable without horizontal scrolling. Type and marker radii
+scale by `geometry.width / svg.clientWidth`; non-scaling strokes retain their
+authored CSS-pixel weight. Timeline ticks come from real Breckenridge instants,
+not fixed minute-of-day values, so midnight and DST are transitions rather than
+chart seams.
 
 **Moon visibility means geometry, not a clear-sky promise.** The Moon curve and
-rail represent when it is above the Breckenridge horizon. Cloud and daylight
-can still prevent an actual sighting, so keep the formal chart wording as
-"above horizon." Midnight span edges are chart clips, not rise/set events.
+Night Watch window represent when it is above the Breckenridge horizon. Cloud
+and daylight can still prevent an actual sighting, so keep the formal wording
+as "above horizon." Keep event copy outside the SVG; putting long rise/set text
+on the plot clips on narrow viewports.
 
 **Mobile is a split composition.** The image stage is 460px tall; the chart,
-four field-note chapters, and ISS line continue on warm paper below it. The
-mobile plate crops are real art-direction variants, not browser crops of the
-panoramic desktop file: 720×960 for narrow phones and 960×768 for wider mobile.
+Night Watch, four field-note chapters, and ISS line continue on warm paper below
+it. The photographed hero contains the daylight countdown but not the lunar
+portrait. Mobile plate crops are real art-direction variants, not browser crops
+of the panoramic desktop file: 720×960 for narrow phones and 960×768 for wider
+mobile.
 
 **Motion rule (site-wide, learned from a real bug): animate only `transform`
 and `opacity`. Never animate paint properties under a `filter`.** Doing so

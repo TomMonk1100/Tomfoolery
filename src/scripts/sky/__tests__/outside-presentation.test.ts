@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   OUTSIDE_PLATE_PRESENTATIONS,
-  breckenridgeInstantAtMinutes,
-  formatRibbonTime,
-  moonHorizonEvents,
+  moonEditorialCopy,
   platePresentationFor,
+  rollingTimelineMarks,
   shouldCommitPlatePresentation,
 } from '../outside-controller';
 import { PLATE_CONDITIONS, SOLAR_MOMENTS } from '../plates';
@@ -52,41 +51,42 @@ describe('atomic plate presentation commit', () => {
   });
 });
 
-describe('Breckenridge civil-time sampling', () => {
-  it('gaps nonexistent spring-forward minutes and stays monotonic', () => {
-    // 2027-03-14 00:00 CST; clocks jump from 01:59 to 03:00.
-    const dayStart = new Date('2027-03-14T06:00:00Z');
-    expect(breckenridgeInstantAtMinutes(dayStart, 120)).toBeNull();
-    expect(breckenridgeInstantAtMinutes(dayStart, 150)).toBeNull();
+describe('Moon horizon labels', () => {
+  it('describes a cross-midnight visibility window without clipping the time', () => {
+    const now = new Date('2026-07-27T20:38:00.000Z'); // 3:38 PM CDT
+    const copy = moonEditorialCopy(false, [
+      {
+        kind: 'rise',
+        minute: 243,
+        at: new Date('2026-07-28T00:41:00.000Z'),
+      },
+      {
+        kind: 'set',
+        minute: 948,
+        at: new Date('2026-07-28T12:26:00.000Z'),
+      },
+    ], now);
 
-    const instants = Array.from(
-      { length: 241 },
-      (_, index) => breckenridgeInstantAtMinutes(dayStart, index * 6),
-    )
-      .filter((instant): instant is Date => instant !== null)
-      .map((instant) => instant.valueOf());
-
-    for (let index = 1; index < instants.length; index++) {
-      expect(instants[index]).toBeGreaterThan(instants[index - 1]);
-    }
+    expect(copy.status).toBe('below horizon · rises 7:41 PM');
+    expect(copy.summary).toBe('7:41 PM → 7:26 AM tomorrow');
+    expect(copy.description).toContain('sets 7:26 AM tomorrow');
   });
 });
 
-describe('Moon horizon labels', () => {
-  it('formats interpolated wall minutes as compact local times', () => {
-    expect(formatRibbonTime(0)).toBe('12:00a');
-    expect(formatRibbonTime(411.6)).toBe('6:52a');
-    expect(formatRibbonTime(1304.4)).toBe('9:44p');
-    expect(formatRibbonTime(1440)).toBe('12:00a');
-  });
-
-  it('turns only interior Moon-up boundaries into rise and set events', () => {
-    expect(moonHorizonEvents([
-      { from: 0, to: 411.6 },
-      { from: 1304.4, to: 1440 },
-    ])).toEqual([
-      { kind: 'set', minute: 411.6 },
-      { kind: 'rise', minute: 1304.4 },
+describe('rolling timeline labels', () => {
+  it('turns midnight into a labelled transition inside the window', () => {
+    const start = new Date('2026-07-27T14:38:00.000Z'); // 9:38 AM CDT
+    const end = new Date(start.valueOf() + 24 * 60 * 60_000);
+    expect(rollingTimelineMarks({
+      start,
+      end,
+      durationMinutes: 1440,
+      focusMinute: 360,
+    })).toEqual([
+      { minute: 142, label: '12p', kind: 'time' },
+      { minute: 502, label: '6p', kind: 'time' },
+      { minute: 862, label: 'TUE · 12A', kind: 'day' },
+      { minute: 1222, label: '6a', kind: 'time' },
     ]);
   });
 });

@@ -31,13 +31,13 @@ import {
   type SolarMoment,
 } from './plates';
 import {
-  altToY,
-  buildRibbon,
+  altToPlotY,
+  buildRollingRibbon,
   hourLabel,
   timeToX,
+  type HorizonEvent,
   type RibbonGeometry,
-  type RibbonModel,
-  type Span,
+  type RibbonWindow,
 } from './ribbon';
 import { uvLabel } from './sky';
 
@@ -50,11 +50,19 @@ const REQUEST_TIMEOUT_MS = 12_000;
 const CONDITION_CACHE_TTL_MS = 2 * 60 * 60_000;
 const CONDITION_CACHE_KEY = 'outside:breckenridge-condition';
 const MINUTE = 60_000;
-const RIBBON: RibbonGeometry = {
+const RIBBON_LOOKBACK_MINUTES = 6 * 60;
+const RIBBON_DURATION_MINUTES = 24 * 60;
+const RIBBON_DESKTOP: RibbonGeometry = {
   width: 1440,
   height: 240,
-  baseline: 166,
+  baseline: 116,
   maxAltitude: 90,
+  minAltitude: -90,
+  belowBand: 44,
+};
+const RIBBON_MOBILE: RibbonGeometry = {
+  ...RIBBON_DESKTOP,
+  width: 600,
 };
 
 const WEATHER_CODES: Record<number, string> = {
@@ -226,6 +234,18 @@ const BRECKENRIDGE_TIME = new Intl.DateTimeFormat('en-US', {
   minute: '2-digit',
 });
 
+const BRECKENRIDGE_WEEKDAY = new Intl.DateTimeFormat('en-US', {
+  timeZone: TIME_ZONE,
+  weekday: 'short',
+});
+
+const BRECKENRIDGE_WINDOW_TIME = new Intl.DateTimeFormat('en-US', {
+  timeZone: TIME_ZONE,
+  weekday: 'long',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
 function numberPart(
   parts: Intl.DateTimeFormatPart[],
   type: Intl.DateTimeFormatPartTypes,
@@ -245,88 +265,6 @@ function zonedParts(date: Date): ZonedParts {
   };
 }
 
-function zoneOffsetAt(date: Date): number {
-  const parts = zonedParts(date);
-  const representedAsUtc = Date.UTC(
-    parts.year,
-    parts.month - 1,
-    parts.day,
-    parts.hour,
-    parts.minute,
-    parts.second,
-  );
-  return representedAsUtc - Math.floor(date.valueOf() / 1000) * 1000;
-}
-
-/** Breckenridge local midnight represented as a real instant. */
-function breckenridgeDayStart(now: Date): Date {
-  const parts = zonedParts(now);
-  const wallMidnight = Date.UTC(parts.year, parts.month - 1, parts.day);
-  let instant = wallMidnight;
-  // Two passes handle the uncommon case where the first guess lands on the
-  // other side of a daylight-saving offset transition.
-  for (let i = 0; i < 2; i++) {
-    instant = wallMidnight - zoneOffsetAt(new Date(instant));
-  }
-  return new Date(instant);
-}
-
-/**
- * Resolve a Breckenridge wall-clock minute to a real instant. Sampling through
- * this function keeps the 24-hour chart aligned on 23/25-hour DST days instead
- * of treating every local day as 24 elapsed hours.
- */
-export function breckenridgeInstantAtMinutes(
-  dayStart: Date,
-  minutes: number,
-): Date | null {
-  const day = zonedParts(dayStart);
-  const wallTime = Date.UTC(
-    day.year,
-    day.month - 1,
-    day.day,
-    0,
-    minutes,
-  );
-  let instant = wallTime - zoneOffsetAt(dayStart);
-  let previous: number | null = null;
-
-  for (let i = 0; i < 4; i++) {
-    const corrected = wallTime - zoneOffsetAt(new Date(instant));
-    if (corrected === instant) break;
-    if (previous !== null && corrected === previous) {
-      // A spring-forward wall time does not exist. Use the later side of the
-      // gap; subsequent real wall times then remain correctly aligned.
-      instant = Math.max(instant, corrected);
-      break;
-    }
-    previous = instant;
-    instant = corrected;
-  }
-
-  const resolved = new Date(instant);
-  const actual = zonedParts(resolved);
-  const expected = new Date(wallTime);
-  if (
-    actual.year !== expected.getUTCFullYear()
-    || actual.month !== expected.getUTCMonth() + 1
-    || actual.day !== expected.getUTCDate()
-    || actual.hour !== expected.getUTCHours()
-    || actual.minute !== expected.getUTCMinutes()
-  ) {
-    // Civil times skipped by spring-forward have no real instant. Returning a
-    // gap lets the chart omit them instead of drawing the curve backward.
-    return null;
-  }
-
-  return resolved;
-}
-
-function breckenridgeMinutes(now: Date): number {
-  const parts = zonedParts(now);
-  return parts.hour * 60 + parts.minute + parts.second / 60;
-}
-
 function breckenridgeDateKey(now: Date): string {
   const parts = zonedParts(now);
   return `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
@@ -344,57 +282,113 @@ function formatDuration(milliseconds: number): string {
   return `${hours}h ${String(minutes).padStart(2, '0')}m`;
 }
 
-export interface MoonHorizonEvent {
-  kind: 'rise' | 'set';
+function breckenridgeDayOrdinal(date: Date): number {
+  const parts = zonedParts(date);
+  return Math.floor(Date.UTC(parts.year, parts.month - 1, parts.day) / 86_400_000);
+}
+
+function formatRelativeEventTime(at: Date, reference: Date): string {
+  const dayDifference =
+    breckenridgeDayOrdinal(at) - breckenridgeDayOrdinal(reference);
+  const suffix = dayDifference === 0
+    ? ''
+    : dayDifference === 1
+      ? ' tomorrow'
+      : ` ${BRECKENRIDGE_WEEKDAY.format(at)}`;
+  return `${BRECKENRIDGE_TIME.format(at)}${suffix}`;
+}
+
+export interface RollingTimelineMark {
   minute: number;
+  label: string;
+  kind: 'time' | 'day';
 }
 
-/** Format a wall-clock minute for the ribbon's compact editorial labels. */
-export function formatRibbonTime(minutes: number): string {
-  const rounded = ((Math.round(minutes) % 1440) + 1440) % 1440;
-  const hour = Math.floor(rounded / 60);
-  const minute = rounded % 60;
-  return `${hour % 12 || 12}:${String(minute).padStart(2, '0')}${hour < 12 ? 'a' : 'p'}`;
-}
+/** Six-hour clock marks generated from real instants across date/DST seams. */
+export function rollingTimelineMarks(
+  window: RibbonWindow,
+): RollingTimelineMark[] {
+  const marks: RollingTimelineMark[] = [];
+  const hour = 60 * MINUTE;
+  const start = window.start.valueOf();
+  const firstHour = Math.ceil(start / hour) * hour;
 
-/** Only interior span edges are real events; midnight edges are chart clips. */
-export function moonHorizonEvents(
-  spans: readonly Span[],
-): MoonHorizonEvent[] {
-  return spans
-    .flatMap((span): MoonHorizonEvent[] => [
-      ...(span.from > 0 ? [{ kind: 'rise' as const, minute: span.from }] : []),
-      ...(span.to < 1440 ? [{ kind: 'set' as const, minute: span.to }] : []),
-    ])
-    .sort((a, b) => a.minute - b.minute);
-}
-
-function moonHorizonStatus(spans: readonly Span[], minutes: number): string {
-  const current = spans.find(
-    (span) => minutes >= span.from && minutes <= span.to,
-  );
-  if (current) {
-    return current.to < 1440
-      ? `up · sets ${formatRibbonTime(current.to)}`
-      : 'up · through midnight';
+  for (let value = firstHour; value <= window.end.valueOf(); value += hour) {
+    const at = new Date(value);
+    const parts = zonedParts(at);
+    if (parts.minute !== 0 || parts.hour % 6 !== 0) continue;
+    const isDayBoundary = parts.hour === 0;
+    marks.push({
+      minute: (value - start) / MINUTE,
+      label: isDayBoundary
+        ? `${BRECKENRIDGE_WEEKDAY.format(at).toUpperCase()} · 12A`
+        : hourLabel(parts.hour),
+      kind: isDayBoundary ? 'day' : 'time',
+    });
   }
-  const next = spans.find((span) => span.from > minutes);
-  return next
-    ? `down · rises ${formatRibbonTime(next.from)}`
-    : 'down · through midnight';
+  return marks;
 }
 
-function moonWindowDescription(spans: readonly Span[]): string {
-  if (spans.length === 0) return 'The Moon stays below the horizon today.';
-  const windows = spans.map((span) => {
-    if (span.from <= 0 && span.to >= 1440) return 'all day';
-    if (span.from <= 0) return `midnight to ${formatRibbonTime(span.to)}`;
-    if (span.to >= 1440) {
-      return `${formatRibbonTime(span.from)} through midnight`;
+interface MoonEditorialCopy {
+  status: string;
+  summary: string;
+  description: string;
+}
+
+export function moonEditorialCopy(
+  isAboveHorizon: boolean,
+  events: readonly HorizonEvent[],
+  now: Date,
+): MoonEditorialCopy {
+  const future = events.filter((event) => event.at.valueOf() >= now.valueOf());
+  const nextRise = future.find((event) => event.kind === 'rise');
+  const nextSet = future.find((event) => event.kind === 'set');
+
+  if (isAboveHorizon) {
+    if (!nextSet) {
+      return {
+        status: 'above horizon',
+        summary: 'Above now',
+        description: 'The Moon is above the horizon now.',
+      };
     }
-    return `${formatRibbonTime(span.from)} to ${formatRibbonTime(span.to)}`;
-  });
-  return `Moon above the horizon ${windows.join(' and ')}.`;
+    const setTime = formatRelativeEventTime(nextSet.at, now);
+    return {
+      status: `above horizon · sets ${setTime}`,
+      summary: `Above now → ${setTime}`,
+      description: `The Moon is above the horizon now and sets ${setTime}.`,
+    };
+  }
+
+  if (!nextRise) {
+    return {
+      status: 'below horizon',
+      summary: 'Below horizon',
+      description: 'The Moon is below the horizon.',
+    };
+  }
+
+  const followingSet = future.find(
+    (event) =>
+      event.kind === 'set'
+      && event.at.valueOf() > nextRise.at.valueOf(),
+  );
+  const riseTime = formatRelativeEventTime(nextRise.at, now);
+  if (!followingSet) {
+    return {
+      status: `below horizon · rises ${riseTime}`,
+      summary: `Rises ${riseTime}`,
+      description: `The Moon is below the horizon and rises ${riseTime}.`,
+    };
+  }
+
+  const setTime = formatRelativeEventTime(followingSet.at, now);
+  return {
+    status: `below horizon · rises ${riseTime}`,
+    summary: `${riseTime} → ${setTime}`,
+    description:
+      `The Moon is below the horizon, rises ${riseTime}, and sets ${setTime}.`,
+  };
 }
 
 function pathEscape(value: string): string {
@@ -525,7 +519,7 @@ export function mountOutside(root: HTMLElement): () => void {
   const setField = (name: string, value: string) => {
     root.querySelectorAll<HTMLElement>(`[data-field="${name}"]`)
       .forEach((element) => {
-        element.textContent = value;
+        if (element.textContent !== value) element.textContent = value;
       });
   };
 
@@ -546,7 +540,8 @@ export function mountOutside(root: HTMLElement): () => void {
   let conditions: Conditions | null = null;
   let plateCondition: PlateCondition = 'clear';
   let schedule: PlateSchedule = buildBreckenridgeSolarSchedule(Date.now());
-  let issPassMinutes: number | null = null;
+  let issPassAt: number | null = null;
+  let issPassEndsAt: number | null = null;
   let lastIssSummary = 'Finding the next visible pass…';
   let resizeTimer: number | undefined;
   let platePresentationRequest = 0;
@@ -675,28 +670,6 @@ export function mountOutside(root: HTMLElement): () => void {
     });
   }
 
-  function dayModel(now: Date): {
-    model: RibbonModel;
-    minutes: number;
-    instantAtMinutes: (minutes: number) => Date | null;
-  } {
-    const start = breckenridgeDayStart(now);
-    const instantAtMinutes = (minutes: number) =>
-      breckenridgeInstantAtMinutes(start, minutes);
-    return {
-      model: buildRibbon(
-        start,
-        LATITUDE,
-        LONGITUDE,
-        RIBBON,
-        6,
-        instantAtMinutes,
-      ),
-      minutes: breckenridgeMinutes(now),
-      instantAtMinutes,
-    };
-  }
-
   function renderDaylight(now: Date) {
     ensureSchedule(now);
     const nextEvent = schedule.anchors.find(
@@ -716,15 +689,13 @@ export function mountOutside(root: HTMLElement): () => void {
 
   function renderCelestial(now: Date) {
     const { fraction, waxing } = moonIllumination(now);
+    const phase = moonPhaseName(fraction, waxing);
+    const illuminated = Math.round(fraction * 100);
 
-    setField('moon-phase', moonPhaseName(fraction, waxing));
-    setField('moon-fraction', `${Math.round(fraction * 100)}%`);
-    drawTexturedMoon(
-      query<HTMLCanvasElement>('[data-moon-portrait]'),
-      moonTexture,
-      fraction,
-      waxing,
-    );
+    setField('moon-phase', phase);
+    setField('moon-fraction', `${illuminated}%`);
+    const portrait = query<HTMLCanvasElement>('[data-moon-portrait]');
+    drawTexturedMoon(portrait, moonTexture, fraction, waxing);
   }
 
   function renderWeather() {
@@ -764,23 +735,61 @@ export function mountOutside(root: HTMLElement): () => void {
     const svg = query<SVGSVGElement>('[data-ribbon]');
     if (!svg) return;
 
-    const { model, minutes, instantAtMinutes } = dayModel(now);
-    const renderedWidth = svg.clientWidth || RIBBON.width;
-    const scale = Math.min(2.2, Math.max(1, RIBBON.width / renderedWidth));
-    const fontSize = (base: number) => (base * scale).toFixed(1);
-    const strokeWidth = (base: number) => (base * Math.min(scale, 1.7)).toFixed(2);
-    const x = (value: number) => timeToX(value, RIBBON);
-    const fragments: string[] = [];
-    const moonEvents = moonHorizonEvents(model.moonUp);
-    const moonDescription = moonWindowDescription(model.moonUp);
+    const geometry = window.matchMedia('(max-width: 720px)').matches
+      ? RIBBON_MOBILE
+      : RIBBON_DESKTOP;
+    svg.setAttribute(
+      'viewBox',
+      `0 0 ${geometry.width} ${geometry.height}`,
+    );
 
-    setField('moon-horizon', moonHorizonStatus(model.moonUp, minutes));
+    const model = buildRollingRibbon(now, LATITUDE, LONGITUDE, geometry, {
+      beforeMinutes: RIBBON_LOOKBACK_MINUTES,
+      durationMinutes: RIBBON_DURATION_MINUTES,
+      stepMinutes: 6,
+    });
+    // The visible plot stays intentionally concise. A longer event-only model
+    // lets the Night Watch sentence include the Moon's following set even when
+    // it falls just beyond the 24-hour chart.
+    const lunarOutlook = buildRollingRibbon(
+      now,
+      LATITUDE,
+      LONGITUDE,
+      geometry,
+      {
+        beforeMinutes: 0,
+        durationMinutes: 36 * 60,
+        stepMinutes: 6,
+      },
+    );
+    const moonAltitude = moonPosition(now, LATITUDE, LONGITUDE).altitude;
+    const moonCopy = moonEditorialCopy(
+      moonAltitude > 0,
+      lunarOutlook.moonEvents,
+      now,
+    );
+    setField('moon-horizon', moonCopy.status);
+    setField('moon-visibility-summary', moonCopy.summary);
+
+    const renderedWidth = svg.clientWidth || geometry.width;
+    const scale = Math.min(
+      2.4,
+      Math.max(1, geometry.width / renderedWidth),
+    );
+    const fontSize = (base: number) => (base * scale).toFixed(1);
+    const radius = (base: number) => (base * Math.min(scale, 2)).toFixed(2);
+    const strokeWidth = (base: number) => base.toFixed(2);
+    const x = (value: number) =>
+      timeToX(value, geometry, model.window.durationMinutes);
+    const fragments: string[] = [];
 
     const washStops: string[] = [];
-    for (let hour = 0; hour <= 24; hour++) {
-      const sample = instantAtMinutes(hour * 60)
-        ?? instantAtMinutes(Math.min(1440, (hour + 1) * 60))
-        ?? now;
+    for (
+      let minute = 0;
+      minute <= model.window.durationMinutes;
+      minute += 60
+    ) {
+      const sample = new Date(model.window.start.valueOf() + minute * MINUTE);
       const altitude = sunPosition(sample, LATITUDE, LONGITUDE).altitude;
       let color = '#152542';
       let opacity = 0.22;
@@ -795,7 +804,7 @@ export function mountOutside(root: HTMLElement): () => void {
         opacity = 0.18;
       }
       washStops.push(
-        `<stop offset="${((hour / 24) * 100).toFixed(2)}%" stop-color="${color}" stop-opacity="${opacity}"/>`,
+        `<stop offset="${((minute / model.window.durationMinutes) * 100).toFixed(2)}%" stop-color="${color}" stop-opacity="${opacity}"/>`,
       );
     }
 
@@ -809,14 +818,24 @@ export function mountOutside(root: HTMLElement): () => void {
           <stop offset="58%" stop-color="#fff" stop-opacity=".52"/>
           <stop offset="100%" stop-color="#fff" stop-opacity=".92"/>
         </linearGradient>
-        <mask id="outside-horizon-mask" maskUnits="userSpaceOnUse" x="0" y="${RIBBON.baseline - 40}" width="${RIBBON.width}" height="40">
-          <rect x="0" y="${RIBBON.baseline - 40}" width="${RIBBON.width}" height="40" fill="url(#outside-horizon-fade)"/>
+        <mask id="outside-horizon-mask" maskUnits="userSpaceOnUse" x="0" y="${geometry.baseline - 40}" width="${geometry.width}" height="40">
+          <rect x="0" y="${geometry.baseline - 40}" width="${geometry.width}" height="40" fill="url(#outside-horizon-fade)"/>
         </mask>
       </defs>`,
-      `<rect x="0" y="${RIBBON.baseline - 40}" width="${RIBBON.width}" height="40" fill="url(#outside-day-wash)" mask="url(#outside-horizon-mask)"/>`,
-      `<line x1="0" y1="${RIBBON.baseline}" x2="${RIBBON.width}" y2="${RIBBON.baseline}" stroke="var(--outside-line)" stroke-width="${strokeWidth(1)}"/>`,
+      `<rect x="0" y="${geometry.baseline - 40}" width="${geometry.width}" height="40" fill="url(#outside-day-wash)" mask="url(#outside-horizon-mask)"/>`,
+      `<line x1="0" y1="${geometry.baseline}" x2="${geometry.width}" y2="${geometry.baseline}" stroke="var(--outside-line)" stroke-width="${strokeWidth(1)}" vector-effect="non-scaling-stroke"/>`,
     );
 
+    if (model.sunBelowPath) {
+      fragments.push(
+        `<path d="${pathEscape(model.sunBelowPath)}" fill="none" stroke="var(--outside-sun-line)" stroke-opacity=".85" stroke-width="${strokeWidth(1.15)}" stroke-dasharray="2 7" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`,
+      );
+    }
+    if (model.moonBelowPath) {
+      fragments.push(
+        `<path d="${pathEscape(model.moonBelowPath)}" fill="none" stroke="var(--outside-moon-line)" stroke-opacity=".5" stroke-width="${strokeWidth(1.05)}" stroke-dasharray="2 8" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`,
+      );
+    }
     if (model.moonPath) {
       fragments.push(
         `<path class="outside-almanac__moon-curve" d="${pathEscape(model.moonPath)}" fill="none" stroke="var(--outside-moon-line)" stroke-width="${strokeWidth(1.9)}" stroke-dasharray="8 6" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`,
@@ -828,124 +847,78 @@ export function mountOutside(root: HTMLElement): () => void {
       );
     }
 
-    for (const hour of [0, 6, 12, 18, 24]) {
-      const tickX = x(hour * 60);
-      const anchor = hour === 0 ? 'start' : hour === 24 ? 'end' : 'middle';
-      fragments.push(
-        `<line x1="${tickX}" y1="${RIBBON.baseline}" x2="${tickX}" y2="${RIBBON.baseline + 6}" stroke="var(--outside-line)" stroke-width="${strokeWidth(1)}"/>`,
-        `<text x="${tickX}" y="${RIBBON.baseline + 24}" text-anchor="${anchor}" font-size="${fontSize(11)}" font-family="var(--font-mono)" fill="var(--outside-muted)">${hourLabel(hour)}</text>`,
-      );
-    }
-
-    fragments.push(
-      `<g class="outside-almanac__chart-key" aria-hidden="true">
-        <line x1="18" y1="18" x2="44" y2="18" stroke="var(--outside-sun-line)" stroke-width="${strokeWidth(2.4)}" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
-        <text x="53" y="22" font-size="${fontSize(10)}" font-family="var(--font-mono)" font-weight="600" letter-spacing=".8" fill="var(--outside-muted)">SUN</text>
-        <line x1="105" y1="18" x2="135" y2="18" stroke="var(--outside-moon-line)" stroke-width="${strokeWidth(1.9)}" stroke-dasharray="8 6" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
-        <text x="145" y="22" font-size="${fontSize(10)}" font-family="var(--font-mono)" font-weight="600" letter-spacing=".8" fill="var(--outside-muted)">MOON · ABOVE HORIZON</text>
-      </g>`,
-    );
-
-    const moonRailY = RIBBON.baseline + 47;
-    for (const span of model.moonUp) {
-      const fromX = x(span.from);
-      const toX = x(span.to);
-      fragments.push(
-        `<line class="outside-almanac__moon-window" x1="${fromX.toFixed(1)}" y1="${moonRailY}" x2="${toX.toFixed(1)}" y2="${moonRailY}" stroke="var(--outside-moon-line)" stroke-width="${strokeWidth(3.2)}" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`,
-      );
-      if (toX - fromX > 250) {
+    for (const mark of rollingTimelineMarks(model.window)) {
+      const tickX = x(mark.minute);
+      const anchor =
+        tickX < 65 ? 'start' : tickX > geometry.width - 65 ? 'end' : 'middle';
+      if (mark.kind === 'day') {
         fragments.push(
-          `<text class="outside-almanac__moon-window-label" x="${((fromX + toX) / 2).toFixed(1)}" y="${moonRailY - 7}" text-anchor="middle" font-size="${fontSize(9.5)}" font-family="var(--font-mono)" font-weight="600" letter-spacing=".7" fill="var(--outside-moon-line)">MOON UP</text>`,
+          `<line x1="${tickX.toFixed(1)}" y1="30" x2="${tickX.toFixed(1)}" y2="${geometry.height - 48}" stroke="var(--outside-line)" stroke-width="${strokeWidth(1)}" stroke-dasharray="3 6" vector-effect="non-scaling-stroke"/>`,
         );
       }
+      fragments.push(
+        `<line x1="${tickX.toFixed(1)}" y1="${geometry.baseline}" x2="${tickX.toFixed(1)}" y2="${geometry.baseline + 7}" stroke="var(--outside-line)" stroke-width="${strokeWidth(1)}" vector-effect="non-scaling-stroke"/>`,
+        `<text x="${tickX.toFixed(1)}" y="${geometry.height - 16}" text-anchor="${anchor}" font-size="${fontSize(mark.kind === 'day' ? 13 : 12.5)}" font-family="var(--font-mono)" font-weight="${mark.kind === 'day' ? '650' : '400'}" letter-spacing="${mark.kind === 'day' ? '.3' : '0'}" fill="${mark.kind === 'day' ? 'var(--outside-ink)' : 'var(--outside-muted)'}">${mark.label}</text>`,
+      );
     }
 
-    for (const event of moonEvents) {
+    for (const event of model.sunEvents) {
       const eventX = x(event.minute);
-      const anchor =
-        eventX < 150 ? 'start' : eventX > RIBBON.width - 150 ? 'end' : 'middle';
       fragments.push(
-        `<circle class="outside-almanac__moon-event" cx="${eventX.toFixed(1)}" cy="${moonRailY}" r="${strokeWidth(3.1)}" fill="var(--outside-plate-edge)" stroke="var(--outside-moon-line)" stroke-width="${strokeWidth(1.5)}" vector-effect="non-scaling-stroke"/>`,
-        `<text class="outside-almanac__moon-event-label" x="${eventX.toFixed(1)}" y="${moonRailY + 20}" text-anchor="${anchor}" font-size="${fontSize(10)}" font-family="var(--font-mono)" font-weight="600" letter-spacing=".55" fill="var(--outside-moon-line)">${event.kind === 'rise' ? 'MOONRISE' : 'MOONSET'} · ${formatRibbonTime(event.minute)}</text>`,
+        `<circle cx="${eventX.toFixed(1)}" cy="${geometry.baseline}" r="${radius(2.7)}" fill="var(--outside-sun-line)" stroke="var(--outside-plate-edge)" stroke-width="${strokeWidth(1)}" vector-effect="non-scaling-stroke"/>`,
+      );
+    }
+    for (const event of model.moonEvents) {
+      const eventX = x(event.minute);
+      fragments.push(
+        `<circle class="outside-almanac__moon-event" cx="${eventX.toFixed(1)}" cy="${geometry.baseline}" r="${radius(2.8)}" fill="var(--outside-plate-edge)" stroke="var(--outside-moon-line)" stroke-width="${strokeWidth(1.35)}" vector-effect="non-scaling-stroke"/>`,
       );
     }
 
-    if (issPassMinutes !== null) {
-      const passX = x(issPassMinutes);
+    if (
+      issPassAt !== null
+      && issPassAt >= model.window.start.valueOf()
+      && issPassAt <= model.window.end.valueOf()
+    ) {
+      const passMinute = (issPassAt - model.window.start.valueOf()) / MINUTE;
+      const passX = x(passMinute);
       fragments.push(
-        `<line x1="${passX.toFixed(1)}" y1="${RIBBON.baseline}" x2="${passX.toFixed(1)}" y2="72" stroke="var(--color-signal)" stroke-width="${strokeWidth(1.35)}" vector-effect="non-scaling-stroke"/>`,
-        `<circle cx="${passX.toFixed(1)}" cy="72" r="${strokeWidth(3.8)}" fill="var(--color-signal)"/>`,
-        `<text x="${passX.toFixed(1)}" y="60" text-anchor="${issPassMinutes > 1320 ? 'end' : 'middle'}" font-size="${fontSize(10.5)}" font-family="var(--font-mono)" fill="var(--color-signal)">ISS</text>`,
+        `<line x1="${passX.toFixed(1)}" y1="${geometry.baseline}" x2="${passX.toFixed(1)}" y2="54" stroke="var(--color-signal)" stroke-width="${strokeWidth(1.25)}" vector-effect="non-scaling-stroke"/>`,
+        `<circle cx="${passX.toFixed(1)}" cy="54" r="${radius(3.2)}" fill="var(--color-signal)"/>`,
+        `<text x="${passX.toFixed(1)}" y="43" text-anchor="${passX > geometry.width - 70 ? 'end' : 'middle'}" font-size="${fontSize(12)}" font-family="var(--font-mono)" fill="var(--color-signal)">ISS</text>`,
       );
     }
 
-    const currentX = x(minutes);
-    const altitude = sunPosition(now, LATITUDE, LONGITUDE).altitude;
-    const moonAltitude = moonPosition(now, LATITUDE, LONGITUDE).altitude;
+    const currentMinute =
+      model.window.focusMinute ?? RIBBON_LOOKBACK_MINUTES;
+    const currentX = x(currentMinute);
+    const sunAltitude = sunPosition(now, LATITUDE, LONGITUDE).altitude;
+    const nowLabel = `NOW · ${BRECKENRIDGE_TIME.format(now)}`;
     fragments.push(
-      `<line x1="${currentX.toFixed(1)}" y1="18" x2="${currentX.toFixed(1)}" y2="${RIBBON.baseline}" stroke="var(--outside-now)" stroke-width="${strokeWidth(1.2)}" vector-effect="non-scaling-stroke"/>`,
-      `<text x="${currentX.toFixed(1)}" y="${RIBBON.baseline - 10}" text-anchor="middle" font-size="${fontSize(10.5)}" font-family="var(--font-mono)" font-weight="600" fill="var(--outside-now)">NOW</text>`,
+      `<text x="${currentX.toFixed(1)}" y="20" text-anchor="middle" font-size="${fontSize(13)}" font-family="var(--font-mono)" font-weight="650" letter-spacing=".25" fill="var(--outside-now)" paint-order="stroke" stroke="var(--outside-plate-edge)" stroke-width="${strokeWidth(3)}" stroke-linejoin="round">${nowLabel}</text>`,
+      `<line x1="${currentX.toFixed(1)}" y1="31" x2="${currentX.toFixed(1)}" y2="${geometry.baseline}" stroke="var(--outside-now)" stroke-width="${strokeWidth(1.25)}" vector-effect="non-scaling-stroke"/>`,
     );
-    if (altitude > 0) {
-      fragments.push(
-        `<circle cx="${currentX.toFixed(1)}" cy="${altToY(altitude, RIBBON).toFixed(1)}" r="${strokeWidth(4.7)}" fill="var(--outside-sun-line)" stroke="var(--outside-plate-edge)" stroke-width="${strokeWidth(1.1)}"/>`,
-      );
-    }
-    if (moonAltitude > 0) {
-      fragments.push(
-        `<circle cx="${currentX.toFixed(1)}" cy="${altToY(moonAltitude, RIBBON).toFixed(1)}" r="${strokeWidth(4.2)}" fill="var(--outside-plate-edge)" stroke="var(--outside-moon-line)" stroke-width="${strokeWidth(1.8)}"/>`,
-      );
-    }
+    fragments.push(
+      `<circle cx="${currentX.toFixed(1)}" cy="${altToPlotY(sunAltitude, geometry).toFixed(1)}" r="${radius(sunAltitude > 0 ? 4.4 : 3.2)}" fill="${sunAltitude > 0 ? 'var(--outside-sun-line)' : 'var(--outside-plate-edge)'}" fill-opacity="${sunAltitude > 0 ? '1' : '.72'}" stroke="var(--outside-sun-line)" stroke-width="${strokeWidth(1.1)}" vector-effect="non-scaling-stroke"/>`,
+      `<circle cx="${currentX.toFixed(1)}" cy="${altToPlotY(moonAltitude, geometry).toFixed(1)}" r="${radius(moonAltitude > 0 ? 4 : 3)}" fill="var(--outside-plate-edge)" fill-opacity="${moonAltitude > 0 ? '1' : '.68'}" stroke="var(--outside-moon-line)" stroke-opacity="${moonAltitude > 0 ? '1' : '.55'}" stroke-width="${strokeWidth(1.7)}" vector-effect="non-scaling-stroke"/>`,
+    );
 
     svg.innerHTML = fragments.join('');
     svg.setAttribute(
       'aria-label',
-      `Twenty-four hour sun and moon altitude chart for Breckenridge. ${moonDescription} Weather and daylight can affect actual visibility. ${lastIssSummary}`,
+      `Rolling 24-hour Sun and Moon altitude chart for Breckenridge, from ${BRECKENRIDGE_WINDOW_TIME.format(model.window.start)} to ${BRECKENRIDGE_WINDOW_TIME.format(model.window.end)}. Now ${BRECKENRIDGE_WINDOW_TIME.format(now)}. ${moonCopy.description} Solid Sun and dashed Moon lines are strong above the horizon and faint below it. Weather and daylight affect actual visibility. ${lastIssSummary}`,
     );
-
-    const scroller = svg.closest<HTMLElement>('.outside-almanac__chart-scroll');
-    if (scroller && scroller.scrollWidth > scroller.clientWidth) {
-      if (
-        scroller.dataset.centered !== 'true'
-        && scroller.dataset.centering !== 'true'
-      ) {
-        scroller.dataset.centering = 'true';
-        const centerChart = (attempt: number) => {
-          if (destroyed) return;
-          const currentPixel = (minutes / 1440) * svg.clientWidth;
-          const target = Math.max(
-            0,
-            Math.min(
-              scroller.scrollWidth - scroller.clientWidth,
-              currentPixel - scroller.clientWidth / 2,
-            ),
-          );
-          scroller.scrollLeft = target;
-          requestAnimationFrame(() => {
-            if (destroyed) return;
-            if (target <= 2 || Math.abs(scroller.scrollLeft - target) <= 2) {
-              scroller.dataset.centered = 'true';
-              delete scroller.dataset.centering;
-            } else if (attempt < 2) {
-              centerChart(attempt + 1);
-            } else {
-              // Layout was still settling. Leave the guard open so the next
-              // render/resize can retry instead of pinning the chart at 12a.
-              delete scroller.dataset.centered;
-              delete scroller.dataset.centering;
-            }
-          });
-        };
-        requestAnimationFrame(() => centerChart(0));
-      }
-    } else if (scroller) {
-      delete scroller.dataset.centered;
-      delete scroller.dataset.centering;
-    }
   }
 
   function render(now = new Date()) {
     if (destroyed) return;
+    if (issPassEndsAt !== null && issPassEndsAt <= now.valueOf()) {
+      issPassAt = null;
+      issPassEndsAt = null;
+      lastIssSummary = 'Finding the next visible pass…';
+      setField('iss-summary', lastIssSummary);
+      void loadIss();
+    }
     updatePlate(now);
     renderDaylight(now);
     renderCelestial(now);
@@ -1040,7 +1013,8 @@ export function mountOutside(root: HTMLElement): () => void {
         + '&visible_only=true&n=3&days_ahead=10&min_elevation=10';
       const passes = (await requestJson(url)).passes ?? [];
       if (!passes.length) {
-        issPassMinutes = null;
+        issPassAt = null;
+        issPassEndsAt = null;
         lastIssSummary = 'No visible ISS passes in the next 10 days';
         setField('iss-summary', lastIssSummary);
         renderRibbon(new Date());
@@ -1049,19 +1023,21 @@ export function mountOutside(root: HTMLElement): () => void {
 
       const pass = passes[0];
       const rise = new Date(pass.rise.time);
+      const set = new Date(pass.set.time);
+      const durationSeconds = Math.round(
+        pass.visible_duration_sec ?? pass.duration_sec ?? 0,
+      );
       const today = breckenridgeDateKey(new Date());
-      issPassMinutes = breckenridgeDateKey(rise) === today
-        ? breckenridgeMinutes(rise)
-        : null;
+      issPassAt = rise.valueOf();
+      issPassEndsAt = Number.isFinite(set.valueOf())
+        ? set.valueOf()
+        : rise.valueOf() + durationSeconds * 1000;
       const day = breckenridgeDateKey(rise) === today
         ? 'Tonight'
         : new Intl.DateTimeFormat('en-US', {
           timeZone: TIME_ZONE,
           weekday: 'long',
         }).format(rise);
-      const durationSeconds = Math.round(
-        pass.visible_duration_sec ?? pass.duration_sec ?? 0,
-      );
       const duration = `${Math.floor(durationSeconds / 60)}m ${durationSeconds % 60}s`;
       const peak = Math.round(pass.culmination?.elevation_deg ?? 0);
       lastIssSummary = `ISS · ${day} ${BRECKENRIDGE_TIME.format(rise)} · ${pass.rise.compass} → ${pass.set.compass}`
@@ -1070,7 +1046,8 @@ export function mountOutside(root: HTMLElement): () => void {
       renderRibbon(new Date());
     } catch {
       if (abortController.signal.aborted) return;
-      issPassMinutes = null;
+      issPassAt = null;
+      issPassEndsAt = null;
       lastIssSummary = 'ISS pass prediction temporarily unavailable';
       setField('iss-summary', lastIssSummary);
     } finally {

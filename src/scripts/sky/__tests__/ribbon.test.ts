@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { buildRibbon, timeToX, altToY, hourLabel, type RibbonGeometry } from '../ribbon';
+import {
+  altToPlotY,
+  altToY,
+  buildRibbon,
+  buildRollingRibbon,
+  hourLabel,
+  timeToX,
+  type RibbonGeometry,
+} from '../ribbon';
 
 const G: RibbonGeometry = { width: 1100, height: 180, baseline: 150, maxAltitude: 90 };
 const LAT = 32.7557, LON = -98.9023;
@@ -15,11 +23,26 @@ describe('scales', () => {
     expect(timeToX(720, G)).toBe(550);
   });
 
+  it('can map a configurable elapsed window to the full width', () => {
+    expect(timeToX(0, G, 600)).toBe(0);
+    expect(timeToX(300, G, 600)).toBe(550);
+    expect(timeToX(600, G, 600)).toBe(1100);
+  });
+
   it('puts the horizon on the baseline and clamps below it', () => {
     expect(altToY(0, G)).toBe(150);
     expect(altToY(-20, G)).toBe(150);
     expect(altToY(90, G)).toBe(6);
     expect(altToY(45, G)).toBeCloseTo(78, 0);
+  });
+
+  it('compresses negative altitude into a shallow lower band', () => {
+    const geometry = { ...G, belowBand: 18, minAltitude: -60 };
+    expect(altToPlotY(20, geometry)).toBeLessThan(G.baseline);
+    expect(altToPlotY(0, geometry)).toBe(G.baseline);
+    expect(altToPlotY(-30, geometry)).toBe(159);
+    expect(altToPlotY(-60, geometry)).toBe(168);
+    expect(altToPlotY(-90, geometry)).toBe(168);
   });
 });
 
@@ -153,6 +176,122 @@ describe('moon curve', () => {
       .filter((minute) => minute > 0 && minute < 1440);
     expect(interiorEdges.length).toBeGreaterThan(0);
     expect(interiorEdges.some((minute) => Math.abs(minute % 6) > 0.01)).toBe(true);
+  });
+});
+
+describe('rolling celestial window', () => {
+  // 8pm CDT: the default window runs from 2pm through 2pm the next day,
+  // putting local midnight inside the axis rather than at either edge.
+  const now = new Date(Date.UTC(2026, 6, 27, 1, 0));
+  const model = buildRollingRibbon(now, LAT, LON, G);
+
+  it('defaults to six hours behind now and eighteen hours ahead', () => {
+    expect(model.window.start.valueOf()).toBe(now.valueOf() - 6 * 60 * 60_000);
+    expect(model.window.end.valueOf()).toBe(now.valueOf() + 18 * 60 * 60_000);
+    expect(model.window.end.valueOf() - model.window.start.valueOf())
+      .toBe(24 * 60 * 60_000);
+    expect(model.window.durationMinutes).toBe(1440);
+    expect(model.window.focusMinute).toBe(360);
+  });
+
+  it('continues cleanly across midnight with no calendar-day seam', () => {
+    // From afternoon to afternoon, the Sun has one continuous below-horizon
+    // segment spanning midnight rather than two calendar-edge fragments.
+    expect((model.sunBelowPath.match(/M/g) ?? [])).toHaveLength(1);
+    expect(model.sunEvents.map((event) => event.kind)).toEqual(['set', 'rise']);
+
+    // Midnight is ten hours after the 2pm window start. There are points on
+    // both sides of it inside the same path segment.
+    const midnightX = timeToX(10 * 60, G);
+    const xs = [...model.sunBelowPath.matchAll(/[ML]([\d.]+),([\d.]+)/g)]
+      .map((match) => Number(match[1]));
+    expect(xs.some((x) => x < midnightX)).toBe(true);
+    expect(xs.some((x) => x > midnightX)).toBe(true);
+  });
+
+  it('covers both window edges instead of terminating at midnight', () => {
+    expect(model.sunUp).toHaveLength(2);
+    expect(model.sunUp[0].from).toBe(0);
+    expect(model.sunUp.at(-1)?.to).toBe(1440);
+
+    const allSunX = [
+      ...model.sunPath.matchAll(/[ML]([\d.]+),([\d.]+)/g),
+      ...model.sunBelowPath.matchAll(/[ML]([\d.]+),([\d.]+)/g),
+    ].map((match) => Number(match[1]));
+    expect(Math.min(...allSunX)).toBe(0);
+    expect(Math.max(...allSunX)).toBe(G.width);
+  });
+
+  it('draws exact horizon joins and quieter below-horizon continuations', () => {
+    const aboveY = [...model.sunPath.matchAll(/[ML]([\d.]+),([\d.]+)/g)]
+      .map((match) => Number(match[2]));
+    const belowY = [...model.sunBelowPath.matchAll(/[ML]([\d.]+),([\d.]+)/g)]
+      .map((match) => Number(match[2]));
+
+    expect(aboveY.some((y) => y === G.baseline)).toBe(true);
+    expect(belowY.some((y) => y === G.baseline)).toBe(true);
+    expect(belowY.some((y) => y > G.baseline)).toBe(true);
+    expect(model.moonBelowPath.length).toBeGreaterThan(20);
+  });
+
+  it('interpolates horizon event minutes and their real instants together', () => {
+    const sunset = model.sunEvents[0];
+    expect(sunset.kind).toBe('set');
+    expect(sunset.minute).toBeCloseTo(model.sunUp[0].to, 5);
+    expect(sunset.minute % 6).not.toBeCloseTo(0, 2);
+    expect(Math.abs(
+      sunset.at.valueOf()
+      - (model.window.start.valueOf() + sunset.minute * 60_000),
+    )).toBeLessThan(1);
+  });
+
+  it('supports a custom duration and always samples the exact endpoint', () => {
+    const custom = buildRollingRibbon(now, LAT, LON, G, {
+      beforeMinutes: 120,
+      durationMinutes: 600,
+      stepMinutes: 17,
+    });
+    expect(custom.window.focusMinute).toBe(120);
+    expect(custom.window.durationMinutes).toBe(600);
+    expect(custom.window.end.valueOf() - custom.window.start.valueOf())
+      .toBe(600 * 60_000);
+
+    const allSunX = [
+      ...custom.sunPath.matchAll(/[ML]([\d.]+),([\d.]+)/g),
+      ...custom.sunBelowPath.matchAll(/[ML]([\d.]+),([\d.]+)/g),
+    ].map((match) => Number(match[1]));
+    expect(Math.min(...allSunX)).toBe(0);
+    expect(Math.max(...allSunX)).toBe(G.width);
+  });
+
+  it('uses 24 real elapsed hours across a daylight-saving fallback', () => {
+    const fallback = new Date('2026-11-01T07:30:00.000Z');
+    const dstModel = buildRollingRibbon(fallback, LAT, LON, G, {
+      beforeMinutes: 360,
+      durationMinutes: 1440,
+      stepMinutes: 60,
+    });
+    expect(dstModel.window.end.valueOf() - dstModel.window.start.valueOf())
+      .toBe(24 * 60 * 60_000);
+
+    const localHour = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Chicago',
+      hour: 'numeric',
+      hourCycle: 'h23',
+    });
+    // The local clock advances only 23 labelled hours while the physical
+    // timeline still contains a full 24 elapsed hours.
+    expect(localHour.format(dstModel.window.start)).toBe('20');
+    expect(localHour.format(dstModel.window.end)).toBe('19');
+  });
+
+  it('rejects a focus that would fall outside the configured window', () => {
+    expect(() =>
+      buildRollingRibbon(now, LAT, LON, G, {
+        beforeMinutes: 700,
+        durationMinutes: 600,
+      }),
+    ).toThrow(RangeError);
   });
 });
 

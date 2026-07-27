@@ -67,37 +67,69 @@
           <p data-field="daylight-label">sunset in</p>
           <strong data-field="daylight-value">—</strong>
         </div>
-        <div class="outside-almanac__moon-readout">
-          <canvas
-            data-moon-portrait
-            width="200"
-            height="200"
-            role="img"
-            aria-label="Current Moon phase"
-          ></canvas>
-          <p>
-            <span data-field="moon-fraction">—</span>
-            <span aria-hidden="true">·</span>
-            <span data-field="moon-phase">—</span>
-            <span
-              class="outside-almanac__moon-horizon"
-              data-field="moon-horizon"
-            >reading horizon</span>
-          </p>
-        </div>
       </div>
     </div>
 
     <div class="outside-almanac__ledger">
+      <section
+        class="outside-almanac__night-watch"
+        aria-labelledby="outside-night-watch-heading"
+      >
+        <div class="outside-almanac__night-watch-heading">
+          <h3 id="outside-night-watch-heading">Night watch</h3>
+          <span>Breckenridge lunar almanac</span>
+        </div>
+
+        <div class="outside-almanac__night-watch-reading">
+          <canvas
+            data-moon-portrait
+            width="200"
+            height="200"
+            aria-hidden="true"
+          ></canvas>
+          <div>
+            <p>
+              <span data-field="moon-fraction">—</span>
+              <span aria-hidden="true">·</span>
+              <span data-field="moon-phase">—</span>
+            </p>
+            <span
+              class="outside-almanac__moon-horizon"
+              data-field="moon-horizon"
+            >reading horizon</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="outside-almanac__chart-header">
+        <p>Solar &amp; lunar altitude <span>rolling 24 hours</span></p>
+        <ul class="outside-almanac__legend" aria-label="Chart key">
+          <li>
+            <span class="outside-almanac__legend-line is-sun" aria-hidden="true"></span>
+            Sun
+          </li>
+          <li>
+            <span class="outside-almanac__legend-line is-moon" aria-hidden="true"></span>
+            Moon
+          </li>
+        </ul>
+      </div>
+
       <div class="outside-almanac__chart-scroll">
         <svg
           class="outside-almanac__chart"
           data-ribbon
           viewBox="0 0 1440 240"
           role="img"
-          aria-label="Twenty-four hour sun and moon chart for Breckenridge"
+          aria-label="Rolling Sun and Moon altitude chart for Breckenridge"
           focusable="false"
         ></svg>
+      </div>
+
+      <div class="outside-almanac__moon-visibility">
+        <p>Moon above horizon</p>
+        <strong data-field="moon-visibility-summary">Calculating tonight’s window…</strong>
+        <small>Weather and daylight affect actual visibility.</small>
       </div>
 
       <dl class="outside-almanac__rail" aria-label="Current field notes">
