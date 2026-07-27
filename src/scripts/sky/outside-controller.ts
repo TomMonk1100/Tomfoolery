@@ -54,6 +54,14 @@ const RIBBON_LOOKBACK_MINUTES = 6 * 60;
 const RIBBON_DURATION_MINUTES = 24 * 60;
 const RIBBON_DESKTOP: RibbonGeometry = {
   width: 1440,
+  height: 200,
+  baseline: 96,
+  maxAltitude: 90,
+  minAltitude: -90,
+  belowBand: 34,
+};
+const RIBBON_TABLET: RibbonGeometry = {
+  width: 1440,
   height: 240,
   baseline: 116,
   maxAltitude: 90,
@@ -61,7 +69,7 @@ const RIBBON_DESKTOP: RibbonGeometry = {
   belowBand: 44,
 };
 const RIBBON_MOBILE: RibbonGeometry = {
-  ...RIBBON_DESKTOP,
+  ...RIBBON_TABLET,
   width: 600,
 };
 
@@ -737,7 +745,9 @@ export function mountOutside(root: HTMLElement): () => void {
 
     const geometry = window.matchMedia('(max-width: 720px)').matches
       ? RIBBON_MOBILE
-      : RIBBON_DESKTOP;
+      : window.matchMedia('(min-width: 1081px)').matches
+        ? RIBBON_DESKTOP
+        : RIBBON_TABLET;
     svg.setAttribute(
       'viewBox',
       `0 0 ${geometry.width} ${geometry.height}`,

@@ -83,8 +83,11 @@ Unchanged: 4px base, generous tile padding (24–32px), breathing room.
   Deliberately slow and hypnotic — the earlier fast blob + fast-orbiting-dots
   combo read as "too intense," so v6 consolidated ambient hero motion into
   one calmer system instead of layering several.
-- **Glass nav:** sticky header with backdrop-filter blur+saturate — content
-  scrolls underneath it like frosted glass, not a flat opaque bar.
+- **Glass nav:** a compact sticky index with all seven primary destinations
+  visible on desktop. Phones keep `now` and `play` immediate and place the
+  remaining sections in a native `index` disclosure, preserving the short
+  header and keyboard semantics. The paper veil uses blur+saturate so content
+  still passes beneath it without compromising the small mono link contrast.
 - **Ember field:** a subtle canvas-based particle layer (warm floating
   motes, like fireflies/embers) drifting slowly across the whole page,
   low-opacity, GPU-cheap, paused under prefers-reduced-motion.
@@ -186,7 +189,10 @@ conditions choose its weather family.
   rolling celestial field line → lunar visibility sentence → one ruled
   four-chapter ledger (Exposure, Air, Water, Tonight) → ISS sentence. The Moon
   portrait no longer floats over the photographed landscape. Local warm/dark
-  washes protect the copy without flattening the whole image.
+  washes protect the copy without flattening the whole image. The desktop
+  calibration above 1080px uses a 1440×200 plot and a 680–760px band; tablet
+  retains 1440×240, while mobile retains its taller 600×240 plot and split
+  composition.
 - **Truthful location scope.** The old geolocation control is removed until
   another location has its own atlas; Texas imagery must never be relabeled as
   New York or another city.

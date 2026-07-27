@@ -20,6 +20,27 @@ const {
 // paths rather than throwing at build time.
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin);
 const imageURL = new URL(image, Astro.site ?? Astro.url.origin);
+
+const primaryNavItems = [
+  { href: '/now', label: 'now' },
+  { href: '/coffee', label: 'coffee' },
+  { href: '/pokemon', label: 'pokémon' },
+  { href: '/art', label: 'art' },
+  { href: '/archive', label: 'archive' },
+  { href: '/game', label: 'play' },
+  { href: '/about', label: 'about' },
+] as const;
+
+const mobileDirectItems = primaryNavItems.filter(
+  ({ href }) => href === '/now' || href === '/game',
+);
+const mobileIndexItems = primaryNavItems.filter(
+  ({ href }) => href !== '/now' && href !== '/game',
+);
+const currentPath = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const isCurrent = (href: string) =>
+  currentPath === href || (href !== '/' && currentPath.startsWith(`${href}/`));
+const currentMobileIndexItem = mobileIndexItems.find(({ href }) => isCurrent(href));
 ---
 
 <!doctype html>
@@ -58,33 +79,80 @@ const imageURL = new URL(image, Astro.site ?? Astro.url.origin);
     <ClientRouter />
   </head>
   <body class="min-h-screen bg-canvas text-ink font-body antialiased">
+    <a class="skip-link" href="#main-content">Skip to content</a>
     <header class="glass-nav">
-      <div class="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
-        <a href="/" class="font-display font-semibold tracking-tight text-lg flicker-hover">
+      <div class="site-header">
+        <a
+          href="/"
+          class="site-wordmark font-display font-semibold tracking-tight text-lg flicker-hover"
+          aria-current={currentPath === '/' ? 'page' : undefined}
+        >
           Tom<span class="gradient-text">foolery</span>
         </a>
-        <nav class="flex items-center gap-4 sm:gap-5 text-sm text-muted font-mono">
-          <a href="/now" class="hover:text-ink transition-colors">now</a>
-          <a href="/coffee" class="hidden sm:inline hover:text-ink transition-colors">coffee</a>
-          <a href="/archive" class="hidden sm:inline hover:text-ink transition-colors">archive</a>
-          <a href="/game" class="hover:text-ink transition-colors">play</a>
-          <a href="/about" class="hover:text-ink transition-colors">about</a>
+
+        <nav class="site-nav site-nav--desktop" aria-label="Primary">
+          {primaryNavItems.map((item) => (
+            <a
+              href={item.href}
+              class="site-nav__link"
+              aria-current={isCurrent(item.href) ? 'page' : undefined}
+            >
+              {item.label}
+            </a>
+          ))}
         </nav>
+
+        <div class="site-nav-mobile">
+          <nav class="site-nav site-nav--mobile-direct" aria-label="Primary">
+            {mobileDirectItems.map((item) => (
+              <a
+                href={item.href}
+                class="site-nav__link"
+                aria-current={isCurrent(item.href) ? 'page' : undefined}
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+
+          <details
+            class="site-index"
+            data-has-current={currentMobileIndexItem ? 'true' : undefined}
+          >
+            <summary
+              aria-label={currentMobileIndexItem
+                ? `Site index, current page ${currentMobileIndexItem.label}`
+                : 'Site index'}
+            >index</summary>
+            <nav class="site-index__panel" aria-label="More pages">
+              {mobileIndexItems.map((item) => (
+                <a
+                  href={item.href}
+                  aria-current={isCurrent(item.href) ? 'page' : undefined}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+          </details>
+        </div>
       </div>
     </header>
-    <main class="max-w-6xl mx-auto px-6 py-10 relative z-10" transition:name="main-content" transition:animate="fade">
+    <main id="main-content" tabindex="-1" class="max-w-6xl mx-auto px-6 py-8 md:py-9 relative z-10" transition:name="main-content" transition:animate="fade">
       <slot />
     </main>
     <footer class="max-w-6xl mx-auto px-6 py-12 relative z-10">
-      <nav class="flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted font-mono border-t border-line pt-6">
-        <a href="/" class="hover:text-ink transition-colors">home</a>
-        <a href="/now" class="hover:text-ink transition-colors">now</a>
-        <a href="/coffee" class="hover:text-ink transition-colors">coffee</a>
-        <a href="/pokemon" class="hover:text-ink transition-colors">pok&eacute;mon</a>
-        <a href="/art" class="hover:text-ink transition-colors">art</a>
-        <a href="/archive" class="hover:text-ink transition-colors">archive</a>
-        <a href="/game" class="hover:text-ink transition-colors">moon lander</a>
-        <a href="/about" class="hover:text-ink transition-colors">about</a>
+      <nav aria-label="Footer" class="footer-nav flex flex-wrap gap-x-5 gap-y-2 text-xs font-mono border-t border-line pt-6">
+        <a href="/" class="hover:text-ink transition-colors" aria-current={currentPath === '/' ? 'page' : undefined}>home</a>
+        {primaryNavItems.map((item) => (
+          <a
+            href={item.href}
+            class="hover:text-ink transition-colors"
+            aria-current={isCurrent(item.href) ? 'page' : undefined}
+          >
+            {item.label}
+          </a>
+        ))}
       </nav>
       <p class="mt-5 text-xs text-muted font-mono">
         built with a little help from an AI, tended by hand

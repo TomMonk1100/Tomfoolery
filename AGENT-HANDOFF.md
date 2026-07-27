@@ -185,13 +185,14 @@ gibbous and toward the lit limb when crescent. Backwards renders a 91% moon as
 `global.css`). `hidden` also stops the overflow but creates a scroll container
 and silently breaks the sticky nav.
 
-**Ribbon geometry is responsive and rolling.** Desktop uses a 1440×240
-coordinate system; mobile uses 600×240 so the full 24-hour window stays
-full-width and readable without horizontal scrolling. Type and marker radii
-scale by `geometry.width / svg.clientWidth`; non-scaling strokes retain their
-authored CSS-pixel weight. Timeline ticks come from real Breckenridge instants,
-not fixed minute-of-day values, so midnight and DST are transitions rather than
-chart seams.
+**Ribbon geometry is responsive and rolling.** Desktop above 1080px uses a
+restrained 1440×200 coordinate system; tablet keeps 1440×240 and mobile keeps
+the taller 600×240 geometry so the full 24-hour window stays full-width and
+readable without horizontal scrolling. Type and marker radii scale by
+`geometry.width / svg.clientWidth`; non-scaling strokes retain their authored
+CSS-pixel weight. Timeline ticks come from real Breckenridge instants, not fixed
+minute-of-day values, so midnight and DST are transitions rather than chart
+seams.
 
 **Moon visibility means geometry, not a clear-sky promise.** The Moon curve and
 Night Watch window represent when it is above the Breckenridge horizon. Cloud
