@@ -58,7 +58,7 @@ ceases to exist in production.
 ### Before every push, run
 
 ```bash
-npm run verify      # atlas gate + typecheck + 202 tests + production build
+npm run verify      # atlas gate + typecheck + 205 tests + production build
 ```
 
 All four gates must pass. `verify` checks the complete photographic atlas,
@@ -119,7 +119,7 @@ Commands:
 | `npm run build` | Production build to `dist/` |
 | `npm run build:sky-plates` | Rebuild and budget-check the photographic atlas |
 | `npm run check:sky-plates` | Verify every plate path, hash, dimension, and budget |
-| `npm test` | 202 tests (`src/scripts` only) |
+| `npm test` | 205 tests (`src/scripts` only) |
 | `npm run typecheck` | `astro sync && tsc --noEmit` |
 | `npm run verify` | Atlas gate + typecheck + tests + build. Run before pushing. |
 
@@ -131,7 +131,10 @@ Commands:
 living almanac fixed to Breckenridge, Texas**. A 32-frame photographic atlas
 (four weather families × eight astronomical moments) supplies the scene while
 local astronomy drives slice selection, the daylight countdown, the textured
-Moon-phase portrait, and the shared sun/Moon chart.
+Moon-phase portrait, and the shared sun/Moon chart. The chart pairs the lunar
+altitude curve with an explicit above-horizon rail and interpolated local
+moonrise/moonset labels; the compact Moon readout repeats the next event so it
+remains useful when the mobile chart is horizontally scrolled.
 
 ### Architecture
 
@@ -185,6 +188,11 @@ and silently breaks the sticky nav.
 label renders at ~4 real pixels. Font sizes and stroke widths multiply by
 `RIBBON.width / svg.clientWidth`, and hour ticks thin from every 3h to every
 6h. If you add anything textual to the ribbon, scale it the same way.
+
+**Moon visibility means geometry, not a clear-sky promise.** The Moon curve and
+rail represent when it is above the Breckenridge horizon. Cloud and daylight
+can still prevent an actual sighting, so keep the formal chart wording as
+"above horizon." Midnight span edges are chart clips, not rise/set events.
 
 **Mobile is a split composition.** The image stage is 460px tall; the chart,
 four field-note chapters, and ISS line continue on warm paper below it. The

@@ -137,6 +137,23 @@ describe('moon curve', () => {
     // three days before full, most of the moon's time up is after dark
     expect(both / moonTotal).toBeLessThan(0.5);
   });
+
+  it('interpolates moonrise and moonset instead of snapping to six-minute samples', () => {
+    const coarse = buildRibbon(JULY, LAT, LON, G, 6);
+    const fine = buildRibbon(JULY, LAT, LON, G, 1);
+
+    expect(coarse.moonUp).toHaveLength(fine.moonUp.length);
+    for (let index = 0; index < coarse.moonUp.length; index++) {
+      expect(coarse.moonUp[index].from).toBeCloseTo(fine.moonUp[index].from, 1);
+      expect(coarse.moonUp[index].to).toBeCloseTo(fine.moonUp[index].to, 1);
+    }
+
+    const interiorEdges = coarse.moonUp
+      .flatMap((span) => [span.from, span.to])
+      .filter((minute) => minute > 0 && minute < 1440);
+    expect(interiorEdges.length).toBeGreaterThan(0);
+    expect(interiorEdges.some((minute) => Math.abs(minute % 6) > 0.01)).toBe(true);
+  });
 });
 
 describe('hourLabel', () => {

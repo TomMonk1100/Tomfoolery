@@ -66,16 +66,45 @@ function spansWhere(
   test: (alt: number) => boolean,
   stepMinutes: number
 ): Span[] {
+  if (samples.length === 0) return [];
+
   const out: Span[] = [];
-  let start: number | null = null;
-  for (const s of samples) {
-    if (test(s.alt)) {
-      if (start === null) start = s.m;
-    } else if (start !== null) {
-      out.push({ from: start, to: s.m });
-      start = null;
+  let previous = samples[0];
+  let previousMatches = test(previous.alt);
+  let start: number | null = previousMatches ? previous.m : null;
+
+  for (let index = 1; index < samples.length; index++) {
+    const sample = samples[index];
+    const matches = test(sample.alt);
+
+    if (matches !== previousMatches) {
+      // Altitude changes smoothly across a six-minute sample. Find the point
+      // where the predicate flips on that straight segment rather than
+      // snapping moonrise/set (and the solar spans) to the next sample.
+      let low = 0;
+      let high = 1;
+      for (let iteration = 0; iteration < 24; iteration++) {
+        const fraction = (low + high) / 2;
+        const altitude =
+          previous.alt + (sample.alt - previous.alt) * fraction;
+        if (test(altitude) === previousMatches) low = fraction;
+        else high = fraction;
+      }
+      const crossing =
+        previous.m + (sample.m - previous.m) * ((low + high) / 2);
+
+      if (matches) {
+        start = crossing;
+      } else if (start !== null) {
+        out.push({ from: start, to: crossing });
+        start = null;
+      }
     }
+
+    previous = sample;
+    previousMatches = matches;
   }
+
   if (start !== null) out.push({ from: start, to: 1440 });
   return out.filter((s) => s.to - s.from >= stepMinutes);
 }

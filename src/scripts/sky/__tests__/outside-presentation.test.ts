@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   OUTSIDE_PLATE_PRESENTATIONS,
   breckenridgeInstantAtMinutes,
+  formatRibbonTime,
+  moonHorizonEvents,
   platePresentationFor,
   shouldCommitPlatePresentation,
 } from '../outside-controller';
@@ -67,5 +69,24 @@ describe('Breckenridge civil-time sampling', () => {
     for (let index = 1; index < instants.length; index++) {
       expect(instants[index]).toBeGreaterThan(instants[index - 1]);
     }
+  });
+});
+
+describe('Moon horizon labels', () => {
+  it('formats interpolated wall minutes as compact local times', () => {
+    expect(formatRibbonTime(0)).toBe('12:00a');
+    expect(formatRibbonTime(411.6)).toBe('6:52a');
+    expect(formatRibbonTime(1304.4)).toBe('9:44p');
+    expect(formatRibbonTime(1440)).toBe('12:00a');
+  });
+
+  it('turns only interior Moon-up boundaries into rise and set events', () => {
+    expect(moonHorizonEvents([
+      { from: 0, to: 411.6 },
+      { from: 1304.4, to: 1440 },
+    ])).toEqual([
+      { kind: 'set', minute: 411.6 },
+      { kind: 'rise', minute: 1304.4 },
+    ]);
   });
 });

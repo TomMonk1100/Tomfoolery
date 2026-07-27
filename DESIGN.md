@@ -176,7 +176,11 @@ conditions choose its weather family.
   textured Moon-phase portrait, and shared 24-hour chart once a minute. The
   fixed-camera plate has no calibrated bearing or field of view, so the browser
   does not pretend to project a free-moving celestial body into it. The shared
-  24-hour SVG is data visualization only.
+  24-hour SVG is data visualization only. Its distinct Sun and Moon altitude
+  curves share one clock; an interpolated lunar window below the axis labels
+  local moonrise and moonset while the portrait repeats the next event. The
+  formal language says "above horizon" because weather and daylight still
+  govern real-world visibility.
 - **Editorial hierarchy.** Location masthead → large current conditions →
   sunset/sunrise countdown and Moon readout → open 24-hour field line → one
   ruled four-chapter ledger (Exposure, Air, Water, Tonight) → ISS sentence.

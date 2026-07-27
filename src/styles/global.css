@@ -227,7 +227,7 @@
     --outside-panel: rgba(250, 246, 238, 0.46);
     --outside-now: #4f571e;
     --outside-sun-line: #bd7607;
-    --outside-moon-line: rgba(32, 29, 30, 0.62);
+    --outside-moon-line: rgba(38, 39, 49, 0.84);
     --outside-plate-edge: #fff8e8;
     --outside-scrim-rgb: 250 246 238;
     --outside-weather-scrim: 0.32;
@@ -244,7 +244,7 @@
     --outside-panel: rgba(7, 13, 22, 0.4);
     --outside-now: #d7e59d;
     --outside-sun-line: #f1b64e;
-    --outside-moon-line: rgba(255, 250, 240, 0.74);
+    --outside-moon-line: rgba(255, 250, 240, 0.88);
     --outside-plate-edge: #111927;
     --outside-scrim-rgb: 3 8 16;
   }
@@ -483,6 +483,14 @@
     text-transform: uppercase;
     white-space: nowrap;
   }
+  .outside-almanac__moon-horizon {
+    display: block;
+    margin-top: 0.16rem;
+    color: var(--outside-ink);
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.075em;
+  }
 
   .outside-almanac__ledger {
     align-self: end;
@@ -700,7 +708,7 @@
       --outside-panel: transparent;
       --outside-now: #4f571e;
       --outside-sun-line: #ae6906;
-      --outside-moon-line: rgba(32, 29, 30, 0.58);
+      --outside-moon-line: rgba(38, 39, 49, 0.84);
       --outside-plate-edge: #fff8e8;
     }
     .outside-almanac__ledger::before {
