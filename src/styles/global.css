@@ -1,5 +1,34 @@
 @import "tailwindcss";
 
+/* Latin variable cuts are bundled with the site. This keeps the established
+   type system without a render-blocking request to Google on every page. */
+@font-face {
+  font-family: "Inter Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/inter/files/inter-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@font-face {
+  font-family: "Space Grotesk Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 700;
+  src: url("@fontsource-variable/space-grotesk/files/space-grotesk-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@font-face {
+  font-family: "JetBrains Mono Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url("@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
 /* ---- Hearthwood Light tokens (REDESIGN-HANDOFF v5) -> Tailwind v4 @theme ----
    Single light theme. The old dark palette + [data-theme] toggle system was
    removed with this redesign: the approved direction flips the site to one
@@ -9,17 +38,22 @@
   --color-surface: #FFFFFF;   /* card surface */
   --color-surface-2: #F4ECDD; /* hover / highlighted surface */
   --color-ink: #221A12;       /* warm near-black text */
-  --color-muted: #8A7B65;     /* secondary text */
+  --color-muted: #6F604A;     /* secondary text, AA on every paper surface */
+  --color-faint: #8A7B65;     /* decorative rules only; never functional text */
   --color-line: #E7DCC8;      /* borders */
   --color-accent: #C2673A;    /* terracotta, deepened for light bg */
   --color-accent-mid: #B8862E;/* gold, deepened for light bg */
   --color-accent-2: #5F7A45;  /* moss, deepened */
   --color-signal: #7C9A2E;    /* olive, live/active states only */
+  --color-accent-ink: #A64E28;/* readable terracotta for actual text */
+  --color-gold-ink: #886018;  /* readable gold for actual text */
+  --color-moss-ink: #56703D;  /* readable moss for actual text */
+  --color-signal-ink: #556A20;/* readable live-state text */
 
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-heading: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-display: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
 
   /* Hybrid radius scale: cards (tiles, Outside panel, featured tile) use
      the soft 10px --radius-xl; small elements (badges, buttons) keep the
@@ -64,7 +98,7 @@
   /* Static gradient fills — no animated angle (repaint-per-frame flicker
      source, and the redesign keeps gradients as calm, fixed fills). */
   .gradient-text {
-    background-image: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-mid) 50%, var(--color-accent-2) 100%);
+    background-image: linear-gradient(135deg, var(--color-accent-ink) 0%, var(--color-gold-ink) 50%, var(--color-moss-ink) 100%);
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
@@ -121,7 +155,7 @@
   /* Featured tile (Moon Lander) — the single gradient-filled focal point
      of the uniform grid. White text/tag on the terracotta→gold→moss fill. */
   .tile-featured {
-    background-image: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-mid) 50%, var(--color-accent-2) 100%);
+    background-image: linear-gradient(135deg, var(--color-accent-ink) 0%, var(--color-gold-ink) 50%, var(--color-moss-ink) 100%);
     border-color: transparent;
     color: #FFFFFF;
   }
@@ -140,14 +174,14 @@
 
   .badge {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     letter-spacing: 0.02em;
     color: var(--color-muted);
     text-transform: uppercase;
   }
 
   .badge-signal {
-    color: var(--color-signal);
+    color: var(--color-signal-ink);
   }
 
   /* Glass nav — light glass, content scrolls underneath */
@@ -438,6 +472,7 @@
     --outside-now: #4f571e;
     --outside-sun-line: #bd7607;
     --outside-moon-line: rgba(38, 39, 49, 0.84);
+    --outside-temperature-line: #9b4432;
     --outside-plate-edge: #fff8e8;
     --outside-scrim-rgb: 250 246 238;
     --outside-weather-scrim: 0.32;
@@ -455,6 +490,7 @@
     --outside-now: #d7e59d;
     --outside-sun-line: #f1b64e;
     --outside-moon-line: rgba(255, 250, 240, 0.88);
+    --outside-temperature-line: #ff9f88;
     --outside-plate-edge: #111927;
     --outside-scrim-rgb: 3 8 16;
   }
@@ -813,6 +849,10 @@
     border-top-color: var(--outside-moon-line);
     border-top-style: dashed;
   }
+  .outside-almanac__legend-line.is-temperature {
+    border-top-color: var(--outside-temperature-line);
+    border-top-width: 1.5px;
+  }
   .outside-almanac__chart-scroll {
     width: 100%;
     overflow: hidden;
@@ -1127,6 +1167,7 @@
       --outside-now: #4f571e;
       --outside-sun-line: #ae6906;
       --outside-moon-line: rgba(38, 39, 49, 0.84);
+      --outside-temperature-line: #9b4432;
       --outside-plate-edge: #fff8e8;
     }
     .outside-almanac__ledger::before {

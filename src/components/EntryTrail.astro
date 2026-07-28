@@ -1,0 +1,180 @@
+---
+type TrailItem = {
+  href: string;
+  eyebrow: string;
+  title: string;
+};
+
+type ContextLink = {
+  href: string;
+  label: string;
+  note: string;
+};
+
+interface Props {
+  ariaLabel?: string;
+  newer?: TrailItem | null;
+  older?: TrailItem | null;
+  contextLinks: ContextLink[];
+}
+
+const {
+  ariaLabel = 'More to read',
+  newer = null,
+  older = null,
+  contextLinks,
+} = Astro.props;
+---
+
+<footer class="entry-trail">
+  {(newer || older) && (
+    <nav class="entry-pagination" aria-label={ariaLabel}>
+      {newer && (
+        <a href={newer.href} class="entry-pagination__newer">
+          <span>{newer.eyebrow}</span>
+          <strong><span aria-hidden="true">← </span>{newer.title}</strong>
+        </a>
+      )}
+      {older && (
+        <a href={older.href} class="entry-pagination__older">
+          <span>{older.eyebrow}</span>
+          <strong>{older.title}<span aria-hidden="true"> →</span></strong>
+        </a>
+      )}
+    </nav>
+  )}
+
+  {contextLinks.length > 0 && (
+    <nav class="entry-context" aria-label="Keep wandering">
+      <p>Keep wandering</p>
+      <ul>
+        {contextLinks.map((link) => (
+          <li>
+            <a href={link.href}>
+              <strong>{link.label}</strong>
+              <span>{link.note}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )}
+</footer>
+
+<style>
+  .entry-trail {
+    max-width: 42rem;
+    margin-top: clamp(3.25rem, 8vw, 5rem);
+    border-top: 1px solid var(--color-line);
+  }
+
+  .entry-pagination {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .entry-pagination a {
+    min-height: 7rem;
+    padding: 1.15rem 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1rem;
+    transition: color 180ms ease;
+  }
+
+  .entry-pagination a:hover {
+    color: var(--color-accent-ink);
+  }
+
+  .entry-pagination a:focus-visible,
+  .entry-context a:focus-visible {
+    border-radius: 2px;
+    outline: 2px solid var(--color-accent);
+    outline-offset: 4px;
+  }
+
+  .entry-pagination a.entry-pagination__newer {
+    padding-right: 1.25rem;
+  }
+
+  .entry-pagination a.entry-pagination__older {
+    grid-column: 2;
+    padding-left: 1.25rem;
+    text-align: right;
+    border-left: 1px solid var(--color-line);
+  }
+
+  .entry-pagination > a > span,
+  .entry-context > p {
+    color: var(--color-muted);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .entry-pagination strong {
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    line-height: 1.4;
+    transition: color 180ms ease;
+  }
+
+  .entry-pagination a:hover strong {
+    color: var(--color-accent-ink);
+  }
+
+  .entry-context {
+    padding-top: 1.35rem;
+  }
+
+  .entry-context ul {
+    margin-top: 0.8rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem 1.5rem;
+  }
+
+  .entry-context a {
+    display: grid;
+    gap: 0.05rem;
+  }
+
+  .entry-context strong {
+    font-size: 0.9rem;
+    transition: color 180ms ease;
+  }
+
+  .entry-context a:hover strong {
+    color: var(--color-accent-ink);
+  }
+
+  .entry-context li span {
+    color: var(--color-muted);
+    font-size: 0.75rem;
+  }
+
+  @media (max-width: 479px) {
+    .entry-pagination {
+      grid-template-columns: 1fr;
+    }
+
+    .entry-pagination a {
+      min-height: 0;
+    }
+
+    .entry-pagination a.entry-pagination__newer {
+      padding-right: 0;
+    }
+
+    .entry-pagination a.entry-pagination__older {
+      grid-column: 1;
+      padding-left: 0;
+      border-top: 1px solid var(--color-line);
+      border-left: 0;
+    }
+  }
+</style>

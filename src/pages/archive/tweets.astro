@@ -6,7 +6,12 @@
 import Layout from '../../layouts/Layout.astro';
 ---
 
-<Layout title="Old Tweets — Tom of the Past" description="13,686 tweets from 2008–2018, served one day at a time.">
+<Layout
+  title="Old Tweets — Tom of the Past"
+  description="13,686 tweets from 2008–2018, served one day at a time."
+  image="/images/social/archive-tweets.png"
+  imageAlt="Old Tweets — 13,686 posts from 2008 through 2018."
+>
   <a href="/archive" class="badge hover:text-ink transition-colors">← the vault</a>
   <h1 class="font-display text-3xl md:text-4xl font-semibold mt-3">On This Day</h1>
   <p class="mt-2 text-muted max-w-xl">
@@ -55,7 +60,7 @@ import Layout from '../../layouts/Layout.astro';
         const target = urls && urls[i] ? urls[i] : m;
         i++;
         const label = target.replace(/^https?:\/\/(www\.)?/, '').slice(0, 40);
-        return '<a href="' + esc(target) + '" class="text-accent underline decoration-dotted" rel="nofollow noopener">' + esc(label) + '</a>';
+        return '<a href="' + esc(target) + '" class="text-accent-ink underline decoration-dotted" rel="nofollow noopener">' + esc(label) + '</a>';
       });
     }
 
@@ -192,7 +197,7 @@ import Layout from '../../layouts/Layout.astro';
       box-shadow: 2px 2px 0 var(--color-surface-2);
       transition: all 0.15s;
     }
-    .day-nav:hover { border-color: var(--color-accent); color: var(--color-accent); }
+    .day-nav:hover { border-color: var(--color-accent); color: var(--color-accent-ink); }
     .day-nav:active { box-shadow: none; transform: translate(2px, 2px); }
     .tweet-card {
       border: 1px solid var(--color-line);

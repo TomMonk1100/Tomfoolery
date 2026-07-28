@@ -1,18 +1,34 @@
 ---
 import '../styles/global.css';
 import { ClientRouter } from 'astro:transitions';
+import interFontURL from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
+import spaceGroteskFontURL from '@fontsource-variable/space-grotesk/files/space-grotesk-latin-wght-normal.woff2?url';
 
 interface Props {
   title?: string;
   description?: string;
   /** Page-specific social share image, as a site-root path. */
   image?: string;
+  imageAlt?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  contentType?: 'website' | 'article';
+  publishedTime?: Date | string;
+  noindex?: boolean;
+  preconnectWeather?: boolean;
 }
 
 const {
   title = "Tomfoolery",
   description = "Tom's personal hub — photos, collections, coffee, and whatever else.",
-  image = "/images/og-card.png",
+  image = "/og.png",
+  imageAlt = "Tomfoolery — coffee, collections, old stories, and the sky over Texas.",
+  imageWidth = 1200,
+  imageHeight = 630,
+  contentType = 'website',
+  publishedTime,
+  noindex = false,
+  preconnectWeather = false,
 } = Astro.props;
 
 // Absolute URLs for canonical + Open Graph. `Astro.site` comes from the `site`
@@ -50,32 +66,51 @@ const currentMobileIndexItem = mobileIndexItems.find(({ href }) => isCurrent(hre
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
     <title>{title}</title>
     <link rel="canonical" href={canonicalURL} />
 
-    <!-- Open Graph / Twitter. Without these, sharing any page anywhere
-         produced a bare link with no title card or image. -->
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={contentType} />
     <meta property="og:site_name" content="Tomfoolery" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:image" content={imageURL} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Tomfoolery — a personal site" />
+    <meta property="og:image:width" content={String(imageWidth)} />
+    <meta property="og:image:height" content={String(imageHeight)} />
+    <meta property="og:image:alt" content={imageAlt} />
+    {
+      contentType === 'article' && publishedTime && (
+        <meta
+          property="article:published_time"
+          content={publishedTime instanceof Date
+            ? publishedTime.toISOString()
+            : publishedTime}
+        />
+      )
+    }
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={imageURL} />
+    <meta name="twitter:image:alt" content={imageAlt} />
     <meta name="theme-color" content="#FAF6EE" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      href={interFontURL}
+      as="font"
+      type="font/woff2"
+      crossorigin
     />
+    <link
+      rel="preload"
+      href={spaceGroteskFontURL}
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    {preconnectWeather && <link rel="preconnect" href="https://api.open-meteo.com" />}
     <ClientRouter />
   </head>
   <body class="min-h-screen bg-canvas text-ink font-body antialiased">

@@ -1,32 +1,32 @@
 ---
-version: beta
-name: Hub — Hearthwood
-description: Warm, earthy personal hub. Home-and-forest feel — deep bark canvas, terracotta and moss accents, alive with slow ambient motion.
+version: v11
+name: Tomfoolery — Hearthwood Light
+description: A warm editorial personal hub with a living West Texas almanac, quietly tended collections, and high-contrast paper typography.
 colors:
-  canvas:    "#171009"   # near-black, warm coffee-bark
-  surface:   "#221808"   # tile surface, dark walnut
-  surface-2: "#2E2110"   # raised / hover, richer walnut
-  text:      "#F4EBDA"   # warm cream, not stark white
-  muted:     "#B9A480"   # dried-sage tan
-  border:    "#3B2C16"   # bark border
-  accent:    "#C97B3D"   # terracotta / campfire
-  accent-2:  "#7C8F5C"   # moss / sage green
-  signal:    "#94B03D"   # jalapeño olive — rare emphasis only
-  gradient:  "linear-gradient(135deg, #C97B3D 0%, #D9A441 50%, #7C8F5C 100%)"
+  canvas:    "#FAF6EE"   # warm paper
+  surface:   "#FFFFFF"   # cards
+  surface-2: "#F4ECDD"   # raised / hover paper
+  text:      "#221A12"   # warm near-black
+  muted:     "#6F604A"   # AA secondary copy on all paper surfaces
+  border:    "#E7DCC8"   # ruled paper border
+  accent:    "#C2673A"   # terracotta graphics / focus
+  accent-2:  "#5F7A45"   # moss graphics
+  signal:    "#7C9A2E"   # live-state graphics
+  gradient:  "linear-gradient(135deg, #A64E28 0%, #886018 50%, #56703D 100%)"
 typography:
   display:
-    fontFamily: "Space Grotesk"
+    fontFamily: "Space Grotesk Variable"
     fontWeight: 600
     letterSpacing: "-0.02em"
   heading:
-    fontFamily: "Space Grotesk"
+    fontFamily: "Space Grotesk Variable"
     fontWeight: 600
   body:
-    fontFamily: "Inter"
+    fontFamily: "Inter Variable"
     fontWeight: 400
     lineHeight: 1.65
   mono:
-    fontFamily: "JetBrains Mono"   # labels, timestamps, live data
+    fontFamily: "JetBrains Mono Variable"   # labels, timestamps, live data
 spacing:
   base: 4px        # scale: 4, 8, 12, 16, 24, 32, 48, 64
 rounded:
@@ -36,61 +36,45 @@ rounded:
 ---
 
 ## Overview
-A personal hub that should feel like walking into a cabin at dusk — warm
-light, natural materials, something always quietly alive (a fire crackling,
-weather moving outside). Not neon, not clinical. Auto-detects light/dark
-(v6), but both are warm: bark-and-walnut at night, cream-and-linen by day —
-never black-and-neon, never clinical white. Editorial bones stay (clear
-hierarchy, generous spacing) so it reads as considered, not rustic-cluttered.
+A personal hub that feels like a living almanac laid out on a warm studio
+table: paper, field notes, collections, and the weather moving outside. It is
+cinematic without becoming a visual-effects demo and emotional without
+sacrificing legibility. The single light theme keeps strong editorial bones —
+clear hierarchy, generous spacing, ruled details, and restrained motion — so
+the site reads as considered rather than rustic-cluttered.
 
 ## Colors
-Coffee-bark canvas with walnut surfaces (dark mode). Terracotta (campfire) is
-the primary accent, moss/sage the secondary — together they read as
-golden-hour light filtering through trees, not a screen glow. The olive
-"signal" green is a quieter cousin of neon lime, reserved for live/active
-states (matches the jalapeño-green nod from the original palette, just
-earthier). Avoid pure black and pure white anywhere — everything is warmed.
-
-**Light mode (v6):** warm cream/linen canvas, dark walnut text, the same
-terracotta/moss/olive accent hues but deepened for contrast on a bright
-background — a "sun-lit studio" counterpart to dark mode's "candlelit
-evening." Dark mode's accents keep their original, more saturated values
-verbatim (zero visual change for existing dark-mode users); light mode is
-the new palette. See "Theming" below.
+Warm cream canvas, white cards, and dark walnut copy form the permanent paper
+palette. Terracotta, old gold, moss, and olive carry the golden-hour identity.
+The brighter accent values belong to borders, focus rings, charts, and small
+graphic signals. Actual text uses the darker `accent-ink`, `gold-ink`,
+`moss-ink`, and `signal-ink` variants. `#6F604A` is the only muted text color;
+the older `#8A7B65` survives as `faint` for non-text decoration because it does
+not meet normal-text contrast on the paper surfaces.
 
 ## Typography
-Unchanged structurally from v1 (Space Grotesk display/heading, Inter body,
-JetBrains Mono for data/labels) — the warmth comes from color and motion,
-not typeface. Mono labels now read like hand-labeled jars rather than
-terminal output, because of the palette shift.
+Space Grotesk for display/heading, Inter for body, and JetBrains Mono for
+data/labels. The Latin variable cuts are self-hosted from Fontsource and use
+`font-display: swap`; the site makes no Google Fonts request. Functional mono
+labels stay at least 12px.
 
 ## Spacing
 Unchanged: 4px base, generous tile padding (24–32px), breathing room.
 
 ## Components (v3 — sharpened)
-- **Tiles (bento):** walnut surface, 0–4px radius max (near-square,
-  architectural), warm 1px border, subtle grain texture. On hover: lift +
-  border picks up the campfire gradient, 250ms spring-ish ease. No pill
-  shapes, no large soft rounding anywhere — that read as generic
-  "AI-generated" and was cut deliberately in v3.
+- **Tiles (bento):** white paper surface, warm 1px rule, and a restrained 10px
+  card radius. On hover: small lift + accent border, 250ms spring-ish ease.
+  Controls and small elements retain the sharper 0–4px scale.
 - **Buttons:** gradient fill for primary; ghost (border only) for secondary. Sharp corners.
 - **Links:** gradient underline that animates in on hover.
 - **Badges/tags:** mono font, small, muted tan — "live"/active states use signal olive.
-- **Lava lamp (v6, replaces the old single ambient blob + orbit field):**
-  four large, soft blobs drifting and morphing on 9–16s cycles via animatable
-  border-radius + long-period transforms, blurred and vignette-masked so they
-  dissolve to nothing well before their container edges (no hard box edges).
-  Deliberately slow and hypnotic — the earlier fast blob + fast-orbiting-dots
-  combo read as "too intense," so v6 consolidated ambient hero motion into
-  one calmer system instead of layering several.
+- **Hero motes:** three tiny, contained embers around the greeting. They move
+  only with transform/opacity and never become a full-page particle field.
 - **Glass nav:** a compact sticky index with all seven primary destinations
   visible on desktop. Phones keep `now` and `play` immediate and place the
   remaining sections in a native `index` disclosure, preserving the short
   header and keyboard semantics. The paper veil uses blur+saturate so content
   still passes beneath it without compromising the small mono link contrast.
-- **Ember field:** a subtle canvas-based particle layer (warm floating
-  motes, like fireflies/embers) drifting slowly across the whole page,
-  low-opacity, GPU-cheap, paused under prefers-reduced-motion.
 
 ## Motion (v3 — pushed further)
 Still warm, but more alive and kinetic than v2 — closer to a high-end
@@ -137,34 +121,15 @@ autonomous life to the page.
   plain cross-fade. Progressive enhancement — falls back to the plain v3
   cross-fade wherever the filter isn't supported.
 
-## Theming — light/dark (v6)
-Full site-wide light/dark system, CSS-custom-property driven:
-- All color tokens (`--color-canvas`, `--color-ink`, accents, plus RGB-triplet
-  helpers for `rgba()` compositing and nav chrome vars) are defined twice,
-  once under `:root[data-theme="dark"]` and once under
-  `:root[data-theme="light"]` in `global.css`. Tailwind's `@theme` block
-  registers the token names (so utilities like `bg-canvas`/`text-ink` exist)
-  with the dark values as the no-JS fallback; the `[data-theme]` blocks
-  override them, and because Tailwind's generated utilities reference
-  `var(--color-*)`, every utility class re-themes automatically with no
-  per-component work.
-- `data-theme` is set on `<html>` by a blocking inline script in
-  `Layout.astro`'s `<head>` — runs before first paint, reads a saved
-  `localStorage` choice, falls back to `prefers-color-scheme`. No flash of
-  the wrong theme.
-- A sun/moon toggle button lives in the nav, persists the choice to
-  `localStorage`, and dispatches a `tomsite:theme-change` DOM event on
-  toggle so any component that needs to react (e.g. the ember field
-  re-picking its particle colors) can, without a full page reload.
-- Applies everywhere, including `/game` — the page chrome (nav, tiles,
-  overlay screens, HUD) all use themed Tailwind utilities/CSS vars, so they
-  flip automatically. The in-canvas game rendering itself (sky, terrain,
-  ship, critters) stays a fixed dark space palette by design — it's outer
-  space, and a moon-lander cockpit reading dark regardless of site chrome
-  is the more honest choice, the same way most games don't re-skin their
-  viewport to match OS light mode.
+## Theming — Hearthwood Light
+There is one CSS-custom-property-driven light theme. Tailwind's `@theme`
+registers the warm-paper tokens so utilities and hand-written components share
+the same source of truth. Do not restore the removed dark-mode toggle: the
+photographic almanac already carries its own authored day/night contrast
+treatment, while the surrounding site remains a stable editorial surface.
+The in-canvas Moon Lander continues to use a fixed space palette by design.
 
-## Outside — living almanac (v10)
+## Outside — living almanac (v11)
 
 A cinematic/editorial field report fixed to Breckenridge, Texas. The background
 is a 32-frame photographic atlas: clear, scattered, overcast, and storm weather
@@ -182,12 +147,21 @@ conditions choose its weather family.
   SVG is data visualization only. Its window runs from six hours behind now to
   eighteen hours ahead; strong above-horizon Sun and Moon curves become quiet
   dotted continuations below the horizon and pass through a labelled midnight
-  without a calendar-day seam. The formal language says "above horizon"
-  because weather and daylight still govern real-world visibility.
+  without a calendar-day seam. A thin Open-Meteo temperature model shares the
+  same time axis in the chart's lower band and uses a minimum 12°F display
+  range so small fluctuations are not exaggerated. The formal language says
+  "above horizon" because weather and daylight still govern real-world
+  visibility.
+- **Sunset potential, not a promise.** The next real astronomical sunset is
+  sampled against low-, mid-, and high-cloud layers, rain probability, and
+  storm codes. The tested heuristic reports Promising, Mixed, Subtle, or
+  Obscured; incomplete layer data reports unavailable. It never claims a
+  colorful sunset or clear view as fact.
 - **Editorial hierarchy.** Location masthead → large current conditions →
   sunset/sunrise countdown → paper-ledger Night Watch and fixed chart key →
-  rolling celestial field line → lunar visibility sentence → one ruled
-  four-chapter ledger (Exposure, Air, Water, Tonight) → ISS sentence. The Moon
+  rolling celestial and temperature field lines → lunar visibility sentence →
+  one ruled four-chapter ledger (Exposure, Air, Water, Sunset potential) → ISS
+  sentence. The Moon
   portrait no longer floats over the photographed landscape. Local warm/dark
   washes protect the copy without flattening the whole image. The desktop
   calibration above 1080px uses a 1440×200 plot and a 680–760px band; tablet
@@ -202,9 +176,12 @@ conditions choose its weather family.
   system. Every plate has real condition-aware crops at 720×960 for narrow
   phones and 960×768 for wider mobile.
 - **Progressive enhancement.** The photographic solar moment, daylight
-  countdown, lunar phase, and chart work with no network. Weather refreshes
-  every 15 minutes and retains only a recent successful condition on failure;
-  ISS remains optional.
+  countdown, lunar phase, and celestial chart work with no network. The
+  current plate request starts before the low-priority Moon texture and
+  deferred ribbon/ISS work. Weather refreshes every 15 minutes; a fully
+  validated 30-minute snapshot can fill a repeat visit immediately and is
+  visibly labelled as a recent reading while the live refresh runs. ISS
+  remains optional.
 
 ## Moon Lander (`/game`)
 A full canvas-based roguelite mini-game, styled to match Hearthwood rather

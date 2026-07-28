@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import EntryTrail from '../components/EntryTrail.astro';
 
 // Portrait gallery photos. `wide` is the lead image and is rendered
 // separately above the masonry columns.
@@ -68,6 +69,8 @@ const gallerySizes = '(min-width: 1024px) 23vw, (min-width: 640px) 46vw, calc(10
 <Layout
   title="Coffee — Tomfoolery"
   description="A growing gallery of lattes, foam doodles, and good coffee."
+  image="/images/social/coffee.png"
+  imageAlt="Tomfoolery's coffee gallery, a warm editorial collection of lattes and playful foam art."
 >
   <section class="max-w-5xl reveal is-visible">
     <span class="badge">latte gallery</span>
@@ -116,4 +119,20 @@ const gallerySizes = '(min-width: 1024px) 23vw, (min-width: 640px) 46vw, calc(10
       ))}
     </div>
   </section>
+
+  <EntryTrail
+    ariaLabel="More from the coffee corner"
+    contextLinks={[
+      {
+        href: '/now/first-brew',
+        label: 'Current coffee setup',
+        note: 'beans, gear, and what is brewing',
+      },
+      {
+        href: '/art',
+        label: 'Art shelf',
+        note: 'where some of the foam ends up',
+      },
+    ]}
+  />
 </Layout>

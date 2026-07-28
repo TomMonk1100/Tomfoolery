@@ -3,33 +3,92 @@
 // /pokemon/:slug, /art/:slug. One template instead of near-duplicates;
 // renders whichever metadata fields a given entry actually has.
 import Layout from '../../layouts/Layout.astro';
+import EntryTrail from '../../components/EntryTrail.astro';
 import { getCollection, render } from 'astro:content';
 
 export async function getStaticPaths() {
+  const entryTime = (entry: { data: unknown }, collection: string) => {
+    const data = entry.data as { date?: Date; dateAcquired?: Date };
+    const date = collection === 'pokemon' ? data.dateAcquired : data.date;
+    return date?.valueOf() ?? Number.NEGATIVE_INFINITY;
+  };
+  const newestFirst = <T extends { id: string; data: unknown }>(
+    a: T,
+    b: T,
+    collection: string,
+  ) => {
+    const aTime = entryTime(a, collection);
+    const bTime = entryTime(b, collection);
+    if (aTime !== bTime) return aTime > bTime ? -1 : 1;
+    if (a.id === b.id) return 0;
+    return a.id < b.id ? 1 : -1;
+  };
   const COLLECTIONS = ['now', 'pokemon', 'art'] as const;
   const paths = [];
   for (const name of COLLECTIONS) {
-    const entries = await getCollection(name);
-    for (const entry of entries) {
+    const entries = (await getCollection(name)).sort((a, b) => newestFirst(a, b, name));
+    for (const [index, entry] of entries.entries()) {
       paths.push({
         params: { collection: name, slug: entry.id },
-        props: { entry, collection: name },
+        props: {
+          entry,
+          collection: name,
+          newerEntry: entries[index - 1] ?? null,
+          olderEntry: entries[index + 1] ?? null,
+        },
       });
     }
   }
   return paths;
 }
 
-const { entry, collection } = Astro.props;
+const { entry, collection, newerEntry, olderEntry } = Astro.props;
 const { Content } = await render(entry);
 const d = entry.data as Record<string, any>;
+
+const collectionLabel = {
+  now: 'Now',
+  pokemon: 'Pokémon',
+  art: 'Art',
+}[collection as 'now' | 'pokemon' | 'art'];
+
+const socialImageAlt = {
+  now: 'The Tomfoolery Now journal, a current field note from Texas.',
+  pokemon: 'The Tomfoolery Pokémon collection, arranged like a warm editorial binder.',
+  art: 'The Tomfoolery art shelf, gathering hand-drawn work and visual experiments.',
+}[collection as 'now' | 'pokemon' | 'art'];
+
+const contextualLinks = collection === 'now'
+  ? [
+      { href: '/', label: 'Live almanac', note: 'weather, light, moon, and sky' },
+      ...(d.tag === 'coffee'
+        ? [{ href: '/coffee', label: 'Coffee gallery', note: 'the ritual in pictures' }]
+        : []),
+    ]
+  : collection === 'art'
+    ? [
+        d.category === 'coffee-art'
+          ? { href: '/coffee', label: 'Coffee gallery', note: 'more from the cup' }
+          : { href: '/pokemon', label: 'Pokémon binder', note: 'another visual collection' },
+      ]
+    : [
+        { href: '/art', label: 'Art shelf', note: 'sketches, experiments, and foam' },
+        { href: '/coffee', label: 'Coffee gallery', note: 'the morning collection' },
+      ];
 
 function fmt(date: Date) {
   return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
 ---
 
-<Layout title={`${d.title} — Tomfoolery`} description={d.title}>
+<Layout
+  title={`${d.title} — Tomfoolery`}
+  description={d.title}
+  image={`/images/social/${collection}.png`}
+  imageAlt={socialImageAlt}
+  contentType="article"
+  publishedTime={d.date ?? d.dateAcquired}
+>
   <a href={`/${collection}`} class="badge hover:text-ink transition-colors">← {collection}</a>
   <h1 class="font-display text-3xl md:text-4xl font-semibold mt-3 max-w-2xl">{d.title}</h1>
 
@@ -50,4 +109,19 @@ function fmt(date: Date) {
   <div class="prose-body mt-6 max-w-xl text-ink leading-relaxed [&_p]:mt-3 [&_p:first-child]:mt-0">
     <Content />
   </div>
+
+  <EntryTrail
+    ariaLabel={`More from ${collectionLabel}`}
+    newer={newerEntry ? {
+      href: `/${collection}/${newerEntry.id}`,
+      eyebrow: `Newer in ${collectionLabel}`,
+      title: newerEntry.data.title,
+    } : null}
+    older={olderEntry ? {
+      href: `/${collection}/${olderEntry.id}`,
+      eyebrow: `Older in ${collectionLabel}`,
+      title: olderEntry.data.title,
+    } : null}
+    contextLinks={contextualLinks}
+  />
 </Layout>

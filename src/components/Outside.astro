@@ -4,6 +4,12 @@
 // reading. Open-Meteo and the ISS service progressively enhance the frame.
 ---
 
+<script>
+  import { installOutsideLifecycle } from '../scripts/sky/outside-controller';
+
+  installOutsideLifecycle();
+</script>
+
 <section
   class="outside-almanac full-bleed"
   id="outside-band"
@@ -22,6 +28,8 @@
       data-plate-slot="a"
       alt=""
       decoding="async"
+      fetchpriority="high"
+      loading="eager"
       draggable="false"
     />
     <img
@@ -29,6 +37,8 @@
       data-plate-slot="b"
       alt=""
       decoding="async"
+      fetchpriority="low"
+      loading="eager"
       draggable="false"
     />
   </div>
@@ -102,7 +112,10 @@
       </section>
 
       <div class="outside-almanac__chart-header">
-        <p>Solar &amp; lunar altitude <span>rolling 24 hours</span></p>
+        <p>
+          Sky altitude &amp; temperature
+          <span data-field="temperature-range">rolling 24 hours</span>
+        </p>
         <ul class="outside-almanac__legend" aria-label="Chart key">
           <li>
             <span class="outside-almanac__legend-line is-sun" aria-hidden="true"></span>
@@ -111,6 +124,10 @@
           <li>
             <span class="outside-almanac__legend-line is-moon" aria-hidden="true"></span>
             Moon
+          </li>
+          <li>
+            <span class="outside-almanac__legend-line is-temperature" aria-hidden="true"></span>
+            Temp
           </li>
         </ul>
       </div>
@@ -121,7 +138,7 @@
           data-ribbon
           viewBox="0 0 1440 200"
           role="img"
-          aria-label="Rolling Sun and Moon altitude chart for Breckenridge"
+          aria-label="Rolling Sun and Moon altitude and temperature chart for Breckenridge"
           focusable="false"
         ></svg>
       </div>
@@ -132,7 +149,7 @@
         <small>Weather and daylight affect actual visibility.</small>
       </div>
 
-      <dl class="outside-almanac__rail" aria-label="Current field notes">
+      <dl class="outside-almanac__rail" aria-label="Current field notes and forecasts">
         <div>
           <dt><span>01</span> Exposure</dt>
           <dd>
@@ -155,10 +172,10 @@
           </dd>
         </div>
         <div>
-          <dt><span>04</span> Tonight</dt>
+          <dt><span>04</span> Sunset potential</dt>
           <dd>
-            <strong data-field="tonight-value">Evening outlook</strong>
-            <small data-field="tonight-detail">updating with the weather</small>
+            <strong data-field="sunset-value">Potential pending</strong>
+            <small data-field="sunset-detail">cloud layers near sunset</small>
           </dd>
         </div>
       </dl>
@@ -169,9 +186,3 @@
     </div>
   </div>
 </section>
-
-<script>
-  import { installOutsideLifecycle } from '../scripts/sky/outside-controller';
-
-  installOutsideLifecycle();
-</script>

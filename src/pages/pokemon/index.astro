@@ -5,7 +5,12 @@ import { getCollection } from 'astro:content';
 const entries = await getCollection('pokemon');
 ---
 
-<Layout title="Pokémon TCG — Tomfoolery" description="The collection, filterable by set and grade.">
+<Layout
+  title="Pokémon TCG — Tomfoolery"
+  description="The collection, filterable by set and grade."
+  image="/images/social/pokemon.png"
+  imageAlt="The Pokémon TCG collection on Tomfoolery."
+>
   <span class="badge">collection</span>
   <h1 class="font-display text-3xl md:text-4xl font-semibold mt-2">Pokémon TCG</h1>
   <p class="text-muted mt-2 max-w-xl">

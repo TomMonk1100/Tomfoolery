@@ -7,17 +7,23 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "npm run check:social-cards && astro build",
+    "build:social-cards": "node scripts/build-social-cards.mjs",
     "build:sky-plates": "node scripts/build-sky-plates.mjs",
+    "check:content-assets": "node scripts/check-content-assets.mjs",
+    "check:social-cards": "node scripts/build-social-cards.mjs --check",
     "check:sky-plates": "node scripts/check-sky-plates.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "test": "vitest run src/scripts",
     "typecheck": "astro sync && tsc --noEmit",
-    "verify": "npm run check:sky-plates && npm run typecheck && npm run test && npm run build"
+    "verify": "npm run check:sky-plates && npm run check:content-assets && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/space-grotesk": "^5.3.0",
     "@netlify/blobs": "^10.7.9",
     "@tailwindcss/vite": "^4.3.2",
     "astro": "^7.0.4",

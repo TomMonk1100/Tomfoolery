@@ -215,7 +215,7 @@ function drawModule(
   c.restore();
   if (n >= 3) {
     c.save();
-    c.font = '2.6px "JetBrains Mono", monospace';
+    c.font = '2.6px "JetBrains Mono Variable", monospace';
     c.textAlign = 'left';
     c.textBaseline = 'middle';
     const px = anchorX + (anchorX >= 0 ? 1 : -1) * (2.2 + 1.4 * (k - 1)) - (anchorX < 0 ? 3.2 : 0);
@@ -539,7 +539,7 @@ export function drawShipModules(
     c.restore();
     if (stacks >= 3) {
       c.save();
-      c.font = '2.6px "JetBrains Mono", monospace';
+      c.font = '2.6px "JetBrains Mono Variable", monospace';
       c.textAlign = 'left';
       c.textBaseline = 'middle';
       c.fillStyle = 'rgba(23,16,9,0.75)';

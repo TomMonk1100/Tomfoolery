@@ -1955,13 +1955,13 @@ export function initLanderGame(root: HTMLElement) {
       .upg-card:hover .upg-emblem{transform:scale(1.07);}
       .upg-name{font-weight:700;font-size:1.02rem;line-height:1.2;color:var(--color-ink);}
       .upg-desc{font-size:.8rem;line-height:1.35;color:#5D5140;}
-      .upg-rarity{margin-top:auto;font-family:"JetBrains Mono",monospace;font-size:.62rem;
-        letter-spacing:.14em;text-transform:uppercase;color:var(--uc);}
+      .upg-rarity{margin-top:auto;font-family:var(--font-mono);font-size:.75rem;font-weight:650;
+        letter-spacing:.12em;text-transform:uppercase;color:var(--color-muted);}
       .upg-body{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;flex:1;}
       .upg-timerbar{height:6px;border-radius:3px;background:var(--color-line);overflow:hidden;}
       .upg-timerbar>div{height:100%;border-radius:3px;transition:width .1s linear;
         background:linear-gradient(90deg,var(--color-accent-mid),var(--color-accent));}
-      .upg-owned{position:absolute;top:8px;right:8px;font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.06em;color:#FFFDF6;background:var(--uc);padding:2px 8px;border-radius:999px;}
+      .upg-owned{position:absolute;top:8px;right:8px;font-family:var(--font-mono);font-size:.75rem;font-weight:650;letter-spacing:.04em;color:var(--color-ink);background:var(--color-surface-2);border:1px solid var(--uc);padding:2px 8px;border-radius:999px;}
       /* Mobile: horizontal compact cards — emblem left, text right — so a
          full offer (3-6 cards) fits the overlay with minimal scrolling and
          every card stays a big, easy tap target. */
@@ -2151,7 +2151,7 @@ export function initLanderGame(root: HTMLElement) {
     const ss = String(Math.floor(el / 1000) % 60).padStart(2, '0');
     setOverlay(`
       <div class="text-center">
-        <p class="badge" style="color:#C97B3D">run over</p>
+        <p class="badge" style="color:var(--color-accent-ink)">run over</p>
         <h2 class="font-display text-3xl font-semibold mt-2">Crashed on ${cfg.name}</h2>
         <p class="text-muted mt-3">Reached level ${reached} as ${DIFF_MODS[difficulty].label} · Landings: ${runStats.landings} · Best: level ${best}</p>
         <p class="text-xs text-muted mt-1">✨ ${runStats.stardustEarned} earned · ${mm}:${ss} flight time · ${runStats.skips} skips</p>
@@ -2273,7 +2273,7 @@ export function initLanderGame(root: HTMLElement) {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4 text-left">
           ${ACHIEVEMENTS.map((a) => {
             const got = !!achievements[a.id];
-            return `<div class="border px-3 py-2 ${got ? '' : 'opacity-45'}" style="border-color: ${got ? 'var(--color-signal)' : 'var(--color-line)'}">
+            return `<div class="border px-3 py-2 ${got ? '' : 'bg-surface-2'}" style="border-color: ${got ? 'var(--color-signal)' : 'var(--color-line)'}">
               <div class="font-mono text-sm">${a.icon} ${a.name}</div>
               <div class="text-xs text-muted mt-0.5">${got ? a.desc : '???'}</div>
             </div>`;
@@ -2291,7 +2291,7 @@ export function initLanderGame(root: HTMLElement) {
         <p class="badge badge-signal">🛒 hangar shop</p>
         <h2 class="font-display text-2xl font-semibold mt-2">✨ ${stardust} stardust</h2>
         <p class="text-xs text-muted mt-1">Earned with every landing — deeper levels pay more.</p>
-        ${statusMsg ? `<p class="text-xs mt-2" style="color:#C97B3D">${statusMsg}</p>` : ''}
+        ${statusMsg ? `<p class="text-xs mt-2" style="color:var(--color-accent-ink)">${statusMsg}</p>` : ''}
         <div class="mt-4 text-left">
           <p class="badge">ship paint</p>
           ${PAINTS.map((p) => shopItemHtml('paint', p.id, p.name, p.price, `linear-gradient(135deg,${p.hullTop},${p.hullBot})`, cosmetics)).join('')}
@@ -2300,7 +2300,7 @@ export function initLanderGame(root: HTMLElement) {
           <p class="badge mt-4">sky theme</p>
           ${SKIES.map((sk) => shopItemHtml('sky', sk.id, sk.name, sk.price, `linear-gradient(180deg,${sk.top},${sk.bot})`, cosmetics)).join('')}
         </div>
-        <p class="text-[11px] text-muted mt-4">Stardust packs for real money aren't wired up yet — that needs a payment
+        <p class="text-xs text-muted mt-4">Stardust packs for real money aren't wired up yet — that needs a payment
         account only Tom can create. Until then: land more, earn more.</p>
         <button data-action="menu" class="tile mt-4 px-6 py-2 inline-block cursor-pointer font-mono text-sm">back</button>
       </div>
@@ -2948,7 +2948,7 @@ export function initLanderGame(root: HTMLElement) {
       ctx.stroke();
       ctx.setLineDash([]);
       const spd = Math.hypot(ship.vx, ship.vy);
-      ctx.font = `${Math.max(10, Math.round(width / 80))}px "JetBrains Mono", monospace`;
+      ctx.font = `${Math.max(10, Math.round(width / 80))}px "JetBrains Mono Variable", monospace`;
       ctx.textAlign = 'left';
       ctx.fillStyle = spd < stats.landingSpeedTol ? '#94B03D' : '#C97B3D';
       ctx.fillText(`${Math.round(spd)} px/s`, ship.x + 14 * S, ship.y);
@@ -2996,7 +2996,7 @@ export function initLanderGame(root: HTMLElement) {
       vg.addColorStop(1, 'rgba(123, 167, 199, 0.16)');
       ctx.fillStyle = vg;
       ctx.fillRect(0, 0, width, height);
-      ctx.font = `${Math.max(11, Math.round(width / 68))}px "JetBrains Mono", monospace`;
+      ctx.font = `${Math.max(11, Math.round(width / 68))}px "JetBrains Mono Variable", monospace`;
       ctx.textAlign = 'right';
       ctx.fillStyle = 'rgba(123, 167, 199, 0.9)';
       ctx.fillText('⌛ chrono', width - 12, height - 12);
@@ -3006,7 +3006,7 @@ export function initLanderGame(root: HTMLElement) {
     // §7 Valkyrie Autopilot OSD text (screen-space)
     if (valkyrieActive) {
       ctx.save();
-      ctx.font = `${Math.max(11, Math.round(width / 68))}px "JetBrains Mono", monospace`;
+      ctx.font = `${Math.max(11, Math.round(width / 68))}px "JetBrains Mono Variable", monospace`;
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(94, 214, 214, 0.9)';
       ctx.fillText('🤖 autopilot engaged', width / 2, 40);
@@ -3020,7 +3020,7 @@ export function initLanderGame(root: HTMLElement) {
       if (mag > 1.5) {
         const arrows = (w > 0 ? '→' : '←').repeat(Math.min(3, Math.max(1, Math.round(mag / 12))));
         ctx.save();
-        ctx.font = `${Math.max(11, Math.round(width / 68))}px "JetBrains Mono", monospace`;
+        ctx.font = `${Math.max(11, Math.round(width / 68))}px "JetBrains Mono Variable", monospace`;
         ctx.textAlign = 'center';
         ctx.fillStyle = 'rgba(185,164,128,0.85)';
         ctx.fillText(`wind ${arrows}`, width / 2, 20);
@@ -3034,10 +3034,10 @@ export function initLanderGame(root: HTMLElement) {
       ctx.save();
       ctx.globalAlpha = Math.max(0, Math.min(1, a));
       ctx.textAlign = 'center';
-      ctx.font = `600 ${Math.max(15, Math.round(width / 34))}px "Space Grotesk", sans-serif`;
+      ctx.font = `600 ${Math.max(15, Math.round(width / 34))}px "Space Grotesk Variable", sans-serif`;
       ctx.fillStyle = '#F4EBDA';
       ctx.fillText(`Level ${levelIndex + 1} — ${cfg.name}`, width / 2, height * 0.3);
-      ctx.font = `${Math.max(10, Math.round(width / 72))}px "JetBrains Mono", monospace`;
+      ctx.font = `${Math.max(10, Math.round(width / 72))}px "JetBrains Mono Variable", monospace`;
       ctx.fillStyle = '#B9A480';
       const tags: string[] = [];
       if (cfg.surge) tags.unshift('⚠ surge · +50%✨');
@@ -3098,7 +3098,7 @@ export function initLanderGame(root: HTMLElement) {
       const alpha = Math.min(1, toast.t / 0.5) * Math.min(1, (4.4 - toast.t) * 2.4);
       ctx.save();
       ctx.globalAlpha = Math.max(0, Math.min(1, alpha)) * 0.95;
-      ctx.font = `${Math.max(12, Math.round(width / 60))}px "JetBrains Mono", monospace`;
+      ctx.font = `${Math.max(12, Math.round(width / 60))}px "JetBrains Mono Variable", monospace`;
       ctx.textAlign = 'center';
       const tw = ctx.measureText(toast.text).width;
       const ty = 38 + i * (Math.max(12, Math.round(width / 60)) + 16);

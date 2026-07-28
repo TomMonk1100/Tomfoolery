@@ -1,6 +1,73 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Outside from '../components/Outside.astro';
+import { getCollection } from 'astro:content';
+
+type RecentEntry = {
+  id: string;
+  data: {
+    title: string;
+    date?: Date;
+    dateAcquired?: Date;
+  };
+};
+
+function latestEntry<T extends RecentEntry>(entries: T[], dateField: 'date' | 'dateAcquired') {
+  return [...entries].sort((a, b) => {
+    const aTime = a.data[dateField]?.valueOf() ?? Number.NEGATIVE_INFINITY;
+    const bTime = b.data[dateField]?.valueOf() ?? Number.NEGATIVE_INFINITY;
+    if (aTime !== bTime) return aTime > bTime ? -1 : 1;
+    if (a.id === b.id) return 0;
+    return a.id < b.id ? 1 : -1;
+  })[0];
+}
+
+function fmtRecent(date?: Date) {
+  if (!date) return 'ongoing';
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+const [nowEntries, artEntries, pokemonEntries, archiveEntries] = await Promise.all([
+  getCollection('now'),
+  getCollection('art'),
+  getCollection('pokemon'),
+  getCollection('pastBlog'),
+]);
+
+const recentlyTended = [
+  {
+    label: 'Now',
+    note: 'from right now',
+    hrefBase: '/now',
+    entry: latestEntry(nowEntries, 'date'),
+    dateField: 'date' as const,
+  },
+  {
+    label: 'Art',
+    note: 'from the sketchbook',
+    hrefBase: '/art',
+    entry: latestEntry(artEntries, 'date'),
+    dateField: 'date' as const,
+  },
+  {
+    label: 'Pokémon',
+    note: 'from the binder',
+    hrefBase: '/pokemon',
+    entry: latestEntry(pokemonEntries, 'dateAcquired'),
+    dateField: 'dateAcquired' as const,
+  },
+  {
+    label: 'Archive',
+    note: 'from the old blog',
+    hrefBase: '/archive/blog',
+    entry: latestEntry(archiveEntries, 'date'),
+    dateField: 'date' as const,
+  },
+];
 
 const tiles = [
   {
@@ -49,7 +116,11 @@ const tiles = [
 ];
 ---
 
-<Layout>
+<Layout
+  image="/og.png"
+  imageAlt="Tomfoolery over a warm West Texas landscape, with coffee, collections, old stories, and the sky traced beneath a sun-and-moon arc."
+  preconnectWeather
+>
   <section class="mb-6 relative overflow-hidden">
     <!-- Contained hero embers: three small motes, hero only. No canvas,
          no JS, no full-viewport layer. Staggered durations + negative
@@ -79,6 +150,36 @@ const tiles = [
     <Outside />
   </div>
 
+  <section class="recently-tended" aria-labelledby="recently-tended-heading">
+    <div class="recently-tended__intro">
+      <span class="badge">recently tended</span>
+      <h2 id="recently-tended-heading">A few things still growing</h2>
+      <p>Fresh notes from across the site, gathered quietly in one place.</p>
+    </div>
+
+    <div class="recently-tended__grid">
+      {recentlyTended.map((item, i) => item.entry ? (
+        <a
+          href={`${item.hrefBase}/${item.entry.id}`}
+          class="recently-tended__item"
+          aria-label={`${item.label}: ${item.entry.data.title}`}
+        >
+          <span class="recently-tended__meta">
+            <span><span aria-hidden="true">{String(i + 1).padStart(2, '0')}</span> · {item.label}</span>
+            <time datetime={item.entry.data[item.dateField]?.toISOString()}>
+              {fmtRecent(item.entry.data[item.dateField])}
+            </time>
+          </span>
+          <strong>{item.entry.data.title}</strong>
+          <span class="recently-tended__note">
+            {item.note}
+            <span aria-hidden="true">↗</span>
+          </span>
+        </a>
+      ) : null)}
+    </div>
+  </section>
+
   <!-- Uniform grid: no col-span overrides. The featured Moon Lander tile
        carries the gradient fill as the single focal point. -->
   <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -97,3 +198,128 @@ const tiles = [
     ))}
   </div>
 </Layout>
+
+<style>
+  .recently-tended {
+    margin-block: clamp(2.75rem, 6vw, 4.75rem);
+  }
+
+  .recently-tended__intro {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.9fr);
+    align-items: end;
+    column-gap: 2rem;
+    padding-bottom: 1rem;
+  }
+
+  .recently-tended__intro .badge {
+    grid-column: 1 / -1;
+    margin-bottom: 0.35rem;
+  }
+
+  .recently-tended__intro h2 {
+    font-size: clamp(1.25rem, 2vw, 1.55rem);
+    line-height: 1.2;
+  }
+
+  .recently-tended__intro p {
+    max-width: 31rem;
+    justify-self: end;
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .recently-tended__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(1rem, 2.5vw, 2rem);
+  }
+
+  .recently-tended__item {
+    min-height: 10.5rem;
+    padding-block: 1rem 0.45rem;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--color-line);
+    transition: border-color 180ms ease, color 180ms ease;
+  }
+
+  .recently-tended__item:hover {
+    border-color: var(--color-accent);
+  }
+
+  .recently-tended__item:focus-visible {
+    border-radius: 2px;
+    outline: 2px solid var(--color-accent);
+    outline-offset: 4px;
+  }
+
+  .recently-tended__meta,
+  .recently-tended__note {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    color: var(--color-muted);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
+  .recently-tended__item strong {
+    margin-top: 1.15rem;
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-size: 1.02rem;
+    line-height: 1.35;
+    transition: color 180ms ease;
+  }
+
+  .recently-tended__item:hover strong {
+    color: var(--color-accent-ink);
+  }
+
+  .recently-tended__note {
+    margin-top: auto;
+    padding-top: 1.25rem;
+    text-transform: none;
+  }
+
+  .recently-tended__note span {
+    color: var(--color-accent);
+    font-size: 0.9rem;
+    transition: transform 180ms ease;
+  }
+
+  .recently-tended__item:hover .recently-tended__note span {
+    transform: translate(2px, -2px);
+  }
+
+  @media (max-width: 767px) {
+    .recently-tended__intro {
+      display: block;
+    }
+
+    .recently-tended__intro p {
+      margin-top: 0.5rem;
+    }
+
+    .recently-tended__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 479px) {
+    .recently-tended__grid {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    .recently-tended__item {
+      min-height: 8.75rem;
+    }
+  }
+</style>

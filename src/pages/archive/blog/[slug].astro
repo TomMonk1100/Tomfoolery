@@ -1,14 +1,28 @@
 ---
 // Individual past-blog post — /archive/blog/:slug
 import Layout from '../../../layouts/Layout.astro';
+import EntryTrail from '../../../components/EntryTrail.astro';
 import { getCollection, render } from 'astro:content';
 
 export async function getStaticPaths() {
-  const entries = await getCollection('pastBlog');
-  return entries.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+  const entries = (await getCollection('pastBlog')).sort((a, b) => {
+    const timeDifference = b.data.date.valueOf() - a.data.date.valueOf();
+    if (timeDifference !== 0) return timeDifference;
+    if (a.id === b.id) return 0;
+    return a.id < b.id ? 1 : -1;
+  });
+
+  return entries.map((entry, index) => ({
+    params: { slug: entry.id },
+    props: {
+      entry,
+      newerEntry: entries[index - 1] ?? null,
+      olderEntry: entries[index + 1] ?? null,
+    },
+  }));
 }
 
-const { entry } = Astro.props;
+const { entry, newerEntry, olderEntry } = Astro.props;
 const { Content } = await render(entry);
 
 function fmt(date: Date) {
@@ -16,7 +30,14 @@ function fmt(date: Date) {
 }
 ---
 
-<Layout title={`${entry.data.title} — Tom of the Past`} description={entry.data.title}>
+<Layout
+  title={`${entry.data.title} — Tom of the Past`}
+  description={entry.data.title}
+  image="/images/social/archive.png"
+  imageAlt="Tom of the Past, Tomfoolery's editorial archive of old blog posts and a decade of tweets."
+  contentType="article"
+  publishedTime={entry.data.date}
+>
   <a href="/archive" class="badge hover:text-ink transition-colors">← the vault</a>
   <h1 class="font-display text-3xl md:text-4xl font-semibold mt-3 max-w-2xl">{entry.data.title}</h1>
   <p class="mt-2 font-mono text-sm text-muted">{fmt(entry.data.date)} · from the old blog, lightly tidied</p>
@@ -24,6 +45,32 @@ function fmt(date: Date) {
   <div class="past-prose mt-8 max-w-xl leading-relaxed [&_p]:mt-4 [&_p:first-child]:mt-0">
     <Content />
   </div>
+
+  <EntryTrail
+    ariaLabel="More from the old blog"
+    newer={newerEntry ? {
+      href: `/archive/blog/${newerEntry.id}`,
+      eyebrow: 'Newer from the old blog',
+      title: newerEntry.data.title,
+    } : null}
+    older={olderEntry ? {
+      href: `/archive/blog/${olderEntry.id}`,
+      eyebrow: 'Older from the old blog',
+      title: olderEntry.data.title,
+    } : null}
+    contextLinks={[
+      {
+        href: '/archive/tweets',
+        label: 'On this day in tweets',
+        note: 'another path through the archive',
+      },
+      {
+        href: '/now',
+        label: 'Right now',
+        note: 'the current chapter',
+      },
+    ]}
+  />
 </Layout>
 
 <style>

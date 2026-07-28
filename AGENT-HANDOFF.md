@@ -3,7 +3,7 @@
 You have been asked to work on Adam's personal site. This document is
 everything you need. Read all of section 1 before touching anything.
 
-Live at **https://tommuncie.com**. Written 2026-07-26. Run `git log --oneline -5`
+Live at **https://tommuncie.com**. Updated 2026-07-27. Run `git log --oneline -5`
 for where things actually stand — this file describes the shape of the project,
 not a snapshot of its history.
 
@@ -58,11 +58,11 @@ ceases to exist in production.
 ### Before every push, run
 
 ```bash
-npm run verify      # atlas gate + typecheck + 214 tests + production build
+npm run verify      # atlas/assets gates + typecheck + 232 tests + production build
 ```
 
-All four gates must pass. `verify` checks the complete photographic atlas,
-then runs `typecheck && test && build`; if any step fails, fix it before
+Every gate must pass. `verify` checks the photographic atlas, content image
+paths, tracked social cards, types, tests, and production build; if any step fails, fix it before
 pushing — a broken build means Netlify publishes nothing and the site silently
 keeps serving the previous version. `netlify.toml` runs the same `verify`
 command so the production build cannot bypass the atlas/test gates.
@@ -96,11 +96,12 @@ Astro 7 + Tailwind 4. Static output. Node ≥ 22.12.
 ```
 src/
   components/Outside.astro      the weather/info band  ← main work area
+  components/EntryTrail.astro   newer/older + contextual content navigation
   layouts/Layout.astro          shell: head/meta, nav, footer
   pages/                        index, about, now, coffee, art, pokemon,
                                 archive/, game, 404
   scripts/sky/                  astronomy, plate selection/compositor, ribbon
-    astro.ts  plates.ts  plate-compositor.ts  outside-controller.ts
+    astro.ts  plates.ts  plate-compositor.ts  outside-controller.ts forecast.ts
     sky.ts  ribbon.ts  __tests__/
   scripts/lander/               the Moon Lander game  ← second work area
     main.ts physics.ts entities.ts levels.ts upgrades.ts abilities.ts
@@ -108,6 +109,8 @@ src/
   styles/global.css             design tokens + component classes
   content/                      markdown collections (now, pokemon, art, pastBlog)
 netlify/functions/scores.mjs    leaderboard API, /api/scores
+scripts/build-social-cards.mjs  tracked 1200×630 card generator + size guard
+scripts/check-content-assets.mjs frontmatter image-path release guard
 understory/                     DEAD PROJECT — see §5. Do not touch.
 ```
 
@@ -115,13 +118,16 @@ Commands:
 
 | Command | What |
 |---|---|
-| `npm run dev` | Local dev server |
-| `npm run build` | Production build to `dist/` |
+| `astro dev --background` | Required background-mode local dev server |
+| `npm run build` | Verify tracked social cards + production build to `dist/` |
+| `npm run build:social-cards` | Explicitly refresh the tracked section cards |
 | `npm run build:sky-plates` | Rebuild and budget-check the photographic atlas |
+| `npm run check:content-assets` | Fail on broken content frontmatter image paths |
+| `npm run check:social-cards` | Verify the tracked homepage/section cards are 1200×630 |
 | `npm run check:sky-plates` | Verify every plate path, hash, dimension, and budget |
-| `npm test` | 214 tests (`src/scripts` only) |
+| `npm test` | 232 tests (`src/scripts` only) |
 | `npm run typecheck` | `astro sync && tsc --noEmit` |
-| `npm run verify` | Atlas gate + typecheck + tests + build. Run before pushing. |
+| `npm run verify` | Atlas/content gates + typecheck + tests + social cards/build. |
 
 ---
 
@@ -131,11 +137,13 @@ Commands:
 living almanac fixed to Breckenridge, Texas**. A 32-frame photographic atlas
 (four weather families × eight astronomical moments) supplies the scene while
 local astronomy drives slice selection, the daylight countdown, the textured
-Moon-phase portrait, and the shared sun/Moon chart. The plot is a rolling
+Moon-phase portrait, and the shared sun/Moon/temperature chart. The plot is a rolling
 24-hour window from six hours behind now through eighteen hours ahead. Solid
 above-horizon curves join faint below-horizon continuations across midnight,
 while the paper-ledger Night Watch row gives the interpolated local lunar
 visibility window without placing a false Moon in the photographed landscape.
+Open-Meteo's hourly model adds a restrained temperature trace, and cloud layers
+around the next real sunset produce an explicitly heuristic sunset potential.
 
 ### Architecture
 
@@ -148,6 +156,8 @@ visibility window without placing a false Moon in the photographed landscape.
   preloading, race cancellation, graceful retention, and reduced-motion
   handling.
 - `scripts/sky/ribbon.ts` — geometry for the shared 24-hour axis.
+- `scripts/sky/forecast.ts` — safe Unix-hour parsing, temperature-trace
+  geometry, and the tested sunset cloud-layer heuristic.
 - `scripts/sky/outside-controller.ts` — DOM/data lifecycle, local astronomical
   frame, lunar portrait, chart, Open-Meteo, and ISS enhancement.
 - `components/Outside.astro` — semantic editorial markup only.
@@ -190,7 +200,9 @@ restrained 1440×200 coordinate system; tablet keeps 1440×240 and mobile keeps
 the taller 600×240 geometry so the full 24-hour window stays full-width and
 readable without horizontal scrolling. Type and marker radii scale by
 `geometry.width / svg.clientWidth`; non-scaling strokes retain their authored
-CSS-pixel weight. Timeline ticks come from real Breckenridge instants, not fixed
+CSS-pixel weight. The temperature trace shares that time axis but stays in the
+otherwise-unused lower band; its display range is at least 12°F so tiny changes
+never look dramatic. Timeline ticks come from real Breckenridge instants, not fixed
 minute-of-day values, so midnight and DST are transitions rather than chart
 seams.
 
@@ -199,6 +211,12 @@ Night Watch window represent when it is above the Breckenridge horizon. Cloud
 and daylight can still prevent an actual sighting, so keep the formal wording
 as "above horizon." Keep event copy outside the SVG; putting long rise/set text
 on the plot clips on narrow viewports.
+
+**Sunset potential is a model, not a promise.** It is calculated from
+proximity-weighted low/mid/high cloud layers, rain probability, and storm codes
+within 90 minutes of the next actual sunset. Keep the label "Sunset potential"
+and the Promising/Mixed/Subtle/Obscured vocabulary. If fewer than two complete
+samples exist, say the layer data is unavailable; never invent a quality.
 
 **Mobile is a split composition.** The image stage is 460px tall; the chart,
 Night Watch, four field-note chapters, and ISS line continue on warm paper below
@@ -222,15 +240,9 @@ silently renders "0° up". This was a real bug, already fixed; don't reintroduce
 
 Adam wants this area sharper. These were offered and not done:
 
-1. **24-hour temperature sparkline.** The Open-Meteo response already carries
-   hourly data — this is nearly free. Highest value per effort.
-2. **A real sunset-quality model.** Currently a crude string. Vivid sunsets
-   come from mid- and high-altitude cloud at particular fractions, and
-   Open-Meteo returns cloud cover split by level. This would be a genuinely
-   novel feature rather than a restyle.
-3. **Air quality** — Open-Meteo, same no-key CORS setup. Relevant in Texas.
-4. **Live radar** — RainViewer has free tiles, no key.
-5. **Drop the polluxlabs dependency** — compute SGP4 client-side from
+1. **Air quality** — Open-Meteo, same no-key CORS setup. Relevant in Texas.
+2. **Live radar** — RainViewer has free tiles, no key.
+3. **Drop the polluxlabs dependency** — compute SGP4 client-side from
    Celestrak TLEs (`satellite.js`, ~30kb). Removes a hobby-proxy single point
    of failure and unlocks a week of passes plus Starlink trains.
 
@@ -320,19 +332,35 @@ full permissions. Rename stray locks rather than deleting them:
 `DESIGN.md` at the repo root is the full spec. Tokens live in
 `src/styles/global.css` under `@theme`.
 
+The homepage's **Recently Tended** row is build-time content, not a second CMS:
+`index.astro` chooses the newest Now, Art, Pokémon, and old-blog entry with a
+stable ID tie-break. Detail pages use `EntryTrail.astro` for unambiguous
+newer/older navigation and small contextual paths into neighboring sections.
+
+`Layout.astro` owns canonical, Open Graph, Twitter, article-date, image-alt,
+and noindex metadata. Every major section passes a 1200×630 image from
+`public/images/social/`; detail pages reuse their section card while retaining
+their own title, description, canonical URL, type, and published time.
+`npm run build` verifies every tracked card before Astro runs; refresh them
+explicitly with `npm run build:social-cards` after changing the card brief.
+The image-generated homepage card is the tracked `public/og.png` master.
+
 Theme is **Hearthwood Light** — a single warm light theme. The old dark
 "Prism" magenta/cyan palette and the whole `[data-theme]` toggle were
 deliberately removed. **Do not reintroduce dark mode or a theme switcher.**
 
 ```
 canvas    #FAF6EE   warm paper        ink       #221A12   warm near-black
-surface   #FFFFFF   cards             muted     #8A7B65   secondary text
+surface   #FFFFFF   cards             muted     #6F604A   readable secondary text
 line      #E7DCC8   borders           accent    #C2673A   terracotta
 accent-mid #B8862E  gold              accent-2  #5F7A45   moss
-signal    #7C9A2E   olive, live states only
+signal    #7C9A2E   graphical signal  faint     #8A7B65   decoration only
 ```
 
-Type: Space Grotesk (display), Inter (body), JetBrains Mono (labels/data).
+Actual text accents use the darker `accent-ink`, `gold-ink`, `moss-ink`, and
+`signal-ink` tokens; do not use the brighter graphical accents for small text.
+Type: self-hosted variable Space Grotesk (display), Inter (body), and JetBrains
+Mono (labels/data). There is no Google Fonts request.
 Corners are sharp — radius tokens are 0/2/4px. No pill shapes, no large soft
 rounding.
 

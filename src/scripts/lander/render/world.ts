@@ -437,7 +437,7 @@ export function drawBonusPad(ctx: CanvasRenderingContext2D, terrain: Terrain, t:
     }
   }
   c.globalAlpha = 0.7;
-  c.font = '12px "JetBrains Mono", monospace';
+  c.font = '12px "JetBrains Mono Variable", monospace';
   c.textAlign = 'center';
   c.fillStyle = '#FFC94A';
   c.fillText('×3✨', (bp.xStart + bp.xEnd) / 2, bp.y - 12);

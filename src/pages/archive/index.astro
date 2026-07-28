@@ -13,7 +13,12 @@ function fmt(date: Date) {
 }
 ---
 
-<Layout title="Archive — Tomfoolery" description="Tom of the Past: old blog posts and tweets, 2008–2018.">
+<Layout
+  title="Archive — Tomfoolery"
+  description="Tom of the Past: old blog posts and tweets, 2008–2018."
+  image="/images/social/archive.png"
+  imageAlt="Tom of the Past — old blog posts and tweets from 2008 through 2018."
+>
   <div class="retro-wrap">
     <p class="badge">from the vault</p>
     <h1 class="font-display text-3xl md:text-4xl font-semibold mt-3">Tom of the Past</h1>
@@ -42,7 +47,7 @@ function fmt(date: Date) {
         <h2 class="font-display text-xl font-semibold">Tweets <span class="font-mono text-xs text-muted">2008–2018</span></h2>
         <p class="mt-1 text-sm text-muted">13,686 original tweets (replies, retweets, and dead Instagram links left in the past).</p>
         <a href="/archive/tweets" class="tile block mt-4 p-5 retro-box">
-          <span class="font-mono text-sm text-accent">→ on this day in tweets</span>
+          <span class="font-mono text-sm text-accent-ink">→ on this day in tweets</span>
         </a>
       </section>
 
@@ -52,7 +57,7 @@ function fmt(date: Date) {
         <ul class="mt-4 space-y-2">
           {posts.map((p) => (
             <li class="flex items-baseline justify-between gap-3 border-b border-dotted border-line pb-1">
-              <a href={`/archive/blog/${p.id}`} class="hover:text-accent transition-colors">{p.data.title}</a>
+              <a href={`/archive/blog/${p.id}`} class="hover:text-accent-ink transition-colors">{p.data.title}</a>
               <span class="font-mono text-xs text-muted whitespace-nowrap">{fmt(p.data.date)}</span>
             </li>
           ))}
@@ -119,7 +124,7 @@ function fmt(date: Date) {
             shown.push(
               `<li class="border-b border-dotted border-line pb-2">
                 <span class="badge-signal font-mono text-xs">blog</span>
-                <a href="/archive/blog/${b.slug}" class="ml-2 font-semibold hover:text-accent">${esc(b.title)}</a>
+                <a href="/archive/blog/${b.slug}" class="ml-2 font-semibold hover:text-accent-ink">${esc(b.title)}</a>
                 <span class="ml-2 font-mono text-xs text-muted">${b.date}</span>
                 <p class="mt-1 text-sm text-muted">${snippet(b.text, q)}</p>
               </li>`
@@ -129,7 +134,7 @@ function fmt(date: Date) {
             shown.push(
               `<li class="border-b border-dotted border-line pb-2">
                 <span class="badge font-mono text-xs">tweet</span>
-                <a href="/archive/tweets?date=${t.ts.slice(5, 10)}#t${t.id}" class="ml-2 font-mono text-xs text-muted hover:text-accent">${t.ts}</a>
+                <a href="/archive/tweets?date=${t.ts.slice(5, 10)}#t${t.id}" class="ml-2 font-mono text-xs text-muted hover:text-accent-ink">${t.ts}</a>
                 <p class="mt-1 text-sm">${snippet(t.text, q)}</p>
               </li>`
             );

@@ -39,6 +39,14 @@ import {
   type RibbonGeometry,
   type RibbonWindow,
 } from './ribbon';
+import {
+  assessSunsetPotential,
+  buildTemperatureTrace,
+  parseOpenMeteoHourly,
+  validateForecastHours,
+  type ForecastHour,
+  type SunsetPotentialBand,
+} from './forecast';
 import { uvLabel } from './sky';
 
 const LATITUDE = 32.7557;
@@ -49,6 +57,8 @@ const ISS_REFRESH_MS = 6 * 60 * 60_000;
 const REQUEST_TIMEOUT_MS = 12_000;
 const CONDITION_CACHE_TTL_MS = 2 * 60 * 60_000;
 const CONDITION_CACHE_KEY = 'outside:breckenridge-condition';
+const WEATHER_CACHE_TTL_MS = 30 * 60_000;
+const WEATHER_CACHE_KEY = 'outside:breckenridge-weather';
 const MINUTE = 60_000;
 const RIBBON_LOOKBACK_MINUTES = 6 * 60;
 const RIBBON_DURATION_MINUTES = 24 * 60;
@@ -188,7 +198,7 @@ export function shouldCommitPlatePresentation(
   return status === 'shown' || status === 'unchanged';
 }
 
-interface Conditions {
+export interface Conditions {
   temperature: number;
   apparentTemperature: number;
   high: number;
@@ -201,13 +211,17 @@ interface Conditions {
   precipitation: number;
   precipitationProbability: number;
   cloud: number;
-  eveningCondition: PlateCondition;
-  eveningPrecipitationProbability: number;
+  forecastHours: ForecastHour[];
 }
 
 interface ConditionCache {
   condition: PlateCondition;
   observedAt: number;
+}
+
+interface RecentWeatherCache {
+  observedAt: number;
+  conditions: Conditions;
 }
 
 interface ZonedParts {
@@ -223,6 +237,105 @@ interface OutsideWindow extends Window {
   __outsideAlmanacCleanup?: () => void;
   __outsideAlmanacInit?: () => void;
   __outsideAlmanacLifecycleBound?: boolean;
+  __outsideAlmanacRoot?: HTMLElement;
+}
+
+const CONDITION_NUMBER_RANGES = Object.freeze([
+  ['temperature', -150, 160],
+  ['apparentTemperature', -180, 200],
+  ['high', -150, 160],
+  ['low', -150, 160],
+  ['code', 0, 99],
+  ['humidity', 0, 100],
+  ['windSpeed', 0, 300],
+  ['windDirection', 0, 360],
+  ['uv', 0, 50],
+  ['precipitation', 0, 500],
+  ['precipitationProbability', 0, 100],
+  ['cloud', 0, 100],
+] as const);
+
+/**
+ * Validate the short-lived full weather snapshot used to avoid an empty hero
+ * on repeat visits. Expired, future-dated, or malformed values are ignored.
+ */
+export function parseRecentWeatherCache(
+  input: unknown,
+  now = Date.now(),
+): RecentWeatherCache | null {
+  if (!input || typeof input !== 'object') return null;
+  const cached = input as Partial<RecentWeatherCache>;
+  const observedAt =
+    typeof cached.observedAt === 'number' && Number.isFinite(cached.observedAt)
+      ? cached.observedAt
+      : null;
+  if (observedAt === null) return null;
+  const age = now - observedAt;
+  if (age < 0 || age > WEATHER_CACHE_TTL_MS) return null;
+  if (!cached.conditions || typeof cached.conditions !== 'object') return null;
+
+  const candidate = cached.conditions as Partial<Conditions>;
+  for (const [field, minimum, maximum] of CONDITION_NUMBER_RANGES) {
+    const value = candidate[field];
+    if (
+      typeof value !== 'number'
+      || !Number.isFinite(value)
+      || value < minimum
+      || value > maximum
+    ) {
+      return null;
+    }
+  }
+  const forecastHours = validateForecastHours(candidate.forecastHours, {
+    minAt: observedAt - 8 * 60 * 60_000,
+    maxAt: observedAt + 36 * 60 * 60_000,
+  });
+
+  return {
+    observedAt,
+    conditions: {
+      temperature: candidate.temperature as number,
+      apparentTemperature: candidate.apparentTemperature as number,
+      high: candidate.high as number,
+      low: candidate.low as number,
+      code: candidate.code as number,
+      humidity: candidate.humidity as number,
+      windSpeed: candidate.windSpeed as number,
+      windDirection: candidate.windDirection as number,
+      uv: candidate.uv as number,
+      precipitation: candidate.precipitation as number,
+      precipitationProbability: candidate.precipitationProbability as number,
+      cloud: candidate.cloud as number,
+      forecastHours,
+    },
+  };
+}
+
+/** Stable, testable Open-Meteo request for the chart and next sunset. */
+export function weatherForecastUrl(): string {
+  const url = new URL('https://api.open-meteo.com/v1/forecast');
+  url.searchParams.set('latitude', String(LATITUDE));
+  url.searchParams.set('longitude', String(LONGITUDE));
+  url.searchParams.set(
+    'current',
+    'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,precipitation,uv_index',
+  );
+  url.searchParams.set(
+    'hourly',
+    'temperature_2m,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,precipitation_probability',
+  );
+  url.searchParams.set(
+    'daily',
+    'temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_probability_max',
+  );
+  url.searchParams.set('temperature_unit', 'fahrenheit');
+  url.searchParams.set('wind_speed_unit', 'mph');
+  url.searchParams.set('timezone', TIME_ZONE);
+  url.searchParams.set('timeformat', 'unixtime');
+  url.searchParams.set('past_hours', '6');
+  url.searchParams.set('forecast_hours', '30');
+  url.searchParams.set('forecast_days', '2');
+  return url.toString();
 }
 
 const BRECKENRIDGE_PARTS = new Intl.DateTimeFormat('en-US', {
@@ -337,6 +450,18 @@ export function rollingTimelineMarks(
   return marks;
 }
 
+/** Resolve the next authored sunset anchor, including the following day. */
+export function nextSunsetAt(
+  schedule: PlateSchedule,
+  now: Date,
+): number | null {
+  const value = now.valueOf();
+  if (!Number.isFinite(value)) return null;
+  return schedule.anchors.find(
+    (anchor) => anchor.moment === 'sunset' && anchor.at > value,
+  )?.at ?? null;
+}
+
 interface MoonEditorialCopy {
   status: string;
   summary: string;
@@ -407,18 +532,6 @@ function pathEscape(value: string): string {
     .replaceAll('"', '&quot;');
 }
 
-function eveningForecastIndex(times: unknown, dateKey: string): number {
-  if (!Array.isArray(times)) return -1;
-  const preferred = times.indexOf(`${dateKey}T20:00`);
-  if (preferred >= 0) return preferred;
-  return times.findIndex(
-    (value) =>
-      typeof value === 'string'
-      && value >= `${dateKey}T18:00`
-      && value <= `${dateKey}T23:59`,
-  );
-}
-
 function plateAsset(condition: PlateCondition, moment: SolarMoment): RasterPlate {
   const base = plateAssetBase(condition, moment);
   const variant = window.matchMedia('(max-width: 420px)').matches
@@ -486,37 +599,13 @@ function drawTexturedMoon(
   context.stroke();
 }
 
-function eveningCopy(
-  condition: PlateCondition,
-  precipitationProbability: number,
-): [string, string] {
-  const rainChance = `${Math.round(precipitationProbability)}% rain chance`;
-  switch (condition) {
-    case 'storm':
-      return ['Storm watch', `${rainChance} · storms possible`];
-    case 'overcast':
-      return [
-        'Clouded evening',
-        precipitationProbability >= 20
-          ? `${rainChance} · overcast`
-          : 'Cloud cover holds after sunset',
-      ];
-    case 'scattered':
-      return [
-        'Broken clouds',
-        precipitationProbability >= 20
-          ? rainChance
-          : 'Openings after sunset',
-      ];
-    default:
-      return [
-        'Clear evening',
-        precipitationProbability >= 20
-          ? rainChance
-          : 'Cooling after sunset',
-      ];
-  }
-}
+const SUNSET_POTENTIAL_LABELS: Readonly<Record<SunsetPotentialBand, string>> =
+  Object.freeze({
+    promising: 'Promising',
+    mixed: 'Mixed',
+    subtle: 'Subtle',
+    obscured: 'Obscured',
+  });
 
 /**
  * Mount one Outside instance and return an idempotent teardown.
@@ -555,7 +644,11 @@ export function mountOutside(root: HTMLElement): () => void {
   let platePresentationRequest = 0;
   let weatherInFlight = false;
   let issInFlight = false;
+  let usingRecentWeather = false;
+  let ribbonStarted = false;
   let plateConditionExpiresAt: number | null = null;
+  let deferredStartupTimer: number | undefined;
+  let deferredStartupIdle: number | undefined;
   const timers: number[] = [];
 
   try {
@@ -578,9 +671,33 @@ export function mountOutside(root: HTMLElement): () => void {
     // Storage is an optional optimization only.
   }
 
+  try {
+    const remembered = localStorage.getItem(WEATHER_CACHE_KEY);
+    if (remembered) {
+      const cached = parseRecentWeatherCache(JSON.parse(remembered));
+      if (cached) {
+        conditions = cached.conditions;
+        usingRecentWeather = true;
+        plateCondition = classifyPlateCondition({
+          code: conditions.code,
+          cloud: conditions.cloud,
+          precipitation: conditions.precipitation,
+        });
+        plateConditionExpiresAt =
+          cached.observedAt + CONDITION_CACHE_TTL_MS;
+        root.dataset.weather = 'recent';
+        setField('source-status', 'recent weather · refreshing');
+      } else {
+        localStorage.removeItem(WEATHER_CACHE_KEY);
+      }
+    }
+  } catch {
+    // The weather snapshot is a repeat-load optimization only.
+  }
+
   const moonTexture = new Image();
   moonTexture.decoding = 'async';
-  moonTexture.src = '/images/outside/celestial/moon.webp';
+  moonTexture.setAttribute('fetchpriority', 'low');
 
   async function requestJson(url: string) {
     const requestController = new AbortController();
@@ -706,7 +823,7 @@ export function mountOutside(root: HTMLElement): () => void {
     drawTexturedMoon(portrait, moonTexture, fraction, waxing);
   }
 
-  function renderWeather() {
+  function renderWeather(now: Date) {
     if (!conditions) return;
     const current = conditions;
     setField('weather-temp', `${Math.round(current.temperature)}°`);
@@ -731,17 +848,34 @@ export function mountOutside(root: HTMLElement): () => void {
         ? `${current.precipitation.toFixed(1)} mm falling now`
         : 'No rain falling now',
     );
-    const [tonightValue, tonightDetail] = eveningCopy(
-      current.eveningCondition,
-      current.eveningPrecipitationProbability,
-    );
-    setField('tonight-value', tonightValue);
-    setField('tonight-detail', tonightDetail);
+    ensureSchedule(now);
+    const nextSunset = nextSunsetAt(schedule, now);
+    const sunsetPotential = nextSunset !== null
+      ? assessSunsetPotential(current.forecastHours, nextSunset)
+      : null;
+    if (nextSunset !== null && sunsetPotential) {
+      const sunsetTime = formatRelativeEventTime(
+        new Date(nextSunset),
+        now,
+      );
+      setField(
+        'sunset-value',
+        `${SUNSET_POTENTIAL_LABELS[sunsetPotential.band]} · ${sunsetTime}`,
+      );
+      setField(
+        'sunset-detail',
+        `H ${Math.round(sunsetPotential.highCloud)} · M ${Math.round(sunsetPotential.midCloud)} · L ${Math.round(sunsetPotential.lowCloud)}%`,
+      );
+    } else {
+      setField('sunset-value', 'Layer data unavailable');
+      setField('sunset-detail', 'No cloud-layer estimate');
+    }
   }
 
   function renderRibbon(now: Date) {
     const svg = query<SVGSVGElement>('[data-ribbon]');
     if (!svg) return;
+    ribbonStarted = true;
 
     const geometry = window.matchMedia('(max-width: 720px)').matches
       ? RIBBON_MOBILE
@@ -758,6 +892,24 @@ export function mountOutside(root: HTMLElement): () => void {
       durationMinutes: RIBBON_DURATION_MINUTES,
       stepMinutes: 6,
     });
+    const temperatureTop =
+      geometry.baseline + (geometry.belowBand ?? 0)
+      + (geometry.height === RIBBON_DESKTOP.height ? 7 : 9);
+    const temperatureBottom = geometry.height - 34;
+    const temperatureTrace = conditions
+      ? buildTemperatureTrace(conditions.forecastHours, model.window, {
+        width: geometry.width,
+        top: temperatureTop,
+        bottom: temperatureBottom,
+        minSpan: 12,
+      })
+      : null;
+    setField(
+      'temperature-range',
+      temperatureTrace
+        ? `rolling 24 hours · ${Math.round(temperatureTrace.min)}°–${Math.round(temperatureTrace.max)}°`
+        : 'rolling 24 hours',
+    );
     // The visible plot stays intentionally concise. A longer event-only model
     // lets the Night Watch sentence include the Moon's following set even when
     // it falls just beyond the 24-hour chart.
@@ -856,6 +1008,12 @@ export function mountOutside(root: HTMLElement): () => void {
         `<path d="${pathEscape(model.sunPath)}" fill="none" stroke="var(--outside-sun-line)" stroke-width="${strokeWidth(2.4)}" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`,
       );
     }
+    if (temperatureTrace) {
+      fragments.push(
+        `<line x1="0" y1="${(temperatureTop - 5).toFixed(1)}" x2="${geometry.width}" y2="${(temperatureTop - 5).toFixed(1)}" stroke="var(--outside-line)" stroke-opacity=".48" stroke-width="${strokeWidth(1)}" vector-effect="non-scaling-stroke"/>`,
+        `<path class="outside-almanac__temperature-curve" d="${pathEscape(temperatureTrace.path)}" fill="none" stroke="var(--outside-temperature-line)" stroke-width="${strokeWidth(1.65)}" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`,
+      );
+    }
 
     for (const mark of rollingTimelineMarks(model.window)) {
       const tickX = x(mark.minute);
@@ -863,7 +1021,7 @@ export function mountOutside(root: HTMLElement): () => void {
         tickX < 65 ? 'start' : tickX > geometry.width - 65 ? 'end' : 'middle';
       if (mark.kind === 'day') {
         fragments.push(
-          `<line x1="${tickX.toFixed(1)}" y1="30" x2="${tickX.toFixed(1)}" y2="${geometry.height - 48}" stroke="var(--outside-line)" stroke-width="${strokeWidth(1)}" stroke-dasharray="3 6" vector-effect="non-scaling-stroke"/>`,
+          `<line x1="${tickX.toFixed(1)}" y1="30" x2="${tickX.toFixed(1)}" y2="${(temperatureTop - 7).toFixed(1)}" stroke="var(--outside-line)" stroke-width="${strokeWidth(1)}" stroke-dasharray="3 6" vector-effect="non-scaling-stroke"/>`,
         );
       }
       fragments.push(
@@ -916,11 +1074,14 @@ export function mountOutside(root: HTMLElement): () => void {
     svg.innerHTML = fragments.join('');
     svg.setAttribute(
       'aria-label',
-      `Rolling 24-hour Sun and Moon altitude chart for Breckenridge, from ${BRECKENRIDGE_WINDOW_TIME.format(model.window.start)} to ${BRECKENRIDGE_WINDOW_TIME.format(model.window.end)}. Now ${BRECKENRIDGE_WINDOW_TIME.format(now)}. ${moonCopy.description} Solid Sun and dashed Moon lines are strong above the horizon and faint below it. Weather and daylight affect actual visibility. ${lastIssSummary}`,
+      `Rolling 24-hour Sun and Moon altitude and hourly temperature model chart for Breckenridge, from ${BRECKENRIDGE_WINDOW_TIME.format(model.window.start)} to ${BRECKENRIDGE_WINDOW_TIME.format(model.window.end)}. Now ${BRECKENRIDGE_WINDOW_TIME.format(now)}. ${moonCopy.description} Solid Sun and dashed Moon lines are strong above the horizon and faint below it. ${temperatureTrace ? `The hourly temperature model ranges from ${Math.round(temperatureTrace.min)} to ${Math.round(temperatureTrace.max)} degrees Fahrenheit.` : 'The hourly temperature model is unavailable.'} Weather and daylight affect actual visibility. Sunset potential is a cloud-layer heuristic, not a visibility guarantee. ${lastIssSummary}`,
     );
   }
 
-  function render(now = new Date()) {
+  function render(
+    now = new Date(),
+    options: { ribbon?: boolean } = {},
+  ) {
     if (destroyed) return;
     if (issPassEndsAt !== null && issPassEndsAt <= now.valueOf()) {
       issPassAt = null;
@@ -932,36 +1093,20 @@ export function mountOutside(root: HTMLElement): () => void {
     updatePlate(now);
     renderDaylight(now);
     renderCelestial(now);
-    renderWeather();
-    renderRibbon(now);
+    renderWeather(now);
+    if (options.ribbon !== false) renderRibbon(now);
   }
 
   async function loadWeather() {
     if (weatherInFlight) return;
     weatherInFlight = true;
     try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}`
-        + '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,precipitation,uv_index'
-        + '&hourly=weather_code,cloud_cover,precipitation_probability'
-        + '&daily=temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_probability_max'
-        + '&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America%2FChicago&forecast_days=1';
-      const data = await requestJson(url);
+      const data = await requestJson(weatherForecastUrl());
       const current = data.current;
       const daily = data.daily;
       const hourly = data.hourly ?? {};
-      const eveningIndex = eveningForecastIndex(
-        hourly.time,
-        breckenridgeDateKey(new Date()),
-      );
-      const eveningCode = hourly.weather_code?.[eveningIndex]
-        ?? current.weather_code;
-      const eveningCloud = hourly.cloud_cover?.[eveningIndex]
-        ?? current.cloud_cover;
-      const eveningPrecipitationProbability =
-        hourly.precipitation_probability?.[eveningIndex]
-        ?? daily.precipitation_probability_max?.[0]
-        ?? 0;
-      conditions = {
+      const receivedAt = Date.now();
+      const candidate: Conditions = {
         temperature: current.temperature_2m,
         apparentTemperature: current.apparent_temperature,
         high: daily.temperature_2m_max?.[0] ?? current.temperature_2m,
@@ -974,25 +1119,35 @@ export function mountOutside(root: HTMLElement): () => void {
         precipitation: current.precipitation ?? 0,
         precipitationProbability: daily.precipitation_probability_max?.[0] ?? 0,
         cloud: current.cloud_cover,
-        eveningCondition: classifyPlateCondition({
-          code: eveningCode,
-          cloud: eveningCloud,
-        }),
-        eveningPrecipitationProbability,
+        forecastHours: parseOpenMeteoHourly(hourly),
       };
+      const validated = parseRecentWeatherCache({
+        observedAt: receivedAt,
+        conditions: candidate,
+      }, receivedAt);
+      if (!validated) throw new Error('Weather response was incomplete');
+      conditions = validated.conditions;
+      usingRecentWeather = false;
       plateCondition = classifyPlateCondition({
         code: conditions.code,
         cloud: conditions.cloud,
         precipitation: conditions.precipitation,
       });
-      plateConditionExpiresAt = Date.now() + CONDITION_CACHE_TTL_MS;
+      plateConditionExpiresAt = receivedAt + CONDITION_CACHE_TTL_MS;
       try {
         localStorage.setItem(
           CONDITION_CACHE_KEY,
           JSON.stringify({
             condition: plateCondition,
-            observedAt: Date.now(),
+            observedAt: receivedAt,
           } satisfies ConditionCache),
+        );
+        localStorage.setItem(
+          WEATHER_CACHE_KEY,
+          JSON.stringify({
+            observedAt: receivedAt,
+            conditions,
+          } satisfies RecentWeatherCache),
         );
       } catch {
         // Storage is an optional optimization only.
@@ -1005,7 +1160,11 @@ export function mountOutside(root: HTMLElement): () => void {
       root.dataset.weather = conditions ? 'stale' : 'offline';
       setField(
         'source-status',
-        conditions ? 'weather delayed · last reading' : 'weather delayed · almanac local',
+        conditions
+          ? usingRecentWeather
+            ? 'weather delayed · recent reading'
+            : 'weather delayed · last reading'
+          : 'weather delayed · almanac local',
       );
       if (!conditions) {
         setField('weather-desc', 'Astronomical view is live');
@@ -1070,9 +1229,33 @@ export function mountOutside(root: HTMLElement): () => void {
   };
   moonTexture.addEventListener('load', onTextureReady);
 
-  render();
+  const initialNow = new Date();
+  // Start the high-priority photographic request before the Moon texture,
+  // large SVG, and optional ISS request compete for the first frame.
+  render(initialNow, { ribbon: false });
+  moonTexture.src = '/images/outside/celestial/moon.webp';
   void loadWeather();
-  void loadIss();
+
+  const idleWindow = window as Window & {
+    requestIdleCallback?: (
+      callback: () => void,
+      options?: { timeout: number },
+    ) => number;
+    cancelIdleCallback?: (handle: number) => void;
+  };
+  const finishDeferredStartup = () => {
+    if (destroyed) return;
+    renderRibbon(new Date());
+    void loadIss();
+  };
+  if (idleWindow.requestIdleCallback) {
+    deferredStartupIdle = idleWindow.requestIdleCallback(
+      finishDeferredStartup,
+      { timeout: 800 },
+    );
+  } else {
+    deferredStartupTimer = window.setTimeout(finishDeferredStartup, 250);
+  }
 
   timers.push(
     window.setInterval(() => render(new Date()), MINUTE),
@@ -1087,7 +1270,7 @@ export function mountOutside(root: HTMLElement): () => void {
       resizeTimer = window.setTimeout(() => {
         const now = new Date();
         updatePlate(now);
-        renderRibbon(now);
+        if (ribbonStarted) renderRibbon(now);
       }, 120);
     });
   resizeObserver?.observe(root);
@@ -1098,6 +1281,10 @@ export function mountOutside(root: HTMLElement): () => void {
     abortController.abort();
     timers.forEach((timer) => window.clearInterval(timer));
     window.clearTimeout(resizeTimer);
+    window.clearTimeout(deferredStartupTimer);
+    if (deferredStartupIdle !== undefined) {
+      idleWindow.cancelIdleCallback?.(deferredStartupIdle);
+    }
     resizeObserver?.disconnect();
     moonTexture.removeEventListener('load', onTextureReady);
     compositor.destroy();
@@ -1112,8 +1299,17 @@ export function mountOutside(root: HTMLElement): () => void {
 export function installOutsideLifecycle() {
   const outsideWindow = window as OutsideWindow;
   outsideWindow.__outsideAlmanacInit = () => {
-    outsideWindow.__outsideAlmanacCleanup?.();
     const root = document.getElementById('outside-band');
+    if (
+      root
+      && root === outsideWindow.__outsideAlmanacRoot
+      && outsideWindow.__outsideAlmanacCleanup
+    ) {
+      return;
+    }
+
+    outsideWindow.__outsideAlmanacCleanup?.();
+    outsideWindow.__outsideAlmanacRoot = root ?? undefined;
     outsideWindow.__outsideAlmanacCleanup = root
       ? mountOutside(root)
       : undefined;
@@ -1127,6 +1323,7 @@ export function installOutsideLifecycle() {
     document.addEventListener('astro:before-swap', () => {
       outsideWindow.__outsideAlmanacCleanup?.();
       outsideWindow.__outsideAlmanacCleanup = undefined;
+      outsideWindow.__outsideAlmanacRoot = undefined;
     });
   }
 

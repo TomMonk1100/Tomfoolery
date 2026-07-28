@@ -2,7 +2,6 @@
 title: "July's calendar art — tag yourself"
 category: "hand-drawn"
 date: 2026-07-01
-image: "/art/july-calendar.jpg"
 ---
 New month, new page. This one's a woodland gathering — fairy lanterns strung
 through the roots, a whole party happening underground while one kid just

@@ -47,10 +47,10 @@ export function diffButtonsHtml(difficulty: Difficulty, bestFor: (d: Difficulty)
   return `<div class="flex gap-2 justify-center mt-4">${(Object.keys(DIFF_MODS) as Difficulty[]).map((d) => {
     const mod = DIFF_MODS[d];
     const active = d === difficulty;
-    return `<button data-diff="${d}" class="tile px-4 py-2 cursor-pointer text-center" style="${active ? 'border-color: var(--color-accent);' : 'opacity:0.65;'}">
+    return `<button data-diff="${d}" class="tile px-4 py-2 cursor-pointer text-center" style="${active ? 'border-color: var(--color-accent);' : 'border-color:var(--color-line);background:var(--color-surface-2);'}">
       <div class="font-mono text-sm">${mod.icon} ${mod.label}</div>
-      <div class="text-[10px] text-muted mt-0.5">${mod.blurb}</div>
-      <div class="text-[10px] font-mono mt-1 badge-signal">best: ${bestFor(d) || '—'}</div>
+      <div class="text-xs text-muted mt-0.5">${mod.blurb}</div>
+      <div class="text-xs font-mono mt-1 badge-signal">best: ${bestFor(d) || '—'}</div>
     </button>`;
   }).join('')}</div>`;
 }
