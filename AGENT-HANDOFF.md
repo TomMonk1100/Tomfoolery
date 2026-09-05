@@ -111,7 +111,6 @@ src/
 netlify/functions/scores.mjs    leaderboard API, /api/scores
 scripts/build-social-cards.mjs  tracked 1200×630 card generator + size guard
 scripts/check-content-assets.mjs frontmatter image-path release guard
-understory/                     DEAD PROJECT — see §5. Do not touch.
 ```
 
 Commands:
@@ -286,16 +285,6 @@ Hit `/api/scores` directly in a browser to see crash stacks. POST test entries
 with the name `TEST PILOT` — it's filtered out of displayed results.
 
 ---
-
-## 5. Traps specific to this repo
-
-**`understory/` is a dead project.** A Phaser game Adam has retired. It is
-still in the tree but is **not** part of the Astro build, must **not** be
-linked from the site, and should not be worked on. It is excluded from
-`tsconfig.json` and from `npm test` — if you widen either, you will inherit
-405 pre-existing type errors that have nothing to do with your work. An agent
-already made the mistake of treating "Understory isn't linked from the hub" as
-a bug and wiring it in; that was reverted.
 
 **Never `git add -A`.** It stages the whole repo regardless of your working
 directory. `public/uploads/` holds ~7MB of unoptimised phone originals that are
