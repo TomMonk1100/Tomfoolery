@@ -2,14 +2,20 @@ import type { GameEvent } from '../core/events';
 import type { GameState } from '../core/state';
 import { UPGRADE_CATALOG } from '../content/upgrades';
 import { DeterministicRng } from '../core/rng';
+import { RARITY, computeStats } from '../../lander/stats';
 
 export function createOffer(state: GameState, rng: DeterministicRng): void {
-  const available = UPGRADE_CATALOG.filter((upgrade) => !state.run.upgrades.includes(upgrade.id));
-  const pool = available.length >= 3 ? available : UPGRADE_CATALOG;
+  const pool = UPGRADE_CATALOG;
+  const owned = new Set(state.run.upgrades);
+  const count = Math.max(3, Math.min(6, 3 + computeStats([...state.run.upgrades], state.run.difficulty).extraChoices));
   const offer: typeof state.offer = [];
-  while (offer.length < 3 && offer.length < pool.length) {
-    const next = rng.pick(pool).id;
-    if (!offer.includes(next)) offer.push(next);
+  while (offer.length < count && offer.length < pool.length) {
+    const total = pool.reduce((sum, upgrade) => sum + RARITY[upgrade.rarity].weight * (owned.has(upgrade.id) ? 0.75 : 1), 0);
+    let roll = rng.next() * total;
+    for (const upgrade of pool) {
+      roll -= RARITY[upgrade.rarity].weight * (owned.has(upgrade.id) ? 0.75 : 1);
+      if (roll <= 0) { if (!offer.includes(upgrade.id)) offer.push(upgrade.id); break; }
+    }
   }
   state.offer = offer;
 }

@@ -1,15 +1,11 @@
-import { DIFFICULTY, PILOT_ANGLE_TOLERANCE, PILOT_SPEED_TOLERANCE, type Difficulty } from '../content/balance';
+import { PILOT_ANGLE_TOLERANCE, PILOT_SPEED_TOLERANCE, type Difficulty } from '../content/balance';
+import { evaluateLanding as evaluateLegacyLanding } from '../../lander/landing';
 
 export type LandingResult = { landed: boolean; quality: 'soft' | 'great' | 'perfect' | null; cause: string; speed: number; angle: number; };
 
-export function evaluateLanding(vx: number, vy: number, angle: number, difficulty: Difficulty, relativePadVx = 0, speedTolerance = PILOT_SPEED_TOLERANCE, angleTolerance = PILOT_ANGLE_TOLERANCE): LandingResult {
-  const speed = Math.hypot(vx - relativePadVx, vy);
-  const normalizedAngle = Math.abs(Math.atan2(Math.sin(angle), Math.cos(angle)));
-  const tuning = DIFFICULTY[difficulty];
-  const maxSpeed = speedTolerance * tuning.landingSpeed;
-  const maxAngle = angleTolerance * tuning.landingAngle;
-  if (speed > maxSpeed) return { landed: false, quality: null, cause: `too fast (${Math.round(speed)} u/s)`, speed, angle: normalizedAngle };
-  if (normalizedAngle > maxAngle) return { landed: false, quality: null, cause: `attitude ${Math.round(normalizedAngle * 57.3)}°`, speed, angle: normalizedAngle };
-  const quality = speed < maxSpeed * 0.24 && normalizedAngle < maxAngle * 0.28 ? 'perfect' : speed < maxSpeed * 0.58 ? 'great' : 'soft';
-  return { landed: true, quality, cause: 'controlled touchdown', speed, angle: normalizedAngle };
+export function evaluateLanding(vx: number, vy: number, angle: number, _difficulty: Difficulty, relativePadVx = 0, speedTolerance = PILOT_SPEED_TOLERANCE, angleTolerance = PILOT_ANGLE_TOLERANCE, onPad = true): LandingResult {
+  const result = evaluateLegacyLanding({ vx, vy, angle, onPad, speedTolerance, angleTolerance, padVelocity: { vx: relativePadVx, vy: 0 } });
+  const quality = result.safe ? result.totalSpeed < speedTolerance * 0.24 && result.angle < angleTolerance * 0.28 ? 'perfect' : result.totalSpeed < speedTolerance * 0.58 ? 'great' : 'soft' : null;
+  const cause = result.safe ? 'controlled touchdown' : result.reason === 'off-pad' ? 'missed the landing pad' : result.reason === 'tilt' ? `attitude ${Math.round(result.angle * 57.3)}°` : `too fast (${Math.round(result.totalSpeed)} u/s)`;
+  return { landed: result.safe, quality, cause, speed: result.totalSpeed, angle: result.angle };
 }
