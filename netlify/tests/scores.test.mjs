@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createScoresHandler, normalizeScores } from './scores.mjs';
+import { createScoresHandler, normalizeScores } from '../functions/scores.mjs';
 
 class FakeStore {
   constructor(scores) {
