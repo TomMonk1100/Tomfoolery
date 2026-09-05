@@ -2,290 +2,77 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout
-  title="Moon Lander — Tomfoolery"
-  description="An endless roguelite Moon Lander — procedurally harder levels, upgrades with real tradeoffs."
-  image="/images/social/game.png"
-  imageAlt="Moon Lander on Tomfoolery — an endless little flight under a Texas night sky."
->
-  <div class="reveal is-visible game-page">
-    <!-- On phones the canvas must be the first thing under the nav — no
-         scrolling to reach the action (the in-canvas title screen already
-         introduces the game). The header lives here for sm+ viewports and
-         moves into a collapsible section below the game on mobile. -->
-    <div class="hidden sm:block">
-      <span class="badge">interactive field note</span>
-      <h1 class="font-display text-3xl md:text-4xl font-semibold mt-2">Moon Lander</h1>
-      <p class="text-muted mt-2 text-sm">
-        A small illustrated descent through stranger and stranger lunar weather. Land softly, tune the ship, and see how deep the signal goes.
-      </p>
-    </div>
-
-    <div id="lander-root" class="mt-0 sm:mt-6 relative game-console" aria-label="Moon Lander game">
-      <div class="game-bleed">
-        <div class="tile !p-0 overflow-hidden relative lander-stage">
-          <canvas class="block w-full" aria-label="Moon Lander flight view"></canvas>
-
-          <!-- HUD — fuel folded into the top row as a compact chip instead
-               of a separate row. Terrain groundBase sits ~72% down the
-               canvas (levels.ts), so a bottom-anchored fuel bar could end up
-               sitting right on top of the landing pad depending on level
-               layout (confirmed bug: pad hidden behind the fuel bar on a
-               hills level) — the top is reliably clear of terrain across
-               every terrain type. Kept it in the SAME row (not a new one
-               below) rather than growing the HUD's height, since the ship
-               now spawns much closer to the top (main.ts) and a taller HUD
-               block would just reintroduce the same "hidden behind the HUD"
-               problem for the ship instead of the pad. flex-wrap already
-               handles overflow on the narrowest phones exactly like the
-               other chips. -->
-          <div class="flight-panel pointer-events-none" aria-label="Flight instruments">
-            <div class="flight-mission pointer-events-auto"><span>MISSION</span><b><span data-hud="level">1</span> / <span data-hud="best">—</span></b></div>
-            <div class="flight-vitals">
-              <div><span>FUEL</span><b data-hud="fuel">100</b><i><i data-hud="fuel-bar" style="width:100%"></i></i></div>
-              <div><span>ALT</span><b data-hud="altitude">—</b></div>
-              <div><span>DESCENT</span><b data-hud="speed">0 u/s</b></div>
-              <div><span>DRIFT</span><b data-hud="drift">0 u/s</b></div>
-              <div><span>ATTITUDE</span><b data-hud="attitude">0°</b></div>
-            </div>
-            <div class="flight-status"><span>LANDING</span><b data-hud="landing">APPROACH</b></div>
-            <button type="button" data-settings class="flight-settings pointer-events-auto" aria-label="Open flight settings">≡</button>
-          </div>
-
-          <!-- Touch controls (mobile) — corner-anchored overlay directly on
-               the canvas, not a separate row below it. This is the standard
-               two-thumb mobile layout: left thumb rests over the rotate
-               pair (opposing actions, so adjacent buttons make sense),
-               right thumb owns thrust. Anchoring to the canvas itself means
-               there's zero extra scroll distance between "canvas visible"
-               and "controls reachable" — the #1 mobile complaint this
-               rework addresses. `pointer-events-none` on the wrapper +
-               `pointer-events-auto` on each cluster keeps the dead space
-               between the clusters from swallowing taps meant for the
-               canvas/HUD above it. The 4th "ability" button (§6.2) is
-               hidden by default via the `hidden` class; main.ts toggles it
-               when the player owns >=1 active-ability upgrade. -->
-          <!-- Three zones (left/mid/right) so main.ts can re-seat the same
-               button nodes for either layout without rebinding listeners:
-               · corner (default): ⟲⟳ pair in the left zone, thrust (+ability)
-                 in the right zone, mid empty (two-thumb layout)
-               · classic: ⟲ far left, thrust (+ability) center, ⟳ far right —
-                 full-width one-thumb-per-edge layout (Scott's preference) -->
-          <div class="touch-controls absolute inset-x-0 bottom-0 items-end justify-between gap-3 p-3 sm:p-4 select-none pointer-events-none">
-            <div data-tc-zone="left" class="flex items-end gap-2 pointer-events-auto">
-              <button data-touch="left" class="touch-btn" aria-label="Rotate left">⟲</button>
-              <button data-touch="right" class="touch-btn" aria-label="Rotate right">⟳</button>
-            </div>
-            <div data-tc-zone="mid" class="flex flex-col items-center gap-2 pointer-events-auto empty:hidden"></div>
-            <div data-tc-zone="right" class="flex flex-col items-center gap-2 pointer-events-auto empty:hidden">
-              <button data-touch="ability" class="touch-btn touch-btn-ability hidden" aria-label="Use ability">◈</button>
-              <button data-touch="thrust" class="touch-btn touch-btn-thrust" aria-label="Thrust">▲</button>
-            </div>
-          </div>
-
-          <!-- Overlay (start / upgrade / crash / shop screens).
-               NOTE: content centers via m-auto on the child, NOT
-               items-center on the flex parent — flex-centering clips the
-               top of any content taller than the canvas and makes it
-               unreachable by scroll (that's what truncated the shop). -->
-          <div data-overlay class="lander-overlay absolute inset-0 flex p-4 sm:p-6 overflow-y-auto" role="dialog" aria-modal="true" aria-label="Moon Lander menu">
-            <div data-overlay-content class="w-full m-auto"></div>
-          </div>
+<Layout title="Moon Lander — Tomfoolery" description="A warm illustrated endless Moon Lander from Tomfoolery." image="/images/social/game.png" imageAlt="Moon Lander on Tomfoolery">
+  <main class="next-page">
+    <div class="next-page-heading"><span class="badge">interactive field note</span><h1>Moon Lander</h1><p>A tiny expedition ship, a very large moon, and a landing pad that has seen things.</p></div>
+    <section id="lander-next-root" class="next-console" aria-label="Moon Lander 1.0">
+      <div data-next-viewport class="next-viewport">
+        <canvas data-next-canvas aria-label="Moon Lander flight view"></canvas>
+        <div class="next-hud" aria-label="Flight instruments">
+          <div class="next-instrument"><span>DESCENT</span><b data-next-hud="level">1</b><small>SECTOR</small></div>
+          <div class="next-vitals"><span>FUEL <b data-next-hud="fuel">100</b></span><span>ALT <b data-next-hud="altitude">—</b></span><span>DOWN <b data-next-hud="descent">0 u/s</b></span><span>DRIFT <b data-next-hud="drift">0 u/s</b></span><span>TRIM <b data-next-hud="attitude">0°</b></span></div>
+          <div class="next-instrument next-status"><span>STATUS</span><b data-next-hud="landing">APPROACH</b><small>SCORE <em data-next-hud="score">00000</em></small></div>
         </div>
+        <div class="next-touch" aria-label="Touch controls"><button data-next-input="left" aria-label="Rotate left">↶</button><button data-next-input="right" aria-label="Rotate right">↷</button><button data-next-input="thrust" aria-label="Thrust">▲</button></div>
+        <div data-next-overlay class="next-overlay" role="dialog" aria-modal="true" aria-label="Moon Lander menu"></div>
       </div>
-
-      <div class="game-command-bar">
-        <p data-controls-copy>Flight controls: rotate ← → · thrust Space</p>
-        <div class="flex items-center gap-4">
-          <button type="button" data-share aria-label="Share Moon Lander" title="Share this game" class="cursor-pointer hover:text-ink transition-colors">↗ share</button>
-          <button type="button" data-controls-toggle aria-label="Toggle touch control layout" title="Touch control layout" class="cursor-pointer hover:text-ink transition-colors sm:hidden">◇ controls</button>
-          <button type="button" data-pause aria-label="Pause" title="Pause (Esc/P)" class="cursor-pointer hover:opacity-80 transition-opacity">Ⅱ pause</button>
-          <button type="button" data-settings class="cursor-pointer hover:opacity-80 transition-opacity">≡ settings</button>
-        </div>
-      </div>
-
-      <!-- Mobile-only: the page header relocated below the game so the
-           canvas is first. Collapsed by default. -->
-      <details class="sm:hidden mt-4">
-        <summary class="font-display font-semibold cursor-pointer select-none">
-          <span class="badge mr-2">play</span>About Moon Lander
-        </summary>
-        <p class="text-muted mt-2 text-sm">
-          A cinematic little lunar roguelite: land on the lit station, choose an upgrade, and press deeper into the signal.
-        </p>
-      </details>
-    </div>
-  </div>
+      <div class="next-command"><span>Rotate <kbd>←</kbd><kbd>→</kbd> · Thrust <kbd>Space</kbd> · Pause <kbd>Esc</kbd></span><a href="/game-legacy">legacy flight model</a><button data-next-action="pause">Ⅱ pause</button></div>
+    </section>
+  </main>
 </Layout>
 
-<style is:global>
-  /* Moon Lander is deliberately its own night-flight instrument system. The
-     warm editorial page stays outside this namespace. */
-  .game-console { --game-ink: #E9DFC8; --game-muted: #b9c4c8; --game-line: rgba(233, 223, 200, .27); --game-panel: rgba(16, 25, 35, .82); }
-  .lander-stage { background: #101923; border-color: #45515B; box-shadow: 0 16px 34px rgba(10, 18, 25, .3); }
-  .flight-panel { position: absolute; inset: .7rem; display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: .55rem; color: var(--game-ink); font: 600 10px/1.1 "JetBrains Mono Variable", monospace; letter-spacing: .08em; }
-  .flight-panel span { color: var(--game-muted); font-size: .72em; }
-  .flight-panel b { display: block; margin-top: .28rem; color: var(--game-ink); font-size: 1.04em; letter-spacing: .04em; }
-  .flight-mission, .flight-status, .flight-vitals > div, .flight-settings { background: var(--game-panel); border: 1px solid var(--game-line); box-shadow: 0 1px 0 rgba(255,255,255,.08) inset; }
-  .flight-mission, .flight-status { padding: .5rem .58rem; }
-  .flight-vitals { display: flex; justify-content: center; gap: .32rem; min-width: 0; }
-  .flight-vitals > div { min-width: 3.55rem; padding: .48rem .48rem .42rem; }
-  .flight-vitals i { display: block; margin-top: .32rem; width: 100%; height: 3px; background: rgba(255,255,255,.2); }
-  .flight-vitals i i { margin: 0; height: 100%; background: #a7c56a; transition: width .12s linear; }
-  .flight-status b { color: #d7e79d; }
-  .flight-settings { width: 2.45rem; height: 2.45rem; color: var(--game-ink); cursor: pointer; font-size: 1rem; }
-  .lander-overlay { background: linear-gradient(120deg, rgba(13, 12, 16, .28), rgba(13, 12, 16, .62) 48%, rgba(20, 14, 9, .82)); backdrop-filter: blur(2px); }
-  .lander-overlay > div { max-width: 42rem; color: var(--game-ink); text-shadow: 0 1px 14px rgba(0,0,0,.9); }
-  .lander-overlay .tile { color: #3b2917; text-shadow: none; }
-  .mission-kicker { margin: 0; color: #d9a441; font: 600 11px/1.2 "JetBrains Mono Variable", monospace; letter-spacing: .13em; text-transform: uppercase; }
-  .mission-ready, .mission-lesson { padding: clamp(1.1rem, 4vw, 2.2rem); border: 1px solid rgba(255, 231, 186, .34); background: linear-gradient(145deg, rgba(27, 29, 35, .87), rgba(39, 25, 14, .82)); box-shadow: 0 14px 40px rgba(0,0,0,.28); }
-  .mission-ready--dock { margin: 3rem auto auto !important; }
-  .mission-ready h2, .mission-lesson h2 { margin: .45rem 0 .55rem; color: #fff3db; font: 600 clamp(1.7rem, 5vw, 2.5rem)/.95 "Space Grotesk Variable", sans-serif; }
-  .mission-ready p:not(.mission-kicker), .mission-lesson li { color: #ded0b9; font-size: .9rem; line-height: 1.5; }
-  .mission-readout { display: grid; grid-template-columns: 1fr auto; gap: .45rem .9rem; margin: 1.35rem 0; padding: .75rem; border-top: 1px solid var(--game-line); border-bottom: 1px solid var(--game-line); color: #c7b89f; font: 11px/1.2 "JetBrains Mono Variable", monospace; text-align: left; letter-spacing: .08em; }
-  .mission-readout b { color: #d7e79d; text-align: right; }
-  .mission-primary { display: block; width: 100%; padding: .85rem 1rem; border: 1px solid #eed092; background: linear-gradient(100deg, #d58645, #d9a441); color: #24170c; cursor: pointer; font: 700 .82rem/1 "JetBrains Mono Variable", monospace; letter-spacing: .1em; text-transform: uppercase; }
-  .mission-link { margin-top: .9rem; border: 0; background: transparent; color: #e3d0ad; cursor: pointer; font: 500 .75rem/1.4 "JetBrains Mono Variable", monospace; text-decoration: underline; text-underline-offset: .25rem; }
-  .mission-lesson { text-align: left; }
-  .mission-lesson ol { margin: 1.1rem 0 0; padding-left: 1.25rem; }
-  .mission-lesson li { margin: .7rem 0; }
-  .mission-lesson b { color: #fff3db; }
-  .game-command-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .7rem 1.4rem; margin-top: .8rem; color: var(--color-muted); font: 500 11px/1.4 "JetBrains Mono Variable", monospace; }
-  .game-command-bar button { color: inherit; }
-  .game-command-bar button:focus-visible, .flight-settings:focus-visible, .mission-primary:focus-visible, .mission-link:focus-visible, .touch-btn:focus-visible { outline: 2px solid #d9a441; outline-offset: 3px; }
-  /* On phones, break the game out of the page gutters so the canvas gets
-     every available pixel — the tile's side borders/rounding go with it. */
-  @media (max-width: 720px) {
-    .game-bleed {
-      margin-left: -1.5rem;
-      margin-right: -1.5rem;
-    }
-    .game-bleed > .tile {
-      border-left: none;
-      border-right: none;
-      border-radius: 0;
-    }
-  }
-
-  .lander-vol {
-    width: 110px;
-    accent-color: var(--color-accent);
-    cursor: pointer;
-  }
-
-  /* Matches the sticky .glass-nav height + a little breathing room, so
-     #lander-root.scrollIntoView({block:'start'}) (main.ts's setOverlay,
-     called whenever a crash/level-complete/shop overlay opens) lands the
-     canvas just below the nav instead of partly hidden behind it. */
-  #lander-root {
-    scroll-margin-top: 4.5rem;
-  }
-
-  /* Touch hygiene: no double-tap zoom, no text selection, no gray tap
-     flashes on the game surface or the thumb buttons. */
-  #lander-root canvas,
-  #lander-root [data-touch] {
-    touch-action: none;
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-  #lander-root {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* Corner-anchored touch controls — sized/shaped here; color comes from
-     the same bg-canvas/70 + border-line utilities the HUD chips use, so
-     they read as one visual system. Brighten/scale on press for immediate
-     feedback (main.ts's bindTouch toggles .is-pressed; real devices don't
-     reliably show :active once touch-action:none + preventDefault are in
-     play). env(safe-area-inset-bottom) keeps buttons clear of the
-     home-indicator bar on notched phones. */
-  .touch-btn {
-    width: 3.25rem;
-    height: 3.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--game-ink);
-    background: rgba(16, 25, 35, .82);
-    border: 1px solid rgba(233, 223, 200, .52);
-    border-radius: 3px;
-    cursor: pointer;
-    transition: transform 0.08s ease, border-color 0.08s ease;
-  }
-  .touch-btn-thrust {
-    width: 4.5rem;
-    height: 4.5rem;
-  }
-  .touch-btn-thrust { color: #101923; background: #E0B665; border-color: #E9DFC8; }
-  .touch-btn-ability {
-    width: 2.75rem;
-    height: 2.75rem;
-    font-size: 1rem;
-  }
-  .touch-btn.is-pressed {
-    border-color: var(--color-accent);
-    transform: scale(0.92);
-  }
-  .touch-controls {
-    display: flex;
-    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
-  }
-  .touch-btn.hidden { display: none; }
-  @media (min-width: 640px) { .touch-controls { display: none; } }
-
-  /* Classic layout: one button per edge + thrust center — bigger targets
-     since each sits alone under a thumb. */
-  .touch-controls.layout-classic .touch-btn {
-    width: 4.25rem;
-    height: 4.25rem;
-  }
-  .touch-controls.layout-classic .touch-btn-thrust {
-    width: 5.25rem;
-    height: 5.25rem;
-  }
-  .touch-controls.layout-classic .touch-btn-ability {
-    width: 3rem;
-    height: 3rem;
-  }
-
-  @media (max-width: 520px) {
-    .flight-panel { inset: .48rem; grid-template-columns: auto 1fr auto; gap: .32rem; font-size: 8px; }
-    .flight-mission, .flight-status { padding: .38rem; }
-    .flight-vitals { gap: 2px; }
-    .flight-vitals > div { min-width: 0; padding: .36rem .34rem; }
-    .flight-vitals > div:nth-child(4) { display: none; }
-    .flight-settings { width: 2rem; height: 2rem; }
-    .mission-ready, .mission-lesson { padding: 1rem; }
-  }
-</style>
-
 <script>
-  import { initLanderGame } from '../scripts/lander-game';
-
-  let cleanup: (() => void) | null = null;
-
-  // Page-scoped viewport lock: disable pinch/double-tap zoom while on the
-  // game page (accidental zooms during play), restored on navigation away.
-  const VIEWPORT_DEFAULT = 'width=device-width, initial-scale=1';
-  const VIEWPORT_GAME = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';
-  function setViewport(content: string) {
-    document.querySelector('meta[name="viewport"]')?.setAttribute('content', content);
-  }
-
-  function boot() {
-    const root = document.getElementById('lander-root');
-    if (!root) return;
-    setViewport(VIEWPORT_GAME);
-    cleanup?.();
-    cleanup = initLanderGame(root);
-  }
-
-  document.addEventListener('astro:page-load', boot);
-  document.addEventListener('astro:before-swap', () => {
-    setViewport(VIEWPORT_DEFAULT);
-    cleanup?.();
-    cleanup = null;
-  });
+  import { mountLander } from '../scripts/lander-next';
+  const root = document.querySelector<HTMLElement>('#lander-next-root');
+  if (root) void mountLander(root);
 </script>
+
+<style is:global>
+  .next-page { max-width: 1180px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  .next-page-heading { margin-bottom: 1.2rem; }
+  .next-page-heading h1 { margin: .55rem 0 .25rem; font: 600 clamp(2rem, 5vw, 3.4rem)/.95 "Space Grotesk Variable", sans-serif; letter-spacing: -.05em; }
+  .next-page-heading p { margin: 0; max-width: 42rem; color: var(--color-muted); font-size: 1rem; }
+  .next-console { --paper: #f4ebda; --copper: #c97b3d; --signal: #d4eef1; --night: #101724; }
+  .next-viewport { position: relative; width: 100%; aspect-ratio: 1000 / 620; overflow: hidden; background: var(--night); border: 1px solid #45515b; box-shadow: 0 24px 60px rgba(16,23,36,.28); }
+  .next-viewport canvas { width: 100%; height: 100%; display: block; }
+  .next-hud { position: absolute; inset: 1rem; display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: .7rem; color: var(--paper); font: 600 .74rem/1.15 "JetBrains Mono Variable", monospace; letter-spacing: .08em; pointer-events: none; }
+  .next-instrument, .next-vitals span { background: rgba(16,23,36,.78); border: 1px solid rgba(244,235,218,.28); box-shadow: inset 0 1px 0 rgba(255,255,255,.08); }
+  .next-instrument { padding: .6rem .7rem; min-width: 6.4rem; }
+  .next-instrument span, .next-instrument small { display: block; color: #b9c4c8; font-size: .65rem; }
+  .next-instrument b { display: block; margin: .25rem 0; color: var(--paper); font-size: 1rem; }
+  .next-instrument em { color: #d7e79d; font-style: normal; }
+  .next-vitals { display: flex; justify-content: center; gap: .35rem; min-width: 0; }
+  .next-vitals span { padding: .62rem .55rem; white-space: nowrap; color: #b9c4c8; }
+  .next-vitals b { color: var(--paper); }
+  .next-status { text-align: right; }
+  .next-status b { color: #d7e79d; }
+  .next-overlay { position: absolute; inset: 0; display: flex; padding: clamp(1rem, 4vw, 2.5rem); overflow: auto; background: linear-gradient(120deg, rgba(13,12,16,.22), rgba(13,12,16,.62) 48%, rgba(20,14,9,.84)); backdrop-filter: blur(2px); }
+  .next-screen { width: min(100%, 43rem); margin: auto; padding: clamp(1.25rem, 4vw, 2.8rem); color: var(--paper); background: linear-gradient(145deg, rgba(27,29,35,.9), rgba(39,25,14,.88)); border: 1px solid rgba(255,231,186,.35); box-shadow: 0 16px 42px rgba(0,0,0,.32); }
+  .next-kicker, .next-readout, .next-controls, .next-command { font: 600 .72rem/1.4 "JetBrains Mono Variable", monospace; letter-spacing: .08em; }
+  .next-kicker { margin: 0; color: #d9a441; text-transform: uppercase; }
+  .next-screen h1, .next-screen h2 { margin: .5rem 0 .65rem; color: #fff3db; font: 600 clamp(2rem, 7vw, 4.2rem)/.9 "Space Grotesk Variable", sans-serif; letter-spacing: -.05em; }
+  .next-screen h2 { font-size: clamp(1.7rem, 5vw, 2.7rem); }
+  .next-lede, .next-screen p, .next-screen li { color: #ded0b9; font-size: 1rem; line-height: 1.55; }
+  .next-readout { display: grid; grid-template-columns: 1fr auto; gap: .55rem 1rem; margin: 1.3rem 0; padding: .8rem 0; border-top: 1px solid rgba(244,235,218,.22); border-bottom: 1px solid rgba(244,235,218,.22); color: #b9aa92; }
+  .next-readout b { color: #d7e79d; text-align: right; }
+  .next-actions { display: grid; gap: .6rem; margin-top: 1.2rem; }
+  .next-primary, .next-secondary, .next-card { min-height: 3rem; padding: .8rem 1rem; border: 1px solid rgba(255,231,186,.35); cursor: pointer; font: 600 .8rem/1.2 "JetBrains Mono Variable", monospace; letter-spacing: .06em; text-align: left; }
+  .next-primary { background: linear-gradient(100deg, #d58645, #d9a441); color: #24170c; text-align: center; }
+  .next-secondary { background: rgba(16,23,36,.64); color: #e3d0ad; }
+  .next-secondary span { float: right; color: #b9c4c8; font-size: .7rem; }
+  .next-controls { margin: 1.4rem 0 0; color: #b9c4c8; text-align: center; }
+  kbd { padding: .12rem .28rem; border: 1px solid rgba(244,235,218,.28); color: var(--paper); }
+  .next-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; margin-top: 1.2rem; }
+  .next-card { display: grid; align-content: start; gap: .55rem; min-height: 12rem; background: rgba(16,23,36,.7); color: #ded0b9; }
+  .next-card strong { color: #fff3db; font: 600 1rem/1.1 "Space Grotesk Variable", sans-serif; }
+  .next-card small { margin-top: auto; color: #d7e79d; font-size: .72rem; line-height: 1.55; }
+  .next-rarity { color: #d9a441; font-size: .68rem; text-transform: uppercase; }
+  .next-inline { border: 0; background: transparent; color: #d7e79d; text-decoration: underline; cursor: pointer; }
+  .next-touch { position: absolute; inset: auto 1rem 1rem; display: flex; justify-content: space-between; pointer-events: none; }
+  .next-touch button { width: 3.6rem; height: 3.6rem; border: 1px solid rgba(244,235,218,.35); border-radius: 50%; background: rgba(16,23,36,.7); color: var(--paper); pointer-events: auto; cursor: pointer; font-size: 1.5rem; touch-action: none; }
+  .next-touch button:last-child { width: 4.5rem; height: 4.5rem; color: #24170c; background: #d9a441; }
+  .next-command { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .7rem 1rem; padding: .75rem .1rem; color: var(--color-muted); }
+  .next-command a, .next-command button { border: 0; background: transparent; color: inherit; cursor: pointer; font: inherit; text-decoration: none; }
+  @media (max-width: 700px) { .next-page { padding: 1rem .5rem 3rem; } .next-page-heading { padding: 0 .5rem; } .next-hud { inset: .5rem; grid-template-columns: 1fr auto; } .next-vitals { grid-column: 1 / -1; grid-row: 2; justify-content: stretch; overflow: hidden; } .next-vitals span { flex: 1; padding: .45rem .3rem; font-size: .62rem; } .next-status { grid-column: 2; grid-row: 1; } .next-instrument { min-width: auto; } .next-cards { grid-template-columns: 1fr; } .next-card { min-height: 8rem; } .next-command { padding-inline: .5rem; } }
+  @media (prefers-reduced-motion: reduce) { .next-overlay { backdrop-filter: none; } }
+</style>

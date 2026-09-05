@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0-slice",
+  "bundles": [{
+    "id": "first-light",
+    "assets": [{
+      "id": "first-light-basin",
+      "source": "assets/sources/lander/first-light-basin.png",
+      "license": "generated-for-project",
+      "dimensions": [1536, 1024],
+      "bundle": "first-light"
+    }]
+  }]
+}
