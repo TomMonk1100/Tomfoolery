@@ -1,32 +1,68 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import EntryTrail from '../../components/EntryTrail.astro';
 import { getCollection } from 'astro:content';
 
-const entries = await getCollection('pokemon');
+const entries = (await getCollection('pokemon')).sort((a, b) =>
+  (b.data.dateAcquired?.valueOf() ?? 0) - (a.data.dateAcquired?.valueOf() ?? 0)
+);
 ---
 
 <Layout
   title="Pokémon TCG — Tomfoolery"
-  description="The collection, filterable by set and grade."
+  description="Pokémon card stories from Tom's collection."
   image="/images/social/pokemon.png"
   imageAlt="The Pokémon TCG collection on Tomfoolery."
 >
-  <span class="badge">collection</span>
-  <h1 class="font-display text-3xl md:text-4xl font-semibold mt-2">Pokémon TCG</h1>
-  <p class="text-muted mt-2 max-w-xl">
-    Set/grade filtering is a fast-follow — for now, the full collection.
-  </p>
+  <article class="editorial-page editorial-pokemon">
+    <header class="editorial-page-lead editorial-pokemon__lead">
+      <div>
+        <span class="editorial-kicker">The binder · {entries.length} stories filed</span>
+        <h1>Cards with a story attached.</h1>
+      </div>
+      <div>
+        <p>
+          The pulls, opinions, and small memories that make a collection worth
+          keeping. Card photographs will join the entries as the binder is documented.
+        </p>
+        <dl class="editorial-collection-facts" aria-label="Collection status">
+          <div><dt>Focus</dt><dd>Personal pulls and set notes</dd></div>
+          <div><dt>On the shelf</dt><dd>Mega Evolution: Chaos Rising master set</dd></div>
+        </dl>
+      </div>
+    </header>
 
-  <div class="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-    {entries.map((entry) => (
-      <a href={`/pokemon/${entry.id}`} class="tile reveal">
-        {entry.data.image && (
-          <img src={entry.data.image} alt={entry.data.title} class="w-full aspect-square object-cover rounded-sm mb-3 border border-line" loading="lazy" />
-        )}
-        <h2 class="font-display font-semibold">{entry.data.title}</h2>
-        {entry.data.set && <p class="text-sm text-muted mt-1">{entry.data.set}</p>}
-        {entry.data.grade && <p class="badge mt-2">{entry.data.grade}</p>}
-      </a>
-    ))}
-  </div>
+    <div class="editorial-binder" aria-label="Pokémon collection entries">
+      {entries.map((entry, index) => (
+        <article class="editorial-binder__entry reveal">
+          <a href={`/pokemon/${entry.id}`} class="editorial-card-record">
+            {entry.data.image ? (
+              <img src={entry.data.image} alt={entry.data.title} loading={index === 0 ? 'eager' : 'lazy'} decoding="async" />
+            ) : (
+              <span class="editorial-card-record__type">
+                <small>Binder story</small>
+                <b>{String(index + 1).padStart(2, '0')}</b>
+                <em>Photograph not yet filed</em>
+              </span>
+            )}
+          </a>
+          <div class="editorial-binder__copy">
+            <p class="editorial-kicker">Entry {String(index + 1).padStart(2, '0')}</p>
+            <h2><a href={`/pokemon/${entry.id}`}>{entry.data.title}</a></h2>
+            <dl>
+              {entry.data.set && <div><dt>Set</dt><dd>{entry.data.set}</dd></div>}
+              {entry.data.grade && <div><dt>Condition</dt><dd>{entry.data.grade}</dd></div>}
+              {entry.data.dateAcquired && <div><dt>Acquired</dt><dd>{entry.data.dateAcquired.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })}</dd></div>}
+            </dl>
+            <a href={`/pokemon/${entry.id}`} class="editorial-text-link">Read the story →</a>
+          </div>
+        </article>
+      ))}
+    </div>
+
+    <EntryTrail contextLinks={[
+      { href: '/now', label: 'What is current', note: 'including the collection goal' },
+      { href: '/art', label: 'Art shelf', note: 'another place for visual things' },
+    ]} />
+  </article>
 </Layout>

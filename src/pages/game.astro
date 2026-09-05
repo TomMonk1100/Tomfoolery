@@ -8,25 +8,23 @@ import Layout from '../layouts/Layout.astro';
   image="/images/social/game.png"
   imageAlt="Moon Lander on Tomfoolery — an endless little flight under a Texas night sky."
 >
-  <div class="reveal is-visible">
+  <div class="reveal is-visible game-page">
     <!-- On phones the canvas must be the first thing under the nav — no
          scrolling to reach the action (the in-canvas title screen already
          introduces the game). The header lives here for sm+ viewports and
          moves into a collapsible section below the game on mobile. -->
     <div class="hidden sm:block">
-      <span class="badge">play</span>
+      <span class="badge">interactive field note</span>
       <h1 class="font-display text-3xl md:text-4xl font-semibold mt-2">Moon Lander</h1>
       <p class="text-muted mt-2 text-sm">
-        Land gently on the pad. Endless levels, each harder than the last — pick an
-        upgrade after every landing, but every boon has a cost. Three difficulty
-        modes. Built with canvas + Web Audio, no libraries.
+        A small illustrated descent through stranger and stranger lunar weather. Land softly, tune the ship, and see how deep the signal goes.
       </p>
     </div>
 
-    <div id="lander-root" class="mt-0 sm:mt-6 relative">
+    <div id="lander-root" class="mt-0 sm:mt-6 relative game-console" aria-label="Moon Lander game">
       <div class="game-bleed">
-        <div class="tile !p-0 overflow-hidden relative">
-          <canvas class="block w-full"></canvas>
+        <div class="tile !p-0 overflow-hidden relative lander-stage">
+          <canvas class="block w-full" aria-label="Moon Lander flight view"></canvas>
 
           <!-- HUD — fuel folded into the top row as a compact chip instead
                of a separate row. Terrain groundBase sits ~72% down the
@@ -41,33 +39,17 @@ import Layout from '../layouts/Layout.astro';
                problem for the ship instead of the pad. flex-wrap already
                handles overflow on the narrowest phones exactly like the
                other chips. -->
-          <div class="absolute top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 flex items-start justify-between gap-2 font-mono text-xs pointer-events-none">
-            <div class="flex items-center gap-1.5 sm:gap-2 pointer-events-auto flex-wrap">
-              <div class="bg-canvas/70 px-2 py-1 border border-line">
-                <span class="text-muted">LVL </span><span data-hud="level" class="text-ink">1</span>
-              </div>
-              <div class="bg-canvas/70 px-2 py-1 border border-line">
-                <span class="text-muted">BEST </span><span data-hud="best" class="text-ink">—</span>
-              </div>
-              <div class="bg-canvas/70 px-2 py-1 border border-line">
-                <span class="text-muted">✨ </span><span data-hud="stardust" class="text-ink">0</span>
-              </div>
-              <div class="bg-canvas/70 px-2 py-1 border border-line flex items-center gap-1.5">
-                <span class="text-muted">⛽</span>
-                <div class="w-9 h-1.5 bg-line/50">
-                  <div data-hud="fuel-bar" class="h-full bg-signal" style="width:100%"></div>
-                </div>
-                <span data-hud="fuel" class="text-ink">100</span>
-              </div>
+          <div class="flight-panel pointer-events-none" aria-label="Flight instruments">
+            <div class="flight-mission pointer-events-auto"><span>MISSION</span><b><span data-hud="level">1</span> / <span data-hud="best">—</span></b></div>
+            <div class="flight-vitals">
+              <div><span>FUEL</span><b data-hud="fuel">100</b><i><i data-hud="fuel-bar" style="width:100%"></i></i></div>
+              <div><span>ALT</span><b data-hud="altitude">—</b></div>
+              <div><span>DESCENT</span><b data-hud="speed">0 u/s</b></div>
+              <div><span>DRIFT</span><b data-hud="drift">0 u/s</b></div>
+              <div><span>ATTITUDE</span><b data-hud="attitude">0°</b></div>
             </div>
-            <div class="flex gap-1.5 sm:gap-3">
-              <div class="bg-canvas/70 px-2 py-1 border border-line">
-                <span class="text-muted">ALT </span><span data-hud="altitude" class="text-ink">—</span>
-              </div>
-              <div class="bg-canvas/70 px-2 py-1 border border-line">
-                <span class="text-muted">SPD </span><span data-hud="speed" class="text-ink">0</span>
-              </div>
-            </div>
+            <div class="flight-status"><span>LANDING</span><b data-hud="landing">APPROACH</b></div>
+            <button type="button" data-settings class="flight-settings pointer-events-auto" aria-label="Open flight settings">≡</button>
           </div>
 
           <!-- Touch controls (mobile) — corner-anchored overlay directly on
@@ -91,13 +73,13 @@ import Layout from '../layouts/Layout.astro';
                  full-width one-thumb-per-edge layout (Scott's preference) -->
           <div class="touch-controls absolute inset-x-0 bottom-0 items-end justify-between gap-3 p-3 sm:p-4 select-none pointer-events-none">
             <div data-tc-zone="left" class="flex items-end gap-2 pointer-events-auto">
-              <button data-touch="left" class="touch-btn bg-canvas/70 border border-line text-ink font-display text-2xl" aria-label="Rotate left">⟲</button>
-              <button data-touch="right" class="touch-btn bg-canvas/70 border border-line text-ink font-display text-2xl" aria-label="Rotate right">⟳</button>
+              <button data-touch="left" class="touch-btn" aria-label="Rotate left">⟲</button>
+              <button data-touch="right" class="touch-btn" aria-label="Rotate right">⟳</button>
             </div>
             <div data-tc-zone="mid" class="flex flex-col items-center gap-2 pointer-events-auto empty:hidden"></div>
             <div data-tc-zone="right" class="flex flex-col items-center gap-2 pointer-events-auto empty:hidden">
-              <button data-touch="ability" class="touch-btn touch-btn-ability hidden bg-canvas/70 border border-line text-ink font-display text-xl" aria-label="Use ability">◈</button>
-              <button data-touch="thrust" class="touch-btn touch-btn-thrust bg-canvas/70 border border-line badge-signal font-display text-2xl" aria-label="Thrust">▲</button>
+              <button data-touch="ability" class="touch-btn touch-btn-ability hidden" aria-label="Use ability">◈</button>
+              <button data-touch="thrust" class="touch-btn touch-btn-thrust" aria-label="Thrust">▲</button>
             </div>
           </div>
 
@@ -106,27 +88,19 @@ import Layout from '../layouts/Layout.astro';
                items-center on the flex parent — flex-centering clips the
                top of any content taller than the canvas and makes it
                unreachable by scroll (that's what truncated the shop). -->
-          <div data-overlay class="absolute inset-0 bg-canvas/92 backdrop-blur-sm flex p-4 sm:p-6 overflow-y-auto">
+          <div data-overlay class="lander-overlay absolute inset-0 flex p-4 sm:p-6 overflow-y-auto" role="dialog" aria-modal="true" aria-label="Moon Lander menu">
             <div data-overlay-content class="w-full m-auto"></div>
           </div>
         </div>
       </div>
 
-      <!-- Sound settings: independent mute + volume per channel -->
-      <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 mt-3 font-mono text-xs text-muted">
-        <p>←/→ or A/D rotate · ↑ / W / Space thrust</p>
-        <div class="flex items-center gap-5">
-          <button type="button" data-share aria-label="Share Moon Lander" title="Share this game" class="cursor-pointer hover:text-ink transition-colors">📤 share</button>
-          <button type="button" data-controls-toggle aria-label="Toggle touch control layout" title="Touch control layout" class="cursor-pointer hover:text-ink transition-colors sm:hidden">🎮</button>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <button type="button" data-pause aria-label="Pause" title="Pause (Esc/P)" class="cursor-pointer hover:opacity-80 transition-opacity">⏸</button>
-            <button data-mute-sfx type="button" aria-label="Toggle sound effects" class="cursor-pointer hover:opacity-80 transition-opacity">🔊</button>
-            <input data-vol-sfx type="range" min="0" max="100" value="90" class="lander-vol" aria-label="Sound effects volume" />
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <button data-mute-music type="button" aria-label="Toggle music" class="cursor-pointer hover:opacity-80 transition-opacity">🎵</button>
-            <input data-vol-music type="range" min="0" max="100" value="75" class="lander-vol" aria-label="Music volume" />
-          </label>
+      <div class="game-command-bar">
+        <p data-controls-copy>Flight controls: rotate ← → · thrust Space</p>
+        <div class="flex items-center gap-4">
+          <button type="button" data-share aria-label="Share Moon Lander" title="Share this game" class="cursor-pointer hover:text-ink transition-colors">↗ share</button>
+          <button type="button" data-controls-toggle aria-label="Toggle touch control layout" title="Touch control layout" class="cursor-pointer hover:text-ink transition-colors sm:hidden">◇ controls</button>
+          <button type="button" data-pause aria-label="Pause" title="Pause (Esc/P)" class="cursor-pointer hover:opacity-80 transition-opacity">Ⅱ pause</button>
+          <button type="button" data-settings class="cursor-pointer hover:opacity-80 transition-opacity">≡ settings</button>
         </div>
       </div>
 
@@ -137,16 +111,48 @@ import Layout from '../layouts/Layout.astro';
           <span class="badge mr-2">play</span>About Moon Lander
         </summary>
         <p class="text-muted mt-2 text-sm">
-          Land gently on the pad. Endless levels, each harder than the last — pick an
-          upgrade after every landing, but every boon has a cost. Three difficulty
-          modes. Built with canvas + Web Audio, no libraries.
+          A cinematic little lunar roguelite: land on the lit station, choose an upgrade, and press deeper into the signal.
         </p>
       </details>
     </div>
   </div>
 </Layout>
 
-<style>
+<style is:global>
+  /* Moon Lander is deliberately its own night-flight instrument system. The
+     warm editorial page stays outside this namespace. */
+  .game-console { --game-ink: #E9DFC8; --game-muted: #b9c4c8; --game-line: rgba(233, 223, 200, .27); --game-panel: rgba(16, 25, 35, .82); }
+  .lander-stage { background: #101923; border-color: #45515B; box-shadow: 0 16px 34px rgba(10, 18, 25, .3); }
+  .flight-panel { position: absolute; inset: .7rem; display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: .55rem; color: var(--game-ink); font: 600 10px/1.1 "JetBrains Mono Variable", monospace; letter-spacing: .08em; }
+  .flight-panel span { color: var(--game-muted); font-size: .72em; }
+  .flight-panel b { display: block; margin-top: .28rem; color: var(--game-ink); font-size: 1.04em; letter-spacing: .04em; }
+  .flight-mission, .flight-status, .flight-vitals > div, .flight-settings { background: var(--game-panel); border: 1px solid var(--game-line); box-shadow: 0 1px 0 rgba(255,255,255,.08) inset; }
+  .flight-mission, .flight-status { padding: .5rem .58rem; }
+  .flight-vitals { display: flex; justify-content: center; gap: .32rem; min-width: 0; }
+  .flight-vitals > div { min-width: 3.55rem; padding: .48rem .48rem .42rem; }
+  .flight-vitals i { display: block; margin-top: .32rem; width: 100%; height: 3px; background: rgba(255,255,255,.2); }
+  .flight-vitals i i { margin: 0; height: 100%; background: #a7c56a; transition: width .12s linear; }
+  .flight-status b { color: #d7e79d; }
+  .flight-settings { width: 2.45rem; height: 2.45rem; color: var(--game-ink); cursor: pointer; font-size: 1rem; }
+  .lander-overlay { background: linear-gradient(120deg, rgba(13, 12, 16, .28), rgba(13, 12, 16, .62) 48%, rgba(20, 14, 9, .82)); backdrop-filter: blur(2px); }
+  .lander-overlay > div { max-width: 42rem; color: var(--game-ink); text-shadow: 0 1px 14px rgba(0,0,0,.9); }
+  .lander-overlay .tile { color: #3b2917; text-shadow: none; }
+  .mission-kicker { margin: 0; color: #d9a441; font: 600 11px/1.2 "JetBrains Mono Variable", monospace; letter-spacing: .13em; text-transform: uppercase; }
+  .mission-ready, .mission-lesson { padding: clamp(1.1rem, 4vw, 2.2rem); border: 1px solid rgba(255, 231, 186, .34); background: linear-gradient(145deg, rgba(27, 29, 35, .87), rgba(39, 25, 14, .82)); box-shadow: 0 14px 40px rgba(0,0,0,.28); }
+  .mission-ready--dock { margin: 3rem auto auto !important; }
+  .mission-ready h2, .mission-lesson h2 { margin: .45rem 0 .55rem; color: #fff3db; font: 600 clamp(1.7rem, 5vw, 2.5rem)/.95 "Space Grotesk Variable", sans-serif; }
+  .mission-ready p:not(.mission-kicker), .mission-lesson li { color: #ded0b9; font-size: .9rem; line-height: 1.5; }
+  .mission-readout { display: grid; grid-template-columns: 1fr auto; gap: .45rem .9rem; margin: 1.35rem 0; padding: .75rem; border-top: 1px solid var(--game-line); border-bottom: 1px solid var(--game-line); color: #c7b89f; font: 11px/1.2 "JetBrains Mono Variable", monospace; text-align: left; letter-spacing: .08em; }
+  .mission-readout b { color: #d7e79d; text-align: right; }
+  .mission-primary { display: block; width: 100%; padding: .85rem 1rem; border: 1px solid #eed092; background: linear-gradient(100deg, #d58645, #d9a441); color: #24170c; cursor: pointer; font: 700 .82rem/1 "JetBrains Mono Variable", monospace; letter-spacing: .1em; text-transform: uppercase; }
+  .mission-link { margin-top: .9rem; border: 0; background: transparent; color: #e3d0ad; cursor: pointer; font: 500 .75rem/1.4 "JetBrains Mono Variable", monospace; text-decoration: underline; text-underline-offset: .25rem; }
+  .mission-lesson { text-align: left; }
+  .mission-lesson ol { margin: 1.1rem 0 0; padding-left: 1.25rem; }
+  .mission-lesson li { margin: .7rem 0; }
+  .mission-lesson b { color: #fff3db; }
+  .game-command-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .7rem 1.4rem; margin-top: .8rem; color: var(--color-muted); font: 500 11px/1.4 "JetBrains Mono Variable", monospace; }
+  .game-command-bar button { color: inherit; }
+  .game-command-bar button:focus-visible, .flight-settings:focus-visible, .mission-primary:focus-visible, .mission-link:focus-visible, .touch-btn:focus-visible { outline: 2px solid #d9a441; outline-offset: 3px; }
   /* On phones, break the game out of the page gutters so the canvas gets
      every available pixel — the tile's side borders/rounding go with it. */
   @media (max-width: 720px) {
@@ -201,7 +207,10 @@ import Layout from '../layouts/Layout.astro';
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 9999px;
+    color: var(--game-ink);
+    background: rgba(16, 25, 35, .82);
+    border: 1px solid rgba(233, 223, 200, .52);
+    border-radius: 3px;
     cursor: pointer;
     transition: transform 0.08s ease, border-color 0.08s ease;
   }
@@ -209,6 +218,7 @@ import Layout from '../layouts/Layout.astro';
     width: 4.5rem;
     height: 4.5rem;
   }
+  .touch-btn-thrust { color: #101923; background: #E0B665; border-color: #E9DFC8; }
   .touch-btn-ability {
     width: 2.75rem;
     height: 2.75rem;
@@ -219,8 +229,11 @@ import Layout from '../layouts/Layout.astro';
     transform: scale(0.92);
   }
   .touch-controls {
+    display: flex;
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
   }
+  .touch-btn.hidden { display: none; }
+  @media (min-width: 640px) { .touch-controls { display: none; } }
 
   /* Classic layout: one button per edge + thrust center — bigger targets
      since each sits alone under a thumb. */
@@ -235,6 +248,16 @@ import Layout from '../layouts/Layout.astro';
   .touch-controls.layout-classic .touch-btn-ability {
     width: 3rem;
     height: 3rem;
+  }
+
+  @media (max-width: 520px) {
+    .flight-panel { inset: .48rem; grid-template-columns: auto 1fr auto; gap: .32rem; font-size: 8px; }
+    .flight-mission, .flight-status { padding: .38rem; }
+    .flight-vitals { gap: 2px; }
+    .flight-vitals > div { min-width: 0; padding: .36rem .34rem; }
+    .flight-vitals > div:nth-child(4) { display: none; }
+    .flight-settings { width: 2rem; height: 2rem; }
+    .mission-ready, .mission-lesson { padding: 1rem; }
   }
 </style>
 

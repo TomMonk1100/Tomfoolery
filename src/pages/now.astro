@@ -52,15 +52,13 @@ function fmt(date: Date) {
   image="/images/social/now.png"
   imageAlt="Now on Tomfoolery — current field notes over a dusk photograph."
 >
-  <section class="max-w-5xl reveal is-visible">
-    <div class="flex items-center gap-2">
-      <span class="w-2 h-2 rounded-full bg-signal live-pulse" aria-hidden="true"></span>
-      <span class="badge badge-signal">current</span>
-    </div>
-    <h1 class="font-display text-3xl md:text-4xl font-semibold mt-2">
-      Right now
-    </h1>
-    <p class="text-muted text-sm font-mono mt-1">last updated {lastUpdated}</p>
+  <article class="editorial-page editorial-now">
+    <header class="editorial-page-lead editorial-now__lead">
+      <div>
+        <span class="editorial-kicker">Current field notes</span>
+        <h1>Right now.</h1>
+        <p class="editorial-now__updated">Last updated {lastUpdated}</p>
+      </div>
 
     <div class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center">
       <div class="space-y-5 text-muted text-lg leading-relaxed">
@@ -94,10 +92,10 @@ function fmt(date: Date) {
           A good reminder to look up once in a while.
         </figcaption>
       </figure>
-    </div>
-  </section>
+      </div>
+    </header>
 
-  <section class="mt-10 max-w-5xl grid gap-4 md:grid-cols-2" aria-label="What has my attention">
+  <section class="editorial-now__attention" aria-label="What has my attention">
     {attention.map((item, i) => (
       <article class="tile reveal" style={`transition-delay: ${Math.min(i * 60, 300)}ms`}>
         <span class="badge">{item.badge}</span>
@@ -115,11 +113,16 @@ function fmt(date: Date) {
   </section>
 
   {posts.length > 0 && (
-    <section class="mt-12 max-w-5xl">
-      <h2 class="font-display text-xl font-semibold">The log</h2>
-      <p class="text-muted text-sm mt-1">Older notes, roughly in order.</p>
+    <section class="editorial-now__log">
+      <header class="editorial-section-head">
+        <div>
+          <span class="editorial-kicker">Journal entries</span>
+          <h2>The log.</h2>
+        </div>
+        <p>Notes from the current chapter, roughly in order.</p>
+      </header>
 
-      <div class="mt-6 space-y-4">
+      <div class="editorial-now__entries">
         {posts.map((post, i) => (
           <a href={`/now/${post.id}`} class="tile reveal flex gap-4 items-start" style={`transition-delay: ${Math.min(i * 60, 300)}ms`}>
             {post.data.image && (
@@ -139,8 +142,9 @@ function fmt(date: Date) {
     </section>
   )}
 
-  <p class="mt-8 max-w-5xl text-sm text-muted">
+  <p class="editorial-now__almanac">
     Looking for the weather, sunset, moon phase, or the ISS? The live view is on
     the <a href="/" class="gradient-text font-medium">home page</a>.
   </p>
+  </article>
 </Layout>

@@ -2,68 +2,17 @@
 import Layout from '../layouts/Layout.astro';
 import EntryTrail from '../components/EntryTrail.astro';
 
-// Portrait gallery photos. `wide` is the lead image and is rendered
-// separately above the masonry columns.
 const photos = [
-  {
-    src: '/images/coffee/latte-with-scout.webp',
-    srcset: '/images/coffee/latte-with-scout-480.webp 480w, /images/coffee/latte-with-scout.webp 768w',
-    width: 768,
-    height: 1024,
-    alt: 'A hand holding a latte with leaf shaped foam art while Scout walks through the living room in the background.',
-  },
-  {
-    src: '/images/coffee/latte-desk-rosetta.webp',
-    srcset: '/images/coffee/latte-desk-rosetta-480.webp 480w, /images/coffee/latte-desk-rosetta.webp 665w',
-    width: 665,
-    height: 1182,
-    alt: 'A brown ceramic cup with leaf shaped latte art on a desk beside a keyboard and a white plush toy.',
-  },
-  {
-    src: '/images/coffee/latte-with-flowers.webp',
-    srcset: '/images/coffee/latte-with-flowers-480.webp 480w, /images/coffee/latte-with-flowers.webp 768w',
-    width: 768,
-    height: 1024,
-    alt: 'A latte with an animal face drawn in the foam, held in front of a bouquet of coral roses.',
-  },
-  {
-    src: '/images/coffee/latte-doodle-flower.webp',
-    srcset: null,
-    width: 360,
-    height: 480,
-    alt: 'A latte with a small dog holding a flower and a heart drawn in the foam, sitting in front of a keyboard.',
-  },
-  {
-    src: '/images/coffee/latte-rosetta.webp',
-    srcset: '/images/coffee/latte-rosetta-480.webp 480w, /images/coffee/latte-rosetta.webp 768w',
-    width: 768,
-    height: 1024,
-    alt: 'A hand holding a gray ceramic cup with a leaf pattern poured into the latte foam.',
-  },
-  {
-    src: '/images/coffee/latte-doodle-hi.webp',
-    srcset: '/images/coffee/latte-doodle-hi-480.webp 480w, /images/coffee/latte-doodle-hi.webp 768w',
-    width: 768,
-    height: 1024,
-    alt: 'A latte with a smiling dog, a heart, and the word Hi drawn in the foam on a desk with Pokémon collectibles.',
-  },
-  {
-    src: '/images/coffee/latte-avocado-toast.webp',
-    srcset: '/images/coffee/latte-avocado-toast-480.webp 480w, /images/coffee/latte-avocado-toast.webp 768w',
-    width: 768,
-    height: 1024,
-    alt: 'A smiling latte beside avocado toast on a desk scattered with Pokémon cards, glasses, and collectibles.',
-  },
-  {
-    src: '/images/coffee/latte-doodle-heart.webp',
-    srcset: '/images/coffee/latte-doodle-heart-480.webp 480w, /images/coffee/latte-doodle-heart.webp 768w',
-    width: 768,
-    height: 1024,
-    alt: 'A latte with a small dog holding a flower and a heart drawn in the foam on a desk with Pokémon cards and collectibles.',
-  },
+  { src: '/images/coffee/latte-breakfast.webp', srcset: '/images/coffee/latte-breakfast-480.webp 480w, /images/coffee/latte-breakfast.webp 1024w', width: 1024, height: 768, alt: 'A latte with a smiling face in the foam beside two slices of toast on a desk filled with collectibles.', caption: 'Breakfast, coffee, and the collection shelf.' },
+  { src: '/images/coffee/latte-with-scout.webp', srcset: '/images/coffee/latte-with-scout-480.webp 480w, /images/coffee/latte-with-scout.webp 768w', width: 768, height: 1024, alt: 'A hand holding a latte with leaf shaped foam art while Scout walks through the living room in the background.', caption: 'A rosetta, with Scout passing through.' },
+  { src: '/images/coffee/latte-desk-rosetta.webp', srcset: '/images/coffee/latte-desk-rosetta-480.webp 480w, /images/coffee/latte-desk-rosetta.webp 665w', width: 665, height: 1182, alt: 'A brown ceramic cup with leaf shaped latte art on a desk beside a keyboard and a white plush toy.', caption: 'Desk rosetta.' },
+  { src: '/images/coffee/latte-with-flowers.webp', srcset: '/images/coffee/latte-with-flowers-480.webp 480w, /images/coffee/latte-with-flowers.webp 768w', width: 768, height: 1024, alt: 'A latte with an animal face drawn in the foam, held in front of a bouquet of coral roses.', caption: 'Foam doodle with flowers.' },
+  { src: '/images/coffee/latte-doodle-flower.webp', width: 360, height: 480, alt: 'A latte with a small dog holding a flower and a heart drawn in the foam, sitting in front of a keyboard.', caption: 'A flower for the foam dog.' },
+  { src: '/images/coffee/latte-rosetta.webp', srcset: '/images/coffee/latte-rosetta-480.webp 480w, /images/coffee/latte-rosetta.webp 768w', width: 768, height: 1024, alt: 'A hand holding a gray ceramic cup with a leaf pattern poured into the latte foam.', caption: 'Another rosetta worth keeping.' },
+  { src: '/images/coffee/latte-doodle-hi.webp', srcset: '/images/coffee/latte-doodle-hi-480.webp 480w, /images/coffee/latte-doodle-hi.webp 768w', width: 768, height: 1024, alt: 'A latte with a smiling dog, a heart, and the word Hi drawn in the foam on a desk with Pokémon collectibles.', caption: 'A small hello.' },
+  { src: '/images/coffee/latte-avocado-toast.webp', srcset: '/images/coffee/latte-avocado-toast-480.webp 480w, /images/coffee/latte-avocado-toast.webp 768w', width: 768, height: 1024, alt: 'A smiling latte beside avocado toast on a desk scattered with Pokémon cards, glasses, and collectibles.', caption: 'Avocado toast and a smiling cup.' },
+  { src: '/images/coffee/latte-doodle-heart.webp', srcset: '/images/coffee/latte-doodle-heart-480.webp 480w, /images/coffee/latte-doodle-heart.webp 768w', width: 768, height: 1024, alt: 'A latte with a small dog holding a flower and a heart drawn in the foam on a desk with Pokémon cards and collectibles.', caption: 'The foam dog returns.' },
 ];
-
-const gallerySizes = '(min-width: 1024px) 23vw, (min-width: 640px) 46vw, calc(100vw - 3rem)';
 ---
 
 <Layout
@@ -72,67 +21,108 @@ const gallerySizes = '(min-width: 1024px) 23vw, (min-width: 640px) 46vw, calc(10
   image="/images/social/coffee.png"
   imageAlt="Tomfoolery's coffee gallery, a warm editorial collection of lattes and playful foam art."
 >
-  <section class="max-w-5xl reveal is-visible">
-    <span class="badge">latte gallery</span>
-    <h1 class="font-display text-3xl md:text-4xl font-semibold mt-2">
-      Coffee, mostly in pictures
-    </h1>
-    <p class="text-muted mt-3 max-w-2xl text-lg leading-relaxed">
-      Coffee is one of my favorite little rituals. Most mornings I make a latte,
-      see what shows up in the foam, and take a picture before I drink it.
-    </p>
-
-    <figure class="mt-8 reveal is-visible">
-      <div class="overflow-hidden border border-line bg-surface p-1">
-        <img
-          src="/images/coffee/latte-breakfast.webp"
-          srcset="/images/coffee/latte-breakfast-480.webp 480w, /images/coffee/latte-breakfast.webp 1024w"
-          sizes="(min-width: 1152px) 1024px, calc(100vw - 3rem)"
-          width="1024"
-          height="768"
-          alt="A latte with a smiling face in the foam beside two slices of toast on a desk filled with collectibles."
-          class="block h-auto w-full"
-          loading="eager"
-          decoding="async"
-          fetchpriority="high"
-        />
+  <article class="editorial-page editorial-coffee">
+    <header class="editorial-page-lead editorial-coffee__lead">
+      <div>
+        <span class="editorial-kicker">Coffee journal · nine photographs</span>
+        <h1>Coffee, before it disappears.</h1>
       </div>
-    </figure>
+      <p>
+        Most mornings I make a latte, see what shows up in the foam, and take
+        one picture before I drink it. This is the growing contact sheet.
+      </p>
+    </header>
 
-    <div class="mt-4 columns-1 sm:columns-2 lg:columns-4 gap-4">
-      {photos.map((photo, i) => (
-        <figure class="mb-4 break-inside-avoid reveal" style={`transition-delay: ${Math.min(i * 50, 250)}ms`}>
-          <div class="overflow-hidden border border-line bg-surface p-1">
+    <div class="editorial-coffee__grid" data-gallery>
+      {photos.map((photo, index) => (
+        <figure class:list={['editorial-gallery-item', 'reveal', index === 0 && 'editorial-gallery-item--lead']}>
+          <button
+            type="button"
+            data-gallery-open={String(index)}
+            aria-label={`Open photo ${index + 1} of ${photos.length}: ${photo.caption}`}
+          >
             <img
               src={photo.src}
-              srcset={photo.srcset ?? undefined}
-              sizes={gallerySizes}
+              srcset={photo.srcset}
+              sizes={index === 0 ? '(min-width: 900px) 58vw, calc(100vw - 3rem)' : '(min-width: 900px) 28vw, calc(100vw - 3rem)'}
               width={photo.width}
               height={photo.height}
               alt={photo.alt}
-              class="block h-auto w-full"
-              loading="lazy"
+              loading={index === 0 ? 'eager' : 'lazy'}
               decoding="async"
+              fetchpriority={index === 0 ? 'high' : undefined}
             />
-          </div>
+            <span aria-hidden="true">View</span>
+          </button>
+          <figcaption><span>{String(index + 1).padStart(2, '0')}</span>{photo.caption}</figcaption>
         </figure>
       ))}
     </div>
-  </section>
 
-  <EntryTrail
-    ariaLabel="More from the coffee corner"
-    contextLinks={[
-      {
-        href: '/now/first-brew',
-        label: 'Current coffee setup',
-        note: 'beans, gear, and what is brewing',
-      },
-      {
-        href: '/art',
-        label: 'Art shelf',
-        note: 'where some of the foam ends up',
-      },
-    ]}
-  />
+    <dialog class="editorial-viewer" data-gallery-dialog aria-label="Coffee photograph viewer">
+      <div class="editorial-viewer__bar">
+        <p data-gallery-count>Photograph 1 of {photos.length}</p>
+        <button type="button" data-gallery-close aria-label="Close image viewer">Close</button>
+      </div>
+      <figure>
+        <img data-gallery-image src={photos[0].src} alt={photos[0].alt} />
+        <figcaption data-gallery-caption>{photos[0].caption}</figcaption>
+      </figure>
+      <div class="editorial-viewer__nav">
+        <button type="button" data-gallery-prev>← Previous</button>
+        <button type="button" data-gallery-next>Next →</button>
+      </div>
+    </dialog>
+
+    <EntryTrail
+      ariaLabel="More from the coffee corner"
+      contextLinks={[
+        { href: '/now/first-brew', label: 'Current coffee setup', note: 'beans, gear, and what is brewing' },
+        { href: '/art', label: 'Art shelf', note: 'where some of the foam ends up' },
+      ]}
+    />
+  </article>
+
+  <script define:vars={{ photos }}>
+    function setupCoffeeGallery() {
+      const dialog = document.querySelector('[data-gallery-dialog]');
+      if (!(dialog instanceof HTMLDialogElement) || dialog.dataset.ready) return;
+      dialog.dataset.ready = 'true';
+
+      const image = dialog.querySelector('[data-gallery-image]');
+      const caption = dialog.querySelector('[data-gallery-caption]');
+      const count = dialog.querySelector('[data-gallery-count]');
+      let current = 0;
+      let returnFocus = null;
+
+      const show = (index) => {
+        current = (index + photos.length) % photos.length;
+        const photo = photos[current];
+        image.src = photo.src;
+        image.alt = photo.alt;
+        caption.textContent = photo.caption;
+        count.textContent = `Photograph ${current + 1} of ${photos.length}`;
+      };
+
+      document.querySelectorAll('[data-gallery-open]').forEach((button) => {
+        button.addEventListener('click', () => {
+          returnFocus = button;
+          show(Number(button.getAttribute('data-gallery-open')));
+          dialog.showModal();
+          dialog.querySelector('[data-gallery-close]')?.focus();
+        });
+      });
+      dialog.querySelector('[data-gallery-prev]')?.addEventListener('click', () => show(current - 1));
+      dialog.querySelector('[data-gallery-next]')?.addEventListener('click', () => show(current + 1));
+      dialog.querySelector('[data-gallery-close]')?.addEventListener('click', () => dialog.close());
+      dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+      dialog.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft') { event.preventDefault(); show(current - 1); }
+        if (event.key === 'ArrowRight') { event.preventDefault(); show(current + 1); }
+      });
+      dialog.addEventListener('close', () => returnFocus?.focus());
+    }
+    document.addEventListener('astro:page-load', setupCoffeeGallery);
+    setupCoffeeGallery();
+  </script>
 </Layout>

@@ -1,4 +1,5 @@
 import { terrainYAt } from '../levels';
+import { evaluateLanding } from '../landing';
 import type { AbilityDef, LevelConfig, ShipStats, Terrain } from '../types';
 
 export interface HudEls {
@@ -6,9 +7,12 @@ export interface HudEls {
   fuelBar: HTMLElement;
   altitude: HTMLElement;
   speed: HTMLElement;
+  drift?: HTMLElement;
   level: HTMLElement;
   best: HTMLElement;
   stardust: HTMLElement;
+  attitude?: HTMLElement;
+  landing?: HTMLElement;
 }
 
 export interface UpdateHudParams {
@@ -53,14 +57,23 @@ export function updateHud(p: UpdateHudParams) {
     setStyle(hud.fuelBar, 'width', `${Math.max(0, Math.min(100, (ship.fuel / stats.maxFuel) * 100))}%`);
   }
   setText(hud.altitude, terrain ? `${Math.max(0, Math.round(terrainYAt(terrain.points, ship.x) - ship.y))}m` : '—');
-  const speed = Math.hypot(ship.vx, ship.vy);
-  setText(hud.speed, `${Math.round(speed)}`);
+  const speed = Math.abs(ship.vy);
+  const drift = Math.abs(ship.vx);
+  setText(hud.speed, `${Math.round(speed)} u/s`);
+  setText(hud.drift, `${Math.round(drift)} u/s`);
   setStyle(hud.speed, 'color',
     speed < stats.landingSpeedTol * 0.8 ? '#94B03D' :
     speed < stats.landingSpeedTol ? '#D9A441' : '#C97B3D');
   setText(hud.level, compact ? `${levelIndex + 1}` : `${levelIndex + 1} — ${cfg?.name ?? ''}`);
   if (hud.best) setText(hud.best, `${bestFor() || '—'}`);
   if (hud.stardust) setText(hud.stardust, `${stardust}`);
+  const attitude = Math.round(Math.abs((ship as { angle?: number }).angle ?? 0) * 180 / Math.PI);
+  setText(hud.attitude, `${attitude}°`);
+  const altitude = terrain ? Math.max(0, terrainYAt(terrain.points, ship.x) - ship.y) : Infinity;
+  const onPad = !!terrain && ship.x > terrain.pad.xStart - stats.padBonus / 2 && ship.x < terrain.pad.xEnd + stats.padBonus / 2;
+  const evaluation = evaluateLanding({ vx: ship.vx, vy: ship.vy, angle: (ship as { angle?: number }).angle ?? 0, onPad, speedTolerance: stats.landingSpeedTol, angleTolerance: stats.landingAngleTol });
+  const status = altitude >= 180 ? 'APPROACH' : evaluation.safe ? 'WITHIN LIMITS' : evaluation.reason === 'off-pad' ? 'LINE UP' : evaluation.reason === 'combined-speed' ? 'COMBINED SPEED' : evaluation.reason === 'vertical-speed' ? 'SLOW DESCENT' : evaluation.reason === 'horizontal-speed' ? 'REDUCE DRIFT' : 'LEVEL OUT';
+  setText(hud.landing, status);
 }
 
 // ---------------------------------------------------------------------------

@@ -8,15 +8,18 @@ import Layout from '../layouts/Layout.astro';
   image="/images/social/about.png"
   imageAlt="About Tom — work, coffee, collections, and learning in public."
 >
-  <section class="max-w-5xl reveal is-visible">
-    <span class="badge">about</span>
-    <h1 class="font-display text-3xl md:text-4xl font-semibold mt-2">
-      A little about me
-    </h1>
+  <article class="editorial-page editorial-about">
+    <header class="editorial-page-lead editorial-about__lead">
+      <div>
+        <span class="editorial-kicker">About Tom</span>
+        <h1>A little about me.</h1>
+      </div>
+      <p>Work, coffee, collections, and a habit of learning by making things.</p>
+    </header>
 
-    <div class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)] lg:items-start">
-      <figure class="lg:order-2 lg:sticky lg:top-28">
-        <div class="overflow-hidden border border-line bg-surface p-1">
+    <div class="editorial-about__body">
+      <figure class="editorial-about__portrait">
+        <div class="editorial-photo-mat">
           <img
             src="/images/about-tom.webp"
             srcset="/images/about-tom-480.webp 480w, /images/about-tom.webp 768w"
@@ -32,7 +35,7 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </figure>
 
-      <div class="space-y-5 text-muted text-lg leading-relaxed lg:order-1">
+      <div class="editorial-about__prose">
         <p>
           Most days, I work from home for a medical supply company. I handle
           revenue cycle work, mainly Medicare and Humana billing and
@@ -61,11 +64,11 @@ import Layout from '../layouts/Layout.astro';
           although I have not made enough time for it lately. I would like to
           get back to it.
         </p>
-        <p class="border-l-2 border-accent pl-5 text-ink">
+        <p class="editorial-about__pullquote">
           This site is a place for all of it. The things I am learning, the
           things I collect, and the projects I keep convincing myself to start.
         </p>
       </div>
     </div>
-  </section>
+  </article>
 </Layout>

@@ -99,7 +99,7 @@ export const TRAILS: TrailDef[] = [
 ];
 
 export const SKIES: SkyDef[] = [
-  { id: 'sky_hearthwood', name: 'Hearthwood',     price: 0,   top: '#191008', mid: '#15100a', bot: '#100d09', star: '#F4EBDA' },
+  { id: 'sky_hearthwood', name: 'Hearthwood',     price: 0,   top: '#101724', mid: '#202b35', bot: '#362419', star: '#F4EBDA' },
   { id: 'sky_bloodmoon',  name: 'Blood Moon',     price: 400, top: '#241010', mid: '#1a0d0d', bot: '#120a0a', star: '#F4D8D8', planet: ['#a04a30', '#401812'] },
   { id: 'sky_emerald',    name: 'Emerald Nebula', price: 400, top: '#0e1a12', mid: '#0d150e', bot: '#0a100b', star: '#D8F4DD', planet: ['#4a7c5a', '#16301e'] },
   { id: 'sky_void',       name: 'The Deep Void',  price: 700, top: '#0a0a12', mid: '#08080e', bot: '#06060a', star: '#E8E8FF', planet: ['#3a3a5a', '#12121f'] },

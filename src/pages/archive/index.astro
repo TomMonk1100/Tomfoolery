@@ -7,6 +7,8 @@ import { getCollection } from 'astro:content';
 const posts = (await getCollection('pastBlog')).sort(
   (a, b) => a.data.date.valueOf() - b.data.date.valueOf()
 );
+const featuredPost = posts[posts.length - 1];
+const years = [...new Set(posts.map((post) => post.data.date.getUTCFullYear()))].sort((a, b) => b - a);
 
 function fmt(date: Date) {
   return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
@@ -19,16 +21,26 @@ function fmt(date: Date) {
   image="/images/social/archive.png"
   imageAlt="Tom of the Past — old blog posts and tweets from 2008 through 2018."
 >
-  <div class="retro-wrap">
-    <p class="badge">from the vault</p>
-    <h1 class="font-display text-3xl md:text-4xl font-semibold mt-3">Tom of the Past</h1>
-    <p class="mt-2 text-muted max-w-xl">
-      An archive of who I used to be online: {posts.length} blog posts from 2015–2016 and
-      13,686 tweets from 2008–2018. Feelings and robot vacuum updates preserved intact; the blog's spelling has since been forgiven.
-    </p>
+  <article class="editorial-page editorial-archive">
+    <header class="editorial-page-lead editorial-archive__lead">
+      <div>
+        <span class="editorial-kicker">From the vault</span>
+        <h1>Tom of the Past.</h1>
+      </div>
+      <p>An archive of who I used to be online: {posts.length} blog posts from 2015–2016 and 13,686 tweets from 2008–2018.</p>
+    </header>
+
+    {featuredPost && (
+      <section class="editorial-archive__feature" aria-labelledby="archive-featured-title">
+        <span class="editorial-kicker">Featured essay · {featuredPost.data.date.getUTCFullYear()}</span>
+        <h2 id="archive-featured-title">{featuredPost.data.title}</h2>
+        <p>One old blog post to start with, preserved alongside the rest of the archive.</p>
+        <a href={`/archive/blog/${featuredPost.id}`} class="editorial-text-link">Read the essay →</a>
+      </section>
+    )}
 
     <!-- Unified search -->
-    <div class="mt-8 retro-box p-4">
+    <div class="editorial-archive__search retro-box">
       <label for="archive-search" class="font-mono text-xs text-muted uppercase tracking-wider">Search the vault</label>
       <input
         id="archive-search"
@@ -41,10 +53,10 @@ function fmt(date: Date) {
       <ul id="search-results" class="mt-2 space-y-3"></ul>
     </div>
 
-    <div class="mt-10 grid md:grid-cols-2 gap-8">
+    <div class="editorial-archive__columns">
       <!-- Tweets -->
-      <section>
-        <h2 class="font-display text-xl font-semibold">Tweets <span class="font-mono text-xs text-muted">2008–2018</span></h2>
+      <section class="editorial-archive__tweets">
+        <h2>Tweets <span>2008–2018</span></h2>
         <p class="mt-1 text-sm text-muted">13,686 original tweets (replies, retweets, and dead Instagram links left in the past).</p>
         <a href="/archive/tweets" class="tile block mt-4 p-5 retro-box">
           <span class="font-mono text-sm text-accent-ink">→ on this day in tweets</span>
@@ -52,19 +64,23 @@ function fmt(date: Date) {
       </section>
 
       <!-- Blog -->
-      <section>
-        <h2 class="font-display text-xl font-semibold">Blog posts <span class="font-mono text-xs text-muted">2015–2016</span></h2>
-        <ul class="mt-4 space-y-2">
+      <section class="editorial-archive__blog">
+        <div class="editorial-archive__blog-head">
+          <h2>Blog posts <span>2015–2016</span></h2>
+          <label for="archive-year">Year <select id="archive-year"><option value="all">All years</option>{years.map((year) => <option value={String(year)}>{year}</option>)}</select></label>
+        </div>
+        <p class="editorial-empty" data-archive-empty hidden>No blog posts from that year.</p>
+        <ul class="editorial-archive__post-list">
           {posts.map((p) => (
-            <li class="flex items-baseline justify-between gap-3 border-b border-dotted border-line pb-1">
-              <a href={`/archive/blog/${p.id}`} class="hover:text-accent-ink transition-colors">{p.data.title}</a>
-              <span class="font-mono text-xs text-muted whitespace-nowrap">{fmt(p.data.date)}</span>
+            <li data-archive-year={String(p.data.date.getUTCFullYear())}>
+              <a href={`/archive/blog/${p.id}`}>{p.data.title}</a>
+              <span>{fmt(p.data.date)}</span>
             </li>
           ))}
         </ul>
       </section>
     </div>
-  </div>
+  </article>
 
   <script>
     let corpus: { tweets: any[]; blog: any[] } | null = null;
@@ -146,6 +162,25 @@ function fmt(date: Date) {
     }
 
     document.addEventListener('astro:page-load', setupSearch);
+
+    function setupArchiveYear() {
+      const select = document.getElementById('archive-year') as HTMLSelectElement | null;
+      const empty = document.querySelector('[data-archive-empty]');
+      const posts = [...document.querySelectorAll('[data-archive-year]')];
+      if (!select || select.dataset.ready) return;
+      select.dataset.ready = 'true';
+      select.addEventListener('change', () => {
+        let visible = 0;
+        posts.forEach((post) => {
+          const show = select.value === 'all' || post.getAttribute('data-archive-year') === select.value;
+          (post as HTMLElement).hidden = !show;
+          if (show) visible += 1;
+        });
+        if (empty instanceof HTMLElement) empty.hidden = visible > 0;
+      });
+    }
+    document.addEventListener('astro:page-load', setupArchiveYear);
+    setupArchiveYear();
   </script>
 
   <style>

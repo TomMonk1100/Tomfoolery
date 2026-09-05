@@ -43,7 +43,9 @@ import { MusicEngine } from './audio/music';
 import { DEFAULT_FACE, analyzeFace, drawShip, checkGhostSave } from './render/ship';
 import { drawCritters, drawUfos, drawPad, drawAsteroids, drawDrones, drawNoodle, drawNoodlePiles, drawCanisters, drawBonusPad, drawProjectileTracers } from './render/world';
 import { updateHud as updateHudEl, drawAbilityPips } from './render/hud';
+import { evaluateLanding } from './landing';
 import { upgradeListHtml, shopItemHtml, trailSwatch, diffButtonsHtml } from './ui/overlays';
+import { crashAdvice, flightLessonHtml, type LandingFailure } from './ui/mission';
 import { loadJSON, bestFor as bestForStored, saveBest, fetchLeaderboard as fetchLeaderboardRemote, submitScore as submitScoreRemote, writeSchemaTag } from './persistence';
 import { resolveReadyAbility, tickAbilityCooldowns, consumeAbilityCharge } from './abilities';
 import {
@@ -76,9 +78,12 @@ export function initLanderGame(root: HTMLElement) {
     fuelBar: root.querySelector('[data-hud="fuel-bar"]') as HTMLElement,
     altitude: root.querySelector('[data-hud="altitude"]') as HTMLElement,
     speed: root.querySelector('[data-hud="speed"]') as HTMLElement,
+    drift: root.querySelector('[data-hud="drift"]') as HTMLElement,
     level: root.querySelector('[data-hud="level"]') as HTMLElement,
     best: root.querySelector('[data-hud="best"]') as HTMLElement,
     stardust: root.querySelector('[data-hud="stardust"]') as HTMLElement,
+    attitude: root.querySelector('[data-hud="attitude"]') as HTMLElement,
+    landing: root.querySelector('[data-hud="landing"]') as HTMLElement,
   };
   const overlay = root.querySelector('[data-overlay]') as HTMLElement;
   const overlayContent = root.querySelector('[data-overlay-content]') as HTMLElement;
@@ -282,6 +287,11 @@ export function initLanderGame(root: HTMLElement) {
   let kickPendingRight = false;
   let valkyrieThrustOn = false;      // set by runValkyrieAutopilot() each tick — whether the PD controller wants thrust
   let crashTimerId = 0;              // tracked so the crash-screen setTimeout can be cleared on restart/cleanup (Commit 1b)
+  let lastCrashReason: LandingFailure = 'hazard';
+  let restoreFocus: HTMLElement | null = null;
+  // The ready deck teaches a first flight, then retries return straight to
+  // the descent. It is deliberately session-local: saved games stay intact.
+  let needsReadyDeck = true;
 
   // Pilot selfie — session-only, in memory (never persisted to disk).
   let pilotPhoto: HTMLCanvasElement | null = null;
@@ -435,9 +445,15 @@ export function initLanderGame(root: HTMLElement) {
   const perfGuard = new DegradationGuard();
 
   const ship = {
-    x: 0, y: 0, vx: 0, vy: 0, angle: 0, fuel: 100, thrusting: false,
+    x: 0, y: 0, vx: 0, vy: 0, angle: 0, omega: 0, throttle: 0, fuel: 100, thrusting: false,
     reserveUsed: false,
   };
+  let previousPose = { x: ship.x, y: ship.y, angle: ship.angle };
+  function syncRenderPose() { previousPose = { x: ship.x, y: ship.y, angle: ship.angle }; }
+  function renderedShipPose(alpha: number) {
+    const angleDelta = normalizeAngle(ship.angle - previousPose.angle);
+    return { ...ship, x: previousPose.x + (ship.x - previousPose.x) * alpha, y: previousPose.y + (ship.y - previousPose.y) * alpha, angle: normalizeAngle(previousPose.angle + angleDelta * alpha) };
+  }
 
   const input = { left: false, right: false, thrust: false };
 
@@ -510,6 +526,7 @@ export function initLanderGame(root: HTMLElement) {
         const gy = terrainYAt(terrain.points, ship.x);
         if (ship.y > gy - 12 * S) ship.y = gy - 40;
       }
+      syncRenderPose();
     }
     // v12 Commit 1: rebuild the vignette whenever canvas dims change —
     // radial gradient, centered, transparent to rgba(15,10,4,0.22) from
@@ -548,9 +565,15 @@ export function initLanderGame(root: HTMLElement) {
     if (html === null) {
       overlay.classList.add('hidden');
       overlayContent.innerHTML = '';
+      const focus = restoreFocus;
+      restoreFocus = null;
+      if (focus?.isConnected) focus.focus({ preventScroll: true });
     } else {
+      if (!restoreFocus && document.activeElement instanceof HTMLElement) restoreFocus = document.activeElement;
       overlay.classList.remove('hidden');
       overlayContent.innerHTML = html;
+      const initialFocus = overlayContent.querySelector<HTMLElement>('[data-autofocus], button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      initialFocus?.focus({ preventScroll: true });
       // Crash/level-complete/shop screens can be taller than the canvas and
       // scroll internally (overlay has overflow-y-auto), but if the player
       // had scrolled the *page* down mid-flight (chasing the ship lower on
@@ -559,20 +582,23 @@ export function initLanderGame(root: HTMLElement) {
       // way back short of manually scrolling up. Snap the game back into
       // view under the nav every time an overlay opens — #lander-root's
       // scroll-margin-top (game.astro) keeps this clear of the sticky nav.
-      root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (state !== 'start' && state !== 'ready') root.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
 
   function pauseGame() {
     if (state !== 'playing') return;
     state = 'paused';
+    input.left = input.right = input.thrust = false;
+    ship.throttle = 0;
+    syncRenderPose();
     audio.stopThrust();
     music.duck(false);
     setOverlay(`
-      <div class="text-center">
-        <p class="badge badge-signal">paused</p>
-        <h2 class="font-display text-3xl font-semibold mt-2">Take a breath</h2>
-        <button data-action="resume" class="tile mt-5 px-8 py-3 inline-block cursor-pointer font-mono badge-signal">resume</button>
+      <div class="mission-ready text-center max-w-sm mx-auto">
+        <p class="mission-kicker">flight paused</p>
+        <h2>Take a breath.</h2>
+        <button data-action="resume" data-autofocus class="mission-primary mt-5">resume descent</button>
         <div class="flex items-center justify-center gap-4 mt-4 text-xs font-mono">
           <button data-action="restart" class="text-muted hover:text-ink transition-colors cursor-pointer underline underline-offset-2">restart run</button>
           <button data-action="menu" class="text-muted hover:text-ink transition-colors cursor-pointer underline underline-offset-2">back to menu</button>
@@ -605,10 +631,34 @@ export function initLanderGame(root: HTMLElement) {
     valkyrieUsed = 0; // §7: Valkyrie Autopilot charges are per-run, not per-level
     music.ensure();
     loadLevel(0);
+    if (!needsReadyDeck) {
+      state = 'playing';
+      setOverlay(null);
+      applySound();
+      if (musicOn) music.start();
+      return;
+    }
+    state = 'ready';
+    setOverlay(`
+      <div class="mission-ready mission-ready--dock text-center max-w-sm mx-auto">
+        <p class="mission-kicker">flight deck · level 1</p>
+        <h2>Find the station.</h2>
+        <p>The approach panel is live. Green means your descent and attitude are safe.</p>
+        <div class="mission-readout"><span>PAD</span><b>CHEVRONS LIT</b><span>MODE</span><b>${DIFF_MODS[difficulty].label.toUpperCase()}</b></div>
+        <button data-action="begin-descent" data-autofocus class="mission-primary">begin descent</button>
+        <button data-action="lesson" class="mission-link">show the quick flight lesson</button>
+      </div>`);
+  }
+
+  function beginDescent() {
+    if (state !== 'ready') return;
+    needsReadyDeck = false;
     state = 'playing';
     setOverlay(null);
+    toasts.push({ text: 'FOLLOW THE LIT CHEVRONS · GREEN = SAFE', t: 4.8 });
     applySound();
     if (musicOn) music.start();
+    canvas.focus({ preventScroll: true });
   }
 
   function loadLevel(idx: number) {
@@ -630,6 +680,9 @@ export function initLanderGame(root: HTMLElement) {
     ship.vx = (Math.random() - 0.5) * 20;
     ship.vy = 10;
     ship.angle = 0;
+    ship.omega = 0;
+    ship.throttle = 0;
+    syncRenderPose();
     ship.fuel = stats.maxFuel;
     ship.reserveUsed = false;
     particlePool.clear();
@@ -1115,6 +1168,7 @@ export function initLanderGame(root: HTMLElement) {
   // Chrono Crystal tradeoff (world slows, fuel clock doesn't).
   function step(dt: number) {
     if (state !== 'playing') return;
+    previousPose = { x: ship.x, y: ship.y, angle: ship.angle };
 
     // Chrono Crystal: the world runs at 0.75^n below 120m (§5.1 — stacks
     // compound the slow-mo depth, not just its presence) — but the fuel
@@ -1185,16 +1239,16 @@ export function initLanderGame(root: HTMLElement) {
       }
     }
 
-    // Rotation — direct control, simple & predictable. Per-tick delta is
-    // clamped to a numerical-stability floor (§4.5) — unreachable at normal
-    // rotMult values, only guards against degenerate stacking. Valkyrie
-    // Autopilot overrides all manual input with a PD controller (§7).
-    const rotSpeed = 2.6 * stats.rotMult;
+    // Responsive rotational inertia: manual input targets a bounded angular
+    // velocity, then eases into a short, deliberate settle on release.
+    const targetOmega = ((input.right ? 1 : 0) - (input.left ? 1 : 0)) * 2.6 * stats.rotMult;
     if (valkyrieActive && terrain) {
       runValkyrieAutopilot(effPdt);
+      ship.omega = 0;
     } else {
-      if (input.left) ship.angle -= clampRotationDelta(rotSpeed * effPdt);
-      if (input.right) ship.angle += clampRotationDelta(rotSpeed * effPdt);
+      const response = targetOmega === 0 ? 24 : 18;
+      ship.omega += (targetOmega - ship.omega) * (1 - Math.exp(-response * effPdt));
+      ship.angle = normalizeAngle(ship.angle + clampRotationDelta(ship.omega * effPdt));
     }
 
     // --- §4.2 Mass & drag model -------------------------------------------
@@ -1235,17 +1289,21 @@ export function initLanderGame(root: HTMLElement) {
     }
 
     // Thrust
-    ship.thrusting = input.thrust && ship.fuel > 0 && !valkyrieActive;
+    const throttleRate = input.thrust && ship.fuel > 0 ? 1 / 0.06 : -1 / 0.04;
+    ship.throttle = Math.max(0, Math.min(1, ship.throttle + throttleRate * effPdt));
+    if (ship.fuel <= 0 || valkyrieActive) ship.throttle = 0;
+    ship.thrusting = ship.throttle > 0 && ship.fuel > 0 && !valkyrieActive;
     const autopilotThrusting = valkyrieActive && valkyrieThrustOn;
     if (ship.thrusting || autopilotThrusting) {
       ship.thrusting = true;
       const a = thrustAccel(stats.thrustPower, mass);
-      ship.vx += Math.sin(ship.angle) * a * effPdt;
-      ship.vy -= Math.cos(ship.angle) * a * effPdt;
+      const effectiveThrottle = autopilotThrusting ? 1 : ship.throttle;
+      ship.vx += Math.sin(ship.angle) * a * effectiveThrottle * effPdt;
+      ship.vy -= Math.cos(ship.angle) * a * effectiveThrottle * effPdt;
       // §7 Black Hole Engine: thrust costs zero fuel below 25% of the tank.
       const freeThrust = stats.blackholeReserve > 0 && ship.fuel <= stats.maxFuel * 0.25;
       if (!freeThrust) {
-        ship.fuel = Math.max(0, ship.fuel - 22 * stats.fuelBurnMult * dt);
+        ship.fuel = Math.max(0, ship.fuel - 22 * stats.fuelBurnMult * effectiveThrottle * dt);
       }
       emitThrusterParticles();
       // §6.1 Spaghetti Engine: every 3rd thruster particle is a noodle
@@ -1536,7 +1594,7 @@ export function initLanderGame(root: HTMLElement) {
 
   // Central destruction path: Phoenix Feather intercepts any lethal hit,
   // once per run — golden flash, back to the top with 60% fuel.
-  function destroyShip() {
+  function destroyShip(reason: LandingFailure = 'hazard') {
     if (stats.phoenixCharges > phoenixUsed) {
       phoenixUsed += 1;
       explode();
@@ -1547,6 +1605,8 @@ export function initLanderGame(root: HTMLElement) {
       ship.vx = 0;
       ship.vy = 10;
       ship.angle = 0;
+      ship.omega = 0;
+      ship.throttle = 0;
       ship.fuel = Math.round(stats.maxFuel * 0.6);
       invulnT = REVIVE_INVULN_S;
       audio.phoenix();
@@ -1554,6 +1614,7 @@ export function initLanderGame(root: HTMLElement) {
       return;
     }
     runStats.crashes += 1;
+    lastCrashReason = reason;
     explode();
     hitStopT = 0.07;
     audio.crash();
@@ -1598,7 +1659,11 @@ export function initLanderGame(root: HTMLElement) {
       sliding = true;
       effSpeedTol = effSpeedTol * stats.slideLandingMult;
     }
-    const safe = onAnyPad && speed < effSpeedTol && angle < stats.landingAngleTol;
+    const landing = evaluateLanding({
+      vx: ship.vx, vy: ship.vy, angle: ship.angle, onPad: onAnyPad,
+      speedTolerance: effSpeedTol, angleTolerance: stats.landingAngleTol,
+    });
+    const safe = landing.safe;
 
     ship.y = groundY - 9 * S;
 
@@ -1656,7 +1721,7 @@ export function initLanderGame(root: HTMLElement) {
       if (stats.doubleProgress > 0 && completed >= 15) unlockAch('ach_crunch');
       if (runStats.skips >= 3) unlockAch('ach_skip3');
 
-      ship.vx = 0; ship.vy = 0; ship.angle = 0;
+      ship.vx = 0; ship.vy = 0; ship.angle = 0; ship.omega = 0; ship.throttle = 0;
       state = 'levelComplete';
       celebrateT = 1.25;
       // levelIndex is advanced by loadLevel(levelIndex + levelsAdvanced) —
@@ -1734,7 +1799,7 @@ export function initLanderGame(root: HTMLElement) {
           return;
         }
       }
-      destroyShip();
+      destroyShip(landing.reason === 'off-pad' ? 'off-pad' : landing.reason === 'tilt' ? 'tilted' : 'too-fast');
     }
   }
 
@@ -2149,21 +2214,24 @@ export function initLanderGame(root: HTMLElement) {
     const el = Math.max(0, performance.now() - runStats.startedAt);
     const mm = Math.floor(el / 60000);
     const ss = String(Math.floor(el / 1000) % 60).padStart(2, '0');
+    const advice = crashAdvice(lastCrashReason);
     setOverlay(`
-      <div class="text-center">
-        <p class="badge" style="color:var(--color-accent-ink)">run over</p>
-        <h2 class="font-display text-3xl font-semibold mt-2">Crashed on ${cfg.name}</h2>
-        <p class="text-muted mt-3">Reached level ${reached} as ${DIFF_MODS[difficulty].label} · Landings: ${runStats.landings} · Best: level ${best}</p>
-        <p class="text-xs text-muted mt-1">✨ ${runStats.stardustEarned} earned · ${mm}:${ss} flight time · ${runStats.skips} skips</p>
+      <div class="mission-ready text-center max-w-lg mx-auto">
+        <p class="mission-kicker">flight ended · ${cfg.name}</p>
+        <h2>${advice.title}</h2>
+        <p>${advice.detail}</p>
+        <p class="text-sm mt-2" style="color:#d7e79d">Next time: ${advice.next}</p>
+        <div class="mission-readout"><span>REACHED</span><b>LEVEL ${reached}</b><span>FLIGHT</span><b>${mm}:${ss}</b><span>LANDINGS</span><b>${runStats.landings}</b><span>STARDUST</span><b>✨ ${runStats.stardustEarned}</b></div>
         ${upgradeListHtml(pickedUpgrades)}
-        <div class="flex items-center justify-center gap-2 mt-5 flex-wrap">
+        <button data-action="restart" data-autofocus class="mission-primary mt-5">retry the descent</button>
+        <details class="mt-4 text-left"><summary class="cursor-pointer text-xs font-mono" style="color:#ded0b9">post this run to the casual leaderboard · best level ${best}</summary>
+        <div class="flex items-center justify-center gap-2 mt-3 flex-wrap">
           <input data-lb-name maxlength="12" placeholder="pilot name" value="${pilotName.replace(/"/g, '')}"
             class="bg-canvas border border-line px-3 py-2 font-mono text-sm w-36 text-center" />
           <button data-action="submit-score" class="tile px-4 py-2 cursor-pointer font-mono text-sm">🌍 post to leaderboard</button>
         </div>
-        <p class="text-xs text-muted mt-1" data-lb-status></p>
-        <button data-action="restart" class="tile mt-5 px-6 py-3 inline-block cursor-pointer font-mono">restart run</button>
-        <div><button data-action="menu" class="mt-3 text-xs font-mono text-muted hover:text-ink transition-colors cursor-pointer underline underline-offset-2">back to menu</button></div>
+        <p class="text-xs text-muted mt-1" data-lb-status></p></details>
+        <div><button data-action="menu" class="mission-link">back to mission select</button></div>
       </div>
     `);
   }
@@ -2223,7 +2291,7 @@ export function initLanderGame(root: HTMLElement) {
     const filterBtnClass = (active: boolean) =>
       `cursor-pointer px-2 py-1.5 ${active ? 'text-ink underline underline-offset-2' : 'text-muted hover:text-ink transition-colors'}`;
     setOverlay(`
-      <div class="text-center max-w-md mx-auto">
+      <div class="mission-ready text-center max-w-md mx-auto">
         <p class="badge badge-signal">🌍 global leaderboard</p>
         <h2 class="font-display text-2xl font-semibold mt-2">Deepest descents, worldwide</h2>
         <div class="flex items-center justify-center gap-3 mt-3 text-xs font-mono" data-lb-filters>
@@ -2267,7 +2335,7 @@ export function initLanderGame(root: HTMLElement) {
   function showAchievements() {
     const unlocked = ACHIEVEMENTS.filter((a) => achievements[a.id]).length;
     setOverlay(`
-      <div class="text-center max-w-lg mx-auto">
+      <div class="mission-ready text-center max-w-lg mx-auto">
         <p class="badge badge-signal">🎖 achievements</p>
         <h2 class="font-display text-2xl font-semibold mt-2">${unlocked} / ${ACHIEVEMENTS.length} unlocked</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4 text-left">
@@ -2287,7 +2355,7 @@ export function initLanderGame(root: HTMLElement) {
   // --- Hangar Shop (cosmetics, paid in Stardust) ---
   function showShop(statusMsg = '') {
     setOverlay(`
-      <div class="text-center max-w-md mx-auto">
+      <div class="mission-ready text-center max-w-md mx-auto">
         <p class="badge badge-signal">🛒 hangar shop</p>
         <h2 class="font-display text-2xl font-semibold mt-2">✨ ${stardust} stardust</h2>
         <p class="text-xs text-muted mt-1">Earned with every landing — deeper levels pay more.</p>
@@ -2335,37 +2403,44 @@ export function initLanderGame(root: HTMLElement) {
   function showStartScreen() {
     state = 'start';
     music.stop();
-    const thumbHtml = pilotPhoto
-      ? `<img src="${pilotPhoto.toDataURL('image/png')}" alt="Pilot selfie preview" class="mx-auto rounded-full border-2 mt-4 block" style="width:64px;height:64px;border-color:var(--color-accent);" />`
-      : `<div class="mx-auto rounded-full border-2 mt-4 flex items-center justify-center text-2xl" style="width:64px;height:64px;border-color:var(--color-line);" aria-hidden="true">🧑‍🚀</div>`;
     setOverlay(`
-      <div class="text-center max-w-md mx-auto">
-        <p class="badge badge-signal">moon lander · endless roguelite</p>
-        <h2 class="font-display text-3xl font-semibold mt-2">How deep can you go?</h2>
-        <p class="text-muted mt-3 text-sm">
-          ←/→ or A/D to rotate · ↑ / W / Space to thrust · ↓ / S for your active
-          ability. Land slow and level on the pad. Endless levels, each harder
-          than the last. 69 upgrades across five rarities, every one with a
-          real tradeoff — and every one stacks forever, so a duplicate pick is
-          never wasted. Don't like what's offered? Skip it for a stardust
-          bonus and travel light.
-        </p>
+      <div class="mission-ready text-center max-w-md mx-auto">
+        <p class="mission-kicker">Tomfoolery presents</p>
+        <h2>Moon<br/>Lander</h2>
+        <p>Descend through an illustrated lunar frontier. Find the lit station. Make the next one stranger.</p>
         ${diffButtonsHtml(difficulty, bestFor)}
-        ${thumbHtml}
-        <button data-action="restart" class="tile mt-4 px-8 py-3 inline-block cursor-pointer font-mono badge-signal">start run</button>
-        <div>
-          <button data-action="open-selfie" class="mt-3 text-xs font-mono text-muted hover:text-ink transition-colors cursor-pointer underline underline-offset-2">
-            ${pilotPhoto ? 'change pilot photo' : 'take a pilot selfie'}
-          </button>
-        </div>
-        <div class="flex items-center justify-center gap-4 mt-4 text-xs font-mono flex-wrap">
-          <button data-action="leaderboard" class="text-muted hover:text-ink transition-colors cursor-pointer underline underline-offset-2">🌍 leaderboard</button>
-          <button data-action="achievements" class="text-muted hover:text-ink transition-colors cursor-pointer underline underline-offset-2">🎖 achievements ${ACHIEVEMENTS.filter((a) => achievements[a.id]).length}/${ACHIEVEMENTS.length}</button>
-          <button data-action="shop" class="text-muted hover:text-ink transition-colors cursor-pointer underline underline-offset-2">🛒 hangar shop · ✨${stardust}</button>
-          <button data-action="toggle-controls" class="text-muted hover:text-ink transition-colors cursor-pointer underline underline-offset-2">🎮 touch controls: ${touchLayout}</button>
+        <button data-action="restart" data-autofocus class="mission-primary mt-5">start a descent</button>
+        <button data-action="lesson" class="mission-link">optional quick flight lesson</button>
+        <div class="flex items-center justify-center gap-x-4 gap-y-2 mt-4 text-xs font-mono flex-wrap" style="color:#ded0b9">
+          <button data-action="leaderboard" class="underline underline-offset-2">leaderboard</button>
+          <button data-action="achievements" class="underline underline-offset-2">achievements ${ACHIEVEMENTS.filter((a) => achievements[a.id]).length}/${ACHIEVEMENTS.length}</button>
+          <button data-action="shop" class="underline underline-offset-2">hangar · ✨${stardust}</button>
+          <button data-action="open-selfie" class="underline underline-offset-2">${pilotPhoto ? 'pilot portrait' : 'pilot selfie'}</button>
+          <button data-action="toggle-controls" class="underline underline-offset-2">touch: ${touchLayout}</button>
         </div>
       </div>
     `);
+  }
+
+  function showLessonScreen() {
+    setOverlay(`<div class="max-w-md mx-auto">${flightLessonHtml(matchMedia('(pointer: coarse)').matches)}</div>`);
+  }
+
+  function showSettings() {
+    let sfxStored = '90', musicStored = '75';
+    try { sfxStored = localStorage.getItem('lander-sfx-vol') ?? '90'; musicStored = localStorage.getItem('lander-music-vol') ?? '75'; } catch {}
+    const sfxVolume = Math.max(0, Math.min(100, parseInt(sfxStored, 10) || 90));
+    const musicVolume = Math.max(0, Math.min(100, parseInt(musicStored, 10) || 75));
+    setOverlay(`<div class="mission-ready max-w-sm mx-auto"><p class="mission-kicker">flight settings</p><h2>Sound and controls</h2>
+      <label class="block mt-5 text-sm">Effects <button data-action="toggle-sfx" class="mission-link" style="float:right;margin:0">${sfxOn ? 'on' : 'off'}</button><input data-setting="sfx" type="range" min="0" max="100" value="${sfxVolume}" class="w-full mt-2" /></label>
+      <label class="block mt-5 text-sm">Music <button data-action="toggle-music" class="mission-link" style="float:right;margin:0">${musicOn ? 'on' : 'off'}</button><input data-setting="music" type="range" min="0" max="100" value="${musicVolume}" class="w-full mt-2" /></label>
+      <p class="text-xs mt-5" style="color:#ded0b9">${matchMedia('(pointer: coarse)').matches ? `Touch layout: ${touchLayout}.` : 'Keyboard: ← → rotate · Space / ↑ thrust · P pauses.'}</p>
+      <button data-action="close-settings" data-autofocus class="mission-primary mt-5">done</button></div>`);
+    overlayContent.querySelectorAll<HTMLInputElement>('[data-setting]').forEach((input) => input.addEventListener('input', () => {
+      const volume = parseInt(input.value, 10) / 100;
+      if (input.dataset.setting === 'sfx') { audio.setVolume(volume); try { localStorage.setItem('lander-sfx-vol', input.value); } catch {} }
+      else { music.setVolume(volume); try { localStorage.setItem('lander-music-vol', input.value); } catch {} }
+    }));
   }
 
   async function openSelfieCapture() {
@@ -2457,6 +2532,12 @@ export function initLanderGame(root: HTMLElement) {
     if (target.dataset.shop) { handleShopAction(target.dataset.shop); return; }
     if (target.dataset.action === 'resume') resumeGame();
     if (target.dataset.action === 'restart') startRun();
+    if (target.dataset.action === 'begin-descent') beginDescent();
+    if (target.dataset.action === 'lesson') showLessonScreen();
+    if (target.dataset.action === 'back-to-menu') showStartScreen();
+    if (target.dataset.action === 'close-settings') { if (state === 'paused') resumeGame(); else showStartScreen(); }
+    if (target.dataset.action === 'toggle-sfx') { sfxOn = !sfxOn; try { localStorage.setItem('lander-sfx', sfxOn ? '1' : '0'); } catch {} applySound(); showSettings(); }
+    if (target.dataset.action === 'toggle-music') { musicOn = !musicOn; try { localStorage.setItem('lander-music', musicOn ? '1' : '0'); } catch {} applySound(); showSettings(); }
     if (target.dataset.action === 'menu') showStartScreen();
     if (target.dataset.action === 'open-selfie') openSelfieCapture();
     if (target.dataset.action === 'snap-selfie') snapSelfie();
@@ -2471,6 +2552,11 @@ export function initLanderGame(root: HTMLElement) {
       if (state === 'start') showStartScreen(); // re-render so the label updates
     }
   });
+
+  root.querySelectorAll<HTMLElement>('[data-settings]').forEach((button) => button.addEventListener('click', () => {
+    if (state === 'playing') pauseGame();
+    showSettings();
+  }));
 
   // --- Input ---
   // §7 Kick Thrusters: double-tap detection window (ms). A second press-down
@@ -2489,6 +2575,8 @@ export function initLanderGame(root: HTMLElement) {
   }
 
   function keydown(e: KeyboardEvent) {
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
     // While actually flying, game keys must never scroll the page. This
     // runs before the e.repeat gate below because held-key repeat events
     // scroll too. Deliberately scoped to state === 'playing' only — on the
@@ -2506,6 +2594,7 @@ export function initLanderGame(root: HTMLElement) {
       if (state === 'playing') pauseGame(); else resumeGame();
       return;
     }
+    if (state !== 'playing') return;
     if (e.repeat) return;
     if (['ArrowLeft', 'a', 'A'].includes(e.key)) { input.left = true; registerTap('left'); }
     if (['ArrowRight', 'd', 'D'].includes(e.key)) { input.right = true; registerTap('right'); }
@@ -2515,6 +2604,8 @@ export function initLanderGame(root: HTMLElement) {
     if (['ArrowDown', 's', 'S'].includes(e.key) && state === 'playing') { fireAbility(); e.preventDefault(); }
   }
   function keyup(e: KeyboardEvent) {
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
     if (['ArrowLeft', 'a', 'A'].includes(e.key)) input.left = false;
     if (['ArrowRight', 'd', 'D'].includes(e.key)) input.right = false;
     if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) input.thrust = false;
@@ -2597,6 +2688,7 @@ export function initLanderGame(root: HTMLElement) {
   function draw() {
     if (!ctx) return;
     const t = performance.now() / 1000;
+    const renderShip = renderedShipPose(Math.max(0, Math.min(1, accumulator / DT)));
 
     ctx.clearRect(0, 0, width, height);
     ctx.save();
@@ -2774,9 +2866,9 @@ export function initLanderGame(root: HTMLElement) {
     }
 
     // Ship
-    if (state === 'playing' || state === 'levelComplete' || state === 'paused') {
+    if (state === 'start' || state === 'ready' || state === 'playing' || state === 'levelComplete' || state === 'paused') {
       drawShip({
-        ctx, ship, S, mood: currentMood(), shieldFlash, stats, pickedUpgrades,
+        ctx, ship: renderShip, S, mood: currentMood(), shieldFlash, stats, pickedUpgrades,
         paint: equippedPaint(), pilotPhoto, faceMap, thrustT: shipThrustT,
         degraded: perfGuard.degraded, invulnT,
       });
@@ -3194,6 +3286,10 @@ export function initLanderGame(root: HTMLElement) {
   document.addEventListener('visibilitychange', onVisibilityChange);
 
   resize();
+  // The opening is a live, playable scene rather than a disconnected card.
+  // It uses the same deterministic first-level world but never steps physics
+  // until the pilot chooses "begin descent".
+  loadLevel(0);
   window.addEventListener('resize', resize);
   // visualViewport fires its own resize event when the address bar
   // collapses/expands or the on-screen keyboard opens, independent of

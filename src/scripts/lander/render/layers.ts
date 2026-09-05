@@ -26,7 +26,7 @@
 import { mulberry32 } from '../rng';
 import { shouldRebuild, REBUILD_INTERVAL_S } from '../entities';
 import { terrainYAt } from '../levels';
-import { shade, depthTint, LIGHT } from './palette';
+import { shade, depthTint, environmentPreset, LIGHT } from './palette';
 import type { LevelConfig, SkyDef, Star, Terrain } from '../types';
 
 export { REBUILD_INTERVAL_S };
@@ -171,7 +171,8 @@ export class LayerCache {
   // is lighter/hazier (farther = lighter), with a haze band blended toward
   // the sky's bottom color pooling at its crest line.
   private buildRidgeFarLayer(input: LayerBuildInput) {
-    const { width, height, terrain, skyTheme } = input;
+    const { width, height, terrain, skyTheme, levelIndex } = input;
+    const preset = environmentPreset(levelIndex);
     const c = makeOffscreen(width, height);
     const ctx = c.getContext('2d')!;
     ctx.beginPath();
@@ -179,7 +180,9 @@ export class LayerCache {
     terrain.ridge.forEach((p) => ctx.lineTo(p.x, p.y));
     ctx.lineTo(width, height);
     ctx.closePath();
-    ctx.fillStyle = shade('#20170c', 0.35);
+    // Cooler slate makes this receding plane read separately from the warm
+    // playable rock, even in the default Hearthwood environment.
+    ctx.fillStyle = preset.farRidge;
     ctx.fill();
 
     const meanY = terrain.ridge.reduce((a, p) => a + p.y, 0) / terrain.ridge.length;
@@ -198,7 +201,8 @@ export class LayerCache {
   // base tone) with a much fainter haze — the contrast between this and
   // the far ridge IS the depth cue.
   private buildRidgeNearLayer(input: LayerBuildInput) {
-    const { width, height, terrain, skyTheme } = input;
+    const { width, height, terrain, skyTheme, levelIndex } = input;
+    const preset = environmentPreset(levelIndex);
     const c = makeOffscreen(width, height);
     const ctx = c.getContext('2d')!;
     ctx.beginPath();
@@ -206,7 +210,7 @@ export class LayerCache {
     terrain.ridgeNear.forEach((p) => ctx.lineTo(p.x, p.y));
     ctx.lineTo(width, height);
     ctx.closePath();
-    ctx.fillStyle = '#20170c';
+    ctx.fillStyle = preset.nearRidge;
     ctx.fill();
 
     const meanY = terrain.ridgeNear.reduce((a, p) => a + p.y, 0) / terrain.ridgeNear.length;
@@ -245,7 +249,8 @@ export class LayerCache {
   // scratch texture gains per-stroke width/alpha variance, and canyon walls
   // get an ambient-occlusion pool at their base.
   private buildTerrainLayer(input: LayerBuildInput) {
-    const { width, height, cfg, terrain } = input;
+    const { width, height, cfg, terrain, levelIndex } = input;
+    const preset = environmentPreset(levelIndex);
     const c = makeOffscreen(width, height);
     const ctx = c.getContext('2d')!;
     ctx.clearRect(0, 0, width, height);
@@ -257,7 +262,7 @@ export class LayerCache {
     terrain.points.forEach((p) => ctx.lineTo(p.x, p.y));
     ctx.lineTo(width, height);
     ctx.closePath();
-    ctx.fillStyle = '#2a1f10';
+    ctx.fillStyle = preset.rockDark;
     ctx.fill();
 
     // 1. Slope shading — each segment's outward (upward-facing) normal
@@ -279,7 +284,7 @@ export class LayerCache {
       ctx.lineTo(p1.x + 0.75, height);
       ctx.lineTo(p0.x - 0.75, height);
       ctx.closePath();
-      ctx.fillStyle = shade('#3B2C16', lit * 0.22);
+      ctx.fillStyle = shade(preset.rock, lit * 0.22);
       ctx.fill();
     }
 
@@ -290,8 +295,8 @@ export class LayerCache {
     ctx.globalCompositeOperation = 'source-atop';
     ctx.globalAlpha = 0.55;
     const groundGrad = ctx.createLinearGradient(0, height * 0.5, 0, height);
-    groundGrad.addColorStop(0, '#3B2C16');
-    groundGrad.addColorStop(1, '#221808');
+    groundGrad.addColorStop(0, preset.rock);
+    groundGrad.addColorStop(1, preset.rockDark);
     ctx.fillStyle = groundGrad;
     ctx.fillRect(0, 0, width, height);
     ctx.restore();
@@ -324,7 +329,7 @@ export class LayerCache {
       ctx.moveTo(p0.x, p0.y);
       ctx.lineTo(p1.x, p1.y);
       if (lit > 0.15) {
-        ctx.strokeStyle = shade('#8a6a3c', lit * 0.5);
+        ctx.strokeStyle = shade(preset.highlight, lit * 0.15);
         ctx.lineWidth = 2;
       } else {
         ctx.strokeStyle = '#221808';

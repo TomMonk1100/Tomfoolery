@@ -1,118 +1,43 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Outside from '../components/Outside.astro';
+import GameFeature from '../components/GameFeature.astro';
 import { getCollection } from 'astro:content';
 
-type RecentEntry = {
-  id: string;
-  data: {
-    title: string;
-    date?: Date;
-    dateAcquired?: Date;
-  };
-};
+type DatedEntry = { id: string; data: { title: string; date?: Date; dateAcquired?: Date } };
 
-function latestEntry<T extends RecentEntry>(entries: T[], dateField: 'date' | 'dateAcquired') {
-  return [...entries].sort((a, b) => {
-    const aTime = a.data[dateField]?.valueOf() ?? Number.NEGATIVE_INFINITY;
-    const bTime = b.data[dateField]?.valueOf() ?? Number.NEGATIVE_INFINITY;
-    if (aTime !== bTime) return aTime > bTime ? -1 : 1;
-    if (a.id === b.id) return 0;
-    return a.id < b.id ? 1 : -1;
-  })[0];
+function newest<T extends DatedEntry>(entries: T[], key: 'date' | 'dateAcquired') {
+  return [...entries].sort((a, b) =>
+    (b.data[key]?.valueOf() ?? 0) - (a.data[key]?.valueOf() ?? 0)
+  )[0];
 }
 
-function fmtRecent(date?: Date) {
-  if (!date) return 'ongoing';
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
+function monthYear(date?: Date) {
+  return date?.toLocaleDateString('en-US', {
+    month: 'short', year: 'numeric', timeZone: 'UTC',
+  }) ?? 'Ongoing';
 }
 
 const [nowEntries, artEntries, pokemonEntries, archiveEntries] = await Promise.all([
-  getCollection('now'),
-  getCollection('art'),
-  getCollection('pokemon'),
-  getCollection('pastBlog'),
+  getCollection('now'), getCollection('art'), getCollection('pokemon'), getCollection('pastBlog'),
 ]);
 
-const recentlyTended = [
-  {
-    label: 'Now',
-    note: 'from right now',
-    hrefBase: '/now',
-    entry: latestEntry(nowEntries, 'date'),
-    dateField: 'date' as const,
-  },
-  {
-    label: 'Art',
-    note: 'from the sketchbook',
-    hrefBase: '/art',
-    entry: latestEntry(artEntries, 'date'),
-    dateField: 'date' as const,
-  },
-  {
-    label: 'Pokémon',
-    note: 'from the binder',
-    hrefBase: '/pokemon',
-    entry: latestEntry(pokemonEntries, 'dateAcquired'),
-    dateField: 'dateAcquired' as const,
-  },
-  {
-    label: 'Archive',
-    note: 'from the old blog',
-    hrefBase: '/archive/blog',
-    entry: latestEntry(archiveEntries, 'date'),
-    dateField: 'date' as const,
-  },
+const currentNotes = [
+  { section: 'Now', hrefBase: '/now', entry: newest(nowEntries, 'date'), key: 'date' as const },
+  { section: 'Art', hrefBase: '/art', entry: newest(artEntries, 'date'), key: 'date' as const },
+  { section: 'Pokémon', hrefBase: '/pokemon', entry: newest(pokemonEntries, 'dateAcquired'), key: 'dateAcquired' as const },
 ];
 
-const tiles = [
-  {
-    href: '/now',
-    title: 'Now',
-    tag: 'live',
-    blurb: 'Status, updated often.',
-  },
-  {
-    href: '/coffee',
-    title: 'Coffee',
-    tag: 'latte gallery',
-    blurb: 'A growing gallery of lattes, doodles, and good coffee.',
-  },
-  {
-    href: '/pokemon',
-    title: 'Pokémon TCG',
-    tag: 'collection',
-    blurb: 'The collection, filterable by set and grade.',
-  },
-  {
-    href: '/art',
-    title: 'Art',
-    tag: 'creative',
-    blurb: 'Latte art, hand-drawn sketches, and AI-art experiments.',
-  },
-  {
-    href: '/archive',
-    title: 'Tom of the Past',
-    tag: 'the vault',
-    blurb: 'Old blog posts and a decade of tweets, 2008–2018.',
-  },
-  {
-    href: '/about',
-    title: 'About',
-    tag: 'the human stuff',
-    blurb: 'What I do, who I am.',
-  },
-  {
-    href: '/game',
-    title: 'Moon Lander',
-    tag: 'play',
-    blurb: 'An endless roguelite lander — every level harder, every upgrade a tradeoff.',
-    featured: true,
-  },
+const rediscovered = archiveEntries.find((entry) => entry.id === 'created-cabin')
+  ?? [...archiveEntries].sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())[0];
+
+const destinations = [
+  { n: '01', href: '/now', title: 'Now', note: 'What has my attention lately' },
+  { n: '02', href: '/coffee', title: 'Coffee', note: 'Lattes, foam doodles, and ritual' },
+  { n: '03', href: '/pokemon', title: 'Pokémon', note: 'Cards and the stories attached to them' },
+  { n: '04', href: '/art', title: 'Art', note: 'Drawings and visual experiments' },
+  { n: '05', href: '/archive', title: 'Archive', note: 'Old posts and ten years of tweets' },
+  { n: '06', href: '/about', title: 'About', note: 'Work, animals, hobbies, and this place' },
 ];
 ---
 
@@ -121,205 +46,124 @@ const tiles = [
   imageAlt="Tomfoolery over a warm West Texas landscape, with coffee, collections, old stories, and the sky traced beneath a sun-and-moon arc."
   preconnectWeather
 >
-  <section class="mb-6 relative overflow-hidden">
-    <!-- Contained hero embers: three small motes, hero only. No canvas,
-         no JS, no full-viewport layer. Staggered durations + negative
-         delays keep them out of sync. -->
-    <span class="ember-mote" aria-hidden="true" style="top: 18%; right: 10%; width: 6px; height: 6px; background: var(--color-accent); animation-duration: 9s; animation-delay: -2s;"></span>
-    <span class="ember-mote" aria-hidden="true" style="top: 62%; right: 26%; width: 4px; height: 4px; background: var(--color-accent-2); animation-duration: 12s; animation-delay: -7s;"></span>
-    <span class="ember-mote" aria-hidden="true" style="top: 32%; right: 42%; width: 3px; height: 3px; background: var(--color-signal); animation-duration: 15s; animation-delay: -11s;"></span>
+  <div class="editorial-home">
+    <section class="editorial-hero" aria-labelledby="home-heading">
+      <div class="editorial-hero__copy">
+        <span class="editorial-kicker">A personal journal from West Texas</span>
+        <h1 id="home-heading">Things I make, collect, notice, and keep.</h1>
+        <p>
+          I’m Tom. This is where coffee rituals, Pokémon cards, old stories,
+          new experiments, and the wide Texas sky end up together.
+        </p>
+        <nav class="editorial-hero__actions" aria-label="Start exploring">
+          <a href="/now" class="editorial-button">See what’s current <span aria-hidden="true">→</span></a>
+          <a href="/about" class="editorial-text-link">A little about me</a>
+        </nav>
+      </div>
 
-    <div class="relative">
-      <!-- Explicit {' '} separators: the build's HTML minification strips
-           plain whitespace between the spans, which rendered as
-           "Hey,I'mTom." — expression-based spaces survive it. -->
-      <h1 class="font-display text-4xl md:text-[2.5rem] font-semibold tracking-tight overflow-hidden py-1">
-        <span class="kinetic-word" style="--i:0">Hey,</span>{' '}<span class="kinetic-word" style="--i:1">I'm</span>{' '}<span class="kinetic-word gradient-text flicker-hover" style="--i:2">Tom</span><span class="kinetic-word" style="--i:3">.</span>
-      </h1>
-      <p class="mt-3 max-w-xl text-muted text-base md:text-[1.0625rem] leading-relaxed" data-kinetic>
-        Welcome in. Coffee's usually on, there's always a collection growing in the corner, and I'm probably planning the next trip into the woods.
-      </p>
-    </div>
-  </section>
+      <figure class="editorial-hero__portrait">
+        <div class="editorial-photo-mat">
+          <img
+            src="/images/about-tom.webp"
+            srcset="/images/about-tom-480.webp 480w, /images/about-tom.webp 768w"
+            sizes="(min-width: 1024px) 34vw, calc(100vw - 3rem)"
+            width="768"
+            height="1024"
+            alt="Tom standing outdoors in warm evening light, wearing a suit and tie."
+            loading="eager"
+            decoding="async"
+            fetchpriority="high"
+          />
+        </div>
+        <figcaption>Tom Muncie · Breckenridge, Texas</figcaption>
+      </figure>
+    </section>
 
-  <!-- Outside is a full-bleed band: it breaks the max-w-6xl column itself
-       (see .full-bleed) and re-establishes that column for its own content,
-       so no wrapper here can constrain it. Still lives outside the tile grid
-       because its height varies with content and geolocation state. -->
-  <div class="mb-5">
-    <Outside />
+    <section class="editorial-feature-row" aria-label="Featured work">
+      <a href="/coffee" class="editorial-photo-feature reveal">
+        <img
+          src="/images/coffee/latte-breakfast.webp"
+          srcset="/images/coffee/latte-breakfast-480.webp 480w, /images/coffee/latte-breakfast.webp 1024w"
+          sizes="(min-width: 1024px) 38vw, calc(100vw - 3rem)"
+          width="1024"
+          height="768"
+          alt="A latte with a smiling face beside breakfast and collectibles."
+          loading="lazy"
+          decoding="async"
+        />
+        <span class="editorial-photo-feature__shade"></span>
+        <span class="editorial-photo-feature__copy">
+          <small>Coffee journal</small>
+          <strong>Before the first sip</strong>
+          <span>Open the gallery →</span>
+        </span>
+      </a>
+      <GameFeature />
+    </section>
+
+    <header class="editorial-section-head editorial-section-head--outside">
+      <div>
+        <span class="editorial-kicker">The living almanac</span>
+        <h2>What the sky is doing.</h2>
+      </div>
+      <p>Local light, weather, Moon, and the next useful thing to look up for.</p>
+    </header>
   </div>
 
-  <section class="recently-tended" aria-labelledby="recently-tended-heading">
-    <div class="recently-tended__intro">
-      <span class="badge">recently tended</span>
-      <h2 id="recently-tended-heading">A few things still growing</h2>
-      <p>Fresh notes from across the site, gathered quietly in one place.</p>
-    </div>
+  <Outside />
 
-    <div class="recently-tended__grid">
-      {recentlyTended.map((item, i) => item.entry ? (
-        <a
-          href={`${item.hrefBase}/${item.entry.id}`}
-          class="recently-tended__item"
-          aria-label={`${item.label}: ${item.entry.data.title}`}
-        >
-          <span class="recently-tended__meta">
-            <span><span aria-hidden="true">{String(i + 1).padStart(2, '0')}</span> · {item.label}</span>
-            <time datetime={item.entry.data[item.dateField]?.toISOString()}>
-              {fmtRecent(item.entry.data[item.dateField])}
-            </time>
-          </span>
-          <strong>{item.entry.data.title}</strong>
-          <span class="recently-tended__note">
-            {item.note}
-            <span aria-hidden="true">↗</span>
-          </span>
-        </a>
-      ) : null)}
-    </div>
-  </section>
-
-  <!-- Uniform grid: no col-span overrides. The featured Moon Lander tile
-       carries the gradient fill as the single focal point. -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-    {tiles.map((tile, i) => (
-      <a
-        href={tile.href}
-        class={`tile home-tile reveal flex flex-col justify-between${tile.featured ? ' tile-featured' : ''}`}
-        style={`transition-delay: ${Math.min(i * 60, 300)}ms`}
-      >
-        <span class="badge">{tile.tag}</span>
+  <div class="editorial-home editorial-home--after-outside">
+    <section class="editorial-notes" aria-labelledby="current-notes-heading">
+      <header class="editorial-section-head">
         <div>
-          <h2 class="font-display text-xl font-semibold">{tile.title}</h2>
-          <p class={`mt-1 text-sm ${tile.featured ? 'tile-blurb' : 'text-muted'}`}>{tile.blurb}</p>
+          <span class="editorial-kicker">Recently tended</span>
+          <h2 id="current-notes-heading">The current shelf.</h2>
         </div>
-      </a>
-    ))}
+        <p>Recent notes, kept separate from the older work below.</p>
+      </header>
+
+      <div class="editorial-notes__grid">
+        {currentNotes.map((item, index) => item.entry && (
+          <a href={`${item.hrefBase}/${item.entry.id}`} class="editorial-note reveal">
+            <span class="editorial-note__meta">
+              <span>{String(index + 1).padStart(2, '0')} · {item.section}</span>
+              <time datetime={item.entry.data[item.key]?.toISOString()}>{monthYear(item.entry.data[item.key])}</time>
+            </span>
+            <strong>{item.entry.data.title}</strong>
+            <span class="editorial-note__arrow" aria-hidden="true">↗</span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    {rediscovered && (
+      <section class="editorial-rediscovery reveal" aria-labelledby="rediscovery-heading">
+        <div>
+          <span class="editorial-kicker">Rediscovered in the archive · {rediscovered.data.date.getUTCFullYear()}</span>
+          <h2 id="rediscovery-heading">{rediscovered.data.title}</h2>
+        </div>
+        <p>An older piece from the blog, brought back into view.</p>
+        <a href={`/archive/blog/${rediscovered.id}`} class="editorial-text-link">Read from the archive →</a>
+      </section>
+    )}
+
+    <section class="editorial-index" aria-labelledby="site-index-heading">
+      <header class="editorial-section-head">
+        <div>
+          <span class="editorial-kicker">The rest of the cabinet</span>
+          <h2 id="site-index-heading">Keep wandering.</h2>
+        </div>
+      </header>
+      <nav aria-label="Explore Tomfoolery">
+        {destinations.map((item) => (
+          <a href={item.href}>
+            <span>{item.n}</span>
+            <strong>{item.title}</strong>
+            <small>{item.note}</small>
+            <b aria-hidden="true">↗</b>
+          </a>
+        ))}
+      </nav>
+    </section>
   </div>
 </Layout>
-
-<style>
-  .recently-tended {
-    margin-block: clamp(2.75rem, 6vw, 4.75rem);
-  }
-
-  .recently-tended__intro {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.9fr);
-    align-items: end;
-    column-gap: 2rem;
-    padding-bottom: 1rem;
-  }
-
-  .recently-tended__intro .badge {
-    grid-column: 1 / -1;
-    margin-bottom: 0.35rem;
-  }
-
-  .recently-tended__intro h2 {
-    font-size: clamp(1.25rem, 2vw, 1.55rem);
-    line-height: 1.2;
-  }
-
-  .recently-tended__intro p {
-    max-width: 31rem;
-    justify-self: end;
-    color: var(--color-muted);
-    font-size: 0.9rem;
-    line-height: 1.55;
-  }
-
-  .recently-tended__grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: clamp(1rem, 2.5vw, 2rem);
-  }
-
-  .recently-tended__item {
-    min-height: 10.5rem;
-    padding-block: 1rem 0.45rem;
-    display: flex;
-    flex-direction: column;
-    border-top: 1px solid var(--color-line);
-    transition: border-color 180ms ease, color 180ms ease;
-  }
-
-  .recently-tended__item:hover {
-    border-color: var(--color-accent);
-  }
-
-  .recently-tended__item:focus-visible {
-    border-radius: 2px;
-    outline: 2px solid var(--color-accent);
-    outline-offset: 4px;
-  }
-
-  .recently-tended__meta,
-  .recently-tended__note {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    color: var(--color-muted);
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    letter-spacing: 0.04em;
-    line-height: 1.4;
-    text-transform: uppercase;
-  }
-
-  .recently-tended__item strong {
-    margin-top: 1.15rem;
-    color: var(--color-ink);
-    font-family: var(--font-display);
-    font-size: 1.02rem;
-    line-height: 1.35;
-    transition: color 180ms ease;
-  }
-
-  .recently-tended__item:hover strong {
-    color: var(--color-accent-ink);
-  }
-
-  .recently-tended__note {
-    margin-top: auto;
-    padding-top: 1.25rem;
-    text-transform: none;
-  }
-
-  .recently-tended__note span {
-    color: var(--color-accent);
-    font-size: 0.9rem;
-    transition: transform 180ms ease;
-  }
-
-  .recently-tended__item:hover .recently-tended__note span {
-    transform: translate(2px, -2px);
-  }
-
-  @media (max-width: 767px) {
-    .recently-tended__intro {
-      display: block;
-    }
-
-    .recently-tended__intro p {
-      margin-top: 0.5rem;
-    }
-
-    .recently-tended__grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 479px) {
-    .recently-tended__grid {
-      grid-template-columns: 1fr;
-      gap: 0.75rem;
-    }
-
-    .recently-tended__item {
-      min-height: 8.75rem;
-    }
-  }
-</style>

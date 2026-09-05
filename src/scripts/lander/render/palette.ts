@@ -13,6 +13,16 @@
 // key off this one vector from Commit 1 onward).
 export const LIGHT = { x: -0.55, y: -0.83 };
 
+export type EnvironmentPreset = { name: 'First Light' | 'Rust Basin' | 'Blue Rift'; farRidge: string; nearRidge: string; rock: string; rockDark: string; highlight: string };
+
+/** Authored visual bands only; collision terrain remains untouched. */
+export function environmentPreset(levelIndex: number): EnvironmentPreset {
+  const band = Math.floor(levelIndex / 5) % 3;
+  if (band === 1) return { name: 'Rust Basin', farRidge: '#6b4a42', nearRidge: '#563c38', rock: '#795744', rockDark: '#3f2924', highlight: '#E9DFC8' };
+  if (band === 2) return { name: 'Blue Rift', farRidge: '#455d70', nearRidge: '#344656', rock: '#596775', rockDark: '#293744', highlight: '#D4EEF1' };
+  return { name: 'First Light', farRidge: '#344656', nearRidge: '#45515B', rock: '#796653', rockDark: '#3f382f', highlight: '#E9DFC8' };
+}
+
 // Parses a `#rrggbb` hex color, multiplies each channel by (1 + amt)
 // (amt in roughly -1..1; clamped to 0-255 per channel), returns a new
 // `#rrggbb` hex string. amt=0 is a no-op (returns the same color).

@@ -38,11 +38,14 @@ function fmt(date: Date) {
   contentType="article"
   publishedTime={entry.data.date}
 >
-  <a href="/archive" class="badge hover:text-ink transition-colors">← the vault</a>
-  <h1 class="font-display text-3xl md:text-4xl font-semibold mt-3 max-w-2xl">{entry.data.title}</h1>
-  <p class="mt-2 font-mono text-sm text-muted">{fmt(entry.data.date)} · from the old blog, lightly tidied</p>
+  <article class="editorial-page editorial-detail editorial-detail--archive">
+  <a href="/archive" class="editorial-detail__back">← the vault</a>
+  <header class="editorial-detail__head">
+  <h1>{entry.data.title}</h1>
+  <p class="editorial-detail__meta">{fmt(entry.data.date)} · from the old blog, lightly tidied</p>
+  </header>
 
-  <div class="past-prose mt-8 max-w-xl leading-relaxed [&_p]:mt-4 [&_p:first-child]:mt-0">
+  <div class="editorial-detail__prose past-prose">
     <Content />
   </div>
 
@@ -71,6 +74,7 @@ function fmt(date: Date) {
       },
     ]}
   />
+  </article>
 </Layout>
 
 <style>
