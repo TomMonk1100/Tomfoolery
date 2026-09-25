@@ -22,7 +22,7 @@
 // RAF loop, mass/drag model, swept terrain + projectile collision (no more
 // tunneling on fast falls), asteroid logic moved out of the render path
 // into entities.ts, and hard gameplay caps in computeStats replaced with
-// numerical-stability floors. See lander-v10-refactor-plan.md §4.
+// numerical-stability floors. See docs/plans/lander/lander-v10-refactor-plan.md §4.
 // ---------------------------------------------------------------------------
 
 import { mulberry32 } from './rng';

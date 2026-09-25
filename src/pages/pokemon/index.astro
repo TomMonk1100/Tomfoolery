@@ -4,7 +4,8 @@ import EntryTrail from '../../components/EntryTrail.astro';
 import { getCollection } from 'astro:content';
 
 const entries = (await getCollection('pokemon')).sort((a, b) =>
-  (b.data.dateAcquired?.valueOf() ?? 0) - (a.data.dateAcquired?.valueOf() ?? 0)
+  (b.data.datePublished?.valueOf() ?? b.data.dateAcquired?.valueOf() ?? 0)
+  - (a.data.datePublished?.valueOf() ?? a.data.dateAcquired?.valueOf() ?? 0)
 );
 ---
 
@@ -23,7 +24,7 @@ const entries = (await getCollection('pokemon')).sort((a, b) =>
       <div>
         <p>
           The pulls, opinions, and small memories that make a collection worth
-          keeping. Card photographs will join the entries as the binder is documented.
+          keeping. A few favorite binder pages are photographed now, with more to come.
         </p>
         <dl class="editorial-collection-facts" aria-label="Collection status">
           <div><dt>Focus</dt><dd>Personal pulls and set notes</dd></div>
@@ -35,9 +36,9 @@ const entries = (await getCollection('pokemon')).sort((a, b) =>
     <div class="editorial-binder" aria-label="Pokémon collection entries">
       {entries.map((entry, index) => (
         <article class="editorial-binder__entry reveal">
-          <a href={`/pokemon/${entry.id}`} class="editorial-card-record">
+          <a href={`/pokemon/${entry.id}`} class:list={['editorial-card-record', entry.data.image && 'editorial-card-record--photo']}>
             {entry.data.image ? (
-              <img src={entry.data.image} alt={entry.data.title} loading={index === 0 ? 'eager' : 'lazy'} decoding="async" />
+              <img src={entry.data.image} alt={entry.data.imageAlt ?? entry.data.title} loading={index === 0 ? 'eager' : 'lazy'} decoding="async" />
             ) : (
               <span class="editorial-card-record__type">
                 <small>Binder story</small>

@@ -1,70 +1,104 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import EntryTrail from '../../components/EntryTrail.astro';
-import { getCollection, render } from 'astro:content';
-
-const pieces = (await getCollection('art')).sort((a, b) =>
-  (b.data.date?.valueOf() ?? 0) - (a.data.date?.valueOf() ?? 0)
-);
-const featured = pieces[0];
-const rendered = featured ? await render(featured) : null;
-const FeaturedContent = rendered?.Content;
-const categoryLabel = {
-  'coffee-art': 'Latte art',
-  'hand-drawn': 'Hand-drawn',
-  'ai-art': 'AI art',
-};
+import photos from '../../data/snoopyPhotos.json';
 ---
 
 <Layout
   title="Art — Tomfoolery"
-  description="Drawings and visual experiments from Tom's art shelf."
+  description="Recent Daily Snoopy drawings from Tom's sketchbook."
   image="/images/social/art.png"
-  imageAlt="Art on Tomfoolery — drawings and visual experiments."
+  imageAlt="Drawings from Tom's Daily Snoopy sketchbook."
 >
   <article class="editorial-page editorial-art">
-    <header class="editorial-page-lead">
+    <header class="editorial-page-lead editorial-art__lead">
       <div>
-        <span class="editorial-kicker">Art shelf · {pieces.length} work{pieces.length === 1 ? '' : 's'}</span>
-        <h1>A small exhibition.</h1>
+        <span class="editorial-kicker">Art · {photos.length} drawings</span>
+        <h1>Daily Snoopy.</h1>
       </div>
       <p>
-        Drawings and experiments get a proper wall here. The room is small for
-        now, so each piece gets space instead of being stretched into a grid.
+        I'm still working on my daily Snoopy. It's just not every day, but here
+        are some of my recent ones.
       </p>
     </header>
 
-    {featured && FeaturedContent ? (
-      <section class="editorial-exhibit reveal" aria-labelledby="featured-work-title">
-        {featured.data.image ? (
-          <figure class="editorial-exhibit__image">
-            <img src={featured.data.image} alt={featured.data.title} loading="eager" decoding="async" />
-          </figure>
-        ) : (
-          <a href={`/art/${featured.id}`} class="editorial-exhibit__placard" aria-label={`Read ${featured.data.title}`}>
-            <span>Work {String(1).padStart(2, '0')}</span>
-            <strong>{featured.data.title}</strong>
-            <small>Story and image notes →</small>
-          </a>
-        )}
-        <div class="editorial-exhibit__label">
-          <span class="editorial-kicker">Featured work</span>
-          <h2 id="featured-work-title">{featured.data.title}</h2>
-          <dl>
-            <div><dt>Medium</dt><dd>{categoryLabel[featured.data.category]}</dd></div>
-            {featured.data.date && <div><dt>Dated</dt><dd>{featured.data.date.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })}</dd></div>}
-          </dl>
-          <div class="editorial-prose"><FeaturedContent /></div>
-          <a href={`/art/${featured.id}`} class="editorial-text-link">Open the full entry →</a>
-        </div>
-      </section>
-    ) : (
-      <p class="editorial-empty">The first work has not been hung yet.</p>
-    )}
+    <div class="editorial-art__grid" data-gallery>
+      {photos.map((photo, index) => (
+        <figure class="editorial-gallery-item reveal">
+          <button
+            type="button"
+            data-gallery-open={String(index)}
+            aria-label={`Open drawing ${index + 1} of ${photos.length}: ${photo.alt}`}
+          >
+            <img
+              src={photo.thumbnail}
+              srcset={`${photo.thumbnail} ${photo.thumbWidth}w, ${photo.src} ${photo.width}w`}
+              sizes="(min-width: 761px) 30vw, (min-width: 441px) 45vw, calc(100vw - 3rem)"
+              width={photo.width}
+              height={photo.height}
+              alt={photo.alt}
+              loading={index < 3 ? 'eager' : 'lazy'}
+              decoding="async"
+              fetchpriority={index === 0 ? 'high' : undefined}
+            />
+            <span aria-hidden="true">View</span>
+          </button>
+        </figure>
+      ))}
+    </div>
 
-    <EntryTrail contextLinks={[
-      { href: '/coffee', label: 'Coffee gallery', note: 'another kind of morning composition' },
-      { href: '/pokemon', label: 'Pokémon binder', note: 'stories from another collection' },
-    ]} />
+    <dialog class="editorial-viewer" data-gallery-dialog aria-label="Snoopy drawing viewer">
+      <div class="editorial-viewer__bar">
+        <p data-gallery-count>Drawing 1 of {photos.length}</p>
+        <button type="button" data-gallery-close aria-label="Close drawing viewer">Close</button>
+      </div>
+      <figure>
+        <img data-gallery-image src={photos[0].src} alt={photos[0].alt} />
+      </figure>
+      <div class="editorial-viewer__nav">
+        <button type="button" data-gallery-prev>← Previous</button>
+        <button type="button" data-gallery-next>Next →</button>
+      </div>
+    </dialog>
   </article>
+
+  <script define:vars={{ photos }}>
+    function setupSnoopyGallery() {
+      const dialog = document.querySelector('[data-gallery-dialog]');
+      if (!(dialog instanceof HTMLDialogElement) || dialog.dataset.ready) return;
+      dialog.dataset.ready = 'true';
+
+      const image = dialog.querySelector('[data-gallery-image]');
+      const count = dialog.querySelector('[data-gallery-count]');
+      let current = 0;
+      let returnFocus = null;
+
+      const show = (index) => {
+        current = (index + photos.length) % photos.length;
+        const photo = photos[current];
+        image.src = photo.src;
+        image.alt = photo.alt;
+        count.textContent = `Drawing ${current + 1} of ${photos.length}`;
+      };
+
+      document.querySelectorAll('[data-gallery-open]').forEach((button) => {
+        button.addEventListener('click', () => {
+          returnFocus = button;
+          show(Number(button.getAttribute('data-gallery-open')));
+          dialog.showModal();
+          dialog.querySelector('[data-gallery-close]')?.focus();
+        });
+      });
+      dialog.querySelector('[data-gallery-prev]')?.addEventListener('click', () => show(current - 1));
+      dialog.querySelector('[data-gallery-next]')?.addEventListener('click', () => show(current + 1));
+      dialog.querySelector('[data-gallery-close]')?.addEventListener('click', () => dialog.close());
+      dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+      dialog.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft') { event.preventDefault(); show(current - 1); }
+        if (event.key === 'ArrowRight') { event.preventDefault(); show(current + 1); }
+      });
+      dialog.addEventListener('close', () => returnFocus?.focus());
+    }
+    document.addEventListener('astro:page-load', setupSnoopyGallery);
+    setupSnoopyGallery();
+  </script>
 </Layout>

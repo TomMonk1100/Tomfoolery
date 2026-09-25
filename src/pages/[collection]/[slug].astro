@@ -9,7 +9,7 @@ import { getCollection, render } from 'astro:content';
 export async function getStaticPaths() {
   const entryTime = (entry: { data: unknown }, collection: string) => {
     const data = entry.data as { date?: Date; dateAcquired?: Date };
-    const date = collection === 'pokemon' ? data.dateAcquired : data.date;
+    const date = collection === 'pokemon' ? (data.datePublished ?? data.dateAcquired) : data.date;
     return date?.valueOf() ?? Number.NEGATIVE_INFINITY;
   };
   const newestFirst = <T extends { id: string; data: unknown }>(
@@ -87,7 +87,7 @@ function fmt(date: Date) {
   image={`/images/social/${collection}.png`}
   imageAlt={socialImageAlt}
   contentType="article"
-  publishedTime={d.date ?? d.dateAcquired}
+  publishedTime={d.datePublished ?? d.date ?? d.dateAcquired}
 >
   <article class="editorial-page editorial-detail">
   <a href={`/${collection}`} class="editorial-detail__back">← {collection}</a>
@@ -95,6 +95,7 @@ function fmt(date: Date) {
   <h1>{d.title}</h1>
   <p class="editorial-detail__meta">
     {d.date && <span>{fmt(new Date(d.date))}</span>}
+    {d.datePublished && <span>Posted {fmt(new Date(d.datePublished))}</span>}
     {d.dateAcquired && <span>{fmt(new Date(d.dateAcquired))}</span>}
     {d.location && <span>{d.location}</span>}
     {d.tag && <span class="badge-signal">{d.tag}</span>}
@@ -104,7 +105,7 @@ function fmt(date: Date) {
   </p>
 
   </header>
-  {d.image && (<img src={d.image} alt={d.title} class="editorial-detail__image" loading="lazy" />)}
+  {d.image && (<img src={d.image} alt={d.imageAlt ?? d.title} class="editorial-detail__image" loading="lazy" />)}
 
   <div class="editorial-detail__prose prose-body">
     <Content />

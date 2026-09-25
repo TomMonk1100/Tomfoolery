@@ -2,11 +2,12 @@
 import Layout from '../layouts/Layout.astro';
 import Outside from '../components/Outside.astro';
 import GameFeature from '../components/GameFeature.astro';
+import CuriosityCabinet from '../components/CuriosityCabinet.astro';
 import { getCollection } from 'astro:content';
 
-type DatedEntry = { id: string; data: { title: string; date?: Date; dateAcquired?: Date } };
+type DatedEntry = { id: string; data: { title: string; date?: Date; dateAcquired?: Date; datePublished?: Date } };
 
-function newest<T extends DatedEntry>(entries: T[], key: 'date' | 'dateAcquired') {
+function newest<T extends DatedEntry>(entries: T[], key: 'date' | 'dateAcquired' | 'datePublished') {
   return [...entries].sort((a, b) =>
     (b.data[key]?.valueOf() ?? 0) - (a.data[key]?.valueOf() ?? 0)
   )[0];
@@ -25,7 +26,7 @@ const [nowEntries, artEntries, pokemonEntries, archiveEntries] = await Promise.a
 const currentNotes = [
   { section: 'Now', hrefBase: '/now', entry: newest(nowEntries, 'date'), key: 'date' as const },
   { section: 'Art', hrefBase: '/art', entry: newest(artEntries, 'date'), key: 'date' as const },
-  { section: 'Pokémon', hrefBase: '/pokemon', entry: newest(pokemonEntries, 'dateAcquired'), key: 'dateAcquired' as const },
+  { section: 'Pokémon', hrefBase: '/pokemon', entry: newest(pokemonEntries, 'datePublished'), key: 'datePublished' as const },
 ];
 
 const rediscovered = archiveEntries.find((entry) => entry.id === 'created-cabin')
@@ -62,6 +63,11 @@ const destinations = [
       </div>
 
       <figure class="editorial-hero__portrait">
+        <svg class="editorial-hero__sun" viewBox="0 0 160 160" aria-hidden="true" focusable="false">
+          <circle cx="80" cy="80" r="52" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 7" />
+          <circle cx="80" cy="80" r="31" fill="currentColor" />
+          <path d="M80 3v13m0 128v13M3 80h13m128 0h13M26 26l10 10m88 88 10 10M134 26l-10 10m-88 88-10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
         <div class="editorial-photo-mat">
           <img
             src="/images/about-tom.webp"
@@ -75,9 +81,12 @@ const destinations = [
             fetchpriority="high"
           />
         </div>
+        <span class="editorial-hero__stamp" aria-hidden="true">FIELD NOTES<br />NO. 001 <span>✳</span></span>
         <figcaption>Tom Muncie · Breckenridge, Texas</figcaption>
       </figure>
     </section>
+
+    <CuriosityCabinet />
 
     <section class="editorial-feature-row" aria-label="Featured work">
       <a href="/coffee" class="editorial-photo-feature reveal">
@@ -93,7 +102,7 @@ const destinations = [
         />
         <span class="editorial-photo-feature__shade"></span>
         <span class="editorial-photo-feature__copy">
-          <small>Coffee journal</small>
+          <small>Latte art gallery</small>
           <strong>Before the first sip</strong>
           <span>Open the gallery →</span>
         </span>

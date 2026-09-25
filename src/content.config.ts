@@ -8,7 +8,9 @@ const pokemon = defineCollection({
     set: z.string().optional(),
     grade: z.string().optional(),
     dateAcquired: z.coerce.date().optional(),
+    datePublished: z.coerce.date().optional(),
     image: z.string().optional(),
+    imageAlt: z.string().optional(),
   }),
 });
 

@@ -1,36 +1,54 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import EntryTrail from '../components/EntryTrail.astro';
+
+const newPhoto = (name: string, width: number, height: number, thumbWidth: number, alt: string, caption: string) => ({
+  src: `/images/coffee/${name}.webp`,
+  srcset: `/images/coffee/${name}-640.webp ${thumbWidth}w, /images/coffee/${name}.webp ${width}w`,
+  width,
+  height,
+  alt,
+  caption,
+});
 
 const photos = [
+  newPhoto('latte-snoopy-flower', 1050, 1400, 480, 'A Snoopy drawing and a heart in latte foam, with Pokémon figures behind the cup.', 'A flower for Snoopy.'),
+  newPhoto('latte-rosetta-doorway', 1069, 1400, 489, 'A hand holding a white cup with a finely layered leaf poured into the latte.', 'A very good pour.'),
+  newPhoto('latte-bear-face', 788, 1400, 360, 'A bear face drawn into the foam of a latte in a dark brown cup.', 'Bear in the cup.'),
   { src: '/images/coffee/latte-breakfast.webp', srcset: '/images/coffee/latte-breakfast-480.webp 480w, /images/coffee/latte-breakfast.webp 1024w', width: 1024, height: 768, alt: 'A latte with a smiling face in the foam beside two slices of toast on a desk filled with collectibles.', caption: 'Breakfast, coffee, and the collection shelf.' },
+  newPhoto('latte-smile-desk', 1050, 1400, 480, 'A wide eyed, surprised face drawn in latte foam on a desk with Pokémon figures.', 'A surprised cup.'),
   { src: '/images/coffee/latte-with-scout.webp', srcset: '/images/coffee/latte-with-scout-480.webp 480w, /images/coffee/latte-with-scout.webp 768w', width: 768, height: 1024, alt: 'A hand holding a latte with leaf shaped foam art while Scout walks through the living room in the background.', caption: 'A rosetta, with Scout passing through.' },
+  newPhoto('latte-dog-flower', 1050, 1400, 480, 'A Snoopy drawing with a flower and heart in latte foam, photographed in front of a keyboard.', 'Snoopy and a flower.'),
+  newPhoto('latte-quiet-face', 1050, 1400, 480, 'A small smiling face in the foam of a white latte cup on a desk.', 'The little smile.'),
   { src: '/images/coffee/latte-desk-rosetta.webp', srcset: '/images/coffee/latte-desk-rosetta-480.webp 480w, /images/coffee/latte-desk-rosetta.webp 665w', width: 665, height: 1182, alt: 'A brown ceramic cup with leaf shaped latte art on a desk beside a keyboard and a white plush toy.', caption: 'Desk rosetta.' },
+  newPhoto('latte-smile-blue-cup', 1400, 1050, 640, 'A smiling face in latte foam in a blue rimmed cup in front of a keyboard and figures.', 'A smile at the desk.'),
   { src: '/images/coffee/latte-with-flowers.webp', srcset: '/images/coffee/latte-with-flowers-480.webp 480w, /images/coffee/latte-with-flowers.webp 768w', width: 768, height: 1024, alt: 'A latte with an animal face drawn in the foam, held in front of a bouquet of coral roses.', caption: 'Foam doodle with flowers.' },
-  { src: '/images/coffee/latte-doodle-flower.webp', width: 360, height: 480, alt: 'A latte with a small dog holding a flower and a heart drawn in the foam, sitting in front of a keyboard.', caption: 'A flower for the foam dog.' },
+  newPhoto('latte-rosetta-cards', 1050, 1400, 480, 'A layered leaf pattern poured into a dark latte with Pokémon cards and figures nearby.', 'A rosetta among the cards.'),
   { src: '/images/coffee/latte-rosetta.webp', srcset: '/images/coffee/latte-rosetta-480.webp 480w, /images/coffee/latte-rosetta.webp 768w', width: 768, height: 1024, alt: 'A hand holding a gray ceramic cup with a leaf pattern poured into the latte foam.', caption: 'Another rosetta worth keeping.' },
+  newPhoto('latte-sleepy-face', 1050, 1400, 480, 'A simple sleepy face drawn in latte foam in a white cup beside a keyboard.', 'A sleepy little face.'),
   { src: '/images/coffee/latte-doodle-hi.webp', srcset: '/images/coffee/latte-doodle-hi-480.webp 480w, /images/coffee/latte-doodle-hi.webp 768w', width: 768, height: 1024, alt: 'A latte with a smiling dog, a heart, and the word Hi drawn in the foam on a desk with Pokémon collectibles.', caption: 'A small hello.' },
+  newPhoto('latte-ghost-smile', 1050, 1400, 480, 'A smiling ghostlike face in the foam of a latte on a desk with Pokémon collectibles.', 'A happy accident.'),
   { src: '/images/coffee/latte-avocado-toast.webp', srcset: '/images/coffee/latte-avocado-toast-480.webp 480w, /images/coffee/latte-avocado-toast.webp 768w', width: 768, height: 1024, alt: 'A smiling latte beside avocado toast on a desk scattered with Pokémon cards, glasses, and collectibles.', caption: 'Avocado toast and a smiling cup.' },
+  newPhoto('latte-heart-brown-cup', 1050, 1400, 480, 'A heart shaped leaf pattern in a brown ceramic latte cup on a desk.', 'Heart in a brown cup.'),
   { src: '/images/coffee/latte-doodle-heart.webp', srcset: '/images/coffee/latte-doodle-heart-480.webp 480w, /images/coffee/latte-doodle-heart.webp 768w', width: 768, height: 1024, alt: 'A latte with a small dog holding a flower and a heart drawn in the foam on a desk with Pokémon cards and collectibles.', caption: 'The foam dog returns.' },
+  newPhoto('latte-snoopy-hi', 1050, 1400, 480, 'A Snoopy drawing with the word Hi in the foam of a latte on a desk.', 'Another small hello.'),
+  newPhoto('latte-soft-face', 1050, 1400, 480, 'A softly smiling face made from latte foam in a cup on an orange tabletop.', 'A face in the foam.'),
+  newPhoto('latte-rosetta-closeup', 1050, 1400, 480, 'A close view of a layered latte art leaf that ends in a tiny smiling face.', 'A tiny smile at the end.'),
+  newPhoto('latte-bear-handheld', 1050, 1400, 480, 'A hand holding a white cup with a bear face in its latte foam.', 'Bear to go.'),
 ];
 ---
 
 <Layout
-  title="Coffee — Tomfoolery"
-  description="A growing gallery of lattes, foam doodles, and good coffee."
+  title="Latte Art — Tomfoolery"
+  description="A gallery of my latte art: faces, hearts, leaves, and little foam doodles."
   image="/images/social/coffee.png"
   imageAlt="Tomfoolery's coffee gallery, a warm editorial collection of lattes and playful foam art."
 >
   <article class="editorial-page editorial-coffee">
     <header class="editorial-page-lead editorial-coffee__lead">
       <div>
-        <span class="editorial-kicker">Coffee journal · nine photographs</span>
-        <h1>Coffee, before it disappears.</h1>
+        <span class="editorial-kicker">Coffee · {photos.length} photographs</span>
+        <h1>Latte art.</h1>
       </div>
-      <p>
-        Most mornings I make a latte, see what shows up in the foam, and take
-        one picture before I drink it. This is the growing contact sheet.
-      </p>
     </header>
 
     <div class="editorial-coffee__grid" data-gallery>
@@ -74,13 +92,6 @@ const photos = [
       </div>
     </dialog>
 
-    <EntryTrail
-      ariaLabel="More from the coffee corner"
-      contextLinks={[
-        { href: '/now/first-brew', label: 'Current coffee setup', note: 'beans, gear, and what is brewing' },
-        { href: '/art', label: 'Art shelf', note: 'where some of the foam ends up' },
-      ]}
-    />
   </article>
 
   <script define:vars={{ photos }}>

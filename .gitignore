@@ -39,3 +39,6 @@ HANDOFF.md
 # leftover CMS uploads: multi-MB unoptimised phone originals, not referenced
 # by any page and not served on the live site. Kept on disk, out of git.
 public/uploads/
+
+# Local review area for generated and retired material kept for manual deletion.
+_cleanup-review/

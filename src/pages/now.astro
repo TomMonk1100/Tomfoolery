@@ -2,40 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-const lastUpdated = 'July 26, 2026';
-
-const attention = [
-  {
-    badge: 'in the cup',
-    title: 'Coffee',
-    body: 'Lavazza Super Crema is in the hopper, and my Rocket Appartamento is doing the work. It is the cup I keep coming back to.',
-  },
-  {
-    badge: 'in the binder',
-    title: 'Pokémon',
-    body: 'The current goal is a master set of Mega Evolution: Chaos Rising. I like having a binder with a mission.',
-  },
-  {
-    badge: 'on the nightstand',
-    title: 'Reading',
-    body: null,
-  },
-  {
-    badge: 'around the house',
-    title: 'Scout and Theo',
-    body: 'Between the two of them, mail carriers get barked at and someone is always coming inside covered in stickers.',
-  },
-  {
-    badge: 'back in the kitchen',
-    title: 'Baking',
-    body: 'I miss baking. I want to stop saying I have not had time for it and actually make something.',
-  },
-  {
-    badge: 'on the horizon',
-    title: 'Japan in 2027',
-    body: 'Right now it is equal parts research, wish list, and something great to look forward to.',
-  },
-];
+const lastUpdated = 'Sep 24, 2026';
 
 const posts = (await getCollection('now')).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
@@ -48,7 +15,7 @@ function fmt(date: Date) {
 
 <Layout
   title="Now — Tomfoolery"
-  description="What Tom is into right now — coffee, cards, books, and what's next."
+  description="Right now: getting my steps in, reading, and keeping my head up through a hard stretch."
   image="/images/social/now.png"
   imageAlt="Now on Tomfoolery — current field notes over a dusk photograph."
 >
@@ -60,25 +27,18 @@ function fmt(date: Date) {
         <p class="editorial-now__updated">Last updated {lastUpdated}</p>
       </div>
 
-    <div class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center">
-      <div class="space-y-5 text-muted text-lg leading-relaxed">
-        <p class="text-xl text-ink">
-          Health is the thing I am putting first right now. Nothing
-          complicated, just trying to make better choices consistently and take
-          better care of myself.
-        </p>
-        <p>
-          This site is my current tech project. I am learning by making it,
-          breaking it, and figuring out how to make it feel like me.
-        </p>
-      </div>
+      <p class="editorial-now__statement">
+        Right now I'm working on losing weight, getting my steps in, and
+        reading. I'm trying to keep my head up, too. I've been pretty
+        depressed, but I'm making it.
+      </p>
 
       <figure>
         <div class="overflow-hidden border border-line bg-surface p-1">
           <img
             src="/images/now-bats.webp"
             srcset="/images/now-bats-640.webp 640w, /images/now-bats.webp 1400w"
-            sizes="(min-width: 1024px) 56vw, calc(100vw - 3rem)"
+            sizes="(min-width: 1024px) 28vw, calc(100vw - 3rem)"
             width="1400"
             height="1051"
             alt="Tom looking up at a sky filled with bats at dusk."
@@ -92,25 +52,7 @@ function fmt(date: Date) {
           A good reminder to look up once in a while.
         </figcaption>
       </figure>
-      </div>
     </header>
-
-  <section class="editorial-now__attention" aria-label="What has my attention">
-    {attention.map((item, i) => (
-      <article class="tile reveal" style={`transition-delay: ${Math.min(i * 60, 300)}ms`}>
-        <span class="badge">{item.badge}</span>
-        <h2 class="mt-2 text-xl text-ink">{item.title}</h2>
-        {item.body ? (
-          <p class="mt-3 text-muted leading-relaxed">{item.body}</p>
-        ) : (
-          <p class="mt-3 text-muted leading-relaxed">
-            I am working my way through James Islington's Hierarchy series,
-            which starts with <cite>The Will of the Many</cite>.
-          </p>
-        )}
-      </article>
-    ))}
-  </section>
 
   {posts.length > 0 && (
     <section class="editorial-now__log">
@@ -119,7 +61,7 @@ function fmt(date: Date) {
           <span class="editorial-kicker">Journal entries</span>
           <h2>The log.</h2>
         </div>
-        <p>Notes from the current chapter, roughly in order.</p>
+        <p>Earlier notes, in reverse chronological order.</p>
       </header>
 
       <div class="editorial-now__entries">
