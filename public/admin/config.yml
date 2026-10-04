@@ -54,3 +54,18 @@ collections:
       - { label: "Date Acquired", name: dateAcquired, widget: datetime, format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false, required: false }
       - { label: Image, name: image, widget: image, required: false }
       - { label: Body, name: body, widget: markdown }
+
+  - name: projects
+    label: "Projects (workshop)"
+    label_singular: "Project"
+    folder: /src/content/projects
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Date, name: date, widget: datetime, format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false }
+      - { label: Kind, name: kind, widget: select, options: ["simulation", "game", "toy", "generative"] }
+      - { label: Summary, name: summary, widget: text }
+      - { label: "Playable file (path under /projects/)", name: file, widget: string, hint: "e.g. /projects/formica.html — upload the single-file HTML to public/projects/ via git" }
+      - { label: Thumbnail, name: image, widget: image, required: false }
+      - { label: Notes, name: body, widget: markdown, required: false }

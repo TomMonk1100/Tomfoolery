@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>periapsis</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden; background: #04060c;
+    touch-action: none; -webkit-user-select: none; user-select: none;
+  }
+  #stage { position: fixed; inset: 0; display: block; cursor: crosshair; }
+  .hud {
+    position: fixed; pointer-events: none; user-select: none;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: rgba(200, 215, 235, 0.55);
+  }
+  #levelname {
+    top: 16px; left: 20px; font-size: 13px; letter-spacing: 0.35em;
+    text-transform: lowercase;
+  }
+  #levelname b { color: rgba(255, 217, 138, 0.85); font-weight: 400; }
+  #hint {
+    bottom: 16px; left: 0; right: 0; text-align: center;
+    font-size: 12px; letter-spacing: 0.18em; color: rgba(200, 215, 235, 0.35);
+  }
+  #attempts {
+    top: 16px; right: 20px; font-size: 12px; letter-spacing: 0.2em;
+    font-family: Menlo, Consolas, monospace; color: rgba(200, 215, 235, 0.35);
+  }
+  #dots {
+    position: fixed; bottom: 44px; left: 0; right: 0;
+    display: flex; gap: 10px; justify-content: center; pointer-events: auto;
+  }
+  #dots button {
+    width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(200,215,235,0.35);
+    background: transparent; padding: 0; cursor: pointer;
+  }
+  #dots button.done { background: rgba(255, 217, 138, 0.7); border-color: transparent; }
+  #dots button.current { border-color: rgba(255, 217, 138, 0.9); box-shadow: 0 0 6px rgba(255,217,138,0.5); }
+  #dots button.locked { opacity: 0.25; cursor: default; }
+  #banner {
+    position: fixed; top: 38%; left: 0; right: 0; text-align: center;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 15px; letter-spacing: 0.5em; text-transform: lowercase;
+    color: rgba(255, 230, 170, 0.9); opacity: 0; transition: opacity 0.4s;
+    pointer-events: none;
+  }
+  #banner.show { opacity: 1; }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div class="hud" id="levelname"></div>
+<div class="hud" id="attempts"></div>
+<div class="hud" id="hint">drag back from the pad &amp; release to launch</div>
+<div id="dots"></div>
+<div id="banner"></div>
+<script>
+"use strict";
+//__CORE_START__
+/* ============================================================
+   PERIAPSIS CORE — gravity-slingshot puzzle game logic.
+   Design space is 1600x900; presentation letterboxes/scales.
+   Pure logic: no DOM, no canvas, no clock. Deterministic:
+   fixed 1/120s substeps, semi-implicit Euler, softened gravity.
+   ============================================================ */
+
+const TUNE = {
+  substep: 1 / 120,
+  powerMin: 120,     // px/s
+  powerMax: 430,     // px/s
+  softK: 0.55,       // gravitational softening = planet.r * softK
+  crashK: 0.96,      // crash when dist < planet.r * crashK
+  maxFlightSteps: 120 * 45,  // substeps before a flight fizzles
+  predictSteps: 120 * 30,
+  predictEvery: 8,   // sample every N substeps for the aim preview
+};
+
+// mu chosen so circular-orbit speed at 2x planet radius ≈ 200-260 px/s
+const LEVELS = [
+  {
+    name: "first light",
+    launch: { x: 180, y: 450 },
+    target: { x: 1350, y: 450, r: 46 },
+    planets: [],
+    escapeR: 1500,
+  },
+  {
+    name: "bend",
+    launch: { x: 180, y: 450 },
+    target: { x: 1350, y: 450, r: 46 },
+    planets: [{ x: 800, y: 450, r: 78, mu: 5.2e6 }],
+    escapeR: 1500,
+  },
+  {
+    name: "slalom",
+    launch: { x: 180, y: 450 },
+    target: { x: 1420, y: 450, r: 46 },
+    planets: [
+      { x: 620, y: 330, r: 64, mu: 4.2e6 },
+      { x: 1020, y: 570, r: 64, mu: 4.2e6 },
+    ],
+    escapeR: 1500,
+  },
+  {
+    name: "gauntlet",
+    launch: { x: 180, y: 450 },
+    target: { x: 1400, y: 450, r: 46 },
+    planets: [
+      { x: 700, y: 380, r: 56, mu: 3.6e6 },
+      { x: 950, y: 520, r: 56, mu: 3.6e6 },
+    ],
+    escapeR: 1500,
+  },
+  {
+    name: "far side",
+    launch: { x: 180, y: 450 },
+    target: { x: 1420, y: 450, r: 46 },
+    planets: [{ x: 800, y: 450, r: 110, mu: 9.0e6 }],
+    escapeR: 1500,
+  },
+];
+
+const CX = 800, CY = 450; // design-space center (escape measured from here)
+
+function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+// one gravity substep; mutates s {x,y,vx,vy}.
+// returns 'crash' | 'win' | 'escape' | null
+function integrate(s, L, h) {
+  let ax = 0, ay = 0;
+  for (let i = 0; i < L.planets.length; i++) {
+    const p = L.planets[i];
+    const dx = p.x - s.x, dy = p.y - s.y;
+    const soft = p.r * TUNE.softK;
+    const inv = 1 / Math.pow(dx * dx + dy * dy + soft * soft, 1.5);
+    ax += p.mu * dx * inv;
+    ay += p.mu * dy * inv;
+  }
+  s.vx += ax * h;
+  s.vy += ay * h;
+  s.x += s.vx * h;
+  s.y += s.vy * h;
+  // target
+  const tdx = s.x - L.target.x, tdy = s.y - L.target.y;
+  if (tdx * tdx + tdy * tdy < L.target.r * L.target.r) return "win";
+  // planets
+  for (let i = 0; i < L.planets.length; i++) {
+    const p = L.planets[i];
+    const dx = s.x - p.x, dy = s.y - p.y;
+    const cr = p.r * TUNE.crashK;
+    if (dx * dx + dy * dy < cr * cr) return "crash";
+  }
+  // escape
+  const edx = s.x - CX, edy = s.y - CY;
+  if (edx * edx + edy * edy > L.escapeR * L.escapeR) return "escape";
+  return null;
+}
+
+// full flight simulation without touching game state.
+// returns { points: [[x,y]...] sampled, outcome, steps }
+function simulate(L, x, y, vx, vy, maxSteps, every) {
+  const s = { x: x, y: y, vx: vx, vy: vy };
+  const points = [[x, y]];
+  let outcome = null, steps = 0;
+  while (steps < maxSteps && !outcome) {
+    outcome = integrate(s, L, TUNE.substep);
+    steps++;
+    if (every > 0 && steps % every === 0) points.push([s.x, s.y]);
+  }
+  if (!outcome) outcome = "fizzle";
+  points.push([s.x, s.y]);
+  return { points: points, outcome: outcome, steps: steps };
+}
+
+function createGame() {
+  const G = {
+    levelIdx: 0,
+    status: "aim", // aim | fly | win | dead
+    probe: { x: 0, y: 0, vx: 0, vy: 0 },
+    steps: 0,
+    attempts: 0,
+    outcome: null,
+    unlocked: 1, // levels unlocked (1-based count)
+  };
+
+  function level() { return LEVELS[G.levelIdx]; }
+
+  function reset() {
+    const L = level();
+    G.probe.x = L.launch.x; G.probe.y = L.launch.y;
+    G.probe.vx = 0; G.probe.vy = 0;
+    G.status = "aim"; G.steps = 0; G.outcome = null;
+  }
+
+  function setLevel(i) {
+    G.levelIdx = clamp(i, 0, LEVELS.length - 1);
+    G.attempts = 0;
+    reset();
+  }
+
+  function launch(angle, power) {
+    if (G.status !== "aim") return false;
+    power = clamp(power, TUNE.powerMin, TUNE.powerMax);
+    const L = level();
+    G.probe.x = L.launch.x; G.probe.y = L.launch.y;
+    G.probe.vx = Math.cos(angle) * power;
+    G.probe.vy = Math.sin(angle) * power;
+    G.status = "fly"; G.steps = 0; G.outcome = null;
+    G.attempts++;
+    return true;
+  }
+
+  // advance the live flight by dt seconds (caller uses fixed dt)
+  function step(dt) {
+    if (G.status !== "fly") return G.status;
+    const n = Math.max(1, Math.round(dt / TUNE.substep));
+    const h = dt / n;
+    const L = level();
+    for (let i = 0; i < n; i++) {
+      const r = integrate(G.probe, L, h);
+      G.steps++;
+      if (r === "win") {
+        G.status = "win"; G.outcome = "win";
+        G.unlocked = Math.max(G.unlocked, Math.min(LEVELS.length, G.levelIdx + 2));
+        return G.status;
+      }
+      if (r === "crash" || r === "escape") {
+        G.status = "dead"; G.outcome = r;
+        return G.status;
+      }
+      if (G.steps >= TUNE.maxFlightSteps) {
+        G.status = "dead"; G.outcome = "fizzle";
+        return G.status;
+      }
+    }
+    return G.status;
+  }
+
+  // aim preview: where would this launch go?
+  function predict(angle, power) {
+    const L = level();
+    power = clamp(power, TUNE.powerMin, TUNE.powerMax);
+    return simulate(
+      L, L.launch.x, L.launch.y,
+      Math.cos(angle) * power, Math.sin(angle) * power,
+      TUNE.predictSteps, TUNE.predictEvery
+    );
+  }
+
+  function serialize() {
+    return JSON.stringify({ v: 1, unlocked: G.unlocked });
+  }
+  function restore(json) {
+    try {
+      const d = typeof json === "string" ? JSON.parse(json) : json;
+      if (!d || d.v !== 1) return false;
+      G.unlocked = clamp(d.unlocked | 0, 1, LEVELS.length);
+      return true;
+    } catch (e) { return false; }
+  }
+
+  reset();
+  return {
+    G: G, TUNE: TUNE, LEVELS: LEVELS,
+    level: level, reset: reset, setLevel: setLevel,
+    launch: launch, step: step, predict: predict,
+    serialize: serialize, restore: restore,
+  };
+}
+//__CORE_END__
+
+/* ============================================================
+   PRESENTATION — canvas rendering, input, HUD. All game logic
+   lives in the core; this layer only draws and forwards input.
+   Design space 1600x900, letterboxed to the window.
+   ============================================================ */
+(function () {
+  const canvas = document.getElementById("stage");
+  const ctx = canvas.getContext("2d");
+  const levelEl = document.getElementById("levelname");
+  const attemptsEl = document.getElementById("attempts");
+  const hintEl = document.getElementById("hint");
+  const dotsEl = document.getElementById("dots");
+  const bannerEl = document.getElementById("banner");
+  const KEY = "periapsis.v1";
+  const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const DW = 1600, DH = 900;
+  let W = 0, H = 0, SC = 1, OX = 0, OY = 0, DPR = 1;
+
+  function fit() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    SC = Math.min(W / DW, H / DH);
+    OX = (W - DW * SC) / 2;
+    OY = (H - DH * SC) / 2;
+  }
+  window.addEventListener("resize", fit);
+  fit();
+
+  function X(x) { return OX + x * SC; }
+  function Y(y) { return OY + y * SC; }
+  function toDesign(cx, cy) { return [(cx - OX) / SC, (cy - OY) / SC]; }
+
+  // deterministic starfield
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const srnd = mulberry32(20261003);
+  const stars = [];
+  for (let i = 0; i < 220; i++) {
+    stars.push({ x: srnd() * DW, y: srnd() * DH, r: 0.4 + srnd() * 1.2, p: srnd() * 6.28, s: 0.3 + srnd() * 1.1 });
+  }
+
+  const game = createGame();
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) game.restore(raw);
+  } catch (e) {}
+  game.setLevel(0);
+  window.__periapsis = { game: game, view: function () { return { SC: SC, OX: OX, OY: OY }; } }; // tooling hook
+
+  let trail = [];
+  let aim = null; // {sx, sy, cx, cy} design coords
+  let bannerTimer = 0;
+
+  function save() {
+    try { localStorage.setItem(KEY, game.serialize()); } catch (e) {}
+  }
+
+  function showBanner(text, ms) {
+    bannerEl.textContent = text;
+    bannerEl.classList.add("show");
+    clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(function () { bannerEl.classList.remove("show"); }, ms);
+  }
+
+  function refreshHud() {
+    const L = game.level();
+    levelEl.innerHTML = "<b>" + (game.G.levelIdx + 1) + " / " + game.LEVELS.length + "</b>&nbsp;&nbsp;" + L.name;
+    attemptsEl.textContent = game.G.attempts > 0 ? "attempt " + game.G.attempts : "";
+    dotsEl.innerHTML = "";
+    for (let i = 0; i < game.LEVELS.length; i++) {
+      const b = document.createElement("button");
+      b.className = (i < game.G.unlocked - 1 || (i === game.G.levelIdx && game.G.status === "win")) ? "done"
+        : i === game.G.levelIdx ? "current"
+        : i < game.G.unlocked ? "" : "locked";
+      if (i < game.G.unlocked) {
+        (function (idx) { b.addEventListener("click", function () { gotoLevel(idx); }); })(i);
+      }
+      dotsEl.appendChild(b);
+    }
+  }
+
+  function gotoLevel(i) {
+    if (i >= game.G.unlocked) return;
+    game.setLevel(i);
+    trail = [];
+    refreshHud();
+  }
+
+  function onWin() {
+    save();
+    showBanner("well flown", 1400);
+    refreshHud();
+    const wonIdx = game.G.levelIdx;
+    setTimeout(function () {
+      if (game.G.levelIdx !== wonIdx) return; // player already moved on
+      if (game.G.levelIdx < game.LEVELS.length - 1) {
+        gotoLevel(game.G.levelIdx + 1);
+      } else {
+        showBanner("all five flown — the sky is yours", 3000);
+      }
+    }, 1500);
+  }
+
+  function onDead() {
+    const msgs = { crash: "lost to the well", escape: "escaped the sky", fizzle: "fizzled out" };
+    showBanner(msgs[game.G.outcome] || "lost", 900);
+    setTimeout(function () { game.reset(); trail = []; refreshHud(); }, 1000);
+  }
+
+  // --- input: pull-back slingshot ---
+  const PULL_K = 1.45; // px drag -> power
+  canvas.addEventListener("pointerdown", function (e) {
+    if (game.G.status !== "aim") return;
+    const L = game.level();
+    const p = toDesign(e.clientX, e.clientY);
+    const dx = p[0] - L.launch.x, dy = p[1] - L.launch.y;
+    if (dx * dx + dy * dy < 130 * 130) {
+      aim = { sx: L.launch.x, sy: L.launch.y, cx: p[0], cy: p[1] };
+      canvas.setPointerCapture(e.pointerId);
+    }
+  });
+  canvas.addEventListener("pointermove", function (e) {
+    if (!aim) return;
+    const p = toDesign(e.clientX, e.clientY);
+    aim.cx = p[0]; aim.cy = p[1];
+  });
+  function endAim(e) {
+    if (!aim) return;
+    const px = aim.sx - aim.cx, py = aim.sy - aim.cy; // pull back -> launch forward
+    const dist = Math.hypot(px, py);
+    aim = null;
+    if (dist < 24) return; // accidental tap: cancel
+    const power = Math.min(game.TUNE.powerMax, Math.max(game.TUNE.powerMin, dist * PULL_K));
+    const angle = Math.atan2(py, px);
+    if (game.launch(angle, power)) {
+      trail = [];
+      refreshHud();
+    }
+  }
+  canvas.addEventListener("pointerup", endAim);
+  canvas.addEventListener("pointercancel", function () { aim = null; });
+
+  window.addEventListener("keydown", function (e) {
+    if (e.key === "r" || e.key === "R") { game.reset(); trail = []; refreshHud(); }
+    if (e.key === "Escape") aim = null;
+    if (e.key === "ArrowRight") gotoLevel(Math.min(game.G.unlocked - 1, game.G.levelIdx + 1));
+    if (e.key === "ArrowLeft") gotoLevel(Math.max(0, game.G.levelIdx - 1));
+  });
+
+  // --- drawing ---
+  function drawBackground(t) {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.fillStyle = "#04060c";
+    ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    for (const st of stars) {
+      const tw = 0.45 + 0.55 * Math.sin(t * st.s + st.p);
+      ctx.fillStyle = "rgba(170,190,225," + (0.5 * tw).toFixed(3) + ")";
+      ctx.beginPath();
+      ctx.arc(X(st.x), Y(st.y), st.r * SC, 0, 6.2832);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawPlanets() {
+    const L = game.level();
+    for (const p of L.planets) {
+      const x = X(p.x), y = Y(p.y), r = p.r * SC;
+      ctx.save();
+      // glow
+      let g = ctx.createRadialGradient(x, y, r * 0.6, x, y, r * 2.6);
+      g.addColorStop(0, "rgba(150,170,220,0.14)");
+      g.addColorStop(1, "rgba(150,170,220,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x, y, r * 2.6, 0, 6.2832); ctx.fill();
+      // body
+      g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
+      g.addColorStop(0, "#2a3550");
+      g.addColorStop(0.7, "#141b2e");
+      g.addColorStop(1, "#0a0e1a");
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill();
+      // rim
+      ctx.strokeStyle = "rgba(170,190,230,0.35)";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawPad(t) {
+    const L = game.level();
+    const x = X(L.launch.x), y = Y(L.launch.y);
+    const pulse = 1 + 0.12 * Math.sin(t * 2.4);
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,217,138,0.75)";
+    ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(x, y, 13 * SC * pulse, 0, 6.2832); ctx.stroke();
+    ctx.fillStyle = "rgba(255,217,138,0.9)";
+    ctx.beginPath(); ctx.arc(x, y, 3.2 * SC, 0, 6.2832); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawTarget(t) {
+    const L = game.level();
+    const x = X(L.target.x), y = Y(L.target.y), r = L.target.r * SC;
+    const pulse = 1 + 0.08 * Math.sin(t * 2.0);
+    ctx.save();
+    ctx.strokeStyle = "rgba(150,232,168,0.8)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([10 * SC, 7 * SC]);
+    ctx.lineDashOffset = -t * 22 * SC;
+    ctx.beginPath(); ctx.arc(x, y, r * pulse, 0, 6.2832); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(150,232,168,0.10)";
+    ctx.beginPath(); ctx.arc(x, y, r * pulse, 0, 6.2832); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawTrail() {
+    if (trail.length < 2) return;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const n = trail.length;
+    for (let i = 1; i < n; i++) {
+      const f = i / n;
+      ctx.strokeStyle = "rgba(255,214,140," + (0.55 * f * f).toFixed(3) + ")";
+      ctx.lineWidth = (1 + 2.2 * f) * SC;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(X(trail[i - 1][0]), Y(trail[i - 1][1]));
+      ctx.lineTo(X(trail[i][0]), Y(trail[i][1]));
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawProbe() {
+    if (game.G.status === "aim" && !aim) return;
+    const p = game.G.probe;
+    const x = X(p.x), y = Y(p.y);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const g = ctx.createRadialGradient(x, y, 0, x, y, 14 * SC);
+    g.addColorStop(0, "rgba(255,240,200,0.95)");
+    g.addColorStop(0.4, "rgba(255,214,140,0.5)");
+    g.addColorStop(1, "rgba(255,214,140,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y, 14 * SC, 0, 6.2832); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawAimPreview() {
+    if (!aim) return;
+    const px = aim.sx - aim.cx, py = aim.sy - aim.cy;
+    const dist = Math.hypot(px, py);
+    if (dist < 24) return;
+    const power = Math.min(game.TUNE.powerMax, Math.max(game.TUNE.powerMin, dist * PULL_K));
+    const angle = Math.atan2(py, px);
+    const r = game.predict(angle, power);
+    const won = r.outcome === "win";
+    ctx.save();
+    // pull line
+    ctx.strokeStyle = "rgba(255,217,138,0.5)";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(X(aim.sx), Y(aim.sy));
+    ctx.lineTo(X(aim.cx), Y(aim.cy));
+    ctx.stroke();
+    // predicted path
+    ctx.fillStyle = won ? "rgba(150,232,168,0.55)" : "rgba(200,215,235,0.30)";
+    const pts = r.points;
+    const stride = Math.max(1, Math.floor(pts.length / 220));
+    for (let i = 0; i < pts.length; i += stride) {
+      ctx.beginPath();
+      ctx.arc(X(pts[i][0]), Y(pts[i][1]), 2.1 * SC, 0, 6.2832);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  let last = performance.now(), acc = 0;
+  const FIXED = 1 / 60;
+  function frame(nowMs) {
+    const t = nowMs / 1000;
+    let dt = (nowMs - last) / 1000;
+    last = nowMs;
+    if (dt > 0.25) dt = 0.25;
+    if (game.G.status === "fly") {
+      acc += dt;
+      while (acc >= FIXED) {
+        const before = game.G.status;
+        game.step(FIXED);
+        acc -= FIXED;
+        if (game.G.status !== before) {
+          if (game.G.status === "win") onWin();
+          else onDead();
+          break;
+        }
+      }
+      const p = game.G.probe;
+      trail.push([p.x, p.y]);
+      if (trail.length > 260) trail.shift();
+    } else {
+      acc = 0;
+    }
+
+    drawBackground(t);
+    drawPlanets();
+    drawTarget(t);
+    drawPad(t);
+    if (!reduced) drawTrail();
+    drawProbe();
+    drawAimPreview();
+    requestAnimationFrame(frame);
+  }
+
+  hintEl.textContent = game.G.unlocked > 1
+    ? "drag back from the pad & release to launch · r resets"
+    : "drag back from the pad & release to launch";
+  refreshHud();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

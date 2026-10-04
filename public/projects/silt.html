@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>silt</title>
+<style>
+  html, body { margin:0; padding:0; height:100%; background:#04070d; overflow:hidden; }
+  canvas { display:block; width:100vw; height:100vh; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+//__CORE_START__
+// Silt core — pure logic, no DOM. The water keeps what it is given and lets
+// go of the rest. Each visit leaves a grain; clarity decays with wall-clock
+// time; below threshold the grain is released to silt — identity lost,
+// residue kept. The log records releases, never what was released.
+const TUNE = {
+  halfLifeMs: 3 * 864e5,   // clarity half-life: 3 days
+  releaseAt: 0.02,         // clarity below this -> released to silt
+  maxGrains: 300,          // live-grain cap; oldest released first past it
+  siltHMax: 0.30,          // bed height ceiling, fraction of viewport
+  siltK: 90,               // bed saturation scale (grains)
+  logCap: 40,
+  storeKey: "silt.v1",
+};
+
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function clamp01(v){ return v < 0 ? 0 : v > 1 ? 1 : v; }
+
+function makeState(){ return { grains: [], silt: 0, log: [], seq: 0 }; }
+
+function pushLog(st, nowMs, released, forced, note){
+  st.log.push({ t: nowMs, released: released|0, forced: forced|0, note: note||null });
+  if(st.log.length > TUNE.logCap) st.log.splice(0, st.log.length - TUNE.logCap);
+}
+
+// A visit leaves one grain. Past the cap, the oldest grains are released first.
+function visit(st, nowMs){
+  let forced = 0;
+  while(st.grains.length >= TUNE.maxGrains){
+    st.grains.shift(); st.silt++; forced++;
+  }
+  const rng = mulberry32(((st.seq * 2654435761) ^ (nowMs % 4294967296)) >>> 0);
+  const g = { id: st.seq++, bornMs: nowMs, seed: (rng() * 4294967296) >>> 0 };
+  st.grains.push(g);
+  if(forced > 0) pushLog(st, nowMs, 0, forced);
+  return g;
+}
+
+function clarity(g, nowMs){
+  const age = Math.max(0, nowMs - g.bornMs);
+  return Math.pow(0.5, age / TUNE.halfLifeMs);
+}
+
+// Drift parameters are a pure function of the grain's seed.
+function grainParams(g){
+  const rng = mulberry32(g.seed);
+  return {
+    x0: 0.08 + rng() * 0.84,
+    y0: 0.05 + rng() * 0.40,
+    w1: (0.5 + rng()) / (6 * 864e5),
+    w2: (0.5 + rng()) / (2.3 * 864e5),
+    w3: (0.5 + rng()) / (3.7 * 864e5),
+    p1: rng() * 6.2832, p2: rng() * 6.2832, p3: rng() * 6.2832,
+    ax: 0.03 + rng() * 0.04,
+    ay: 0.015 + rng() * 0.02,
+    r: 0.004 + rng() * 0.006,   // normalized radius
+  };
+}
+
+// Position is a pure function of (grain, time, bedTop): as clarity fades the
+// grain sinks toward the bed. bedTop is the bed surface as a 0..1 fraction.
+function grainPos(g, nowMs, bedTop){
+  const P = grainParams(g);
+  const age = Math.max(0, nowMs - g.bornMs);
+  const c = clarity(g, nowMs);
+  const x = P.x0 + P.ax * Math.sin(age * P.w1 + P.p1) + 0.5 * P.ax * Math.sin(age * P.w2 + P.p2);
+  const restY = Math.min(Math.max(bedTop - 0.02, 0), 0.94);
+  const y = P.y0 + (restY - P.y0) * (1 - c) + P.ay * Math.sin(age * P.w3 + P.p3);
+  return { x: clamp01(x), y: clamp01(y), r: P.r };
+}
+
+// Release what the water has let go of. Returns the released grains so the
+// presentation can settle them.
+function tick(st, nowMs){
+  const released = [];
+  const keep = [];
+  for(const g of st.grains){
+    if(clarity(g, nowMs) < TUNE.releaseAt){ st.silt++; released.push(g); }
+    else keep.push(g);
+  }
+  st.grains = keep;
+  if(released.length > 0) pushLog(st, nowMs, released.length, 0);
+  return released;
+}
+
+function bedHeightFrac(silt){
+  return TUNE.siltHMax * (1 - Math.exp(-Math.max(0, silt) / TUNE.siltK));
+}
+
+function logLine(e){
+  const d = new Date(e.t);
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  if(e.note) return hh + ":" + mm + " · " + e.note;
+  let s = hh + ":" + mm + " · released " + e.released;
+  if(e.forced > 0) s += " (sieve full, " + e.forced + " forced)";
+  return s;
+}
+
+function save(st, storage){
+  try{
+    storage.setItem(TUNE.storeKey, JSON.stringify({ v:1, grains: st.grains, silt: st.silt, log: st.log, seq: st.seq }));
+    return true;
+  }catch(e){ return false; }
+}
+
+function load(storage){
+  const blank = { state: makeState(), corrupt: false, volatile: false };
+  let raw = null;
+  try{ raw = storage.getItem(TUNE.storeKey); }
+  catch(e){ blank.volatile = true; return blank; }
+  if(!raw) return blank;
+  try{
+    const d = JSON.parse(raw);
+    if(!d || !Array.isArray(d.grains)) throw new Error("bad shape");
+    const st = makeState();
+    st.grains = d.grains.filter(g => g && typeof g.bornMs === "number" && typeof g.seed === "number");
+    st.silt = Math.max(0, d.silt | 0);
+    st.log = Array.isArray(d.log) ? d.log.filter(e => e && typeof e.t === "number") : [];
+    st.seq = Math.max(0, d.seq | 0);
+    blank.state = st;
+  }catch(e){ blank.corrupt = true; }
+  return blank;
+}
+
+if(typeof module !== "undefined" && module.exports){
+  module.exports = { TUNE, mulberry32, makeState, visit, clarity, grainParams, grainPos, tick, bedHeightFrac, pushLog, logLine, save, load };
+}
+//__CORE_END__
+
+// ---- presentation -------------------------------------------------------
+(function(){
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+  let W = 0, H = 0, DPR = 1;
+  function resize(){
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    buildSpeckle();
+  }
+
+  // storage (volatile fallback)
+  let storage;
+  try{
+    localStorage.setItem("__silt_probe", "1"); localStorage.removeItem("__silt_probe");
+    storage = localStorage;
+  }catch(e){
+    const mem = {};
+    storage = { getItem:k=>mem[k]??null, setItem:(k,v)=>{mem[k]=String(v);}, removeItem:k=>{delete mem[k];} };
+  }
+
+  const core = (typeof module !== "undefined" && module.exports) ? module.exports : null;
+  const C = core || { TUNE, mulberry32, makeState, visit, clarity, grainPos, tick, bedHeightFrac, pushLog, logLine, save, load };
+
+  const loaded = C.load(storage);
+  const st = loaded.state;
+  const now0 = Date.now();
+  const fresh = st.grains.length === 0 && st.silt === 0 && st.log.length === 0;
+  C.tick(st, now0);                    // the water forgot while you were gone
+  if(fresh) C.pushLog(st, now0, 0, 0, "clearing browser data ends the silt");
+  C.visit(st, now0);                   // this visit leaves a grain
+  C.save(st, storage);
+
+  // grain sprite
+  const sprite = document.createElement("canvas");
+  sprite.width = sprite.height = 64;
+  (function(){
+    const g = sprite.getContext("2d");
+    const rg = g.createRadialGradient(32,32,0,32,32,32);
+    rg.addColorStop(0, "rgba(255,240,214,1)");
+    rg.addColorStop(0.35, "rgba(255,232,196,0.55)");
+    rg.addColorStop(1, "rgba(255,232,196,0)");
+    g.fillStyle = rg; g.fillRect(0,0,64,64);
+  })();
+
+  // silt speckle, regenerated when the silt bucket changes
+  let speckle = [], speckleBucket = -1;
+  function buildSpeckle(){
+    const bucket = Math.floor(st.silt / 8);
+    if(bucket === speckleBucket) return;
+    speckleBucket = bucket;
+    const rng = mulberry32(9001 + bucket);
+    speckle = [];
+    for(let i=0;i<420;i++){
+      speckle.push({
+        x: rng(),
+        y: Math.pow(rng(), 0.65),          // denser toward the bottom
+        r: 0.4 + rng()*1.1,               // fine grain, not confetti
+        a: 0.08 + rng()*0.22,
+        warm: rng() < 0.6,
+      });
+    }
+  }
+
+  // faint current streaks
+  const streaks = (function(){
+    const rng = mulberry32(4242), arr = [];
+    for(let i=0;i<34;i++) arr.push({
+      x: rng(), y: rng()*0.72, len: 0.05+rng()*0.12,
+      sp: (4+rng()*9)/1000, a: 0.020+rng()*0.030, ph: rng()*6.283,
+    });
+    return arr;
+  })();
+
+  const mouse = { x: -1, y: -1 };
+  window.addEventListener("pointermove", e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+  window.addEventListener("pointerleave", () => { mouse.x = -1; mouse.y = -1; });
+
+  const settling = [];   // presentation-only falling specks
+  const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function bedTopFrac(){ return 1 - C.bedHeightFrac(st.silt); }
+
+  function render(nowMs){
+    buildSpeckle();
+    const bedTop = bedTopFrac();
+    const bedH = H * C.bedHeightFrac(st.silt);
+
+    // water
+    const bg = ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0, "#04070d"); bg.addColorStop(0.62, "#070d18"); bg.addColorStop(1, "#0a101c");
+    ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+
+    // currents
+    ctx.lineWidth = 1;
+    const t = nowMs / 1000;
+    for(const s of streaks){
+      const x = ((s.x + t*s.sp) % 1.2 - 0.1) * W;
+      const y = s.y * H + Math.sin(t*0.3 + s.ph) * 6;
+      ctx.strokeStyle = "rgba(150,180,210," + s.a.toFixed(3) + ")";
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + s.len*W, y); ctx.stroke();
+    }
+
+    // cursor glow
+    if(mouse.x >= 0 && !reduced){
+      const rg = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 130);
+      rg.addColorStop(0, "rgba(190,215,240,0.055)");
+      rg.addColorStop(1, "rgba(190,215,240,0)");
+      ctx.fillStyle = rg; ctx.fillRect(mouse.x-130, mouse.y-130, 260, 260);
+    }
+
+    // silt bed
+    if(bedH > 1){
+      const topY = H - bedH;
+      const fade = 26; // soft top edge: no hard line where water meets silt
+      const body = ctx.createLinearGradient(0, topY - fade, 0, H);
+      body.addColorStop(0, "rgba(74,58,36,0)");
+      body.addColorStop(fade / (bedH + fade), "rgba(74,58,36,0.40)");
+      body.addColorStop(1, "rgba(26,20,13,0.92)");
+      ctx.fillStyle = body;
+      ctx.fillRect(0, topY - fade, W, bedH + fade);
+      // thin luminous settling line at the surface
+      ctx.fillStyle = "rgba(214,186,140,0.07)";
+      ctx.fillRect(0, topY - 1, W, 2);
+      // speckle, kept below the perturbed surface
+      for(const d of speckle){
+        const surf = topY + edge(topY, d.x*W);
+        const sy = surf + d.y * (H - surf);
+        if(sy > H) continue;
+        const depthK = d.y; // 0 at surface -> 1 at bottom
+        const a = d.a * (0.25 + 0.75*depthK);
+        ctx.fillStyle = d.warm
+          ? "rgba(214,186,140," + a.toFixed(3) + ")"
+          : "rgba(160,175,195," + (a*0.7).toFixed(3) + ")";
+        ctx.beginPath(); ctx.arc(d.x*W, sy, d.r, 0, 6.2832); ctx.fill();
+      }
+      // faint glow just above the bed
+      const gl = ctx.createLinearGradient(0, topY-46, 0, topY);
+      gl.addColorStop(0, "rgba(214,186,140,0)");
+      gl.addColorStop(1, "rgba(214,186,140,0.05)");
+      ctx.fillStyle = gl; ctx.fillRect(0, topY-46, W, 46);
+    }
+    function edge(topY, x){
+      return Math.sin(x*0.011+1.7)*5 + Math.sin(x*0.031+0.4)*3 + Math.sin(x*0.083+2.9)*1.5;
+    }
+
+    // grains
+    const m = Math.min(W, H);
+    for(const g of st.grains){
+      const c = C.clarity(g, nowMs);
+      const p = C.grainPos(g, nowMs, bedTop);
+      const r = p.r * m * (0.55 + 0.75*c);
+      const a = Math.pow(c, 1.25) * 0.92;
+      ctx.globalAlpha = a;
+      ctx.drawImage(sprite, p.x*W - r, p.y*H - r, r*2, r*2);
+    }
+    ctx.globalAlpha = 1;
+
+    // settling specks
+    for(let i=settling.length-1;i>=0;i--){
+      const s = settling[i];
+      const k = (nowMs - s.born) / 2200;
+      if(k >= 1){ settling.splice(i,1); continue; }
+      const y = s.y + k*k*(bedTop*H - s.y + 8);
+      ctx.globalAlpha = 0.5*(1-k);
+      ctx.drawImage(sprite, s.x - 3, y - 3, 6, 6);
+    }
+    ctx.globalAlpha = 1;
+
+    // release log
+    ctx.font = "11px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.fillStyle = "rgba(190,205,220,0.38)";
+    ctx.textBaseline = "bottom";
+    const entries = st.log.slice(-7);
+    let ly = H - Math.max(bedH, 0) - 26;
+    if(bedH < 1) ly = H - 26;
+    for(let i=entries.length-1;i>=0;i--){
+      ctx.fillText(C.logLine(entries[i]), 18, ly);
+      ly -= 17;
+    }
+
+    // wordmark
+    ctx.fillStyle = "rgba(190,205,220,0.20)";
+    ctx.textBaseline = "bottom";
+    ctx.fillText("silt", W - 44, H - 14);
+  }
+
+  let lastSave = 0;
+  function frame(){
+    const nowMs = Date.now();
+    const released = C.tick(st, nowMs);
+    if(released.length){
+      const bedTop = bedTopFrac();
+      const m = Math.min(W, H);
+      for(const g of released.slice(0, 12)){
+        const p = C.grainPos(g, nowMs, bedTop);
+        for(let k=0;k<3;k++) settling.push({ x: p.x*W + (Math.random()-0.5)*8, y: p.y*H, born: nowMs });
+      }
+      C.save(st, storage);
+    }
+    render(nowMs);
+    if(nowMs - lastSave > 10000){ lastSave = nowMs; C.save(st, storage); }
+    if(!reduced) requestAnimationFrame(frame);
+  }
+
+  window.addEventListener("resize", resize);
+  document.addEventListener("visibilitychange", () => { if(document.hidden) C.save(st, storage); });
+  window.addEventListener("pagehide", () => C.save(st, storage));
+
+  resize();
+  if(reduced){ render(Date.now()); setInterval(() => { const n=Date.now(); C.tick(st,n); render(n); }, 2000); }
+  else requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

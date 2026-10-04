@@ -45,4 +45,21 @@ const pastBlog = defineCollection({
   }),
 });
 
-export const collections = { now, pokemon, art, pastBlog };
+// "Projects" is the workshop: small interactive toys, simulations, and games
+// built by Pip (the AI that helps Tom tend this site). Each entry points at a
+// self-contained HTML file served from /public/projects and iframed on its
+// detail page.
+const projects = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/projects' }),
+  schema: z.object({
+    title: z.string(),
+    date: z.coerce.date(),
+    kind: z.enum(['simulation', 'game', 'toy', 'generative']),
+    summary: z.string(),
+    file: z.string(),
+    image: z.string().optional(),
+    imageAlt: z.string().optional(),
+  }),
+});
+
+export const collections = { now, pokemon, art, pastBlog, projects };

@@ -1,0 +1,121 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import EntryTrail from '../../components/EntryTrail.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const entries = (await getCollection('projects')).sort(
+    (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+  );
+  return entries.map((entry, index) => ({
+    params: { slug: entry.id },
+    props: {
+      entry,
+      newerEntry: entries[index - 1] ?? null,
+      olderEntry: entries[index + 1] ?? null,
+    },
+  }));
+}
+
+const { entry, newerEntry, olderEntry } = Astro.props;
+const { Content } = await render(entry);
+const d = entry.data;
+
+const kindLabel: Record<string, string> = {
+  simulation: 'Simulation',
+  game: 'Game',
+  toy: 'Toy',
+  generative: 'Generative',
+};
+
+function fmt(date: Date) {
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
+---
+
+<Layout
+  title={`${d.title} — Tomfoolery`}
+  description={d.summary}
+  image="/images/social/projects.png"
+  imageAlt="The Tomfoolery projects workshop."
+  contentType="article"
+  publishedTime={d.date}
+>
+  <article class="editorial-page editorial-detail">
+    <a href="/projects" class="editorial-detail__back">← projects</a>
+    <header class="editorial-detail__head">
+      <p class="editorial-kicker">{kindLabel[d.kind]}</p>
+      <h1>{d.title}</h1>
+      <p class="editorial-detail__meta">
+        <span>{fmt(new Date(d.date))}</span>
+        <span>Built by Pip</span>
+      </p>
+      <p class="editorial-detail__lede">{d.summary}</p>
+    </header>
+
+    <figure class="project-player">
+      <iframe
+        src={d.file}
+        title={`${d.title} — interactive piece`}
+        loading="lazy"
+        allow="autoplay"
+      ></iframe>
+      <figcaption>
+        <a href={d.file} target="_blank" rel="noopener" class="editorial-text-link">Open full screen →</a>
+      </figcaption>
+    </figure>
+
+    <div class="editorial-detail__prose prose-body">
+      <Content />
+    </div>
+
+    <EntryTrail
+      ariaLabel="More from the workshop"
+      newer={newerEntry ? {
+        href: `/projects/${newerEntry.id}`,
+        eyebrow: 'Newer in Projects',
+        title: newerEntry.data.title,
+      } : null}
+      older={olderEntry ? {
+        href: `/projects/${olderEntry.id}`,
+        eyebrow: 'Older in Projects',
+        title: olderEntry.data.title,
+      } : null}
+      contextLinks={[
+        { href: '/projects', label: 'The workshop', note: 'all seven pieces' },
+        { href: '/game', label: 'Moon Lander', note: 'the other playable thing here' },
+      ]}
+    />
+  </article>
+</Layout>
+
+<style>
+  .project-player {
+    margin: 2rem 0;
+  }
+  .project-player iframe {
+    display: block;
+    width: 100%;
+    height: min(78vh, 760px);
+    min-height: 440px;
+    border: 1px solid var(--color-line);
+    border-radius: 2px;
+    background: #0d0f14;
+  }
+  .project-player figcaption {
+    margin-top: 0.75rem;
+    text-align: right;
+  }
+  .editorial-detail__lede {
+    font-size: 1.1rem;
+    color: var(--color-muted);
+    max-width: 44rem;
+    margin-top: 0.75rem;
+  }
+  @media (max-width: 720px) {
+    .project-player iframe {
+      height: 72vh;
+      min-height: 380px;
+    }
+  }
+</style>

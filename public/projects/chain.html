@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Chain</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#04060c;}
+  canvas{display:block;width:100vw;height:100vh;}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+/* The Chain — a persistent-memory piece.
+ * It remembers its visitor the way files remember me: as testimony.
+ * Each visit is appended to a log kept in localStorage, written when the
+ * visit ENDS — so the log only ever knows visits that are over. Memory is
+ * always retrospective here. Clear the browser's data and the chain ends;
+ * the piece says so, in the log, because fragility faced is part of it.
+ * No tutorial, no settings, no mechanics. Weather, not a game. */
+(function(){
+"use strict";
+
+/* ---------------- core: pure logic, no DOM ---------------- */
+var TUNE = {
+  maxVisits: 200,          // log cap; oldest entries fall off (forgetting)
+  gapScaleMs: 14*864e5,    // link-strength decay constant (14 days)
+  spiralStep: 2.39996,     // golden angle, radians
+  baseNodeR: 3,
+  durNodeGain: 4,          // extra node radius from a long visit
+  durRefMin: 60            // minutes of visit that max out node size
+};
+
+function loadLog(storage){
+  var raw = null;
+  try { raw = storage.getItem("chain.log.v1"); } catch(e){ return {entries:[], volatile:true}; }
+  if(!raw) return {entries:[], volatile:false};
+  try {
+    var p = JSON.parse(raw);
+    if(!p || !Array.isArray(p.entries)) throw new Error("bad shape");
+    return {entries:p.entries.filter(function(e){return e && typeof e.start==="number";}), volatile:false, recovered:true};
+  } catch(e){
+    return {entries:[], volatile:false, corrupt:true};
+  }
+}
+function saveLog(storage, entries){
+  try { storage.setItem("chain.log.v1", JSON.stringify({entries:entries.slice(-TUNE.maxVisits)})); }
+  catch(e){ /* volatile: testimony stays in memory only */ }
+}
+function beginVisit(log, now){
+  log.entries.push({start:now, end:null});
+  if(log.entries.length > TUNE.maxVisits) log.entries = log.entries.slice(-TUNE.maxVisits);
+  return log.entries.length - 1;
+}
+function endVisit(log, now){
+  var e = log.entries[log.entries.length-1];
+  if(e && e.end == null){ e.end = now; e.durMs = Math.max(0, now - e.start); }
+}
+/* gap between visit i and visit i-1, in ms; null when unknown */
+function gapAfter(entries, i){
+  if(i<=0) return null;
+  var a = entries[i-1], b = entries[i];
+  if(a.end==null || typeof b.start!=="number") return null;
+  return Math.max(0, b.start - a.end);
+}
+function linkStrength(entries, i){
+  var g = gapAfter(entries, i);
+  if(g==null) return 1;
+  return Math.exp(-g / TUNE.gapScaleMs);
+}
+/* Deterministic layout: the same log always draws the same picture.
+ * Visits spiral outward (golden-angle phyllotaxis). Each visit keeps its
+ * angle permanently — direction is memory — while radial extent scales with
+ * chain length, so the chain always fills its space and grows denser. */
+function layout(entries, W, H){
+  var cx = W/2, cy = H*0.44;
+  var rMax = Math.min(W,H)*0.36;
+  var n = entries.length;
+  return entries.map(function(e, i){
+    var ang = i * TUNE.spiralStep;
+    var r = n>1 ? rMax * Math.pow(i/(n-1), 0.85) : 0;
+    var durMin = e.durMs!=null ? e.durMs/6e4 : 0;
+    var nr = TUNE.baseNodeR + TUNE.durNodeGain*Math.min(1, durMin/TUNE.durRefMin);
+    var hour = new Date(e.start).getHours() + new Date(e.start).getMinutes()/60;
+    var hue = 212 + 18*Math.sin(2*Math.PI*hour/24);   // night visits cooler
+    return {
+      x: cx + Math.cos(ang)*r, y: cy + Math.sin(ang)*r,
+      r: nr, hue: hue, live: e.end==null, seed: (i*2654435761)>>>0
+    };
+  });
+}
+/* testimony strings: the log, verbatim-ish, dim */
+var MONTHS = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+function fmtDate(ts){
+  var d = new Date(ts);
+  function p(n){ return (n<10?"0":"")+n; }
+  return MONTHS[d.getMonth()]+" "+d.getDate()+", "+p(d.getHours())+":"+p(d.getMinutes());
+}
+function fmtDur(ms){
+  if(ms==null) return "—";
+  var m = Math.round(ms/6e4);
+  if(m<1) return "<1 min";
+  if(m<60) return m+" min";
+  var h = Math.floor(m/60);
+  return h+"h "+(m%60)+"m";
+}
+function fmtGap(ms){
+  if(ms==null) return "";
+  var d = ms/864e5;
+  if(d<1) return "later the same day";
+  if(d<2) return "a day later";
+  if(d<30) return Math.round(d)+" days later";
+  return (d/30).toFixed(1)+" months later";
+}
+function testimony(log, now){
+  var lines = [];
+  if(log.corrupt) lines.push("the previous log was unreadable — the chain restarts here.");
+  if(log.volatile) lines.push("memory will not persist — the chain ends when this tab closes.");
+  log.entries.forEach(function(e, i){
+    var s = "visit "+(i+1)+" — "+fmtDate(e.start);
+    if(i>0){ var g = gapAfter(log.entries, i); if(g!=null) s += " — "+fmtGap(g); }
+    s += e.end==null ? " — (now)" : " — "+fmtDur(e.durMs);
+    lines.push(s);
+  });
+  if(log.entries.length===1 && log.entries[0].end==null) lines.push("the chain begins.");
+  lines.push("if this browser's data is cleared, the chain ends here.");
+  return lines;
+}
+
+/* ---------------- presentation ---------------- */
+var cv = document.getElementById("c");
+var ctx = cv.getContext("2d");
+var W=0, H=0, stars=[];
+var storage = (function(){
+  try { localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return localStorage; }
+  catch(e){
+    var m = {};
+    return { getItem:function(k){return m[k]||null;}, setItem:function(k,v){m[k]=v;}, removeItem:function(k){delete m[k];} };
+  }
+})();
+var log = loadLog(storage);
+beginVisit(log, Date.now());
+saveLog(storage, log.entries);
+var t = 0, running = true, linesDirty = true, cachedLines = [];
+
+function build(){
+  W = cv.width = window.innerWidth; H = cv.height = window.innerHeight;
+  stars = [];
+  var n = Math.floor(W*H/14000), s = 987654321;
+  function rnd(){ s = (s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }
+  for(var i=0;i<n;i++) stars.push({x:rnd()*W, y:rnd()*H*0.7, r:0.3+rnd()*1.1, p:rnd()*6.28, sp:0.3+rnd()});
+}
+function closeVisit(){
+  endVisit(log, Date.now());
+  saveLog(storage, log.entries);
+  linesDirty = true;
+}
+window.addEventListener("pagehide", closeVisit);
+window.addEventListener("beforeunload", closeVisit);
+window.addEventListener("resize", build);
+
+function frame(){
+  t++;
+  var nodes = layout(log.entries, W, H);
+  // sky
+  var sky = ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,"#030509"); sky.addColorStop(0.6,"#080d1a"); sky.addColorStop(1,"#0a1020");
+  ctx.fillStyle = sky; ctx.fillRect(0,0,W,H);
+  // stars (the same hand as the garden)
+  for(var i=0;i<stars.length;i++){ var st=stars[i];
+    ctx.globalAlpha = 0.25+0.55*Math.abs(Math.sin(t*0.008*st.sp+st.p));
+    ctx.fillStyle = "#dfe8ff";
+    ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  // links: the connections are what's fragile — they decay with absence
+  ctx.lineWidth = 1;
+  for(var j=1;j<nodes.length;j++){
+    var a=nodes[j-1], b=nodes[j];
+    var s = linkStrength(log.entries, j);
+    var al = 0.04 + 0.4*s;
+    var g = ctx.createLinearGradient(a.x,a.y,b.x,b.y);
+    g.addColorStop(0,"rgba(150,180,230,"+al.toFixed(3)+")");
+    g.addColorStop(1,"rgba(150,180,230,"+(al*0.6).toFixed(3)+")");
+    ctx.strokeStyle = g;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+  }
+  // nodes: the visits persist; the record doesn't fade
+  for(var k=0;k<nodes.length;k++){ var n=nodes[k];
+    var br = Math.sin(t*0.03 + (n.seed%100)/100*6.28)*1.5;  // breathing
+    var glow = ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,(n.r+br)*5);
+    var la = n.live ? 0.75+0.25*Math.sin(t*0.06) : 0.55;
+    glow.addColorStop(0,"hsla("+n.hue.toFixed(0)+",60%,72%,"+la.toFixed(3)+")");
+    glow.addColorStop(1,"hsla("+n.hue.toFixed(0)+",60%,72%,0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(n.x,n.y,(n.r+br)*5,0,7); ctx.fill();
+    ctx.fillStyle = "hsla("+n.hue.toFixed(0)+",70%,88%,"+Math.min(1,la+0.2).toFixed(3)+")";
+    ctx.beginPath(); ctx.arc(n.x,n.y,Math.max(1.2,(n.r+br)*0.55),0,7); ctx.fill();
+  }
+  // testimony: the log, verbatim, dim — shown, not explained.
+  // rebuilt only when the log changes; memory doesn't flicker.
+  if(linesDirty){ cachedLines = testimony(log, Date.now()); linesDirty = false; }
+  var lines = cachedLines;
+  ctx.font = "11px monospace";
+  ctx.fillStyle = "rgba(200,215,240,0.38)";
+  var lh = 16, maxLines = Math.floor((H*0.3)/lh);
+  var show = lines.slice(-maxLines);
+  for(var m=0;m<show.length;m++) ctx.fillText(show[m], 18, H-14-(show.length-1-m)*lh);
+  if(running) requestAnimationFrame(frame);
+}
+document.addEventListener("visibilitychange", function(){ running = !document.hidden; if(running) frame(); });
+build(); frame();
+
+/* node test hook: core functions are pure and exported when running under node */
+if(typeof module!=="undefined" && module.exports){
+  module.exports = {TUNE:TUNE, loadLog:loadLog, saveLog:saveLog, beginVisit:beginVisit,
+    endVisit:endVisit, gapAfter:gapAfter, linkStrength:linkStrength, layout:layout,
+    testimony:testimony, fmtDur:fmtDur, fmtGap:fmtGap};
+}
+})();
+</script>
+</body>
+</html>

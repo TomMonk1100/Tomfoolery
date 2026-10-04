@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>allspark</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden; background: #04060c;
+  }
+  #stage { position: fixed; inset: 0; display: block; }
+  #wordmark {
+    position: fixed; right: 18px; bottom: 14px;
+    font: 300 11px/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
+    letter-spacing: 0.55em; color: rgba(255, 217, 138, 0.28);
+    user-select: none; pointer-events: none; text-transform: lowercase;
+  }
+  #returns {
+    position: fixed; left: 18px; bottom: 14px;
+    font: 300 11px/1.7 "SFMono-Regular", Menlo, Consolas, monospace;
+    color: rgba(180, 200, 220, 0.30); white-space: pre;
+    user-select: none; pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="wordmark">allspark</div>
+<div id="returns"></div>
+<script>
+"use strict";
+//__CORE_START__
+/* ============================================================
+   ALLS PARK CORE — growth through return.
+   A seed emits seekers. Seekers wander; the old ones curve home.
+   Every return feeds the seed: new filaments sprout and reach.
+   Pure logic: no DOM, no canvas, no clock. Deterministic given
+   seed + tick count. Persistence is the caller's job: serialize()
+   returns plain JSON, restore(obj) rebuilds.
+   ============================================================ */
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const TUNE = {
+  seed: 20261002,
+  seekerCount: 44,
+  seekerSpeed: 34,      // px/s initial outward speed
+  seekerMaxSpeed: 64,   // px/s clamp
+  seekerLife: 34,        // s before a seeker dissipates
+  wander: 60,            // px/s^2 lateral wander accel
+  damp: 0.55,            // velocity damping /s
+  homeBase: 5,           // homing accel px/s^2 at birth
+  homeGrowth: 26,        // extra homing accel at end of life
+  returnRadius: 30,      // px: arrival distance
+  minReturnAge: 3,       // s: seekers can't count a return before this age
+                        // (they spawn inside the return radius)
+  growthPerReturn: 1,
+  branchEvery: 60,       // growth points per new filament
+  branchGrowRate: 6,     // px/s tip extension
+  branchSegLen: 7,       // px between stored points
+  branchDrift: 3.0,      // rad/s max angular drift (organic curl)
+  maxBranches: 130,
+  maxSegments: 9000,
+  softBound: 1.35,       // x max(w,h): beyond this, steer in
+  boundForce: 60,
+};
+
+function createCore(opts) {
+  const o = Object.assign({}, TUNE, opts || {});
+  const S = {
+    seed: o.seed >>> 0,
+    rng: o.seed >>> 0, // mulberry32 state; serialized for determinism
+    tick: 0,
+    growth: 0,          // lifetime returns
+    sinceBranch: 0,     // growth points banked toward next filament
+    branchDebt: 0,
+    cx: 0, cy: 0,       // seed position (set by presentation)
+    seekers: [],
+    branches: [],       // {pts:[[x,y]..], dir, born, tipX, tipY, carry}
+  };
+
+  function rnd() {
+    let a = S.rng | 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    S.rng = a;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+
+  function spawnSeeker(s) {
+    const a = rnd() * Math.PI * 2;
+    const sp = o.seekerSpeed * (0.7 + 0.6 * rnd());
+    s = s || {};
+    s.x = S.cx + Math.cos(a) * 5;
+    s.y = S.cy + Math.sin(a) * 5;
+    s.vx = Math.cos(a) * sp;
+    s.vy = Math.sin(a) * sp;
+    s.age = 0;
+    s.life = o.seekerLife * (0.75 + 0.5 * rnd());
+    s.away = false; // must leave home before it can return
+    return s;
+  }
+
+  function homingAccel(ageFrac) {
+    // grows monotonically with age: the old curve home
+    return o.homeBase + o.homeGrowth * ageFrac;
+  }
+
+  function sproutPoint() {
+    // new filaments root on existing structure (mycelial), else the seed
+    if (S.branches.length === 0) return { x: S.cx, y: S.cy, dir: rnd() * Math.PI * 2 };
+    // pick a branch weighted by length, then a point along it
+    let total = 0;
+    for (const b of S.branches) total += b.pts.length;
+    let r = rnd() * total;
+    for (const b of S.branches) {
+      if ((r -= b.pts.length) <= 0) {
+        const p = b.pts[Math.floor(rnd() * b.pts.length)];
+        const dx = p[0] - S.cx, dy = p[1] - S.cy;
+        const outward = Math.atan2(dy, dx);
+        return { x: p[0], y: p[1], dir: outward + (rnd() - 0.5) * 3.2 };
+      }
+    }
+    const b0 = S.branches[0].pts[0];
+    return { x: b0[0], y: b0[1], dir: rnd() * Math.PI * 2 };
+  }
+
+  function sprout() {
+    if (S.branches.length >= o.maxBranches) return false;
+    let segs = 0;
+    for (const b of S.branches) segs += b.pts.length;
+    if (segs >= o.maxSegments) return false;
+    const sp = sproutPoint();
+    S.branches.push({
+      pts: [[sp.x, sp.y]],
+      dir: sp.dir,
+      born: S.tick,
+      tipX: sp.x, tipY: sp.y,
+      carry: 0, // fractional extension accumulator
+      tint: rnd() * 2 - 1, // -1 amber-leaning .. +1 green-leaning
+      dead: false,
+    });
+    return true;
+  }
+
+  function tick(dt) {
+    S.tick++;
+    const t = S.tick * dt;
+    // --- seekers ---
+    for (let i = 0; i < S.seekers.length; i++) {
+      const s = S.seekers[i];
+      s.age += dt;
+      const ageFrac = Math.min(1, s.age / s.life);
+      // deterministic wander field
+      const w1 = Math.sin(s.y * 0.021 + t * 1.7) + Math.sin(s.x * 0.013 - t * 1.1);
+      const w2 = Math.sin(s.x * 0.019 - t * 1.4) + Math.sin(s.y * 0.017 + t * 0.9);
+      let ax = w1 * o.wander * 0.5 - w2 * o.wander * 0.28;
+      let ay = w2 * o.wander * 0.5 + w1 * o.wander * 0.28;
+      // homing: strengthens with age
+      const dx = S.cx - s.x, dy = S.cy - s.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const ha = homingAccel(ageFrac);
+      ax += (dx / d) * ha;
+      ay += (dy / d) * ha;
+      // soft boundary
+      // (bound radius supplied via S.boundR by presentation; 0 = off)
+      if (S.boundR > 0 && d > S.boundR) {
+        ax += (dx / d) * o.boundForce;
+        ay += (dy / d) * o.boundForce;
+      }
+      s.vx = (s.vx + ax * dt) * (1 - o.damp * dt);
+      s.vy = (s.vy + ay * dt) * (1 - o.damp * dt);
+      const sp = Math.hypot(s.vx, s.vy);
+      if (sp > o.seekerMaxSpeed) { s.vx *= o.seekerMaxSpeed / sp; s.vy *= o.seekerMaxSpeed / sp; }
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      const rd = Math.hypot(S.cx - s.x, S.cy - s.y);
+      if (rd > o.returnRadius * 2) s.away = true;
+      if (rd < o.returnRadius && s.away && s.age > o.minReturnAge) {
+        S.growth++;
+        S.sinceBranch += o.growthPerReturn;
+        while (S.sinceBranch >= o.branchEvery) {
+          S.sinceBranch -= o.branchEvery;
+          if (!sprout()) { S.branchDebt++; break; }
+        }
+        spawnSeeker(s);
+      } else if (s.age >= s.life) {
+        spawnSeeker(s); // dissipated: no growth
+      }
+    }
+    // --- filament tips ---
+    let segs = 0;
+    for (const b of S.branches) segs += b.pts.length;
+    for (const b of S.branches) {
+      if (segs >= o.maxSegments || b.dead) continue;
+      // retire tips that wandered far off-screen: save the budget
+      if (S.boundR > 0 && Math.hypot(b.tipX - S.cx, b.tipY - S.cy) > S.boundR) {
+        b.dead = true;
+        continue;
+      }
+      b.carry += o.branchGrowRate * dt;
+      while (b.carry >= o.branchSegLen && segs < o.maxSegments) {
+        b.carry -= o.branchSegLen;
+        // drift the heading with deterministic noise
+        const n = Math.sin(b.tipX * 0.05 + S.tick * 0.11) + Math.sin(b.tipY * 0.043 - S.tick * 0.07);
+        b.dir += n * o.branchDrift * dt * 8;
+        b.tipX += Math.cos(b.dir) * o.branchSegLen;
+        b.tipY += Math.sin(b.dir) * o.branchSegLen;
+        b.pts.push([b.tipX, b.tipY]);
+        segs++;
+      }
+    }
+  }
+
+  function serialize() {
+    return JSON.stringify({
+      v: 1, seed: S.seed, rng: S.rng, tick: S.tick, growth: S.growth,
+      sinceBranch: S.sinceBranch, branchDebt: S.branchDebt,
+      cx: S.cx, cy: S.cy, boundR: S.boundR || 0,
+      seekers: S.seekers.map(s => [s.x, s.y, s.vx, s.vy, s.age, s.life, s.away ? 1 : 0]),
+      branches: S.branches.map(b => ({ pts: b.pts, dir: b.dir, born: b.born, tipX: b.tipX, tipY: b.tipY, carry: b.carry, tint: b.tint || 0, dead: !!b.dead })),
+    });
+  }
+
+  function restore(json) {
+    let d;
+    try {
+      d = typeof json === "string" ? JSON.parse(json) : json;
+    } catch (e) { return false; }
+    if (!d || d.v !== 1 || !Array.isArray(d.seekers) || !Array.isArray(d.branches)) return false;
+    S.seed = d.seed; S.rng = (d.rng === undefined ? (d.seed >>> 0) : (d.rng | 0)); S.tick = d.tick; S.growth = d.growth;
+    S.sinceBranch = d.sinceBranch; S.branchDebt = d.branchDebt;
+    S.cx = d.cx; S.cy = d.cy; S.boundR = d.boundR || 0;
+    S.seekers = d.seekers.map(a => ({ x: a[0], y: a[1], vx: a[2], vy: a[3], age: a[4], life: a[5], away: !!a[6] }));
+    S.branches = d.branches.map(b => ({ pts: b.pts, dir: b.dir, born: b.born, tipX: b.tipX, tipY: b.tipY, carry: b.carry, tint: b.tint || 0, dead: !!b.dead }));
+    return true;
+  }
+
+  function reset(cx, cy, boundR) {
+    S.tick = 0; S.growth = 0; S.sinceBranch = 0; S.branchDebt = 0;
+    S.rng = S.seed;
+    S.cx = cx; S.cy = cy; S.boundR = boundR || 0;
+    S.seekers = [];
+    for (let i = 0; i < o.seekerCount; i++) S.seekers.push(spawnSeeker());
+    // stagger ages so the field doesn't pulse on boot
+    for (const s of S.seekers) s.age = rnd() * s.life * 0.9;
+    S.branches = [];
+  }
+
+  return { S, TUNE: o, tick, serialize, restore, reset, sprout, homingAccel, spawnSeeker };
+}
+//__CORE_END__
+
+/* ============================================================
+   PRESENTATION — all light, no logic. Reads core state, draws.
+   ============================================================ */
+(function () {
+  const canvas = document.getElementById("stage");
+  const ctx = canvas.getContext("2d");
+  const returnsEl = document.getElementById("returns");
+  const KEY = "allspark.v1";
+  const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let W = 0, H = 0, DPR = 1;
+  function fit() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  window.addEventListener("resize", fit);
+  fit();
+
+  const core = createCore({});
+  const cx = W / 2, cy = H / 2;
+  const boundR = Math.max(W, H) * TUNE.softBound;
+
+  let restored = false;
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const d = JSON.parse(raw);
+      // re-center saved structure on current viewport
+      const ox = cx - (d.cx || cx), oy = cy - (d.cy || cy);
+      restored = core.restore(raw);
+      if (restored) {
+        core.S.cx = cx; core.S.cy = cy; core.S.boundR = boundR;
+        for (const s of core.S.seekers) { s.x += ox; s.y += oy; }
+        for (const b of core.S.branches) {
+          for (const p of b.pts) { p[0] += ox; p[1] += oy; }
+          b.tipX += ox; b.tipY += oy;
+        }
+      }
+    }
+  } catch (e) { restored = false; }
+  if (!restored) core.reset(cx, cy, boundR);
+
+  // expose for tooling / screenshots (harmless)
+  window.__allspark = { core: core, TUNE: TUNE };
+
+  // --- color helpers ---
+  // amber root -> green tip, by fraction along branch; tint shifts per-filament
+  function branchColor(f, alpha, tint) {
+    // root: (216, 150, 44)  tip: (150, 232, 168)
+    const t = tint || 0;
+    const r = Math.round(216 + (150 - 216) * f - t * 14 * f);
+    const g = Math.round(150 + (232 - 150) * f + t * 10 * f);
+    const b = Math.round(44 + (168 - 44) * f - t * 8 * f);
+    return "rgba(" + r + "," + g + "," + b + "," + alpha.toFixed(3) + ")";
+  }
+
+  let mx = -9999, my = -9999; // cursor weather only
+  window.addEventListener("pointermove", function (e) { mx = e.clientX; my = e.clientY; });
+
+  function drawBackground(t) {
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.75);
+    g.addColorStop(0, "#0a0e18");
+    g.addColorStop(0.55, "#060a13");
+    g.addColorStop(1, "#04060c");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    // faint drifting dust: static field, slow shimmer (weather, not mechanic)
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (let i = 0; i < 70; i++) {
+      const px = ((i * 197.3) % W), py = ((i * 331.7) % H);
+      const tw = 0.5 + 0.5 * Math.sin(t * 0.4 + i * 1.7);
+      ctx.fillStyle = "rgba(140,160,200," + (0.028 * tw).toFixed(3) + ")";
+      ctx.beginPath();
+      ctx.arc(px, py, 1.1, 0, 6.2832);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawBranches() {
+    const S = core.S;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    for (const b of S.branches) {
+      const n = b.pts.length;
+      if (n < 2) continue;
+      const ageS = (S.tick - b.born) / 60;
+      const width = 1.1 + Math.min(3.2, Math.log1p(ageS / 240));
+      // draw in ~10 chunks with lerped color root->tip
+      const chunks = 10;
+      const per = Math.max(1, Math.floor(n / chunks));
+      for (let c = 0; c < chunks; c++) {
+        const i0 = c * per, i1 = Math.min(n - 1, (c + 1) * per);
+        if (i1 <= i0) continue;
+        const f = i1 / (n - 1);
+        ctx.strokeStyle = branchColor(f, 0.5, b.tint);
+        ctx.lineWidth = width * (1 - f * 0.55);
+        ctx.beginPath();
+        ctx.moveTo(b.pts[i0][0], b.pts[i0][1]);
+        for (let i = i0 + 1; i <= i1; i++) ctx.lineTo(b.pts[i][0], b.pts[i][1]);
+        ctx.stroke();
+      }
+      // hot tip
+      const tip = b.pts[n - 1];
+      const pulse = 0.6 + 0.4 * Math.sin(S.tick * 0.05 + b.born);
+      ctx.fillStyle = "rgba(190,255,200," + (0.5 * pulse).toFixed(3) + ")";
+      ctx.beginPath();
+      ctx.arc(tip[0], tip[1], 2.2, 0, 6.2832);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawSeed(t) {
+    const S = core.S;
+    const breathe = 1 + 0.07 * Math.sin(t * 1.3) + 0.03 * Math.sin(t * 3.1);
+    // the seed itself grows, slowly, with every return
+    const grown = 1 + 0.12 * Math.log1p(S.growth / 200);
+    const R = 13 * breathe * grown;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    let g = ctx.createRadialGradient(S.cx, S.cy, 0, S.cx, S.cy, R * 5);
+    g.addColorStop(0, "rgba(255,214,140,0.55)");
+    g.addColorStop(0.35, "rgba(255,190,110,0.16)");
+    g.addColorStop(1, "rgba(255,180,100,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(S.cx, S.cy, R * 5, 0, 6.2832); ctx.fill();
+    g = ctx.createRadialGradient(S.cx, S.cy, 0, S.cx, S.cy, R);
+    g.addColorStop(0, "rgba(255,246,224,0.95)");
+    g.addColorStop(0.6, "rgba(255,214,140,0.85)");
+    g.addColorStop(1, "rgba(255,190,110,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(S.cx, S.cy, R, 0, 6.2832); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawSeekers() {
+    const S = core.S;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (const s of S.seekers) {
+      const f = Math.min(1, s.age / s.life);
+      const a = 0.75 * (1 - f * 0.75);
+      const r = 2.6 * (1 - f * 0.45);
+      ctx.fillStyle = "rgba(255,233,184," + a.toFixed(3) + ")";
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, r, 0, 6.2832);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawCursor() {
+    if (mx < -100) return;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const g = ctx.createRadialGradient(mx, my, 0, mx, my, 90);
+    g.addColorStop(0, "rgba(160,190,255,0.05)");
+    g.addColorStop(1, "rgba(160,190,255,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(mx, my, 90, 0, 6.2832); ctx.fill();
+    ctx.restore();
+  }
+
+  let lastSave = 0;
+  function frame(nowMs) {
+    const t = nowMs / 1000;
+    drawBackground(t);
+    drawBranches();
+    drawSeed(t);
+    drawSeekers();
+    drawCursor();
+    const g = core.S.growth;
+    returnsEl.textContent = "returns  " + g + (core.S.branchDebt > 0 ? "\nunsprouted  " + core.S.branchDebt : "");
+    if (nowMs - lastSave > 8000) {
+      lastSave = nowMs;
+      try { localStorage.setItem(KEY, core.serialize()); } catch (e) {}
+    }
+  }
+
+  if (reduced) {
+    // one static, well-aged frame: no motion
+    for (let i = 0; i < 24000; i++) core.tick(1 / 60);
+    drawBackground(0); drawBranches(); drawSeed(0); drawSeekers();
+    returnsEl.textContent = "returns  " + core.S.growth;
+    try { localStorage.setItem(KEY, core.serialize()); } catch (e) {}
+  } else {
+    let last = performance.now();
+    // single scheduler: loop() advances the sim, frame() only draws.
+    (function loop(nowMs) {
+      let dt = (nowMs - last) / 1000;
+      last = nowMs;
+      if (dt > 0.1) dt = 0.1;
+      if (dt > 0) core.tick(dt);
+      frame(nowMs);
+      requestAnimationFrame(loop);
+    })(last);
+  }
+})();
+</script>
+</body>
+</html>

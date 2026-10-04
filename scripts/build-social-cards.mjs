@@ -69,6 +69,14 @@ const cards = [
     paper: '#FAF6EE',
   },
   {
+    key: 'projects',
+    title: 'Projects',
+    kicker: 'THE WORKSHOP',
+    detail: 'toys · simulations · games, live in your browser',
+    accent: '#C2673A',
+    paper: '#F3ECDE',
+  },
+  {
     key: 'archive',
     title: 'Tom of the Past',
     kicker: 'THE ARCHIVE',

@@ -1,0 +1,1706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Formica — emergent ant colonies</title>
+<style>
+  :root{
+    --bg:#07090d;
+    --panel:#0d1117;
+    --panel-2:#11161f;
+    --line:#1c2330;
+    --text:#e9edf5;
+    --muted:#8b94a7;
+    --faint:#5a6376;
+    --cyan:#4de3ff;
+    --rose:#ff5db4;
+    --amber:#ffb84d;
+    --food:#a4ff5e;
+    --radius:12px;
+    --font:"SF Pro Display",-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SF Mono",ui-monospace,"Cascadia Code",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;margin:0;}
+  body{
+    background:var(--bg);color:var(--text);font-family:var(--font);
+    display:flex;flex-direction:column;height:100dvh;overflow:hidden;
+    -webkit-font-smoothing:antialiased;overscroll-behavior:none;
+  }
+  header{
+    display:flex;align-items:center;gap:14px;
+    padding:10px 16px;border-bottom:1px solid var(--line);
+    background:rgba(13,17,23,.85);backdrop-filter:blur(8px);z-index:5;
+    flex:0 0 auto;
+  }
+  .brand{display:flex;flex-direction:column;line-height:1.1;margin-right:auto;}
+  .brand h1{
+    margin:0;font-size:17px;font-weight:700;letter-spacing:.42em;text-indent:.02em;
+  }
+  .brand span{font-size:10.5px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;}
+  .ctl{display:flex;align-items:center;gap:8px;}
+  button{
+    font-family:var(--font);color:var(--text);background:var(--panel-2);
+    border:1px solid var(--line);border-radius:9px;
+    padding:8px 12px;font-size:13px;font-weight:600;letter-spacing:.02em;
+    cursor:pointer;transition:border-color .15s,background .15s,transform .05s;
+    user-select:none;touch-action:manipulation;
+  }
+  button:hover{border-color:#334052;background:#151c28;}
+  button:active{transform:scale(.96);}
+  button.primary{background:#1a2433;border-color:#2b3a52;}
+  button svg{display:block;width:14px;height:14px;fill:currentColor;}
+  .seg{display:flex;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:2px;gap:2px;}
+  .seg button{border:0;background:transparent;padding:6px 10px;font-size:12px;color:var(--muted);border-radius:7px;}
+  .seg button.on{background:#232d40;color:var(--text);}
+  button.tog{border:1px solid var(--line);background:var(--panel-2);color:var(--muted);font-size:12px;padding:7px 10px;}
+  button.tog.on{color:var(--text);border-color:#2b3a52;background:#1a2433;}
+  main{position:relative;flex:1 1 auto;min-height:0;background:#04060a;}
+  #stage{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair;}
+  .grain{
+    position:absolute;inset:0;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  }
+  .hint{
+    position:absolute;left:50%;bottom:10px;transform:translateX(-50%);
+    font-size:11px;color:var(--faint);letter-spacing:.08em;pointer-events:none;
+    background:rgba(7,9,13,.55);padding:4px 12px;border-radius:20px;border:1px solid var(--line);
+    white-space:nowrap;transition:opacity .4s;
+  }
+  /* ---- V4 overlays ---- */
+  /* ---- V5: season pill ---- */
+  #season-pill{
+    position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:4;pointer-events:none;
+    display:flex;align-items:center;gap:7px;
+    background:rgba(7,9,13,.66);border:1px solid var(--line);border-radius:20px;
+    padding:5px 12px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+  }
+  #season-pill .sbar{width:52px;height:3px;background:#1c2330;border-radius:2px;overflow:hidden;}
+  #season-pill .sbar i{display:block;height:100%;width:0;background:#8b94a7;}
+  #inspector{
+    position:absolute;left:10px;top:10px;z-index:6;
+    background:rgba(13,17,23,.92);border:1px solid var(--line);border-radius:var(--radius);
+    padding:10px 12px;min-width:190px;max-width:250px;backdrop-filter:blur(6px);
+  }
+  #inspector[hidden]{display:none;}
+  .ins-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .ins-head .dot{width:10px;height:10px;border-radius:50%;box-shadow:0 0 8px currentColor;}
+  #ins-name{font-size:13px;font-weight:700;letter-spacing:.05em;}
+  #ins-caste{
+    font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:2px 6px;margin-left:auto;
+  }
+  #ins-status{font-size:12px;color:var(--text);margin-bottom:4px;}
+  #ins-meta{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-bottom:8px;}
+  #inspector button{font-size:11px;padding:5px 10px;width:100%;}
+  #legend{
+    position:absolute;right:10px;top:10px;z-index:4;pointer-events:none;
+    background:rgba(7,9,13,.66);border:1px solid var(--line);border-radius:10px;
+    padding:7px 10px;display:flex;flex-direction:column;gap:4px;
+  }
+  #legend .lrow{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--muted);letter-spacing:.06em;}
+  .sw{flex:0 0 auto;border-radius:50%;}
+  .sw.scout{width:5px;height:5px;background:var(--cyan);opacity:.6;margin:0 2.5px;}
+  .sw.worker{width:8px;height:8px;background:var(--cyan);}
+  .sw.soldier{width:11px;height:11px;background:var(--rose);}
+  .sw.carrier{width:8px;height:8px;background:var(--cyan);box-shadow:inset 0 0 0 2px #fff;}
+  .sw.queen{width:8px;height:8px;background:var(--amber);box-shadow:0 0 6px var(--amber);}
+  #minimap{
+    position:absolute;right:10px;bottom:10px;z-index:4;
+    width:150px;height:auto;border:1px solid var(--line);border-radius:8px;
+    background:#04060a;opacity:.94;pointer-events:none;
+  }
+  footer{
+    flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line);
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom));z-index:5;
+  }
+  .toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .grp{display:flex;align-items:center;gap:8px;}
+  .grp-sep{width:1px;align-self:stretch;background:var(--line);}
+  .brush{display:flex;align-items:center;gap:8px;}
+  .brush input[type=range]{width:110px;accent-color:#7fd4ff;}
+  .stats{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .col{
+    flex:1 1 0;min-width:150px;display:flex;align-items:center;gap:10px;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);
+    padding:8px 10px;
+  }
+  .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 8px currentColor;}
+  .col .meta{display:flex;flex-direction:column;line-height:1.25;margin-right:auto;min-width:0;}
+  .col .name{font-size:12px;font-weight:700;letter-spacing:.06em;}
+  .col .nums{font-family:var(--mono);font-size:11px;color:var(--muted);}
+  .col button{padding:5px 9px;font-size:11px;}
+  details.how{margin-top:10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel-2);}
+  details.how summary{
+    cursor:pointer;list-style:none;padding:9px 12px;font-size:12.5px;font-weight:600;
+    letter-spacing:.04em;color:var(--muted);user-select:none;
+  }
+  details.how summary::-webkit-details-marker{display:none;}
+  details.how summary::before{content:"+ ";color:var(--faint);}
+  details.how[open] summary::before{content:"– ";}
+  details.how p{margin:0;padding:0 14px 12px;font-size:13px;line-height:1.65;color:#c3cad9;}
+  details.how p b{color:var(--text);}
+  @media (max-width:560px){
+    .brand h1{font-size:14px;letter-spacing:.32em;}
+    .brand span{font-size:9px;}
+    header{gap:8px;padding:8px 10px;}
+    button{padding:7px 9px;font-size:12px;}
+    .seg button{padding:5px 6px;font-size:11px;}
+    button.tog{font-size:11px;padding:6px 8px;}
+    .brush input[type=range]{width:80px;}
+    .col{min-width:calc(50% - 4px);}
+    .hint{display:none;}
+    #legend{display:none;}
+    #minimap{width:104px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>FORMICA</h1>
+    <span>emergent foraging colonies</span>
+  </div>
+  <div class="ctl">
+    <button id="btn-play" class="primary" title="Play / pause" aria-label="Play or pause">
+      <svg id="ico-pause" viewBox="0 0 16 16"><rect x="2" y="1" width="4" height="14" rx="1"/><rect x="10" y="1" width="4" height="14" rx="1"/></svg>
+      <svg id="ico-play" viewBox="0 0 16 16" style="display:none"><path d="M3 1.5v13l11-6.5z"/></svg>
+    </button>
+    <div class="seg" id="seg-speed" role="group" aria-label="Simulation speed">
+      <button data-v="0.25" class="on">&#188;&times;</button><button data-v="0.5">&#189;&times;</button><button data-v="1">1&times;</button><button data-v="2">2&times;</button><button data-v="4">4&times;</button>
+    </div>
+    <button id="btn-reset" title="Reset simulation">Reset</button>
+  </div>
+</header>
+
+<main>
+  <canvas id="stage"></canvas>
+  <div class="grain"></div>
+  <div id="inspector" hidden>
+    <div class="ins-head">
+      <span class="dot" id="ins-dot"></span><span id="ins-name"></span><span id="ins-caste"></span>
+    </div>
+    <div id="ins-status"></div>
+    <div id="ins-meta"></div>
+    <button id="btn-release" title="Stop following this ant">Release</button>
+  </div>
+  <div id="legend" aria-hidden="true">
+    <div class="lrow"><i class="sw scout"></i>Scout</div>
+    <div class="lrow"><i class="sw worker"></i>Worker</div>
+    <div class="lrow"><i class="sw soldier"></i>Soldier</div>
+    <div class="lrow"><i class="sw carrier"></i>Carrier</div>
+    <div class="lrow"><i class="sw queen"></i>Queen</div>
+  </div>
+  <div id="season-pill" aria-hidden="true"><span id="season-emoji">🌱</span><span id="season-name">Spring</span><span class="sbar"><i id="season-fill"></i></span></div>
+  <canvas id="minimap" width="200" height="125"></canvas>
+  <div class="hint" id="hint">tap&nbsp;&middot;&nbsp;drop food&nbsp;&nbsp;&nbsp;drag&nbsp;&middot;&nbsp;draw</div>
+</main>
+
+<footer>
+  <div class="toolbar">
+    <div class="grp" role="group" aria-label="Brush tools">
+      <div class="seg" id="seg-tool" role="group" aria-label="Brush tool">
+        <button data-v="food" class="on">Food</button><button data-v="wall">Wall</button><button data-v="erase">Erase</button><button data-v="inspect">Inspect</button>
+      </div>
+      <div class="brush">
+        <input type="range" id="rng-size" min="1" max="9" step="1" value="4" aria-label="Brush size" title="Brush size">
+      </div>
+      <button id="btn-scatter" title="Scatter new food clusters">Scatter food</button>
+    </div>
+    <div class="grp-sep"></div>
+    <div class="grp" role="group" aria-label="World options">
+      <div class="seg" id="seg-regrow" role="group" aria-label="Food regrowth">
+        <button data-v="1" class="on">Regrows</button><button data-v="0">Finite</button>
+      </div>
+      <button id="btn-trails" class="tog" title="Show fading trails behind food carriers">Trails</button>
+      <button id="btn-heat" class="tog" title="Pheromone heatmap: foraging intensity">Heat</button>
+    </div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <details class="how">
+    <summary>How it works</summary>
+    <p>Each ant follows <b>three simple rules</b> and nothing else. It smells with three sensors &mdash; left, center, right &mdash; and turns toward the strongest scent. An ant without food follows <b>food-scent</b> and drips <b>home-scent</b> behind it as it walks. An ant carrying food follows <b>home-scent</b> back to the nest and drips food-scent behind it. The nest always smells strongly of home, and all scents slowly fade and spread. No ant has a plan and no ant talks to another &mdash; the highways, the foraging parties, the way a whole colony pivots to a fresh find all <b>emerge</b> from those rules.</p>
+    <p>Ants come in <b>castes</b>. <b>Scouts</b> are fast, roam far, and lay faint trails when they stumble on food. <b>Workers</b> follow the strong trails and haul food home. <b>Soldiers</b> never forage &mdash; they patrol around the nest and attack rival ants on sight, though every fight risks the soldier&rsquo;s own life. The legend at the top-right of the field shows each caste at a glance; carriers glow white-hot at the core.</p>
+    <p>Each nest is a <b>mound of earth</b>: speckled soil, a raised crater rim around a dark entrance, scattered pebbles, and a small <b>pennant</b> in the colony&rsquo;s color &mdash; the only bright mark, so the mounds read as ground, not neon. Faint stippled earth fades out around each one, marking its territory. The small label gives <b>name and live population</b>. Deep in the entrance glows the <b>queen</b>. Delivered food goes into her store. She burns a little per ant every moment to keep the colony alive, and spends food to hatch new ants while the store is healthy. If it runs dry, ants begin to starve &mdash; and a colony left with no ants and no food <b>dies</b>, its mound going dark and its pennant gray.</p>
+    <p>The year turns through <b>four seasons</b>, about a minute each &mdash; watch the marker at the top of the field. <b>Spring</b> doubles the wild food that appears on its own. <b>Summer</b> bakes the scent-highways away half again as fast. <b>Autumn</b> thins new growth to a trickle. <b>Winter</b> stops it entirely and slows every ant with cold &mdash; while the queen&rsquo;s hunger never pauses. Spring and autumn bring <b>rain</b>: a single storm washes every scent field half away, so highways built for weeks can vanish in an afternoon.</p>
+    <p>Winter makes thieves. When the cold bites and a queen&rsquo;s store falls below 25, her <b>soldiers turn raider</b>: up to three march on the nearest rival mound, steal 8 food from its store, and run home. The return trip crosses patrolled ground, and defenders fight raiders with the usual deadly odds. Inspect a raider mid-march and the card tells you whose nest it is after.</p>
+    <p><b>Watching it.</b> Time runs at &frac14;&times; by default so you can actually follow a foraging trip, a fight, a haul home &mdash; crank it to 4&times; when you want colony-scale drama. The <b>Trails</b> toggle draws faint fading ribbons behind food carriers, so foraging highways materialize without shouting. <b>Heat</b> turns the scent field into a foraging-intensity heatmap, hiding colony colors so you see pure traffic. Pick the <b>Inspect</b> brush and tap any ant: the camera follows it and the card tells you its caste, its current job, its age, and how many hauls it has made. Tap empty ground or press Esc to release.</p>
+    <p>The <b>minimap</b> (bottom-right) keeps you oriented, with a white frame showing your current view. The <b>legend</b> (top-right) reads the castes at a glance.</p>
+    <p>The <b>Food</b> switch decides whether new clusters appear on their own. <b>Regrows</b> runs the ecosystem forever; <b>Finite</b> makes the world what you scatter &mdash; colonies can boom, then starve out. Tap to drop food, drag with the wall brush to reshape the world, and watch what happens.</p>
+  </details>
+</footer>
+
+<script>
+'use strict';
+//__CORE_START__
+// =====================================================================
+// FORMICA core simulation — no DOM dependencies (testable in Node).
+// Grid pheromone fields, sensor-steered ants, emergent foraging.
+// V2: castes, queens, combat. V3: trails, inspection. V4: event feed removed.
+// V5: seasons, rain, scarcity raiding.
+// =====================================================================
+
+const GRID_W = 200;
+const GRID_H = 125;
+const MAX_PHER = 255;
+
+const COLONY_DEFS = [
+  { name:'Cyan',  color:[ 77, 227, 255], nest:{ fx:0.18, fy:0.50 } },
+  { name:'Rose',  color:[255,  93, 180], nest:{ fx:0.82, fy:0.50 } },
+  { name:'Amber',  color:[255, 184,  77], nest:{ fx:0.50, fy:0.86 } },
+];
+
+// V5 seasons: spring, summer, autumn, winter — looping. Seasonal regrowth
+// multipliers; winter also slows ants and can trigger scarcity raids.
+const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
+const SEASON_REGROW = { spring: 2.0, summer: 1.0, autumn: 0.4, winter: 0.0 };
+
+// V2 castes: scouts find, workers exploit, soldiers fight.
+const CASTES = {
+  scout:   { speed:1.15, jitter:0.55, homeDep:0.35, foodDep:0.80, sensorDist:4.5, share:0.20 },
+  worker:  { speed:0.85, jitter:0.30, homeDep:0.70, foodDep:1.60, sensorDist:3.5, share:0.70 },
+  soldier: { speed:0.55, jitter:0.20, homeDep:0.25, foodDep:0.00, sensorDist:3.0, share:0.10 },
+};
+function pickCaste(){
+  const r = Math.random();
+  let acc = 0;
+  for (const k of ['scout', 'worker', 'soldier']){
+    acc += CASTES[k].share;
+    if (r < acc) return k;
+  }
+  return 'worker';
+}
+
+const TUNE = {
+  antSpeed:      0.85,   // cells per tick
+  sensorDist:    3.5,    // cells ahead
+  sensorAngle:   0.45,   // radians between sensors
+  turnAngle:     0.38,   // radians per tick when steering
+  jitter:        0.30,   // random heading noise
+  homeDeposit:   0.70,   // pheromone laid per tick while searching
+  foodDeposit:   1.60,   // pheromone laid per tick while carrying
+  pickupBurst:   4.0,    // extra food-scent burst on pickup
+  evap:          0.986,  // per-tick pheromone retention
+  diffuseAmt:    0.25,   // blend toward neighbor average
+  diffuseEvery:  2,      // ticks between diffusion passes
+  nestRadius:    5,      // cells
+  startAnts:     130,
+  foodClusters:  9,
+  // --- V2: castes & queen ---
+  queenStartFood: 60,    // food banked in each nest at start
+  spawnCost:      3,     // queen food cost per new ant
+  spawnThreshold: 30,    // queen spawns only while store is above this
+  spawnEvery:     10,    // ticks between spawn attempts
+  maxAntsPerColony: 320,
+  upkeepPerAnt:  0.0009, // queen food drained per ant per tick
+  starveEvery:   25,     // ticks between starvation losses while store is 0
+  soldierSight:  10,     // cells
+  soldierKillRange: 1.8, // cells
+  soldierCooldown: 120,  // ticks between kills
+  soldierDeathChance: 0.30, // chance the killer also dies (fights are risky)
+  patrolRadius:  16,     // soldiers drift back inside this range of the nest
+  regrowEvery:   90,     // ticks between ambient food regrowth events
+  regrowRadius:  2,
+  regrowAmount:  2,
+  // --- V3: trails, inspection ---
+  trailEvery:    3,      // ticks between motion-trail samples
+  trailLen:     12,     // max stored trail points per ant
+  // --- V5: seasons & scarcity ---
+  seasonLen:     1800,   // V5: ticks per season (~60s at default 0.25x; a full year is ~4 min).
+                        // Tuned from ~3600: the spec's "4 min/year" requires 1800 at the
+                        // presentation's default speed, and 3600-tick winters proved
+                        // unsurvivable (17% colony survival vs the "usually survive" target).
+  summerEvapMul: 1.5,    // pheromone evaporation multiplier in summer
+  winterSpeedMul: 0.75,  // ant speed multiplier in winter (cold)
+  rainP:         1/3600, // per-tick rain chance in spring/autumn (~1 per season)
+  rainDur:       600,    // ticks a rain event lasts
+  rainWash:      0.6,    // pheromone multiplier applied once per rain event
+  raidStoreThreshold: 25,// colony raids only while its queen store is below this
+  raidSteal:     8,      // food taken per successful raid
+  raidMaxConcurrent: 3,  // max simultaneous raiders per colony
+  raidCooldown:  900,    // ticks before a raider can raid again
+};
+
+function rand(a, b){ return a + Math.random() * (b - a); }
+function clamp(v, lo, hi){ return v < lo ? lo : (v > hi ? hi : v); }
+function angDiff(want, cur){
+  let d = want - cur;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d < -Math.PI) d += Math.PI * 2;
+  return d;
+}
+
+class FormicaSim {
+  constructor(){
+    const W = this.W = GRID_W, H = this.H = GRID_H, n = W * H;
+    this.n = n;
+    this.numColonies = COLONY_DEFS.length;
+    this.foodPher = [];
+    this.homePher = [];
+    this._tmp = [];
+    for (let c = 0; c < this.numColonies; c++){
+      this.foodPher.push(new Float32Array(n));
+      this.homePher.push(new Float32Array(n));
+      this._tmp.push(new Float32Array(n));
+    }
+    this.food = new Float32Array(n);   // food units per cell
+    this.wall = new Uint8Array(n);    // 1 = obstacle
+    this.ants = [];
+    this.scores = new Array(this.numColonies).fill(0);
+    this.pop = new Array(this.numColonies).fill(0);    // live ants per colony
+    this.kills = new Array(this.numColonies).fill(0);  // rival ants killed
+    this.queens = COLONY_DEFS.map(() => ({ store: TUNE.queenStartFood, alive: true }));
+    this.regrown = 0;   // total food added by ambient regrowth (for bookkeeping)
+    this.lostCarried = 0; // food units lost when carriers died
+    this.regrow = true;   // ambient food regrowth on/off (toggle in UI)
+    this._grid = new Map();   // spatial hash rebuilt each tick
+    this._gridCell = 4;
+    this.nests = COLONY_DEFS.map(d => ({
+      x: d.nest.fx * W, y: d.nest.fy * H, r: TUNE.nestRadius
+    }));
+    this.tick = 0;
+    // --- V5: seasons & scarcity ---
+    this.seasonIdx = 0;      // spring
+    this.seasonTick = 0;
+    this.rainTicks = 0;      // >0 while a rain event is active
+    this.rainParts = [];     // screen-space streak particles
+    this.debug = { raidsAttempted: 0, raidsSucceeded: 0, winterDeaths: 0 };
+    for (let c = 0; c < this.numColonies; c++) this.addAnts(c, TUNE.startAnts);
+    this.seedFood(TUNE.foodClusters);
+  }
+
+  idx(x, y){ return ((y | 0) * this.W + (x | 0)); }
+
+  walkable(x, y){
+    if (x < 1 || y < 1 || x >= this.W - 1 || y >= this.H - 1) return false;
+    return this.wall[this.idx(x, y)] === 0;
+  }
+
+  sample(grid, x, y){
+    const xi = x | 0, yi = y | 0;
+    if (xi < 0 || yi < 0 || xi >= this.W || yi >= this.H) return 0;
+    const i = yi * this.W + xi;
+    if (this.wall[i]) return 0;
+    return grid[i];
+  }
+
+  spawnAnt(c){
+    const nest = this.nests[c];
+    const a = rand(0, Math.PI * 2), r = rand(0, nest.r);
+    this.ants.push({
+      x: nest.x + Math.cos(a) * r,
+      y: nest.y + Math.sin(a) * r,
+      heading: rand(0, Math.PI * 2),
+      state: 0,            // 0 = searching, 1 = carrying food home
+      colony: c,
+      caste: pickCaste(),
+      cool: 0,             // soldier kill cooldown
+      dead: false,
+      born: this.tick,     // V3: for the inspector's age readout
+      delivered: 0,        // V3: lifetime food hauls
+      trail: [],           // V3: flat [x0,y0,x1,y1,...] motion-trail samples
+    });
+    this.pop[c]++;
+  }
+
+  // V5: force-spawn a soldier (winter militarization)
+  spawnSoldier(c){
+    const nest = this.nests[c];
+    const a = rand(0, Math.PI * 2), r = rand(0, nest.r);
+    this.ants.push({
+      x: nest.x + Math.cos(a) * r,
+      y: nest.y + Math.sin(a) * r,
+      heading: rand(0, Math.PI * 2),
+      state: 0,
+      colony: c,
+      caste: 'soldier',
+      cool: 0,
+      dead: false,
+      born: this.tick,
+      delivered: 0,
+      trail: [],
+    });
+    this.pop[c]++;
+  }
+
+  soldierCount(c){
+    let n = 0;
+    for (const a of this.ants) if (!a.dead && a.colony === c && a.caste === 'soldier') n++;
+    return n;
+  }
+
+  addAnts(c, count){
+    for (let k = 0; k < count; k++) this.spawnAnt(c);
+  }
+
+  farFromNests(x, y, minDist){
+    for (const n of this.nests){
+      const dx = x - n.x, dy = y - n.y;
+      if (dx * dx + dy * dy < minDist * minDist) return false;
+    }
+    return true;
+  }
+
+  dropFoodCluster(cx, cy, radius, amount){
+    const r2 = radius * radius;
+    const x0 = Math.max(1, Math.floor(cx - radius)), x1 = Math.min(this.W - 2, Math.ceil(cx + radius));
+    const y0 = Math.max(1, Math.floor(cy - radius)), y1 = Math.min(this.H - 2, Math.ceil(cy + radius));
+    for (let y = y0; y <= y1; y++){
+      for (let x = x0; x <= x1; x++){
+        const dx = x - cx, dy = y - cy;
+        if (dx * dx + dy * dy <= r2){
+          const i = y * this.W + x;
+          if (!this.wall[i]) this.food[i] = Math.min(6, this.food[i] + amount);
+        }
+      }
+    }
+  }
+
+  seedFood(count){
+    let placed = 0, guard = 0;
+    while (placed < count && guard++ < 400){
+      const x = rand(10, this.W - 10), y = rand(10, this.H - 10);
+      if (!this.farFromNests(x, y, 26)) continue;
+      this.dropFoodCluster(x, y, rand(2, 4), 3);
+      placed++;
+    }
+  }
+
+  // ambient regrowth: a small new food cluster now and then, so the
+  // ecosystem can run indefinitely instead of starving when the map is bare
+  regrowFood(){
+    for (let tries = 0; tries < 20; tries++){
+      const x = rand(10, this.W - 10), y = rand(10, this.H - 10);
+      if (!this.farFromNests(x, y, 26)) continue;
+      const before = this.totalFood();
+      this.dropFoodCluster(x, y, TUNE.regrowRadius, TUNE.regrowAmount);
+      this.regrown += this.totalFood() - before;
+      return;
+    }
+  }
+
+  paintWall(cx, cy, radius, value){
+    const r2 = radius * radius;
+    const x0 = Math.max(0, Math.floor(cx - radius)), x1 = Math.min(this.W - 1, Math.ceil(cx + radius));
+    const y0 = Math.max(0, Math.floor(cy - radius)), y1 = Math.min(this.H - 1, Math.ceil(cy + radius));
+    for (let y = y0; y <= y1; y++)
+      for (let x = x0; x <= x1; x++){
+        const dx = x - cx, dy = y - cy;
+        if (dx * dx + dy * dy <= r2) this.wall[y * this.W + x] = value ? 1 : 0;
+      }
+  }
+
+  step(){
+    this.tick++;
+    // V5: season clock
+    this.seasonTick++;
+    if (this.seasonTick >= TUNE.seasonLen){
+      this.seasonTick = 0;
+      this.seasonIdx = (this.seasonIdx + 1) % SEASONS.length;
+    }
+    // V5: rain — spring/autumn only
+    if (this.rainTicks > 0) this.rainTicks--;
+    else {
+      const s = this.season();
+      if ((s === 'spring' || s === 'autumn') && Math.random() < TUNE.rainP) this.triggerRain();
+    }
+    this.buildSpatialGrid();
+    const ants = this.ants;
+    for (let k = 0; k < ants.length; k++){
+      const a = ants[k];
+      if (!a.dead) this.updateAnt(a);
+    }
+    for (let c = 0; c < this.numColonies; c++) this.queenTick(c);
+    if (this.regrow && this.tick % TUNE.regrowEvery === 0){
+      // V5: seasonal regrowth multiplier (Finite toggle still wins: regrow=false → nothing)
+      const m = SEASON_REGROW[this.season()];
+      let n = Math.floor(m);
+      if (Math.random() < m - n) n++;
+      for (let k = 0; k < n; k++) this.regrowFood();
+    }
+    this.sweepDead();
+
+    // pheromone dynamics per colony
+    for (let c = 0; c < this.numColonies; c++){
+      this.evaporate(this.foodPher[c]);
+      this.evaporate(this.homePher[c]);
+      if (this.tick % TUNE.diffuseEvery === 0){
+        this.diffuse(this.foodPher[c], this._tmp[c]);
+        this.diffuse(this.homePher[c], this._tmp[c]);
+      }
+      if (this.queens[c].alive) this.emitNestBeacon(c);
+    }
+  }
+
+  buildSpatialGrid(){
+    const m = this._grid, cs = this._gridCell, ants = this.ants;
+    m.clear();
+    for (let k = 0; k < ants.length; k++){
+      const a = ants[k];
+      if (a.dead) continue;
+      const key = (((a.y / cs) | 0) * 64) + ((a.x / cs) | 0);
+      let arr = m.get(key);
+      if (!arr){ arr = []; m.set(key, arr); }
+      arr.push(k);
+    }
+  }
+
+  // nearest living rival ant within maxDist of (x, y), or null
+  nearestRival(x, y, colony, maxDist){
+    const cs = this._gridCell, m = this._grid;
+    const cx = (x / cs) | 0, cy = (y / cs) | 0;
+    const r = Math.ceil(maxDist / cs);
+    let best = null, bestD2 = maxDist * maxDist;
+    for (let oy = -r; oy <= r; oy++){
+      for (let ox = -r; ox <= r; ox++){
+        const arr = m.get((cy + oy) * 64 + (cx + ox));
+        if (!arr) continue;
+        for (let j = 0; j < arr.length; j++){
+          const b = this.ants[arr[j]];
+          if (b.dead || b.colony === colony) continue;
+          const dx = b.x - x, dy = b.y - y, d2 = dx * dx + dy * dy;
+          if (d2 < bestD2){ bestD2 = d2; best = b; }
+        }
+      }
+    }
+    return best;
+  }
+
+  // V3: nearest living ant of any colony within maxDist — for the Inspect tool
+  antAt(x, y, maxDist){
+    const cs = this._gridCell, m = this._grid;
+    const cx = (x / cs) | 0, cy = (y / cs) | 0;
+    const r = Math.ceil(maxDist / cs);
+    let best = null, bestD2 = maxDist * maxDist;
+    for (let oy = -r; oy <= r; oy++){
+      for (let ox = -r; ox <= r; ox++){
+        const arr = m.get((cy + oy) * 64 + (cx + ox));
+        if (!arr) continue;
+        for (let j = 0; j < arr.length; j++){
+          const b = this.ants[arr[j]];
+          if (b.dead) continue;
+          const dx = b.x - x, dy = b.y - y, d2 = dx * dx + dy * dy;
+          if (d2 < bestD2){ bestD2 = d2; best = b; }
+        }
+      }
+    }
+    return best;
+  }
+
+  // V3: sample an ant's position into its motion trail (flat, capped)
+  recordTrail(a){
+    if (this.tick % TUNE.trailEvery !== 0) return;
+    if (!a.trail) a.trail = [];
+    a.trail.push(a.x, a.y);
+    const cap = TUNE.trailLen * 2;
+    if (a.trail.length > cap) a.trail.splice(0, a.trail.length - cap);
+  }
+
+  sweepDead(){
+    const ants = this.ants;
+    for (let k = ants.length - 1; k >= 0; k--){
+      if (ants[k].dead){
+        if (ants[k].state === 1) this.lostCarried++;  // carried food is lost with the ant
+        this.pop[ants[k].colony]--;
+        ants[k] = ants[ants.length - 1];
+        ants.pop();
+      }
+    }
+  }
+
+  // --- V5: seasons ---
+  season(){ return SEASONS[this.seasonIdx]; }
+  antSpeedMul(){ return this.season() === 'winter' ? TUNE.winterSpeedMul : 1; }
+
+  // one rain event: a single wash of both scent fields, then streaks for a while
+  triggerRain(){
+    this.rainTicks = TUNE.rainDur;
+    const w = TUNE.rainWash;
+    for (let c = 0; c < this.numColonies; c++){
+      const fp = this.foodPher[c], hp = this.homePher[c];
+      for (let i = 0; i < this.n; i++){ fp[i] *= w; hp[i] *= w; }
+    }
+  }
+
+  queenTick(c){
+    const q = this.queens[c];
+    if (!q.alive) return;
+    const pop = this.pop[c];
+    q.store -= pop * TUNE.upkeepPerAnt;   // metabolic upkeep
+    if (q.store > TUNE.spawnThreshold && pop > 0 && pop < TUNE.maxAntsPerColony &&
+        this.tick % TUNE.spawnEvery === 0){
+      q.store -= TUNE.spawnCost;
+      this.spawnAnt(c);
+    }
+    // V5: winter militarization — a starving colony converts its last food
+    // into soldiers so the raid system has raiders. Only tops up to the
+    // raid cap; each soldier is a gamble (3 food) for an 8-food steal.
+    if (this.season() === 'winter' && q.store >= TUNE.spawnCost &&
+        q.store < TUNE.raidStoreThreshold && pop > 0 && pop < TUNE.maxAntsPerColony &&
+        this.tick % TUNE.spawnEvery === 0 &&
+        this.soldierCount(c) < TUNE.raidMaxConcurrent){
+      q.store -= TUNE.spawnCost;
+      this.spawnSoldier(c);
+    }
+    if (q.store <= 0){
+      q.store = 0;
+      if (pop > 0 && this.tick % TUNE.starveEvery === 0){
+        for (let k = 0; k < this.ants.length; k++){
+          const a = this.ants[k];
+          if (!a.dead && a.colony === c){ a.dead = true; break; }
+        }
+      }
+    }
+    if (this.pop[c] === 0 && q.store <= 0){
+      q.alive = false;
+      if (this.season() === 'winter') this.debug.winterDeaths++;  // V5
+    }
+  }
+
+  evaporate(grid){
+    // V5: summer heat fades scents faster
+    const ev = this.season() === 'summer' ? 1 - (1 - TUNE.evap) * TUNE.summerEvapMul : TUNE.evap;
+    const n = this.n;
+    for (let i = 0; i < n; i++){
+      const v = grid[i] * ev;
+      grid[i] = v < 0.02 ? 0 : v;   // snap tiny values to zero
+    }
+  }
+
+  diffuse(grid, tmp){
+    const W = this.W, H = this.H, d = TUNE.diffuseAmt, keep = 1 - d;
+    for (let y = 0; y < H; y++){
+      const yu = y > 0 ? y - 1 : 0, yd = y < H - 1 ? y + 1 : H - 1;
+      for (let x = 0; x < W; x++){
+        const xl = x > 0 ? x - 1 : 0, xr = x < W - 1 ? x + 1 : W - 1;
+        const i = y * W + x;
+        const avg = (grid[yu*W+xl] + grid[yu*W+x] + grid[yu*W+xr] +
+                     grid[y*W+xl]  + grid[y*W+xr] +
+                     grid[yd*W+xl] + grid[yd*W+x] + grid[yd*W+xr]) * 0.125;
+        tmp[i] = grid[i] * keep + avg * d;
+      }
+    }
+    grid.set(tmp);
+  }
+
+  emitNestBeacon(c){
+    const n = this.nests[c], grid = this.homePher[c];
+    const r = n.r, x0 = Math.max(0, Math.floor(n.x - r)), x1 = Math.min(this.W - 1, Math.ceil(n.x + r));
+    const y0 = Math.max(0, Math.floor(n.y - r)), y1 = Math.min(this.H - 1, Math.ceil(n.y + r));
+    const r2 = r * r;
+    for (let y = y0; y <= y1; y++)
+      for (let x = x0; x <= x1; x++){
+        const dx = x - n.x, dy = y - n.y;
+        if (dx * dx + dy * dy <= r2){
+          const i = y * this.W + x;
+          if (grid[i] < MAX_PHER) grid[i] = MAX_PHER;
+        }
+      }
+  }
+
+  updateAnt(a){
+    if (a.caste === 'soldier'){ this.updateSoldier(a); return; }
+    const P = CASTES[a.caste] || CASTES.worker;
+    const c = a.colony;
+    const searching = a.state === 0;
+    const grid = searching ? this.foodPher[c] : this.homePher[c];
+    const sd = P.sensorDist, sa = TUNE.sensorAngle, h = a.heading;
+
+    const cx = a.x + Math.cos(h) * sd,      cy = a.y + Math.sin(h) * sd;
+    const lx = a.x + Math.cos(h - sa) * sd, ly = a.y + Math.sin(h - sa) * sd;
+    const rx = a.x + Math.cos(h + sa) * sd, ry = a.y + Math.sin(h + sa) * sd;
+    const cv = this.sample(grid, cx, cy);
+    const lv = this.sample(grid, lx, ly);
+    const rv = this.sample(grid, rx, ry);
+
+    if (cv >= lv && cv >= rv){
+      // keep heading
+    } else if (lv > rv){
+      a.heading -= TUNE.turnAngle;
+    } else if (rv > lv){
+      a.heading += TUNE.turnAngle;
+    } else {
+      a.heading += (Math.random() < 0.5 ? -1 : 1) * TUNE.turnAngle;
+    }
+    a.heading += (Math.random() - 0.5) * P.jitter;
+
+    // move with wall / edge collision (V5: winter cold slows every ant)
+    const sp = P.speed * this.antSpeedMul();
+    let nx = a.x + Math.cos(a.heading) * sp;
+    let ny = a.y + Math.sin(a.heading) * sp;
+    if (!this.walkable(nx, ny)){
+      a.heading += rand(-1, 1) * 2.4;
+      nx = a.x + Math.cos(a.heading) * sp;
+      ny = a.y + Math.sin(a.heading) * sp;
+      if (!this.walkable(nx, ny)){ nx = a.x; ny = a.y; }
+    }
+    a.x = nx; a.y = ny;
+
+    const i = this.idx(a.x, a.y);
+    if (searching){
+      const hp = this.homePher[c];
+      hp[i] = Math.min(MAX_PHER, hp[i] + P.homeDep);
+      // pick up food
+      if (this.food[i] > 0.5){
+        this.food[i] -= 1;
+        a.state = 1;
+        a.heading += Math.PI + rand(-0.25, 0.25);  // about-face
+        const fp = this.foodPher[c];
+        fp[i] = Math.min(MAX_PHER, fp[i] + TUNE.pickupBurst);
+      }
+    } else {
+      const fp = this.foodPher[c];
+      fp[i] = Math.min(MAX_PHER, fp[i] + P.foodDep);
+      // deposit at nest
+      const nst = this.nests[c];
+      const dx = a.x - nst.x, dy = a.y - nst.y;
+      if (dx * dx + dy * dy < nst.r * nst.r){
+        this.scores[c]++;
+        const q = this.queens[c];
+        if (q.alive) q.store += 1;
+        a.state = 0;
+        a.delivered = (a.delivered || 0) + 1;   // V3: lifetime hauls
+        a.heading += Math.PI + rand(-0.25, 0.25);  // head back out
+      }
+    }
+    this.recordTrail(a);
+  }
+
+  updateSoldier(a){
+    const c = a.colony, P = CASTES.soldier;
+    if (a.cool > 0) a.cool--;
+    if (a.raidCool > 0) a.raidCool--;
+    if (a.raid){ this.updateRaider(a); return; }
+    // V5: scarcity raiding — winter, own queen's store low, cap concurrent raiders
+    if (this.season() === 'winter' && this.queens[c].alive &&
+        this.queens[c].store < TUNE.raidStoreThreshold && !a.raidCool &&
+        this.raiderCount(c) < TUNE.raidMaxConcurrent){
+      const target = this.nearestRivalNest(a, c);
+      if (target >= 0){
+        a.raid = { target, phase: 'out' };
+        this.debug.raidsAttempted++;
+      }
+    }
+    const target = this.nearestRival(a.x, a.y, c, TUNE.soldierSight);
+    if (target){
+      const want = Math.atan2(target.y - a.y, target.x - a.x);
+      a.heading += clamp(angDiff(want, a.heading), -TUNE.turnAngle * 1.6, TUNE.turnAngle * 1.6);
+      const dx = target.x - a.x, dy = target.y - a.y;
+      if (dx * dx + dy * dy < TUNE.soldierKillRange * TUNE.soldierKillRange && a.cool <= 0){
+        target.dead = true;
+        a.cool = TUNE.soldierCooldown;
+        this.kills[c]++;
+        if (Math.random() < TUNE.soldierDeathChance) a.dead = true;  // fights wound the killer too
+      }
+    } else {
+      // patrol: drift back toward the nest when too far, wander otherwise
+      const nst = this.nests[c];
+      const dx = nst.x - a.x, dy = nst.y - a.y;
+      if (dx * dx + dy * dy > TUNE.patrolRadius * TUNE.patrolRadius){
+        const want = Math.atan2(dy, dx);
+        a.heading += clamp(angDiff(want, a.heading), -TUNE.turnAngle, TUNE.turnAngle);
+      } else {
+        a.heading += (Math.random() - 0.5) * 0.6;
+      }
+    }
+    a.heading += (Math.random() - 0.5) * P.jitter;
+    const sp = P.speed * this.antSpeedMul();   // V5: winter cold
+    let nx = a.x + Math.cos(a.heading) * sp;
+    let ny = a.y + Math.sin(a.heading) * sp;
+    if (!this.walkable(nx, ny)){
+      a.heading += rand(-1, 1) * 2.4;
+      nx = a.x + Math.cos(a.heading) * sp;
+      ny = a.y + Math.sin(a.heading) * sp;
+      if (!this.walkable(nx, ny)){ nx = a.x; ny = a.y; }
+    }
+    a.x = nx; a.y = ny;
+    // faint home trail so patrols read visually
+    const hp = this.homePher[c], i = this.idx(a.x, a.y);
+    hp[i] = Math.min(MAX_PHER, hp[i] + P.homeDep);
+    this.recordTrail(a);
+  }
+
+  // --- V5: scarcity raiding ---
+  raiderCount(c){
+    let n = 0;
+    for (const a of this.ants) if (!a.dead && a.colony === c && a.raid) n++;
+    return n;
+  }
+
+  nearestRivalNest(a, c){
+    let best = -1, bestD2 = Infinity;
+    for (let o = 0; o < this.numColonies; o++){
+      if (o === c) continue;
+      const n = this.nests[o];
+      const dx = a.x - n.x, dy = a.y - n.y, d2 = dx * dx + dy * dy;
+      if (d2 < bestD2){ bestD2 = d2; best = o; }
+    }
+    return best;
+  }
+
+  // a soldier with a.raid marches on the rival nest, steals, and runs home.
+  // Defenders still use the normal combat above — raiders don't start fights.
+  updateRaider(a){
+    const c = a.colony, P = CASTES.soldier;
+    const r = a.raid;
+    const dest = r.phase === 'out' ? this.nests[r.target] : this.nests[c];
+    const want = Math.atan2(dest.y - a.y, dest.x - a.x);
+    a.heading += clamp(angDiff(want, a.heading), -TUNE.turnAngle * 1.6, TUNE.turnAngle * 1.6);
+    a.heading += (Math.random() - 0.5) * P.jitter;
+    const sp = P.speed * this.antSpeedMul();
+    let nx = a.x + Math.cos(a.heading) * sp;
+    let ny = a.y + Math.sin(a.heading) * sp;
+    if (!this.walkable(nx, ny)){
+      a.heading += rand(-1, 1) * 2.4;
+      nx = a.x + Math.cos(a.heading) * sp;
+      ny = a.y + Math.sin(a.heading) * sp;
+      if (!this.walkable(nx, ny)){ nx = a.x; ny = a.y; }
+    }
+    a.x = nx; a.y = ny;
+    const dx = a.x - dest.x, dy = a.y - dest.y;
+    if (dx * dx + dy * dy < dest.r * dest.r){
+      if (r.phase === 'out'){
+        const q = this.queens[r.target];
+        const take = Math.min(TUNE.raidSteal, Math.max(0, q.store));
+        q.store -= take;
+        if (this.queens[c].alive) this.queens[c].store += take;
+        this.debug.raidsSucceeded++;
+        a.raidCool = TUNE.raidCooldown;
+        r.phase = 'back';
+      } else {
+        a.raid = null;   // home: resume patrol
+      }
+    }
+    const hp = this.homePher[c], i = this.idx(a.x, a.y);
+    hp[i] = Math.min(MAX_PHER, hp[i] + P.homeDep);
+    this.recordTrail(a);
+  }
+
+  totalFood(){
+    let s = 0;
+    const f = this.food;
+    for (let i = 0; i < this.n; i++) s += f[i];
+    return s;
+  }
+}
+//__CORE_END__
+
+// =====================================================================
+// Presentation layer — DOM, canvas rendering, input, UI wiring.
+// =====================================================================
+(function(){
+  if (typeof document === 'undefined') return;
+
+  const FONT = "'SF Pro Display',-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif";
+  const canvas = document.getElementById('stage');
+  const ctx = canvas.getContext('2d');
+  const hint = document.getElementById('hint');
+  const mmCanvas = document.getElementById('minimap');
+  const mmc = mmCanvas.getContext('2d');
+
+  let sim = new FormicaSim();
+  let running = true;
+  const BASE_TICKS_PER_FRAME = 2;
+  let speedMul = 0.25;          // V3 default: slow enough to watch one ant work
+  let tickAcc = 0;
+  let tool = 'food';
+  let brushSize = 4;
+  let trailsOn = false;         // V3: motion ribbons behind carriers
+  let heatOn = false;           // V3: pheromone heatmap view
+  let diffuseEvery = TUNE.diffuseEvery;   // adaptive under load
+
+  // V3: follow camera — {x,y} current, {tx,ty} target, zoom eased
+  const cam = { x: GRID_W / 2, y: GRID_H / 2, zoom: 1,
+                tx: GRID_W / 2, ty: GRID_H / 2, tzoom: 1 };
+  let followed = null;          // ant under inspection, or null
+
+  // deterministic mound speckle per colony (seeded, computed once)
+  function mulberry32(seed){
+    return function(){
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  // ---- V4: baked mounds — real earth, pre-rendered once per colony ----
+  // Each sprite: soft drop shadow, irregular soil dome with seeded speckle
+  // and clumps, a raised crater rim with relief around a dark entrance,
+  // colony-tinted rim pebbles, scattered pebbles, a twig. The only live
+  // identity mark is a small pennant flag (drawn per-frame so it can
+  // gray out on death) plus the soft queen glow in the entrance.
+  const MOUND_R = TUNE.nestRadius * 2;   // world units
+  const MOUND_SS = 4;                    // supersample factor for crispness
+  const moundSprites = [];
+  function bakeMounds(){
+    for (let c = 0; c < sim.numColonies; c++){
+      const S = MOUND_SS;
+      const half = MOUND_R * 1.95;
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = Math.ceil(half * 2 * S);
+      const g = cv.getContext('2d');
+      g.scale(S, S);
+      const cx = half, cy = half;
+      const col = COLONY_DEFS[c].color;
+      const rnd = mulberry32(4100 + c * 977);
+
+      // drop shadow grounding the mound
+      g.save();
+      g.translate(cx, cy + MOUND_R * 0.42);
+      g.scale(1, 0.42);
+      const sh = g.createRadialGradient(0, 0, 1, 0, 0, MOUND_R * 1.12);
+      sh.addColorStop(0, 'rgba(0,0,0,0.5)');
+      sh.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = sh;
+      g.beginPath(); g.arc(0, 0, MOUND_R * 1.12, 0, Math.PI * 2); g.fill();
+      g.restore();
+
+      // irregular soil dome
+      const wob1 = rnd() * Math.PI * 2, wob2 = rnd() * Math.PI * 2;
+      g.beginPath();
+      for (let i = 0; i <= 48; i++){
+        const th = (i / 48) * Math.PI * 2;
+        const r = MOUND_R * (1 + 0.05 * Math.sin(3 * th + wob1) + 0.035 * Math.sin(5 * th + wob2));
+        const px = cx + Math.cos(th) * r, py = cy + Math.sin(th) * r * 0.8;
+        if (i === 0) g.moveTo(px, py); else g.lineTo(px, py);
+      }
+      g.closePath();
+      const soil = g.createLinearGradient(cx, cy - MOUND_R * 0.8, cx, cy + MOUND_R * 0.8);
+      soil.addColorStop(0, '#775e40');
+      soil.addColorStop(0.5, '#4e3b28');
+      soil.addColorStop(1, '#2c2115');
+      g.fillStyle = soil;
+      g.fill();
+      const hl = g.createRadialGradient(cx - MOUND_R * 0.35, cy - MOUND_R * 0.42, 1, cx - MOUND_R * 0.35, cy - MOUND_R * 0.42, MOUND_R * 1.1);
+      hl.addColorStop(0, 'rgba(255,224,175,0.14)');
+      hl.addColorStop(1, 'rgba(255,224,175,0)');
+      g.fillStyle = hl;
+      g.fill();
+
+      // soil speckle
+      for (let i = 0; i < 150; i++){
+        const a = rnd() * Math.PI * 2, rr = Math.sqrt(rnd()) * 0.94;
+        const x = cx + Math.cos(a) * rr * MOUND_R, y = cy + Math.sin(a) * rr * MOUND_R * 0.8;
+        const t = rnd();
+        g.fillStyle = t < 0.55 ? 'rgba(0,0,0,0.30)' : (t < 0.85 ? 'rgba(255,230,190,0.10)' : 'rgba(120,95,65,0.35)');
+        const s = 0.3 + rnd() * 0.8;
+        g.fillRect(x - s / 2, y - s / 2, s, s);
+      }
+      // soil clumps: dark base + light kiss on top
+      for (let i = 0; i < 12; i++){
+        const a = rnd() * Math.PI * 2, rr = Math.sqrt(rnd()) * 0.85;
+        const x = cx + Math.cos(a) * rr * MOUND_R, y = cy + Math.sin(a) * rr * MOUND_R * 0.8;
+        const r = 0.7 + rnd() * 0.9;
+        g.fillStyle = 'rgba(20,14,9,0.55)';
+        g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+        g.strokeStyle = 'rgba(255,225,180,0.20)';
+        g.lineWidth = 0.5;
+        g.beginPath(); g.arc(x, y, r, Math.PI * 1.1, Math.PI * 1.9); g.stroke();
+      }
+
+      // crater: raised rim with relief around the dark entrance
+      const ex = cx, ey = cy - MOUND_R * 0.30;
+      g.lineWidth = 2.4;
+      g.strokeStyle = '#1c140d';
+      g.beginPath(); g.ellipse(ex, ey, 4.6, 3.1, 0, 0, Math.PI * 2); g.stroke();
+      g.lineWidth = 1.1;
+      g.strokeStyle = 'rgba(255,226,180,0.4)';
+      g.beginPath(); g.ellipse(ex, ey, 4.6, 3.1, 0, Math.PI * 0.85, Math.PI * 1.95); g.stroke();
+      g.strokeStyle = 'rgba(0,0,0,0.55)';
+      g.beginPath(); g.ellipse(ex, ey, 4.6, 3.1, 0, Math.PI * -0.05, Math.PI * 0.9); g.stroke();
+      const hole = g.createRadialGradient(ex, ey, 0.5, ex, ey, 3.4);
+      hole.addColorStop(0, '#000000');
+      hole.addColorStop(1, '#0b0906');
+      g.fillStyle = hole;
+      g.beginPath(); g.ellipse(ex, ey, 3.4, 2.3, 0, 0, Math.PI * 2); g.fill();
+
+      // rim pebbles, quietly tinted with the colony color
+      for (let i = 0; i < 9; i++){
+        const a = (i / 9) * Math.PI * 2 + rnd() * 0.4;
+        const x = ex + Math.cos(a) * 5.6, y = ey + Math.sin(a) * 3.9;
+        const r = 0.55 + rnd() * 0.5;
+        g.fillStyle = 'rgb(' + Math.round(120 * 0.6 + col[0] * 0.4) + ',' +
+          Math.round(105 * 0.6 + col[1] * 0.4) + ',' + Math.round(92 * 0.6 + col[2] * 0.4) + ')';
+        g.beginPath(); g.ellipse(x, y, r, r * 0.7, a, 0, Math.PI * 2); g.fill();
+      }
+
+      // scattered pebbles around the mound
+      for (let i = 0; i < 8; i++){
+        const a = rnd() * Math.PI * 2, rr = MOUND_R * (1.02 + rnd() * 0.35);
+        const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr * 0.8;
+        const r = 0.5 + rnd() * 0.7;
+        const v = Math.round(95 + rnd() * 50);
+        g.fillStyle = 'rgb(' + v + ',' + Math.round(v * 0.92) + ',' + Math.round(v * 0.82) + ')';
+        g.beginPath(); g.ellipse(x, y, r, r * 0.7, a, 0, Math.PI * 2); g.fill();
+      }
+      // a twig leaning against the mound
+      const ta = rnd() * Math.PI * 2;
+      const tx = cx + Math.cos(ta) * MOUND_R * 1.05, ty = cy + Math.sin(ta) * MOUND_R * 0.85;
+      g.strokeStyle = '#5d4a34';
+      g.lineWidth = 1.0;
+      g.lineCap = 'round';
+      g.beginPath();
+      g.moveTo(tx, ty);
+      g.quadraticCurveTo(tx + 3.5, ty - 2.5, tx + 6.5, ty - 1.2);
+      g.stroke();
+      g.lineWidth = 0.6;
+      g.beginPath();
+      g.moveTo(tx + 3.2, ty - 2.1);
+      g.lineTo(tx + 4.6, ty - 4.0);
+      g.stroke();
+
+      moundSprites[c] = { cv, half };
+    }
+  }
+
+  // ---- V4: baked ground — faint disturbed-earth stipple per territory ----
+  let groundCanvas = null;
+  function bakeGround(){
+    groundCanvas = document.createElement('canvas');
+    groundCanvas.width = GRID_W; groundCanvas.height = GRID_H;
+    const g = groundCanvas.getContext('2d');
+    for (let c = 0; c < sim.numColonies; c++){
+      const nst = sim.nests[c];
+      const rnd = mulberry32(7700 + c * 313);
+      // soft disturbed-earth wash right around the mound
+      const wash = g.createRadialGradient(nst.x, nst.y, 2, nst.x, nst.y, MOUND_R * 2.4);
+      wash.addColorStop(0, 'rgba(150,116,80,0.07)');
+      wash.addColorStop(1, 'rgba(150,116,80,0)');
+      g.fillStyle = wash;
+      g.beginPath(); g.arc(nst.x, nst.y, MOUND_R * 2.4, 0, Math.PI * 2); g.fill();
+      // stipple fading with distance
+      for (let i = 0; i < 260; i++){
+        const a = rnd() * Math.PI * 2;
+        const d = 11 + 40 * Math.sqrt(rnd());
+        const x = nst.x + Math.cos(a) * d, y = nst.y + Math.sin(a) * d;
+        const al = 0.15 * (1 - (d - 11) / 42);
+        const s = 0.25 + rnd() * 0.55;
+        g.fillStyle = 'rgba(148,118,88,' + al.toFixed(3) + ')';
+        g.fillRect(x - s / 2, y - s / 2, s, s);
+      }
+      for (let i = 0; i < 40; i++){
+        const a = rnd() * Math.PI * 2;
+        const d = 8 + 14 * rnd();
+        const x = nst.x + Math.cos(a) * d, y = nst.y + Math.sin(a) * d;
+        const s = 0.8 + rnd() * 0.8;
+        g.fillStyle = 'rgba(140,110,80,' + (0.10 * (1 - d / 24)).toFixed(3) + ')';
+        g.fillRect(x - s / 2, y - s / 2, s, s);
+      }
+    }
+  }
+
+  function css(col, a){ return 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + a + ')'; }
+
+  // ---- V5: seasonal ground tint — one translucent wash over the ground, under the ants ----
+  const SEASON_TINT = {
+    spring: [120, 200, 120, 0.06],
+    summer: [255, 190, 110, 0.04],
+    autumn: [220, 150,  60, 0.07],
+    winter: [150, 190, 240, 0.08],
+  };
+  const SEASON_EMOJI = { spring: '🌱', summer: '☀️', autumn: '🍂', winter: '❄️' };
+
+  // ---- V5: rain streak particles (screen space, cheap, capped) ----
+  let rainDrops = [];
+
+  // ---- offscreen layers ----
+  const pherCanvas = document.createElement('canvas');
+  pherCanvas.width = GRID_W; pherCanvas.height = GRID_H;
+  const pherCtx = pherCanvas.getContext('2d');
+  const pherImg = pherCtx.createImageData(GRID_W, GRID_H);
+
+  const wallCanvas = document.createElement('canvas');
+  wallCanvas.width = GRID_W; wallCanvas.height = GRID_H;
+  const wallCtx = wallCanvas.getContext('2d');
+  let wallsDirty = true;
+
+  let vignette = null;
+
+  // ---- sizing (DPR aware) ----
+  let view = { w:0, h:0, dpr:1, scale:1 };
+  function resize(){
+    const r = canvas.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.max(1, Math.round(r.width * dpr));
+    canvas.height = Math.max(1, Math.round(r.height * dpr));
+    const s = Math.min(r.width / GRID_W, r.height / GRID_H);
+    view = { w:r.width, h:r.height, dpr, scale:s };
+    buildVignette();
+  }
+  function buildVignette(){
+    vignette = document.createElement('canvas');
+    vignette.width = canvas.width; vignette.height = canvas.height;
+    const vc = vignette.getContext('2d');
+    const g = vc.createRadialGradient(
+      canvas.width/2, canvas.height/2, Math.min(canvas.width, canvas.height)*0.35,
+      canvas.width/2, canvas.height/2, Math.max(canvas.width, canvas.height)*0.75);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, 'rgba(0,0,0,0.55)');
+    vc.fillStyle = g;
+    vc.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  window.addEventListener('resize', resize);
+
+  // world scale incl. camera zoom
+  function worldScale(){ return view.scale * cam.zoom; }
+
+  // ---- pheromone rendering: additive glow per colony, or heatmap ----
+  const invMax = 1 / MAX_PHER;
+  function renderPheromones(){
+    const d = pherImg.data, n = sim.n, C = sim.numColonies;
+    if (heatOn){
+      // V3 heat view: foraging intensity only, colony colors hidden
+      for (let i = 0; i < n; i++){
+        let v = 0;
+        for (let c = 0; c < C; c++) v += sim.foodPher[c][i];
+        const t = Math.min(1, v * invMax * 0.8);
+        const o = i * 4;
+        if (t > 0.004){
+          const k = Math.min(1, t * 2.2);
+          d[o]   = 255 * Math.min(1, k);
+          d[o+1] = 255 * Math.min(1, Math.max(0, k - 0.7));
+          d[o+2] = 255 * Math.min(1, Math.max(0, k - 1.6));
+          d[o+3] = 255;
+        } else { d[o] = d[o+1] = d[o+2] = d[o+3] = 0; }
+      }
+    } else {
+      for (let i = 0; i < n; i++){
+        let r = 0, g = 0, b = 0;
+        for (let c = 0; c < C; c++){
+          const col = COLONY_DEFS[c].color;
+          // food trails full strength, home trails softer — foraging pops
+          const inten = Math.min(1, (sim.foodPher[c][i] + sim.homePher[c][i] * 0.45) * invMax);
+          if (inten > 0.004){
+            r += col[0] * inten; g += col[1] * inten; b += col[2] * inten;
+          }
+        }
+        const o = i * 4;
+        d[o]   = r > 255 ? 255 : r;
+        d[o+1] = g > 255 ? 255 : g;
+        d[o+2] = b > 255 ? 255 : b;
+        d[o+3] = 255;
+      }
+    }
+    pherCtx.putImageData(pherImg, 0, 0);
+  }
+
+  function renderWalls(){
+    wallCtx.clearRect(0, 0, GRID_W, GRID_H);
+    wallCtx.fillStyle = '#232b3a';
+    const w = sim.wall;
+    for (let y = 0; y < GRID_H; y++)
+      for (let x = 0; x < GRID_W; x++)
+        if (w[y * GRID_W + x]) wallCtx.fillRect(x, y, 1, 1);
+    wallsDirty = false;
+  }
+
+  function renderFood(t){
+    ctx.fillStyle = '#a4ff5e';
+    const f = sim.food, W = sim.W;
+    const tw = 0.75 + 0.25 * Math.sin(t * 0.004);
+    for (let y = 0; y < GRID_H; y++){
+      for (let x = 0; x < GRID_W; x++){
+        const v = f[y * W + x];
+        if (v > 0.05){
+          const s = 1 + Math.min(1.6, v * 0.45);
+          ctx.globalAlpha = Math.min(1, 0.35 + v * 0.25) * tw;
+          ctx.fillRect(x - s/2, y - s/2, s, s);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // V4: mounds as baked earth sprites + quiet live details (flag, queen glow, label)
+  function renderColonies(t){
+    for (let c = 0; c < sim.numColonies; c++){
+      const nst = sim.nests[c], col = COLONY_DEFS[c].color;
+      const alive = sim.queens[c].alive;
+      const sp = moundSprites[c];
+      const half = sp.half;
+      ctx.drawImage(sp.cv, nst.x - half, nst.y - half, half * 2, half * 2);
+
+      const ex = nst.x, ey = nst.y - MOUND_R * 0.30;
+
+      if (!alive){
+        // dead colony: the earth goes cold
+        ctx.fillStyle = 'rgba(6,8,12,0.55)';
+        ctx.beginPath(); ctx.arc(nst.x, nst.y, MOUND_R + 1.5, 0, Math.PI * 2); ctx.fill();
+      } else {
+        // queen: a small ember deep in the entrance — warmth, not a searchlight
+        const qp = 0.38 + 0.10 * Math.sin(t * 0.0022 + c * 2.1);
+        const qg = ctx.createRadialGradient(ex, ey, 0.2, ex, ey, 1.7);
+        qg.addColorStop(0, css(col, qp));
+        qg.addColorStop(0.6, css(col, qp * 0.35));
+        qg.addColorStop(1, css(col, 0));
+        ctx.fillStyle = qg;
+        ctx.beginPath(); ctx.arc(ex, ey, 1.7, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // pennant: the colony's one quiet mark
+      const bx = nst.x + MOUND_R * 0.58, by = nst.y - MOUND_R * 0.34;
+      ctx.strokeStyle = alive ? '#6a563e' : '#4a4d55';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx, by - 8.5); ctx.stroke();
+      ctx.fillStyle = alive ? css(col, 0.92) : 'rgba(120,126,138,0.85)';
+      ctx.beginPath();
+      ctx.moveTo(bx, by - 8.5);
+      ctx.lineTo(bx + 4.6, by - 7.3);
+      ctx.lineTo(bx, by - 6.1);
+      ctx.closePath(); ctx.fill();
+
+      // label: small, quiet — name · population
+      ctx.font = '500 4.6px ' + FONT;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,0.85)';
+      ctx.shadowBlur = 3;
+      const name = COLONY_DEFS[c].name;
+      const rest = '  ·  ' + (alive ? sim.pop[c] : 'dead');
+      const nameW = ctx.measureText(name).width;
+      const restW = ctx.measureText(rest).width;
+      const sx = nst.x - (nameW + restW) / 2;
+      const ly = nst.y - MOUND_R - 6.5;
+      ctx.fillStyle = alive ? css(col, 0.8) : '#6a7280';
+      ctx.fillText(name, sx, ly);
+      ctx.fillStyle = '#7d8598';
+      ctx.fillText(rest, sx + nameW, ly);
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  function renderAnts(){
+    const ants = sim.ants;
+    // batch by colony + caste for fewer fillStyle switches
+    for (let c = 0; c < sim.numColonies; c++){
+      const col = COLONY_DEFS[c].color;
+      const cs = 'rgb(' + col[0] + ',' + col[1] + ',' + col[2] + ')';
+      ctx.fillStyle = cs;
+      // scouts: small and dim
+      ctx.globalAlpha = 0.65;
+      for (let k = 0; k < ants.length; k++){
+        const a = ants[k];
+        if (a.colony !== c || a.caste !== 'scout' || a.state !== 0) continue;
+        ctx.fillRect(a.x - 0.6, a.y - 0.6, 1.2, 1.2);
+      }
+      // workers
+      ctx.globalAlpha = 1;
+      for (let k = 0; k < ants.length; k++){
+        const a = ants[k];
+        if (a.colony !== c || a.caste !== 'worker' || a.state !== 0) continue;
+        ctx.fillRect(a.x - 0.8, a.y - 0.8, 1.6, 1.6);
+      }
+      // soldiers: bigger, always drawn (they don't forage)
+      for (let k = 0; k < ants.length; k++){
+        const a = ants[k];
+        if (a.colony !== c || a.caste !== 'soldier') continue;
+        ctx.fillRect(a.x - 1.2, a.y - 1.2, 2.4, 2.4);
+      }
+      // carriers: brighter body + white-hot core
+      for (let k = 0; k < ants.length; k++){
+        const a = ants[k];
+        if (a.colony !== c || a.state !== 1) continue;
+        ctx.fillRect(a.x - 1, a.y - 1, 2, 2);
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ffffff';
+    for (let k = 0; k < ants.length; k++){
+      const a = ants[k];
+      if (a.state !== 1) continue;
+      ctx.fillRect(a.x - 0.5, a.y - 0.5, 1, 1);
+    }
+    // followed ant gets a highlight ring
+    if (followed && !followed.dead){
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 0.9;
+      ctx.globalAlpha = 0.55;
+      ctx.beginPath(); ctx.arc(followed.x, followed.y, 3.4, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // V3: fading motion ribbons behind food carriers (+ the followed ant)
+  function renderTrails(){
+    const ants = sim.ants, K = TUNE.trailLen;
+    for (let j = 0; j < K; j++){
+      const alpha = ((j + 1) / K) * 0.26;
+      for (let c = 0; c < sim.numColonies; c++){
+        const col = COLONY_DEFS[c].color;
+        ctx.fillStyle = 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + alpha.toFixed(3) + ')';
+        const sz = 0.8 + (j / K) * 0.9;
+        for (let k = 0; k < ants.length; k++){
+          const a = ants[k];
+          if (a.colony !== c) continue;
+          if (a.state !== 1 && a !== followed) continue;
+          const tr = a.trail;
+          if (!tr || tr.length < (j + 1) * 2) continue;
+          const o = tr.length - (j + 1) * 2;
+          ctx.fillRect(tr[o] - sz / 2, tr[o + 1] - sz / 2, sz, sz);
+        }
+      }
+    }
+  }
+
+
+  // V3: minimap with viewport frame
+  let mmTick = 0;
+  function renderMinimap(){
+    if ((mmTick++ % 3) !== 0) return;
+    mmc.fillStyle = '#04060a';
+    mmc.fillRect(0, 0, GRID_W, GRID_H);
+    const f = sim.food;
+    mmc.fillStyle = 'rgba(164,255,94,0.75)';
+    for (let y = 0; y < GRID_H; y++)
+      for (let x = 0; x < GRID_W; x++)
+        if (f[y * GRID_W + x] > 0.5) mmc.fillRect(x, y, 1, 1);
+    const ants = sim.ants;
+    for (let c = 0; c < sim.numColonies; c++){
+      const col = COLONY_DEFS[c].color;
+      mmc.fillStyle = 'rgb(' + col[0] + ',' + col[1] + ',' + col[2] + ')';
+      for (let k = 0; k < ants.length; k++){
+        const a = ants[k];
+        if (a.colony !== c) continue;
+        mmc.fillRect(a.x, a.y, 1.4, 1.4);
+      }
+      const nst = sim.nests[c];
+      mmc.strokeStyle = 'rgb(' + col[0] + ',' + col[1] + ',' + col[2] + ')';
+      mmc.lineWidth = 1;
+      mmc.beginPath(); mmc.arc(nst.x, nst.y, nst.r * 2, 0, Math.PI * 2); mmc.stroke();
+    }
+    if (followed && !followed.dead){
+      mmc.fillStyle = '#ffffff';
+      mmc.fillRect(followed.x - 1, followed.y - 1, 2.4, 2.4);
+    }
+    // viewport frame
+    const s = worldScale();
+    const hw = (view.w / 2) / s, hh = (view.h / 2) / s;
+    mmc.strokeStyle = 'rgba(255,255,255,0.8)';
+    mmc.lineWidth = 1;
+    mmc.strokeRect(cam.x - hw, cam.y - hh, hw * 2, hh * 2);
+  }
+
+  function renderFrame(t){
+    renderPheromones();
+    if (wallsDirty) renderWalls();
+
+    const s = worldScale();
+    ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+    ctx.fillStyle = '#04060a';
+    ctx.fillRect(0, 0, view.w, view.h);
+    // camera: center (cam.x, cam.y) in the middle of the canvas
+    ctx.translate(view.w / 2, view.h / 2);
+    ctx.scale(s, s);
+    ctx.translate(-cam.x, -cam.y);
+
+    // soft additive glow of pheromone field
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.globalAlpha = 0.9;
+    ctx.drawImage(pherCanvas, 0, 0, GRID_W, GRID_H);
+    ctx.globalAlpha = 1;
+
+    // walls (crisp, on top of glow)
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(wallCanvas, 0, 0, GRID_W, GRID_H);
+
+    // V4: baked disturbed-earth stipple under everything living
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(groundCanvas, 0, 0, GRID_W, GRID_H);
+    ctx.imageSmoothingEnabled = false;
+
+    // V5: seasonal tint — one translucent wash over the ground, under the ants
+    const tint = SEASON_TINT[sim.season()];
+    if (tint[3] > 0){
+      ctx.fillStyle = 'rgba(' + tint[0] + ',' + tint[1] + ',' + tint[2] + ',' + tint[3] + ')';
+      ctx.fillRect(0, 0, GRID_W, GRID_H);
+    }
+
+    renderFood(t);
+    renderColonies(t);
+    if (trailsOn) renderTrails();
+    renderAnts();
+
+    // vignette in screen space
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (vignette) ctx.drawImage(vignette, 0, 0);
+
+    // V5: rain streaks — screen space, cheap, capped
+    if (sim.rainTicks > 0){
+      for (let i = 0; i < 5 && rainDrops.length < 140; i++){
+        rainDrops.push({ x: Math.random() * canvas.width, y: -12,
+                         v: 9 + Math.random() * 6, len: 7 + Math.random() * 9 });
+      }
+    }
+    if (rainDrops.length){
+      ctx.strokeStyle = 'rgba(170,200,255,0.32)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = rainDrops.length - 1; i >= 0; i--){
+        const d = rainDrops[i];
+        d.y += d.v;
+        if (d.y - d.len > canvas.height){ rainDrops.splice(i, 1); continue; }
+        ctx.moveTo(d.x, d.y - d.len); ctx.lineTo(d.x, d.y);
+      }
+      ctx.stroke();
+    }
+
+    renderMinimap();
+  }
+
+  // ---- tick formatter for the inspector's age readout ----
+  function fmtTick(tick){
+    const s = Math.floor(tick / 60);
+    const m = Math.floor(s / 60);
+    return (m < 10 ? '0' + m : '' + m) + ':' + (s % 60 < 10 ? '0' + (s % 60) : '' + (s % 60));
+  }
+
+  // ---- V3: follow camera ----
+  function updateCamera(){
+    if (followed && !followed.dead){
+      cam.tx = followed.x; cam.ty = followed.y; cam.tzoom = 1.8;
+    } else {
+      if (followed && followed.dead) releaseFollow();
+      cam.tx = GRID_W / 2; cam.ty = GRID_H / 2; cam.tzoom = 1;
+    }
+    const k = 0.12;
+    cam.x += (cam.tx - cam.x) * k;
+    cam.y += (cam.ty - cam.y) * k;
+    cam.zoom += (cam.tzoom - cam.zoom) * k;
+  }
+
+  const inspEl = document.getElementById('inspector');
+  const insDot = document.getElementById('ins-dot');
+  const insName = document.getElementById('ins-name');
+  const insCaste = document.getElementById('ins-caste');
+  const insStatus = document.getElementById('ins-status');
+  const insMeta = document.getElementById('ins-meta');
+
+  function antStatus(a){
+    if (a.caste === 'soldier'){
+      if (a.raid) return 'Raiding the ' + COLONY_DEFS[a.raid.target].name + ' nest';
+      return a.cool > 0 ? 'In combat — recovering' : 'Patrolling for rivals';
+    }
+    return a.state === 1 ? 'Carrying food home' : 'Searching for food';
+  }
+  function refreshInspector(){
+    if (!followed || followed.dead){ inspEl.hidden = true; return; }
+    inspEl.hidden = false;
+    const def = COLONY_DEFS[followed.colony];
+    const cs = 'rgb(' + def.color[0] + ',' + def.color[1] + ',' + def.color[2] + ')';
+    insDot.style.background = cs;
+    insDot.style.color = cs;
+    insName.textContent = def.name + ' ant';
+    insCaste.textContent = followed.caste;
+    insStatus.textContent = antStatus(followed);
+    insMeta.textContent = 'age ' + fmtTick(sim.tick - (followed.born || 0)) +
+      ' · hauls ' + (followed.delivered || 0);
+  }
+  function releaseFollow(){
+    followed = null;
+    inspEl.hidden = true;
+  }
+
+  function frame(t){
+    if (running){
+      const t0 = performance.now();
+      tickAcc += BASE_TICKS_PER_FRAME * speedMul;
+      let n = 0;
+      while (tickAcc >= 1 && n < 40){ sim.step(); tickAcc -= 1; n++; }
+      if (n === 40) tickAcc = 0;   // shed load rather than spiral
+      const dt = performance.now() - t0;
+      // adaptive: ease off diffusion if the device is struggling
+      if (dt > 26 && diffuseEvery < 6) diffuseEvery += 1;
+      else if (dt < 12 && diffuseEvery > TUNE.diffuseEvery) diffuseEvery -= 1;
+      TUNE.diffuseEvery = diffuseEvery;
+    }
+    updateCamera();
+
+    renderFrame(t);
+    requestAnimationFrame(frame);
+  }
+
+  // ---- input: tap = tool action, drag paints (except inspect) ----
+  function toGrid(e){
+    const r = canvas.getBoundingClientRect();
+    const s = worldScale();
+    return {
+      x: (e.clientX - r.left - view.w / 2) / s + cam.x,
+      y: (e.clientY - r.top - view.h / 2) / s + cam.y,
+    };
+  }
+  let painting = false;
+  function applyTool(gx, gy){
+    if (gx < 0 || gy < 0 || gx >= GRID_W || gy >= GRID_H) return;
+    if (tool === 'food'){
+      sim.dropFoodCluster(gx, gy, brushSize * 0.9, 3);
+    } else if (tool === 'wall'){
+      sim.paintWall(gx, gy, brushSize * 0.8, 1);
+      wallsDirty = true;
+    } else if (tool === 'erase'){
+      sim.paintWall(gx, gy, brushSize * 0.9, 0);
+      wallsDirty = true;
+    }
+  }
+  function inspectAt(gx, gy){
+    const a = sim.antAt(gx, gy, 7);
+    if (a){
+      followed = a;
+      refreshInspector();
+    } else {
+      releaseFollow();
+    }
+  }
+  canvas.addEventListener('pointerdown', e => {
+    const p = toGrid(e);
+    if (tool === 'inspect'){
+      inspectAt(p.x, p.y);
+    } else {
+      painting = true;
+      canvas.setPointerCapture(e.pointerId);
+      applyTool(p.x, p.y);
+    }
+    if (hint) hint.style.opacity = '0';
+    e.preventDefault();
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!painting) return;
+    const p = toGrid(e);
+    applyTool(p.x, p.y);
+    e.preventDefault();
+  });
+  function endPaint(e){ painting = false; }
+  canvas.addEventListener('pointerup', endPaint);
+  canvas.addEventListener('pointercancel', endPaint);
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') releaseFollow();
+  });
+
+  // ---- UI wiring ----
+  const btnPlay = document.getElementById('btn-play');
+  const icoPlay = document.getElementById('ico-play');
+  const icoPause = document.getElementById('ico-pause');
+  function setRunning(v){
+    running = v;
+    icoPlay.style.display = v ? 'none' : 'block';
+    icoPause.style.display = v ? 'block' : 'none';
+  }
+  btnPlay.addEventListener('click', () => setRunning(!running));
+
+  document.getElementById('seg-speed').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    for (const x of e.currentTarget.children) x.classList.remove('on');
+    b.classList.add('on');
+    speedMul = parseFloat(b.dataset.v);
+    tickAcc = 0;
+  });
+
+  document.getElementById('seg-tool').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    for (const x of e.currentTarget.children) x.classList.remove('on');
+    b.classList.add('on');
+    tool = b.dataset.v;
+    if (tool !== 'inspect') releaseFollow();
+    if (hint){
+      hint.style.opacity = '1';
+      hint.innerHTML = tool === 'food' ? 'tap&nbsp;&middot;&nbsp;drop food&nbsp;&nbsp;&nbsp;drag&nbsp;&middot;&nbsp;scatter'
+        : tool === 'wall' ? 'drag&nbsp;&middot;&nbsp;build walls'
+        : tool === 'erase' ? 'drag&nbsp;&middot;&nbsp;erase walls'
+        : 'tap an ant&nbsp;&middot;&nbsp;follow it';
+      clearTimeout(hint._t);
+      hint._t = setTimeout(() => { hint.style.opacity = '0'; }, 2200);
+    }
+  });
+
+  document.getElementById('rng-size').addEventListener('input', e => {
+    brushSize = parseInt(e.target.value, 10);
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    sim = new FormicaSim();
+    sim.regrow = regrowOn;
+    wallsDirty = true;
+    releaseFollow();
+    cam.x = cam.tx = GRID_W / 2; cam.y = cam.ty = GRID_H / 2;
+    cam.zoom = cam.tzoom = 1;
+  });
+
+  document.getElementById('btn-scatter').addEventListener('click', () => {
+    sim.seedFood(4);
+  });
+
+  document.getElementById('btn-release').addEventListener('click', releaseFollow);
+
+  const btnTrails = document.getElementById('btn-trails');
+  btnTrails.addEventListener('click', () => {
+    trailsOn = !trailsOn;
+    btnTrails.classList.toggle('on', trailsOn);
+  });
+  const btnHeat = document.getElementById('btn-heat');
+  btnHeat.addEventListener('click', () => {
+    heatOn = !heatOn;
+    btnHeat.classList.toggle('on', heatOn);
+  });
+
+  let regrowOn = true;
+  document.getElementById('seg-regrow').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    for (const x of e.currentTarget.children) x.classList.remove('on');
+    b.classList.add('on');
+    regrowOn = b.dataset.v === '1';
+    sim.regrow = regrowOn;
+  });
+
+  // ---- stats ----
+  const statsEl = document.getElementById('stats');
+  const seasonEmojiEl = document.getElementById('season-emoji');
+  const seasonNameEl = document.getElementById('season-name');
+  const seasonFillEl = document.getElementById('season-fill');
+  const statRows = COLONY_DEFS.map((def, c) => {
+    const cs = 'rgb(' + def.color[0] + ',' + def.color[1] + ',' + def.color[2] + ')';
+    const el = document.createElement('div');
+    el.className = 'col';
+    el.innerHTML =
+      '<span class="dot" style="background:' + cs + ';color:' + cs + '"></span>' +
+      '<span class="meta"><span class="name">' + def.name + '</span>' +
+      '<span class="nums"><span class="js-ants"></span> ants &middot; <span class="js-food"></span> food &middot; <span class="js-kills"></span> kills &middot; &#x1f451;<span class="js-store"></span></span></span>' +
+      '<button title="Add 40 ants">+ ants</button>';
+    el.querySelector('button').addEventListener('click', () => sim.addAnts(c, 40));
+    statsEl.appendChild(el);
+    return {
+      ants: el.querySelector('.js-ants'),
+      food: el.querySelector('.js-food'),
+      kills: el.querySelector('.js-kills'),
+      store: el.querySelector('.js-store'),
+    };
+  });
+  setInterval(() => {
+    for (let c = 0; c < sim.numColonies; c++){
+      statRows[c].ants.textContent = sim.pop[c];
+      statRows[c].food.textContent = sim.scores[c];
+      statRows[c].kills.textContent = sim.kills[c];
+      statRows[c].store.textContent = sim.queens[c].alive ? Math.round(sim.queens[c].store) : 'dead';
+    }
+    // V5: season pill — name + progress through the season
+    const sn = sim.season();
+    seasonEmojiEl.textContent = SEASON_EMOJI[sn];
+    seasonNameEl.textContent = sn.charAt(0).toUpperCase() + sn.slice(1);
+    seasonFillEl.style.width = (100 * sim.seasonTick / TUNE.seasonLen).toFixed(1) + '%';
+    refreshInspector();
+  }, 300);
+
+  // ---- go ----
+  bakeGround();
+  bakeMounds();
+  resize();
+  setTimeout(resize, 60);   // settle after mobile chrome bars
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

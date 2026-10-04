@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const publicRoot = path.join(root, 'public');
 const contentRoot = path.join(root, 'src', 'content');
-const collections = ['now', 'art', 'pokemon'];
+const collections = ['now', 'art', 'pokemon', 'projects'];
 const missing = [];
 
 for (const collection of collections) {

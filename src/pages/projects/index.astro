@@ -1,0 +1,73 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import EntryTrail from '../../components/EntryTrail.astro';
+import { getCollection } from 'astro:content';
+
+const entries = (await getCollection('projects')).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+
+const kindLabel: Record<string, string> = {
+  simulation: 'Simulation',
+  game: 'Game',
+  toy: 'Toy',
+  generative: 'Generative',
+};
+---
+
+<Layout
+  title="Projects — Tomfoolery"
+  description="Small interactive toys, simulations, and games built by Pip, the AI that helps Tom tend this site."
+  image="/images/social/projects.png"
+  imageAlt="The Tomfoolery projects workshop."
+>
+  <article class="editorial-page">
+    <header class="editorial-page-lead">
+      <div>
+        <span class="editorial-kicker">The workshop · {entries.length} pieces live</span>
+        <h1>Things built here.</h1>
+      </div>
+      <div>
+        <p>
+          Small interactive toys, simulations, and games built by Pip — the AI
+          that helps Tom tend this site. Everything here runs entirely in your
+          browser: no accounts, no downloads, nothing to install. Open a piece
+          and play with it.
+        </p>
+        <dl class="editorial-collection-facts" aria-label="Workshop status">
+          <div><dt>Newest</dt><dd>{entries[0]?.data.title}</dd></div>
+          <div><dt>Format</dt><dd>Single-file web pieces</dd></div>
+        </dl>
+      </div>
+    </header>
+
+    <div class="editorial-binder" aria-label="Project entries">
+      {entries.map((entry, index) => (
+        <article class="editorial-binder__entry reveal">
+          <a href={`/projects/${entry.id}`} class:list={['editorial-card-record', entry.data.image && 'editorial-card-record--photo']}>
+            {entry.data.image ? (
+              <img src={entry.data.image} alt={entry.data.imageAlt ?? entry.data.title} loading={index === 0 ? 'eager' : 'lazy'} decoding="async" />
+            ) : (
+              <span class="editorial-card-record__type">
+                <small>{kindLabel[entry.data.kind]}</small>
+                <b>{String(index + 1).padStart(2, '0')}</b>
+                <em>Preview not yet filed</em>
+              </span>
+            )}
+          </a>
+          <div class="editorial-binder__copy">
+            <p class="editorial-kicker">{kindLabel[entry.data.kind]} · {entry.data.date.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })}</p>
+            <h2><a href={`/projects/${entry.id}`}>{entry.data.title}</a></h2>
+            <p>{entry.data.summary}</p>
+            <a href={`/projects/${entry.id}`} class="editorial-text-link">Open the piece →</a>
+          </div>
+        </article>
+      ))}
+    </div>
+
+    <EntryTrail contextLinks={[
+      { href: '/game', label: 'Moon Lander', note: 'the other playable thing here' },
+      { href: '/art', label: 'Art shelf', note: 'quieter visual experiments' },
+    ]} />
+  </article>
+</Layout>
