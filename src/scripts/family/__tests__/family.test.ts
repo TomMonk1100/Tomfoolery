@@ -53,7 +53,11 @@ describe('family identity and evidence integrity', () => {
     expect(namedParents.map(r => r.from)).toEqual(['p022', 'p023']);
     expect(namedParents.every(r => r.sources.includes('palmiero-certificate'))).toBe(true);
     expect(relationships.filter(r => r.kind === 'parent' && ['p022', 'p023'].includes(r.to))).toEqual([]);
-    expect(relationships.filter(r => r.kind === 'parent' && r.to === 'p002').every(r => r.confidence === 'provisional')).toBe(true);
+    const emmaParents = relationships.filter(r => r.kind === 'parent' && r.to === 'p002');
+    expect(emmaParents.map(r => r.from)).toEqual(['p008', 'p009']);
+    expect(emmaParents.every(r => r.confidence === 'probable' && r.sources.includes('emma-certificate'))).toBe(true);
+    expect(relationships.find(r => r.from === 'p002' && r.to === 'p007')).toMatchObject({confidence: 'supported', sources: ['emma-census-1940']});
+    expect(relationships.find(r => r.from === 'p001' && r.to === 'p007')!.confidence).toBe('provisional');
     expect(people.find(p => p.id === 'p001')!.facts.find(f => f.label === 'Date hypothesis')!.confidence).toBe('provisional');
     expect(people.find(p => p.id === 'p001')!.facts.find(f => f.label === 'Birthplace lead')!.confidence).toBe('provisional');
     expect(sources.find(s => s.id === 'palmiero-certificate')).toMatchObject({kind: 'original record', inspected: true});

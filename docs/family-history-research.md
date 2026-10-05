@@ -45,6 +45,38 @@ The indexed **standardized death place** is “Saint Joseph Cemetery, Cincinnati
 
 The certificate’s number, exact birth/death dates, and wife Emma strongly match the existing Palmiero identity. It does not use the Paul Muncie name, prove a legal name change, or identify every child. Added stable IDs **p022** (Concezio) and **p023** (Carlina); their parent links are supported as names explicitly reported on this original death record. No earlier generations were added. L’Aquila remains a separate provisional birthplace lead.
 
+## Emma’s original death certificate and 1940 household
+
+A signed-in FamilySearch historical-record search for **Emma Muncie, birth 1876, Italy** returned eight results. Two were strong candidates, and their original images were inspected:
+
+- [Emma death index X6FG-3FN](https://www.familysearch.org/ark:/61903/1:1:X6FG-3FN), [original certificate](https://www.familysearch.org/ark:/61903/3:1:S3HT-6QZ7-SQP): Ohio certificate **47517**, 1945; viewer image **2259 of 3545**. [Saved viewer screenshot](./emma-death-certificate.jpg).
+- [Emma census index KWXD-89K](https://www.familysearch.org/ark:/61903/1:1:KWXD-89K), [original 1940 census](https://www.familysearch.org/ark:/61903/3:1:3QSQ-G9M1-943T): Sharon Township, Franklin County, Ohio, **ED 25-57, sheet 16A, household 294**, Emma on line 3; NARA T627; viewer image **460 of 656**. [Saved viewer screenshot](./emma-1940-census.jpg).
+
+| Certificate field | Reading | Limit |
+| --- | --- | --- |
+| Name / status | Emma Muncie; widowed | Does not give her Italian given name or document a legal name change. |
+| Husband | Palmerio | Supports the working couple alongside Palmiero’s certificate naming Emma Mangini. |
+| Birth | 5 August 1875; Castel di Sangro, Italy | Informant-reported; Italian birth act needed. Index renders the place as “Castelon Sangro Pro. Italy.” |
+| Death | 23 August 1945; Sharon Township, Franklin County, Ohio | Original county/township fields; do not conflate residence with death location. |
+| Father | Nicola Richiuto, born Italy | Name reported on the original; matching this father to the 1856 groom remains probable. |
+| Mother | Dominica Mastrocco, born Italy | Name reported on the original; Domenica Antonia Mastrorocco remains the probable fuller-name match. |
+| Informant | Fred Muncie | Certificate does not explicitly state his relationship; the census does. |
+| Time in U.S.A. | 50 years | Suggests approximately 1895, but a rounded duration is not a passenger-list arrival date or marriage date. |
+
+The age field reads **70 years, 0 months, 18 days**, consistent with 5 August 1875 / 23 August 1945. The index’s “70y8m18d” is inconsistent and was not adopted. Medical fields were not added to the public tree.
+
+The 1940 original lists **Emma, widowed head, age 64, born Italy; Fred, son, 25, born Ohio; Mae, daughter-in-law, 19; Fred Richard, grandson, 1; Dora Jean, granddaughter, 0**. It reports the same house in 1935. This supports the Emma → Fred parent link, but does not identify Fred’s father or independently establish his expanded name Victor. Grandchildren were retained in the household citation rather than used to invent a modern path to Tom. Citizenship and occupational columns were not fully transcribed in this pass.
+
+Together, the two death certificates, parental surnames, locality and Fred household make this a strong working identity match for the existing Emma/Emida profile. The Nicola/Domenica links were promoted from provisional to **probable**, while the names reported as her parents are **supported** facts. Italian corroboration is still required to prove that the specifically identified 1856 couple are her parents.
+
+### Italian access and rejected shared-tree claims
+
+- Antenati locality search **Castel di Sangro**, type **Nati**, sorted newest first, returned **113 registers**, newest year **1865**. It includes Rocca Cinquemiglia as well as Castel di Sangro. No 1875 book was available in those results; this is an access limitation, not evidence that the birth record does not exist.
+- Antenati name search **Concezio Mangini**, without locality/year restriction, returned no indexed result. The portal explicitly warns that only part of the registers are name-indexed. This does not establish absence.
+- [Palmiero shared-tree profile LKSJ-PXJ](https://www.familysearch.org/en/tree/person/LKSJ-PXJ) has **zero attached sources**, no parents, and an unsourced birth standardization in **Castel, Gressoney-Saint-Jean, Aosta, Valle d’Aosta**. This conflicts with the earlier Abruzzo lead and was not adopted. Its spouse quick view, Emidia Ricchuita Mangini LKSJ-59W, also showed zero sources and only 1875–1945 / Italy / Ohio. These are contributor claims, not original evidence.
+- The 1940 census is attached in FamilySearch to an **Emma Ritz** profile. That attachment and the suggested Ritz marriage are not identity evidence; Ritz was not added as an alias. No shared-tree, record-index or source-link edits were made.
+- Revisited the 1856 marriage register’s final images 44–45; they contain an act and closing page, not a surname index. The relevant Nicola/Domenica act remains untranscribed.
+
 ## Rechecked earlier sources
 
 [Nora’s compiled genealogy](https://fieldgenealogy.com/g0/p424.htm) explicitly pairs Palmiero Mangini / Paul Muncie and Emida Ricchuitta / Emma Richards, and identifies Nora as their daughter. It supports the working identity bridge, not a legal name-change claim. Underlying records remain uninspected.
@@ -58,7 +90,7 @@ New locators extracted from its citations:
 
 The reproduced obituary names brothers Victor, Albert, and Fred. This supports a sibling group, but does not prove both parents for each brother or the exact full-name/date matches from supplied summaries. Maria / Marianana Mary remains a candidate child and tentative identity match.
 
-[Italy Heritage’s Castel di Sangro transcription](https://www.italyheritage.com/genealogy/records/abruzzo/province-laquila/casteldisangro/marriages/r.htm) explicitly lists the **12 July 1856** Nicola Ricchiuto / Domenica Antonia Mastrorocco marriage with parents Patrizio Ricchiuto / Reparata Liberatore and Samuele Mastrorocco / Alberta Di Battista; Domenica is described as from Roccaraso. This does not connect Emiecia to them.
+[Italy Heritage’s Castel di Sangro transcription](https://www.italyheritage.com/genealogy/records/abruzzo/province-laquila/casteldisangro/marriages/r.htm) explicitly lists the **12 July 1856** Nicola Ricchiuto / Domenica Antonia Mastrorocco marriage with parents Patrizio Ricchiuto / Reparata Liberatore and Samuele Mastrorocco / Alberta Di Battista; Domenica is described as from Roccaraso. This alone does not connect Emiecia to them; Emma’s newly inspected death certificate supplies the matching parent names, making the specific couple a probable match.
 
 The same index lists Giuseppe Ricchiuto’s **21 April 1814** marriage with parents Lionardo / Rosa Santostefano, and Anna Grazia Ricchiuto’s **7 February 1813** marriage with the same parent names. Keep that family separate from the supplied Lionardo / Anna Grazia Sconciafurno reconstruction until original acts identify the people.
 
@@ -70,7 +102,7 @@ The [original 1856 marriage register](https://antenati.cultura.gov.it/ark:/12657
 2. Retrieve census households for 1900, 1910, and 1920 under Mangini, Muncie, Muncy, and Muncey; search Palmier/Palmiero/Palmiro/Palmerio/Paul and Emiecia/Emida/Emidia/Emma. Compare the complete household, rather than identifying a person from a name alone. Record enumeration district, sheet, dwelling/family numbers, original image link, and immigration/citizenship columns. Consider absence from 1900 if arrival was later; do not assume that from Mary’s unverified birth.
 3. Use census citizenship status and arrival year to target [Ohio county naturalization records](https://www.familysearch.org/en/search/collection/1987615) and immigration manifests. No matching record retrieved yet.
 4. Seek Palmiero and Emiecia’s marriage around **1895** in both Italy and Franklin County. **30 June 1895 is an inference**, not a verified date. Do not pick a jurisdiction prematurely. The [Franklin County Probate Court certified-records page](https://probate.franklincountyohio.gov/Departments/Certified-Records) describes marriage holdings from 1803; direct retrieval returned 403, but its official search excerpt was available. This is an access lead only.
-5. Seek Emiecia’s birth around 1876, Maria’s reported 2 February 1897 birth, and Nicola / Domenica’s 1856 original act. Palmiero’s reported 3 April 1851 birth requires the exact comune; L’Aquila may mean city or province.
+5. Seek Emma/Emidia’s **5 August 1875 Castel di Sangro birth**, now reported by her original death certificate, through later civil registers or the municipality. Antenati’s available Nati search results end in 1865. Also seek Maria’s reported 2 February 1897 birth and Nicola / Domenica’s 1856 original act. Palmiero’s reported 3 April 1851 birth requires the exact comune; L’Aquila may mean city or province, and Emma’s birthplace does not prove his.
 6. [Columbus Metropolitan Library’s obituary request page](https://www.columbuslibrary.org/request-obituary/) describes up to six free obituary requests per month. Request Palmier / Paul near 30 July 1927 and Nora’s disputed obituary if needed. No request was sent and no contact information was submitted.
 
 ## Tree framework and maintenance
@@ -82,7 +114,7 @@ The new `/family` page uses the existing Layout, typography, and paper palette. 
 - `FamilyBranch.astro` renders native expandable disclosures and selectable links; the TypeScript enhancement adds alias search, one selected profile, deep links, and opt-in older branches. The same people are reused in relationships rather than duplicated.
 - Supported / probable / provisional connections use solid / dashed / dotted borders and text labels. Native summaries and links support keyboard input; on phones selection focuses and scrolls to the profile.
 - With JavaScript unavailable, branches remain expandable, older ancestry remains inside collapsed disclosures, and all profiles/source references remain readable.
-- Emiecia → Nicola/Domenica is provisional because the source of the earlier reconstruction is missing. The 1856 couple/parent facts are supported by transcription, independently of whether this is Emiecia’s family.
+- Emma’s parent names are supported by the inspected 1945 certificate; her connection to the specifically identified 1856 Nicola/Domenica couple is probable pending her Italian birth act. Their own parent facts remain supported by transcription. Older branches remain provisional and hidden by default.
 - Francesca Ricchiuto, Aurelio Rocci, and Salvatore Rocci are retained only as notes/leads in the supplied summaries. The proposed first-cousin marriage was not asserted as a fact or inserted as an established branch.
 
 Before promoting any claim, add a complete record citation and explain whether the original was inspected. Keep the older people hidden by default. Do not fabricate the modern generations or Palmiero’s parents.
