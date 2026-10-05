@@ -1,0 +1,82 @@
+---
+import Layout from '../layouts/Layout.astro';
+import FamilyBranch from '../components/FamilyBranch.astro';
+import { familyBranch, people, relationships, personById, sourceById, sources } from '../data/family';
+import '../styles/family.css';
+---
+<Layout title="Family history — Tomfoolery" description="An evolving Muncie and Mangini family tree, with sources, alternate names, and room for unanswered questions." noindex>
+  <article class="editorial-page family-page" data-family-root>
+    <header class="editorial-page-lead">
+      <div><span class="editorial-kicker">The family notebook · Muncie / Mangini</span><h1>Names change.<br />Stories connect.</h1></div>
+      <p>A growing family tree, from Ohio to Italy. Follow a branch, open a person’s notes, and see where the evidence ends.</p>
+    </header>
+    <div class="family-intro">
+      <p>Start with Palmiero Mangini, known in family material as Paul Muncie, and Emiecia / Emida Ricchiuto, also called Emma Richards. The generations connecting this group to Tom have not been documented here.</p>
+      <p class="family-update"><span class="editorial-kicker">Latest record lead · 5 October 2026</span>The official Ohio index lists <strong>Palmier Mangini</strong>, died <strong>30 July 1927, Franklin County</strong>: volume 5401, certificate 40647. The original certificate still needs inspection. <a href="#source-ohio-index">See the search citation →</a></p>
+    </div>
+    <section class="family-key" aria-label="How to read the tree">
+      <span data-confidence="supported"><b>Supported</b> · explicitly stated in an inspected source</span>
+      <span data-confidence="probable"><b>Probable</b> · a working identity or relationship match</span>
+      <span data-confidence="provisional"><b>Provisional</b> · an unverified lead or inference</span>
+      <p>Confidence belongs to each fact and connection. “Supported” may mean a transcription or compiled genealogy, not an original record. Open a profile for the evidence.</p>
+    </section>
+    <div class="family-controls" data-family-controls hidden>
+      <div><label for="family-search">Find a person or alternate name</label><input id="family-search" type="search" placeholder="Try Paul, Emma, Ricchuitta…" autocomplete="off" aria-controls="family-results" /></div>
+      <label class="family-toggle"><input type="checkbox" data-show-provisional /> Include older provisional branches</label>
+      <button type="button" data-family-reset>Reset view</button>
+      <div class="family-search-results"><p data-search-status role="status" aria-live="polite"></p><ul id="family-results"></ul></div>
+    </div>
+    <div class="family-workspace">
+      <section class="family-tree" aria-labelledby="tree-heading">
+        <div class="family-section-head"><h2 id="tree-heading">Follow the branches</h2><a href="#family-profiles">Person notes ↓</a></div>
+        <p class="family-caption">Open or close a branch with its heading. Select a name for dates, sources, and research notes.</p>
+        <FamilyBranch branch={familyBranch} />
+      </section>
+      <section id="family-profiles" class="family-profiles" aria-labelledby="profiles-heading">
+        <h2 id="profiles-heading">Person notes</h2>
+        <noscript><p>All profiles are available below. The branches work without JavaScript.</p></noscript>
+        {people.map(person => {
+          const relations = relationships.filter(r => r.from === person.id || r.to === person.id);
+          const citations = [...new Set([...person.facts.flatMap(f => f.sources), ...relations.flatMap(r => r.sources)])];
+          return <article id={`person-${person.id}`} class="family-profile" data-profile={person.id} data-older-profile={person.provisional || undefined}>
+            <span class="editorial-kicker">Research profile {person.provisional && '· provisional branch'}</span>
+            <h3 tabindex="-1">{person.name}</h3>
+            <p class="family-aliases">{person.aliases.length ? `Also recorded or searched as: ${person.aliases.join(' · ')}` : 'No alternate name recorded yet.'}</p>
+            <dl class="family-facts">{person.facts.map(fact => <div>
+              <dt>{fact.label} <span class="family-confidence" data-confidence={fact.confidence}>{fact.confidence}</span></dt>
+              <dd>{fact.value}{fact.note && <small>{fact.note}</small>}
+                <span class="family-fact-sources">{fact.sources.map(id => <a href={`#source-${id}`}>{sourceById[id].kind} ↗</a>)}</span>
+              </dd>
+            </div>)}</dl>
+            <h4>Research notes</h4><ul class="family-notes">{person.notes.map(note => <li>{note}</li>)}</ul>
+            {relations.length > 0 && <><h4>Connections</h4><ul class="family-profile-relations">{relations.map(r => {
+              const other = r.from === person.id ? r.to : r.from;
+              const label = r.kind === 'parent' ? (r.from === person.id ? 'Child' : 'Parent') : r.kind === 'spouse' ? 'Spouse / working couple' : 'Sibling';
+              return <li data-confidence={r.confidence}><span class="family-confidence">{r.confidence}</span> {label}: <a href={`#person-${other}`} data-person-link={other}>{personById[other].name}</a><small>{r.note}</small><span class="family-fact-sources">{r.sources.map(id => <a href={`#source-${id}`}>{sourceById[id].kind} ↗</a>)}</span></li>;
+            })}</ul></>}
+            <h4>Sources for this person</h4><ul class="family-notes">{citations.map(id => <li><a href={`#source-${id}`}>{sourceById[id].title}</a> <small>· {sourceById[id].kind}</small></li>)}</ul>
+            <a class="family-back" href="#tree-heading">Back to branches ↑</a>
+          </article>;
+        })}
+      </section>
+    </div>
+    <section class="family-research" aria-labelledby="research-heading">
+      <span class="editorial-kicker">Open questions</span><h2 id="research-heading">The next pages to turn.</h2>
+      <ol>
+        <li><strong>Inspect Palmier’s death certificate.</strong> Search Ohio Deaths under Palmier / Palmiero / Palmiro / Paul Mangini, using 1927 certificate 40647. Confirm the identity before entering parents or an exact birthplace. <a href="https://www.familysearch.org/en/search/collection/1307272">Open collection ↗</a></li>
+        <li><strong>Reconstruct the 1900, 1910, and 1920 households.</strong> Compare Muncie, Muncy, Muncey, and Mangini, with Emma / Emida and the candidate children. Record household members, immigration years, naturalization status, residence, and the image citation. No matching household has been inspected here.</li>
+        <li><strong>Follow both surnames through immigration and naturalization.</strong> Search Paul / Palmier / Palmiero / Palmiro / Palmerio and the spouse’s variants. A petition or passenger list may identify the Italian comune. <a href="https://www.familysearch.org/en/search/collection/1987615">Ohio naturalizations ↗</a></li>
+        <li><strong>Resolve the marriage and birthplaces.</strong> Search both Italy and Franklin County around 1895. June 30 is an inferred date only. Seek Emiecia’s birth around 1876, Maria’s reported 1897 birth, and Nicola / Domenica’s 1856 original marriage act. L’Aquila does not yet identify Palmiero’s town.</li>
+        <li><strong>Check Nora’s original obituary.</strong> The reproduced text points to the Columbus Dispatch, February 12, 1962, page 4A; the compiled citation instead says November 9, 1989. Preserve both until the newspaper is inspected.</li>
+      </ol>
+    </section>
+    <section class="family-sources" aria-labelledby="sources-heading">
+      <span class="editorial-kicker">Evidence ledger</span><h2 id="sources-heading">Sources & their limits</h2>
+      <p>Original records, official indexes, transcriptions, compiled genealogies, supplied information, and inferences are recorded separately. A collection or access guide is not evidence of a matching person.</p>
+      <ul>{sources.map(source => <li id={`source-${source.id}`}><span class="editorial-kicker">{source.kind}</span><h3>{source.title}</h3><p>{source.citation}</p>{source.url && <a href={source.url}>Visit source ↗</a>}</li>)}</ul>
+    </section>
+  </article>
+  <script>
+    import '../scripts/family-tree';
+  </script>
+</Layout>

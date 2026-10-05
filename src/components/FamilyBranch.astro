@@ -1,0 +1,26 @@
+---
+import { personById, relationshipById, type Branch } from '../data/family';
+interface Props { branch: Branch }
+const { branch } = Astro.props;
+---
+<details class="family-branch" open={branch.open} data-branch={branch.id} data-default-open={branch.open ? 'true' : 'false'} data-provisional-branch={branch.provisional || undefined}>
+  <summary>{branch.title}</summary>
+  <div class="family-branch__body">
+    {branch.note && <p class="family-caption">{branch.note}</p>}
+    {branch.people.length > 0 && <ul class="family-people">
+      {branch.people.map(id => <li><a href={`#person-${id}`} data-person-link={id} class="family-person">
+        <span>{personById[id].name}</span>
+        <small>{personById[id].dates}</small>
+        {personById[id].aliases[0] && <small>also {personById[id].aliases[0]}</small>}
+      </a></li>)}
+    </ul>}
+    {branch.relations?.length && <ul class="family-connections" aria-label="Connections and confidence">
+      {branch.relations.map(id => { const r = relationshipById[id]; return <li data-confidence={r.confidence}>
+        <span class="family-confidence">{r.confidence}</span>
+        <span>{personById[r.from].name} {r.kind === 'parent' ? '→' : r.kind === 'sibling' ? '↔' : '+'} {personById[r.to].name}</span>
+        <small>{r.kind === 'parent' ? 'parent / child' : r.kind} · {r.note}</small>
+      </li>; })}
+    </ul>}
+    {branch.children && <ul class="family-branches">{branch.children.map(child => <li><Astro.self branch={child} /></li>)}</ul>}
+  </div>
+</details>

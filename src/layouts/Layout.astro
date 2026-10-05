@@ -180,6 +180,7 @@ const currentMobileIndexItem = mobileIndexItems.find(({ href }) => isCurrent(hre
     <footer class="max-w-6xl mx-auto px-6 py-12 relative z-10">
       <nav aria-label="Footer" class="footer-nav flex flex-wrap gap-x-5 gap-y-2 text-xs font-mono border-t border-line pt-6">
         <a href="/" class="hover:text-ink transition-colors" aria-current={currentPath === '/' ? 'page' : undefined}>home</a>
+        <a href="/family" class="hover:text-ink transition-colors" aria-current={isCurrent('/family') ? 'page' : undefined}>family</a>
         {primaryNavItems.map((item) => (
           <a
             href={item.href}
