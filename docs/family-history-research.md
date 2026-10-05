@@ -43,7 +43,41 @@ On the same research date, the user completed FamilySearch sign-in. A collection
 
 The indexed **standardized death place** is “Saint Joseph Cemetery, Cincinnati, Hamilton, Ohio, United States,” while its **original-place field** is “Franklin, Franklin, Ohio.” The original certificate itself records Franklin County / Camp Chase. Do not move the death to Cincinnati or adopt a cemetery location from this conflicting standardization. No FamilySearch index or shared-tree edits were made.
 
-The certificate’s number, exact birth/death dates, and wife Emma strongly match the existing Palmiero identity. It does not use the Paul Muncie name, prove a legal name change, or identify every child. Added stable IDs **p022** (Concezio) and **p023** (Carlina); their parent links are supported as names explicitly reported on this original death record. No earlier generations were added. L’Aquila remains a separate provisional birthplace lead.
+The state certificate’s number, exact birth/death dates, and wife Emma strongly match the existing Palmiero identity. This state copy does not use the Paul Muncie name; the county copy found below does. Neither proves a legal name-change proceeding or identifies every child. Added stable IDs **p022** (Concezio) and **p023** (Carlina); their parent links are supported as names explicitly reported on this original death record. No earlier generations were added. L’Aquila remains a separate provisional birthplace lead.
+
+## Concezio research: county certificate and Palmiero’s first papers
+
+The 5 October 2026 follow-up located two useful original documents, but no record independently establishing Concezio’s dates, exact birthplace, occupation or parents. Carlina is reported as Palmiero’s mother; a marriage record identifying the parents as a couple is still needed.
+
+### County copy of the 1927 death registration
+
+- [Palmiero index F6KD-B42](https://www.familysearch.org/ark:/61903/1:1:F6KD-B42), [father index F6KD-B4L](https://www.familysearch.org/ark:/61903/1:1:F6KD-B4L), [original image](https://www.familysearch.org/ark:/61903/3:1:S3HT-64V7-7XT).
+- Ohio, County Death Records, 1840–2001; **Deaths: Columbus, Death Certificates January 1927–September 1927**, **image 2789 of 3246**, local **file 2750**. [Saved viewer screenshot](./palmiero-county-death-certificate.jpg).
+- The full name **Palmiero Mangini** is explicitly annotated **Paul Muncie**. This promotes the identity bridge to supported by an inspected original record; it does not establish a legal name change.
+- Records residence **1971 Trabue Pike**, death **30 July 1927**, Camp Chase / Franklin Township / Franklin County, wife **Emma Mangini**, father **Concezio Mangini**, mother **Carlina (unknown)**; both parents born Italy. The parent names remain reported ancestry, pending an Italian act. The birth-date field is blank; use the state copy for the reported 3 April 1851 date.
+- Farmer; burial **1 August 1927**, St Joseph Cem., location unresolved. Informant’s given name appears Margaret, but the surname is not securely transcribed; no relationship inferred from the shared address.
+- County file **2750** and state certificate **40647** concern the **same death registration**. Their agreement is not independent testimony of Italian parentage.
+
+### Probable 1902 declaration match
+
+- [Index QP4Z-QVHJ](https://www.familysearch.org/ark:/61903/1:1:QP4Z-QVHJ), [duplicate index QGDZ-H226](https://www.familysearch.org/ark:/61903/1:1:QGDZ-H226), [original image](https://www.familysearch.org/ark:/61903/3:1:3QS7-L996-39LX-Q).
+- Ohio Probate Court, Franklin County, **Declarations of Intention 1896–1904**, **volume 5, printed page 168**, top left entry, **image 106 of 130**, **DGS 005489846**. Custodian listed as Ohio County Court (Franklin County). [Saved viewer screenshot](./palmiero-declaration-1902.jpg).
+- **Palmiero Mangini**, native of Italy, reports arrival in the United States in **December 1897**; declaration sworn **10 October 1902**, signed with that name.
+- The unusual exact name, county and chronology make this a **probable identity match**, but the entry supplies no birth date, town, parents or spouse. No ship or port is established. It is a declaration of intention, **not final citizenship**. The two indexes point to one image and are not separate naturalizations.
+- Follow this arrival window through manifests and look for a later petition/final papers naming the same declaration. Emma’s approximately 1895 immigration lead is separate; do not assume the couple arrived together or use either arrival report to decide their marriage jurisdiction.
+
+### Bounded negative searches and Italian access
+
+- FamilySearch historical records, exact **Concezio Mangini**, no dates: **two results**, both as father on Palmiero’s 1927 state/county death entries. With exact Concezio and fuzzy Mangini: **three results**, adding a Concezio Manganaro / Maria Spina marriage in Sicily in 1904; no identity match established.
+- FamilySearch Full-Text Search, **Concezio Mangini** and then **Palmiero Mangini**, each without location/date restrictions: **zero results**. “Include limited access content” remained off. Coverage, access and handwriting-recognition limits mean this is not evidence of absence.
+- As an exploratory spelling comparison, exact **Concezio Mancini**, no dates: **35 results**, all read in the results list. Different spouses, towns or generations supplied no Palmiero/Carlina bridge. Mancini was not added as an alias or family branch. An 1885-born Concezio associated with Castel di Sangro is too young to father Palmiero in 1851.
+- A surname-only **Mangini** migration/naturalization search, birth **1848–1854**, event **1896–1899**, returned **16 results**, all read. No matching Palmiero established. Earlier broader searches were only partly read; ports, age errors and name variants remain unexhausted.
+- [Castel di Sangro, Nati 1851](https://antenati.cultura.gov.it/ark:/12657/an_ua19119084/): Archivio di Stato dell’Aquila, Stato civile della restaurazione, segnatura **1404**, 88 viewer pages. Inspected annual-index pages 3–5, including **M on page 5**; no matching Palmiero Mangini entry in the section examined. [Saved M-section screenshot](./castel-di-sangro-birth-index-1851-m.jpg). Individual acts and adjacent years were not exhaustively searched.
+- [Rocca Cinquemiglia, Nati 1851](https://antenati.cultura.gov.it/ark:/12657/an_ua19326710/): same archive, segnatura **1404**, 19 viewer pages. **Page 3** annual index lists **29 names**; no matching Palmiero Mangini entry. [Saved index screenshot](./rocca-cinquemiglia-birth-index-1851.jpg).
+- These towns were selected as leads around Emma’s reported birthplace, **not as established birthplaces for Palmiero**. The checks do not exclude other towns in the province of L’Aquila, another year, an indexing problem or a different name.
+- FamilySearch’s Castel di Sangro locality catalog returned [Registri dello stato civile, 1809–1865](https://www.familysearch.org/en/search/catalog/koha:390193), 40 microfilm reels. The displayed early film entries require a FamilySearch Center or affiliate library, including their Full-Text Search access. This catalog title does not cover an 1895 marriage or Emma’s 1875 birth. Later municipal/church records remain a separate access task; no absence claim follows from the available holdings.
+
+Tree updates retain p001, p022 and p023 and their existing relationships. Added the county certificate and declaration as distinct original-record sources, the county-supported Paul alias and residence, and probable declaration/arrival facts. No new generations or speculative Concezio family were added.
 
 ## Emma’s original death certificate and 1940 household
 
@@ -98,9 +132,9 @@ The [original 1856 marriage register](https://antenati.cultura.gov.it/ark:/12657
 
 ## Next record work
 
-1. Corroborate the **Concezio Mangini / Carlina** parents reported in certificate 40647 with Palmiero’s Italian birth act around **3 April 1851**. Resolve Carlina’s maiden surname and the exact comune. Finish a careful transcription of the informant’s surname and address before using them as another family link.
+1. Corroborate the **Concezio Mangini / Carlina** parents reported in state certificate 40647 / county file 2750 with Palmiero’s Italian birth act around **3 April 1851**. Resolve Carlina’s maiden surname and the exact comune. Residence is now read as **1971 Trabue Pike**; the informant’s surname still needs careful transcription before using it as another family link.
 2. Retrieve census households for 1900, 1910, and 1920 under Mangini, Muncie, Muncy, and Muncey; search Palmier/Palmiero/Palmiro/Palmerio/Paul and Emiecia/Emida/Emidia/Emma. Compare the complete household, rather than identifying a person from a name alone. Record enumeration district, sheet, dwelling/family numbers, original image link, and immigration/citizenship columns. Consider absence from 1900 if arrival was later; do not assume that from Mary’s unverified birth.
-3. Use census citizenship status and arrival year to target [Ohio county naturalization records](https://www.familysearch.org/en/search/collection/1987615) and immigration manifests. No matching record retrieved yet.
+3. Follow the probable **10 October 1902 declaration**, Franklin County, volume 5, p. 168, into a later petition/final papers, and search manifests around the reported **December 1897 arrival**. No matching manifest or final naturalization retrieved. Use census citizenship and immigration columns to corroborate the identity and narrow the search; do not treat first papers as final citizenship.
 4. Seek Palmiero and Emiecia’s marriage around **1895** in both Italy and Franklin County. **30 June 1895 is an inference**, not a verified date. Do not pick a jurisdiction prematurely. The [Franklin County Probate Court certified-records page](https://probate.franklincountyohio.gov/Departments/Certified-Records) describes marriage holdings from 1803; direct retrieval returned 403, but its official search excerpt was available. This is an access lead only.
 5. Seek Emma/Emidia’s **5 August 1875 Castel di Sangro birth**, now reported by her original death certificate, through later civil registers or the municipality. Antenati’s available Nati search results end in 1865. Also seek Maria’s reported 2 February 1897 birth and Nicola / Domenica’s 1856 original act. Palmiero’s reported 3 April 1851 birth requires the exact comune; L’Aquila may mean city or province, and Emma’s birthplace does not prove his.
 6. [Columbus Metropolitan Library’s obituary request page](https://www.columbuslibrary.org/request-obituary/) describes up to six free obituary requests per month. Request Palmier / Paul near 30 July 1927 and Nora’s disputed obituary if needed. No request was sent and no contact information was submitted.
@@ -123,6 +157,8 @@ The `/family` page uses the existing Layout, typography, and paper palette. It i
 Before promoting any claim, add a complete record citation and explain whether the original was inspected. Keep the older people hidden by default. Do not fabricate the modern generations or Palmiero’s parents.
 
 ## Validation for this implementation
+
+After the Concezio research update, `npm run verify` again passed all gates, including 260 tests in 25 files and the 59-page build. The local Concezio profile displayed both death-record sources and the revised research limits; Palmiero’s rendered profile distinguished the supported Paul alias/residence from the probable declaration/arrival match. No map layout or interaction code changed.
 
 `npm run verify` passed on the map redesign: asset checks, TypeScript, 260 tests in 25 files, social-card checks, and a 59-page production build. Browser checks covered alias search, profile selection, older-branch gating, reset, deep links, keyboard Enter, pan/zoom/fit, full-screen panels and Escape, source navigation, and Astro navigation from Family to About and back. At 390px, document width matched the viewport and selection opened a readable bottom sheet. No browser error logs were observed. Multi-touch simulation is unavailable in the in-app browser; real-device pinch remains unverified.
 
