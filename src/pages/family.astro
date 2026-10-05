@@ -1,40 +1,26 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import FamilyBranch from '../components/FamilyBranch.astro';
+import FamilyMap from '../components/FamilyMap.astro';
 import { familyBranch, people, relationships, personById, sourceById, sources } from '../data/family';
 import '../styles/family.css';
 ---
 <Layout title="Family history — Tomfoolery" description="An evolving Muncie and Mangini family tree, with sources, alternate names, and room for unanswered questions." noindex>
   <article class="editorial-page family-page" data-family-root>
-    <header class="editorial-page-lead">
-      <div><span class="editorial-kicker">The family notebook · Muncie / Mangini</span><h1>Names change.<br />Stories connect.</h1></div>
-      <p>A growing family tree, from Ohio to Italy. Follow a branch, open a person’s notes, and see where the evidence ends.</p>
+    <header class="family-lead">
+      <span class="editorial-kicker">The family notebook · Muncie / Mangini</span>
+      <h1>One family. Many names.</h1>
+      <p>Explore the connections from Ohio to Italy. Zoom out for the whole picture, or choose a person to follow their story.</p>
     </header>
-    <div class="family-intro">
-      <p>Start with Palmiero Mangini, known in family material as Paul Muncie, and Emiecia / Emida Ricchiuto, also called Emma Richards. The generations connecting this group to Tom have not been documented here.</p>
-      <p class="family-update"><span class="editorial-kicker">Original record inspected · 5 October 2026</span>Palmiero’s <strong>1927 death certificate, number 40647</strong>, names his wife <strong>Emma Mangini</strong> and parents <strong>Concezio Mangini and Carlina</strong>. It records birth on 3 April 1851 in Italy and death on 30 July 1927 in Franklin County. The exact Italian birthplace remains unresolved. <a href="#source-palmiero-certificate">See the certificate citation →</a></p>
-      <p class="family-update"><span class="editorial-kicker">Emma’s record found · 5 October 2026</span>Emma Muncie’s <strong>1945 death certificate</strong> reports birth on <strong>5 August 1875 at Castel di Sangro</strong> and names parents <strong>Nicola Richiuto and Dominica Mastrocco</strong>. Their match to the couple in the 1856 marriage transcription is probable. The original 1940 census also lists Fred as Emma’s son. <a href="#source-emma-certificate">See Emma’s certificate citation →</a></p>
-    </div>
-    <section class="family-key" aria-label="How to read the tree">
-      <span data-confidence="supported"><b>Supported</b> · explicitly stated in an inspected source</span>
-      <span data-confidence="probable"><b>Probable</b> · a working identity or relationship match</span>
-      <span data-confidence="provisional"><b>Provisional</b> · an unverified lead or inference</span>
-      <p>Confidence belongs to each fact and connection. “Supported” may mean a transcription or compiled genealogy, not an original record. Open a profile for the evidence.</p>
-    </section>
-    <div class="family-controls" data-family-controls hidden>
-      <div><label for="family-search">Find a person or alternate name</label><input id="family-search" type="search" placeholder="Try Paul, Emma, Ricchuitta…" autocomplete="off" aria-controls="family-results" /></div>
-      <label class="family-toggle"><input type="checkbox" data-show-provisional /> Include older provisional branches</label>
-      <button type="button" data-family-reset>Reset view</button>
-      <div class="family-search-results"><p data-search-status role="status" aria-live="polite"></p><ul id="family-results"></ul></div>
-    </div>
-    <div class="family-workspace">
-      <section class="family-tree" aria-labelledby="tree-heading">
-        <div class="family-section-head"><h2 id="tree-heading">Follow the branches</h2><a href="#family-profiles">Person notes ↓</a></div>
-        <p class="family-caption">Open or close a branch with its heading. Select a name for dates, sources, and research notes.</p>
-        <FamilyBranch branch={familyBranch} />
-      </section>
+    <FamilyMap />
+    <details class="family-fallback">
+      <summary>Read the branches as a list</summary>
+      <FamilyBranch branch={familyBranch} />
+    </details>
+    <div class="family-profile-home" data-profile-home>
       <section id="family-profiles" class="family-profiles" aria-labelledby="profiles-heading">
-        <h2 id="profiles-heading">Person notes</h2>
+        <div class="family-detail-header"><h2 id="profiles-heading">Person notes</h2><button type="button" data-close-profile aria-label="Close person details" hidden>×</button></div>
+        <button class="family-locate" type="button" data-locate-person hidden>Locate in tree ↗</button>
         <noscript><p>All profiles are available below. The branches work without JavaScript.</p></noscript>
         {people.map(person => {
           const relations = relationships.filter(r => r.from === person.id || r.to === person.id);
@@ -49,20 +35,20 @@ import '../styles/family.css';
                 <span class="family-fact-sources">{fact.sources.map(id => <a href={`#source-${id}`}>{sourceById[id].kind} ↗</a>)}</span>
               </dd>
             </div>)}</dl>
-            <h4>Research notes</h4><ul class="family-notes">{person.notes.map(note => <li>{note}</li>)}</ul>
-            {relations.length > 0 && <><h4>Connections</h4><ul class="family-profile-relations">{relations.map(r => {
+            <details class="family-person-section"><summary>Research notes</summary><ul class="family-notes">{person.notes.map(note => <li>{note}</li>)}</ul></details>
+            {relations.length > 0 && <details class="family-person-section"><summary>Connections & evidence</summary><ul class="family-profile-relations">{relations.map(r => {
               const other = r.from === person.id ? r.to : r.from;
               const label = r.kind === 'parent' ? (r.from === person.id ? 'Child' : 'Parent') : r.kind === 'spouse' ? 'Spouse / working couple' : 'Sibling';
               return <li data-confidence={r.confidence}><span class="family-confidence">{r.confidence}</span> {label}: <a href={`#person-${other}`} data-person-link={other}>{personById[other].name}</a><small>{r.note}</small><span class="family-fact-sources">{r.sources.map(id => <a href={`#source-${id}`}>{sourceById[id].kind} ↗</a>)}</span></li>;
-            })}</ul></>}
-            <h4>Sources for this person</h4><ul class="family-notes">{citations.map(id => <li><a href={`#source-${id}`}>{sourceById[id].title}</a> <small>· {sourceById[id].kind}</small></li>)}</ul>
-            <a class="family-back" href="#tree-heading">Back to branches ↑</a>
+            })}</ul></details>}
+            <details class="family-person-section"><summary>Sources for this person</summary><ul class="family-notes">{citations.map(id => <li><a href={`#source-${id}`}>{sourceById[id].title}</a> <small>· {sourceById[id].kind}</small></li>)}</ul></details>
+            <a class="family-back" href="#tree-heading">Back to tree ↑</a>
           </article>;
         })}
       </section>
     </div>
-    <section class="family-research" aria-labelledby="research-heading">
-      <span class="editorial-kicker">Open questions</span><h2 id="research-heading">The next pages to turn.</h2>
+    <details class="family-research"><summary id="research-heading">Research notes & next steps</summary>
+      <p class="family-research-intro">Palmiero’s 1927 certificate names Concezio Mangini and Carlina. Emma’s 1945 certificate names Nicola Richiuto and Dominica Mastrocco. Those records guide the next searches; the original Italian acts are still needed.</p>
       <ol>
         <li><strong>Corroborate the parents named on Palmiero’s death certificate.</strong> Certificate 40647 names Concezio Mangini and Carlina, both born in Italy. Seek Palmiero’s Italian birth act around 3 April 1851 to confirm those reported names and identify the comune. The certificate gives only Italy. <a href="https://www.familysearch.org/ark:/61903/3:1:33S7-9PK4-DJR">Open certificate ↗</a></li>
         <li><strong>Reconstruct the 1900, 1910, and 1920 households.</strong> Compare Muncie, Muncy, Muncey, and Mangini, with Emma / Emida and the candidate children. Record household members, immigration years, naturalization status, residence, and the image citation. No matching household has been inspected here.</li>
@@ -71,12 +57,11 @@ import '../styles/family.css';
         <li><strong>Resolve the marriage and Palmiero’s birthplace.</strong> Search both Italy and Franklin County around 1895. June 30 remains an inferred date only. Seek Maria’s reported 1897 birth and Nicola / Domenica’s 1856 original marriage act. Emma’s Castel di Sangro birthplace does not establish Palmiero’s town.</li>
         <li><strong>Check Nora’s original obituary.</strong> The reproduced text points to the Columbus Dispatch, February 12, 1962, page 4A; the compiled citation instead says November 9, 1989. Preserve both until the newspaper is inspected.</li>
       </ol>
-    </section>
-    <section class="family-sources" aria-labelledby="sources-heading">
-      <span class="editorial-kicker">Evidence ledger</span><h2 id="sources-heading">Sources & their limits</h2>
+    </details>
+    <details class="family-sources"><summary id="sources-heading">Sources & their limits</summary>
       <p>Original records, official indexes, transcriptions, compiled genealogies, supplied information, and inferences are recorded separately. A collection or access guide is not evidence of a matching person.</p>
       <ul>{sources.map(source => <li id={`source-${source.id}`}><span class="editorial-kicker">{source.kind}</span><h3>{source.title}</h3><p>{source.citation}</p>{source.url && <a href={source.url}>Visit source ↗</a>}</li>)}</ul>
-    </section>
+    </details>
   </article>
   <script>
     import '../scripts/family-tree';

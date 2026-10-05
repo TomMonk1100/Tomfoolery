@@ -1,0 +1,60 @@
+---
+import { people, personById } from '../data/family';
+import { buildGraph, treeLabel, treeAlias } from '../scripts/family/graph';
+const graph = buildGraph();
+---
+<section class="family-explorer" data-family-explorer aria-labelledby="tree-heading">
+  <div class="family-map-header">
+    <div><span class="editorial-kicker">Ohio ↔ Italy</span><h2 id="tree-heading">The family at a glance.</h2></div>
+    <span class="family-map-count" data-map-count>{graph.nodes.length} people in view</span>
+  </div>
+  <div class="family-toolbar" data-family-controls hidden>
+    <div class="family-search-wrap">
+      <label class="sr-only" for="family-search">Find a person or alternate name</label>
+      <input id="family-search" type="search" placeholder="Find a name — Paul, Emma…" autocomplete="off" aria-controls="family-results" />
+      <div class="family-search-results" data-search-popup hidden><p data-search-status role="status" aria-live="polite"></p><ul id="family-results"></ul></div>
+    </div>
+    <div class="family-zoom-controls" aria-label="Tree view controls">
+      <button type="button" data-zoom-out aria-label="Zoom out">−</button>
+      <output data-zoom aria-label="Zoom level">100%</output>
+      <button type="button" data-zoom-in aria-label="Zoom in">+</button>
+      <button type="button" data-fit>Fit tree</button>
+      <button type="button" data-center>Family view</button>
+      <button type="button" data-fullscreen>Full screen</button>
+    </div>
+  </div>
+  <div class="family-map-options" data-family-controls hidden>
+    <fieldset><legend class="sr-only">Visible branches</legend>
+      <label><input type="checkbox" data-show-parents checked /> Parents</label>
+      <label><input type="checkbox" data-show-children checked /> Children</label>
+      <label><input type="checkbox" data-show-earlier /> Earlier generations</label>
+      <label><input type="checkbox" data-show-provisional /> Older provisional branches</label>
+    </fieldset>
+    <button type="button" data-family-reset>Reset</button>
+  </div>
+  <div class="family-map-stage" data-map-stage tabindex="0" aria-label="Family tree diagram. Arrow keys move the view; plus and minus zoom; Home fits the tree." aria-describedby="map-help">
+    <div class="family-map-world" data-map-world style={`width:${graph.width}px;height:${graph.height}px`}>
+      <svg class="family-map-lines" data-map-lines width={graph.width} height={graph.height} aria-hidden="true">
+        {graph.familyBus && <path class="family-rail" d={graph.familyBus} />}
+        {graph.edges.map(edge => <path d={edge.path} data-confidence={edge.relationship.confidence} data-edge={edge.relationship.id} />)}
+      </svg>
+      <div class="family-generation-labels" data-generation-labels aria-hidden="true">{graph.generations.map(generation => <span style={`top:${generation.y - 14}px`}>{generation.label}</span>)}</div>
+      {people.map(person => {
+        const node = graph.nodes.find(node => node.id === person.id);
+        return <a class="family-map-person" data-map-person={person.id} data-person-link={person.id} hidden={!node} href={`#person-${person.id}`} style={node ? `left:${node.x}px;top:${node.y}px` : undefined} aria-label={`${treeLabel(person.id)}, ${person.dates}. Open person details.`}>
+          <span class="family-node-name">{treeLabel(person.id)}</span>
+          <span class="family-node-dates">{person.dates.replace(/ \(.*\)/, '')}</span>
+          <span class="family-node-alias">{treeAlias(person.id) || (person.provisional ? 'Provisional research' : 'Open person notes ↗')}</span>
+        </a>;
+      })}
+    </div>
+    <span class="family-map-watermark" aria-hidden="true">Muncie / Mangini</span>
+  </div>
+  <div class="family-map-footer">
+    <div class="family-map-key" aria-label="Connection confidence">
+      <span data-confidence="supported">Supported</span><span data-confidence="probable">Probable</span><span data-confidence="provisional">Provisional</span>
+    </div>
+    <p id="map-help">Drag to move · pinch or Ctrl + scroll to zoom · select a person for details</p>
+  </div>
+  <p class="family-map-note">Child stems show each parent’s evidence; parallel stems mean different confidence. “Supported” can include compiled sources. Open a person for the records. The path to Tom is still undocumented.</p>
+</section>
