@@ -4,6 +4,7 @@ import { familyBranch, people, relationships, sources, searchPeople, type Branch
 describe('family identity and evidence integrity', () => {
   it('resolves aliases to stable people, without duplicate search results', () => {
     expect(searchPeople('Paul Muncie').map(p => p.id)).toEqual(['p001']);
+    expect(searchPeople('Palmicro Mangini').map(p => p.id)).toEqual(['p001']);
     expect(searchPeople('Emma Richards').map(p => p.id)).toEqual(['p002']);
     expect(searchPeople('Ricchuitta').map(p => p.id)).toEqual(['p002']);
     expect(searchPeople('Nicola', true).map(p => p.id)).toEqual(['p008', 'p014']);
@@ -48,9 +49,13 @@ describe('family identity and evidence integrity', () => {
     expect(rendered).toEqual(personIds);
   });
   it('does not promote missing ancestry or inferred dates into supported facts', () => {
-    expect(relationships.filter(r => r.kind === 'parent' && r.to === 'p001')).toEqual([]);
+    const namedParents = relationships.filter(r => r.kind === 'parent' && r.to === 'p001');
+    expect(namedParents.map(r => r.from)).toEqual(['p022', 'p023']);
+    expect(namedParents.every(r => r.sources.includes('palmiero-certificate'))).toBe(true);
+    expect(relationships.filter(r => r.kind === 'parent' && ['p022', 'p023'].includes(r.to))).toEqual([]);
     expect(relationships.filter(r => r.kind === 'parent' && r.to === 'p002').every(r => r.confidence === 'provisional')).toBe(true);
     expect(people.find(p => p.id === 'p001')!.facts.find(f => f.label === 'Date hypothesis')!.confidence).toBe('provisional');
-    expect(sources.filter(s => s.kind === 'original record' && s.inspected)).toEqual([]);
+    expect(people.find(p => p.id === 'p001')!.facts.find(f => f.label === 'Birthplace lead')!.confidence).toBe('provisional');
+    expect(sources.find(s => s.id === 'palmiero-certificate')).toMatchObject({kind: 'original record', inspected: true});
   });
 });

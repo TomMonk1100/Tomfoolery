@@ -10,17 +10,40 @@ The [Ohio History Connection death index](https://resources.ohiohistory.org/deat
 | --- | --- | --- | --- | --- |
 | MANGINI, Palmier | 30 July 1927 | Franklin | ODC | Volume 5401, certificate 40647 |
 
-The entry is an excellent candidate because the reported death date, county, and unusual given name agree. The index does not establish the Paul Muncie identity, birth date, birthplace, spouse, or parents. Inspect the certificate before attaching those details. Evidence screenshot: [mangini-death-index.jpg](./mangini-death-index.jpg). Results use session state; a direct results-page link does not reproduce the query.
+The entry was an excellent candidate because the reported death date, county, and unusual given name agreed. The index alone does not establish the Paul Muncie identity, birth date, birthplace, spouse, or parents. The original certificate was subsequently inspected after sign-in (see below). Evidence screenshot: [mangini-death-index.jpg](./mangini-death-index.jpg). Results use session state; a direct results-page link does not reproduce the query.
 
 Additional searches performed in this pass:
 
 - Muncie, no given-name filter, 1926–1928, all counties, Soundex on: 1,624 entries, including many unrelated surnames. Only the first page was examined. This is **not** a complete negative search.
 - Paul + Muncie, same dates/counties, Soundex on: 10 entries; none matched 30 July 1927 or Franklin County. They included Paul Maag, Paul L. Mace, Paul Majecic, Paul Manning, Paul Mauzy, Paul J. Means, Pauline O. Menges, Paul Minchak, Paul V. Moses, and Paul Mucci. The broad Soundex behavior means it should not replace exact spelling searches.
 - Mangini, all given names, 1926–1928, all counties, Soundex off: the entry above. This search avoids relying on the given-name spelling.
-- [FamilySearch Ohio Deaths](https://www.familysearch.org/en/search/collection/1307272), Palmier Mangini: search redirected to sign-in. No result record or certificate image inspected. User does not currently have an account; continued with public sources.
+- Initial [FamilySearch Ohio Deaths](https://www.familysearch.org/en/search/collection/1307272) attempt, Palmier Mangini: redirected to sign-in. Continued with public sources until the user created an account and completed Google sign-in.
 - Open-web searches for the central names and variants did not retrieve a matching 1900, 1910, or 1920 census, naturalization petition, or passenger manifest. No absence claim follows from search-engine silence.
 
 Ohio History Connection's current page says it no longer fulfills vital-record searches/orders. It directs users to microfilm on site, FamilySearch for 1908–1953, or local county health departments for certified copies. A free FamilySearch account is required to view original documents; an account itself does not cost money.
+
+## Original certificate inspected after sign-in
+
+On the same research date, the user completed FamilySearch sign-in. A collection search for **Palmier Mangini** returned 23 matches; all were inspected in the results list, with no matching certificate. Removing the given-name restriction and searching **Mangini, death year 1927** produced a strong first-page match indexed as **Palmicro Mangini**. The broader query returned 641 personas; only the first 50 were read before opening the matching record. This is not an exhaustive negative search of the collection.
+
+- [Indexed record X64B-F73](https://www.familysearch.org/ark:/61903/1:1:X64B-F73): source detail **fn 40647**.
+- [Original certificate image](https://www.familysearch.org/ark:/61903/3:1:33S7-9PK4-DJR): Ohio certificate of death **40647**, 1927; viewer image **2862 of 3458**, image group **004022017**, file nos. **38001–41200**; creator Ohio Department of Health, custodian Ohio Historical Society (Columbus, Ohio). Inspected visually at enlarged resolution.
+- [Saved viewer screenshot](./palmiero-death-certificate.jpg). The download button opened a format dialog, but the browser automation did not retrieve a downloadable file after submission. This saved evidence is a screenshot of the original in the viewer, not a full-resolution image download.
+
+| Field | Reading from the original | Evidence limit |
+| --- | --- | --- |
+| Name | Palmiero Mangini | Handwritten e is indexed as c in “Palmicro”; preserved as a search alias, not another person. |
+| Death | 30 July 1927; Franklin County; Camp Chase | Certificate number and date match the Ohio index. Township not separately transcribed. |
+| Birth | 3 April 1851; Italy | Informant-reported details on a death record, not an inspected Italian birth act. No comune or province named. |
+| Wife | Emma Mangini | Supports the working group; the Emma Richards / Emida Ricchuitta bridge still comes from Nora’s compiler. |
+| Father | Concezio Mangini; born Italy | Name agrees with FamilySearch’s index. Needs Italian corroboration. |
+| Mother | Carlina; born Italy | Small writing after the given name appears to indicate an unknown surname; maiden surname is not securely established. |
+| Occupation | Farmer | Recorded on the certificate. |
+| Burial | 1 August 1927; St Joseph Cem. | This does not establish which St Joseph cemetery. |
+
+The indexed **standardized death place** is “Saint Joseph Cemetery, Cincinnati, Hamilton, Ohio, United States,” while its **original-place field** is “Franklin, Franklin, Ohio.” The original certificate itself records Franklin County / Camp Chase. Do not move the death to Cincinnati or adopt a cemetery location from this conflicting standardization. No FamilySearch index or shared-tree edits were made.
+
+The certificate’s number, exact birth/death dates, and wife Emma strongly match the existing Palmiero identity. It does not use the Paul Muncie name, prove a legal name change, or identify every child. Added stable IDs **p022** (Concezio) and **p023** (Carlina); their parent links are supported as names explicitly reported on this original death record. No earlier generations were added. L’Aquila remains a separate provisional birthplace lead.
 
 ## Rechecked earlier sources
 
@@ -43,7 +66,7 @@ The [original 1856 marriage register](https://antenati.cultura.gov.it/ark:/12657
 
 ## Next record work
 
-1. Inspect **1927 certificate 40647**, volume 5401, for Palmier Mangini. Compare spouse, informant, age/birth date, residence, and parents to the existing working group. Distinguish informant-reported birth/parent facts from directly recorded death details.
+1. Corroborate the **Concezio Mangini / Carlina** parents reported in certificate 40647 with Palmiero’s Italian birth act around **3 April 1851**. Resolve Carlina’s maiden surname and the exact comune. Finish a careful transcription of the informant’s surname and address before using them as another family link.
 2. Retrieve census households for 1900, 1910, and 1920 under Mangini, Muncie, Muncy, and Muncey; search Palmier/Palmiero/Palmiro/Palmerio/Paul and Emiecia/Emida/Emidia/Emma. Compare the complete household, rather than identifying a person from a name alone. Record enumeration district, sheet, dwelling/family numbers, original image link, and immigration/citizenship columns. Consider absence from 1900 if arrival was later; do not assume that from Mary’s unverified birth.
 3. Use census citizenship status and arrival year to target [Ohio county naturalization records](https://www.familysearch.org/en/search/collection/1987615) and immigration manifests. No matching record retrieved yet.
 4. Seek Palmiero and Emiecia’s marriage around **1895** in both Italy and Franklin County. **30 June 1895 is an inference**, not a verified date. Do not pick a jurisdiction prematurely. The [Franklin County Probate Court certified-records page](https://probate.franklincountyohio.gov/Departments/Certified-Records) describes marriage holdings from 1803; direct retrieval returned 403, but its official search excerpt was available. This is an access lead only.
@@ -54,7 +77,7 @@ The [original 1856 marriage register](https://antenati.cultura.gov.it/ark:/12657
 
 The new `/family` page uses the existing Layout, typography, and paper palette. It is linked from About and the footer. It is marked noindex while the research is provisional.
 
-- Data: `src/data/family.ts`. Permanent IDs p001–p021; separate person, fact, source, and relationship objects. Never derive identity from the current display name.
+- Data: `src/data/family.ts`. Permanent IDs p001–p023; separate person, fact, source, and relationship objects. Never derive identity from the current display name. New parent IDs preserve every earlier ID.
 - Each fact/relationship has its own confidence and source IDs. Supported means explicitly stated in an inspected source; the source type still matters. Research guides are access routes, not evidence for person facts.
 - `FamilyBranch.astro` renders native expandable disclosures and selectable links; the TypeScript enhancement adds alias search, one selected profile, deep links, and opt-in older branches. The same people are reused in relationships rather than duplicated.
 - Supported / probable / provisional connections use solid / dashed / dotted borders and text labels. Native summaries and links support keyboard input; on phones selection focuses and scrolls to the profile.
