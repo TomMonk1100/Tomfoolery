@@ -5,6 +5,7 @@
 .family-page :is(a, button, input, summary):focus-visible { outline: 2px solid var(--color-accent-ink); outline-offset: 4px; }
 .family-page :is(h2, h3) { font-family: var(--font-display); letter-spacing: -.035em; }
 .family-page h2 { font-size: clamp(1.5rem, 3vw, 2.1rem); }
+.family-page [id] { scroll-margin-top: 6rem; }
 .family-intro { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2.5rem 0; color: var(--color-muted); line-height: 1.7; }
 .family-update { border-left: 2px solid var(--color-accent); padding-left: 1.25rem; }
 .family-update .editorial-kicker { margin-bottom: .65rem; }

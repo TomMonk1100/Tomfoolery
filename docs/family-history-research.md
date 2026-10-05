@@ -68,4 +68,6 @@ Before promoting any claim, add a complete record citation and explain whether t
 
 `npm run verify` passed on the final code: asset checks, TypeScript, 251 tests in 24 files, social-card checks, and a 59-page production build. Browser checks covered alias search, profile selection, older-branch gating, reset, deep links, keyboard Enter, and Astro navigation from Family to About and back. At 390px, document width matched the viewport and selection focused the profile heading. No browser error logs were observed.
 
-The live archive baseline before release was **31 linked posts**, matching the current build. AGENT-HANDOFF.md’s older expectation of 30 is stale; preservation is checked against the actual 31-post baseline. Existing game, weather, galleries, and archive implementation files were not edited.
+The live archive before and after release contains **30 distinct blog-post links**, with the featured essay linked a second time (31 link occurrences). The exact set of article links is unchanged. Existing game, weather, galleries, and archive implementation files were not edited.
+
+Production checks returned HTTP 200 for Family, Home, Coffee, Archive, Tweets, Now, About, Art, Pokémon, Game, Projects, the scores API, robots.txt, and the sitemap index. Live alternate-name search and keyboard profile selection worked without browser errors. Anchor targets have space above them to remain readable below the fixed site header.
