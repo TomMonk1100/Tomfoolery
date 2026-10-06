@@ -15,6 +15,8 @@
     "check:sky-plates": "node scripts/check-sky-plates.mjs",
     "preview": "astro preview",
     "astro": "astro",
+    "family:check": "node scripts/family-access.mjs check",
+    "family:fetch": "node scripts/family-access.mjs fetch",
     "test": "vitest run src/scripts netlify/tests",
     "typecheck": "astro sync && tsc --noEmit",
     "verify": "npm run check:sky-plates && npm run check:content-assets && npm run typecheck && npm run test && npm run build"

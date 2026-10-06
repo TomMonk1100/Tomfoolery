@@ -102,3 +102,25 @@
 .shared-key .shared-key-review::before { border-color: var(--provisional); border-top-style: dotted; }
 .shared-review-link { display: block; font-size: .75rem; text-decoration: underline; min-height: 44px; padding-block: .5rem; color: var(--color-muted); }
 .ancestry-trail li > div > .ancestry-review-link { font: .7rem/1.5 var(--font-body); min-height: 44px; color: var(--color-muted); }
+
+.family-origin { margin: 2rem 0; padding: 1.5rem; border: 1px solid var(--color-line); background: var(--color-surface); }
+.family-origin h2 { font: 600 1.6rem var(--font-display); margin: .4rem 0 1rem; }
+.family-origin > p { font-size: .8rem; line-height: 1.7; color: var(--color-muted); margin-top: 1rem; }
+.family-origin-route { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; align-items: stretch; }
+.family-origin-route > * { padding: 1rem; border: 1px solid var(--color-line); font: 600 1rem var(--font-display); }
+.family-origin-route a { display: flex; flex-direction: column; justify-content: center; text-decoration: underline; min-height: 80px; }
+.family-origin-route small { display: block; font: .75rem/1.6 var(--font-body); color: var(--color-muted); margin-top: .5rem; }
+.family-origin-route .family-origin-gap { text-align: center; border: 1px dashed var(--provisional); }
+.family-origin-gap strong { display: block; font: 600 2rem var(--font-display); }
+.shared-tree .family-map-person[data-person-kind="biblical"] { border-color: var(--color-moss-ink); border-top-width: 3px; }
+.shared-tree .family-map-person[data-person-kind="unknown"] { border: 1px dashed var(--provisional); background: var(--color-canvas); }
+.shared-tree .family-map-person[data-person-kind="unknown"] .family-node-name { font-size: 28px; }
+.shared-tree .family-map-person[data-person-kind="unknown"] .family-node-alias { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shared-tree .family-map-lines path[data-source="biblical narrative"] { stroke: var(--color-moss-ink); }
+.shared-key .shared-key-biblical::before { border-color: var(--color-moss-ink); }
+.ancestry-gap-mark { font: 600 2rem var(--font-display); display: inline-block; margin-right: .5rem; }
+@media (max-width:600px) {
+  .family-origin { padding: 1rem; }
+  .family-origin-route { grid-template-columns: 1fr; gap: .7rem; }
+  .family-origin-route > * { padding: .8rem; }
+}

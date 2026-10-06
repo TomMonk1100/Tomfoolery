@@ -17,6 +17,12 @@ pnpm-debug.log*
 # environment variables
 .env
 .env.production
+.env*.local
+
+# Private family-login credentials and authenticated page snapshots.
+.family-access/
+# Local continuation notes include private browser/account context.
+docs/family-import/NEXT-SESSION.md
 
 # macOS-specific files
 .DS_Store

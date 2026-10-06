@@ -91,6 +91,13 @@ If `/archive` returns anything other than 30, or `/api/scores` is not 200,
 
 ## 2. Project shape
 
+**Family work:** read `docs/family-access.md` and
+`docs/family-import/NEXT-SESSION.md`. The live tree is now password protected;
+anonymous `/family/` checks should return 401. Use `npm run family:check`
+for both anonymous and authenticated verification. The ignored local
+`.env.family.local` supplies the password on Tom's Mac; never print or commit
+it. The tree source remains available for local editing.
+
 Astro 7 + Tailwind 4. Static output. Node ≥ 22.12.
 
 ```
