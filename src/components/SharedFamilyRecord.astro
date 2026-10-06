@@ -2,10 +2,14 @@
 import { sharedRecords, type SharedRecord } from '../data/shared-family-records';
 import { personById, sourceById } from '../data/family';
 import { ADAM, personUrl, sharedById } from '../data/shared-family';
+import { findingsFor } from '../data/ancestry-research';
+import { missingParents } from '../scripts/family/ancestry';
 interface Props { record: SharedRecord }
 const { record } = Astro.props;
 const person = record.kind === 'person' ? sharedById[record.id] : undefined;
 const research = record.kind === 'person' ? personById[record.id] : undefined;
+const ancestry = findingsFor(record.id);
+const gaps = person ? missingParents(person) : [];
 const media = (url: string) => sharedRecords[`media:${url.split('/').filter(Boolean).at(-1)}`];
 ---
 <article class="editorial-page family-page shared-record-page">
@@ -13,6 +17,8 @@ const media = (url: string) => sharedRecords[`media:${url.split('/').filter(Bool
   <header class="family-lead"><span class="editorial-kicker">Muncie & Crook · {record.kind} record</span><h1>{record.title}</h1>{record.id===ADAM && <p>Preferred name: Tom · supplied by Adam</p>}{record.dates && <p>{record.dates}</p>}</header>
   <p class="shared-provenance"><strong>Family-provided genealogy · imported 5 October 2026.</strong> These are your family’s recorded details and citations. A cited collection is not an original document inspected by this site. Repeated or conflicting entries are preserved.</p>
   {person && <p><a href={`/family/?focus=${person.id}`}>Explore this person’s branches ↗</a>{research && <> · <a href={`/family/#person-${research.id}`}>Open researched profile ↗</a></>}</p>}
+  {ancestry.length > 0 && <section class="shared-record-section"><h2>Ancestry research · unresolved matches</h2>{ancestry.map(f => <div><h3>{f.title}</h3><span class="family-confidence" data-confidence={f.confidence}>{f.confidence} identity / connection</span><p class="shared-provenance">{f.finding} {f.limit}</p><a href={f.url}>{f.sourceKind}: {f.citation} ↗</a><p class="shared-provenance">Next record: {f.next}</p></div>)}</section>}
+  {gaps.length > 0 && <section class="shared-record-section"><h2>Missing parent positions</h2><p>These immediate positions have no identity in the imported account. They carry provisional confidence and an inference label. Other independent research, when available below, is kept separate until the records are reconciled.</p><ul>{gaps.map(g => <li>Unknown parent {g.slot} · <span class="family-confidence" data-confidence="provisional">placeholder</span><small class="shared-record-origin"> {g.id}</small></li>)}</ul></section>}
   {record.images.map(src => <img class="shared-record-photo" src={src} alt={record.title === 'Unnamed Media' ? 'Photograph from the shared family tree; caption not recorded.' : record.title} loading="lazy" />)}
   {record.sections.map(section => <section class="shared-record-section">
     <h2>{section.title === 'Overview' ? 'Recorded details' : section.title}</h2>

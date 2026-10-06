@@ -1,0 +1,57 @@
+---
+import { ancestryAudit, missingParents } from '../scripts/family/ancestry';
+import { sharedById, ADAM, personUrl } from '../data/shared-family';
+import { ancestryFindings } from '../data/ancestry-research';
+import { biblicalPeople, biblicalById, ancientGap } from '../data/biblical-family';
+const audit = ancestryAudit();
+const gapsByChild = audit.ids.filter(id => missingParents(sharedById[id]).length).sort((a,b) => sharedById[a].name.localeCompare(sharedById[b].name));
+---
+<section class="ancestry-journey" id="ancestry-journey" aria-labelledby="ancestry-heading" data-ancestry-journey>
+  <header><span class="editorial-kicker">The next chapter</span><h2 id="ancestry-heading">How far back can we go?</h2><p>Follow a single trail from Adam (Tom), see where names are missing, and check the records behind the oldest claims.</p></header>
+  <div class="ancestry-stats"><p><strong>{audit.ancestors.length}</strong><span>recorded ancestors</span></p><p><strong>{audit.longest.length-1}</strong><span>parent links on the longest trail</span></p><p><strong>{audit.gaps.length}</strong><span>unfilled parent positions</span></p></div>
+  <p class="shared-provenance">These counts describe Kevin’s family account. They do not mean every generation has been independently proved. The longest recorded trail reaches Henry Degotham, whose birth is recorded there as 1247.</p>
+  <details class="ancestry-trails" open>
+    <summary>Follow one ancestry trail</summary>
+    <label class="ancestry-select">Trail endpoint <select data-ancestry-select>{audit.paths.map((path, i) => <option value={i}>{i===0?'Longest · ':''}{sharedById[path.at(-1)!].name} · {path.length-1} parent links{i>0&&audit.paths.slice(0,i).some(p=>p.at(-1)===path.at(-1))?' · another route':''}</option>)}</select></label>
+    <p class="ancestry-trail-help">Start at Tom and read downward into earlier generations. Open a name for its full profile, or “On the map” to explore that branch.</p>
+    <div class="ancestry-trail-window" tabindex="0" aria-label="Ancestry trail; scroll to earlier generations">
+      {audit.paths.map((path, i) => <div data-ancestry-path={i} hidden={i!==0}><ol class="ancestry-trail">{path.map((id, generation) => <li><span class="ancestry-generation">{generation===0?'You':`G${generation}`}</span><div><a href={personUrl(id)}>{id===ADAM?'Adam Muncie (Tom)':sharedById[id].name}</a><small>{sharedById[id].dates || 'Dates not recorded'} · family-provided</small></div><a class="ancestry-map-link" href={`/family/?focus=${id}`}>On the map ↗</a></li>)}</ol>
+        <div class="ancestry-unknown"><strong>Next generation: parents not recorded</strong><ul>{missingParents(sharedById[path.at(-1)!]).map(g => <li><a href={`#${g.id}`}>Unknown parent {g.slot}</a> <span class="family-confidence" data-confidence="provisional">placeholder</span></li>)}</ul><p>Earlier generations remain an open gap. Their number has not been established.</p></div>
+      </div>)}
+    </div>
+    <p role="status" class="ancestry-trail-status" data-ancestry-status>Longest recorded trail · {audit.longest.length-1} parent links · family-provided</p>
+  </details>
+  <details class="ancestry-gaps"><summary>Explore {audit.gaps.length} missing-parent placeholders</summary><p>Each placeholder has a permanent ID tied to an unfilled immediate parent position. Its identity, sex, dates, and biological or adoptive status are unknown. These are research positions, not additional identified relatives. More distant generations will be added only when their positions can be established.</p><ul class="ancestry-gap-list">{gapsByChild.map(id => <li><a href={personUrl(id)}>{sharedById[id].name}</a><div>{missingParents(sharedById[id]).map(g => <details id={g.id}><summary>Unknown parent {g.slot} <span class="family-confidence" data-confidence={g.confidence}>provisional</span></summary><p>No identity recorded for this position. Source: inference from the imported tree’s incomplete parent entries.</p><small>Stable placeholder: {g.id}</small></details>)}</div></li>)}</ul></details>
+  <details class="ancestry-research"><summary>Ancestry research · records, candidates & conflicts</summary><p>Checked 5 October 2026. These findings add evidence and questions alongside the imported account; they do not replace its people or parent links.</p>{ancestryFindings.map(f => <article id={f.id}><h3>{f.title}</h3><span class="family-confidence" data-confidence={f.confidence}>{f.confidence} identity / connection</span> <small>{f.sourceKind}</small><p>{f.finding}</p><p>{f.limit}</p><p><strong>Next record:</strong> {f.next}</p><p class="ancestry-citation"><a href={f.url}>{f.citation} ↗</a></p><p>{f.people.map(id => <a class="ancestry-person-link" href={personUrl(id)}>{sharedById[id].name} ↗</a>)}</p></article>)}</details>
+  <div class="ancestry-unresolved"><span class="editorial-kicker">The open gap</span><h3>{ancientGap.label}</h3><p>No established chain joins Tom’s recorded family to a biblical person. This gap has no generation count. It remains visible while the family branches are researched.</p></div>
+  <details class="ancestry-biblical"><summary>Explore the biblical genealogy · Adam & Eve to Abram</summary><p>This separate branch follows the King James text of Genesis 4, 5, and 11. “Textual tradition” means the relationship appears in that text; it is not an independently verified vital record or a proven ancestor of Tom. No calendar birth dates or missing spouses have been invented.</p><div class="ancestry-bible-grid">{biblicalPeople.map(p => <article id={p.id}><span class="editorial-kicker">Biblical narrative · textual tradition</span><h3>{p.name}</h3><p>{p.parents.length?`Parents named in this branch: ${p.parents.map(id=>biblicalById[id].name).join(' & ')}`:'No human parent given in this branch.'}</p><a href={p.url}>{p.verse} · KJV ↗</a><small>Stable ID: {p.id}</small></article>)}</div></details>
+  <noscript><p>Every trail remains available without scripting through the person profiles: follow their parent entries. The missing-parent and biblical sections above also work without scripting.</p></noscript>
+</section>
+<script>
+  function initAncestry() {
+    const root = document.querySelector<HTMLElement>('[data-ancestry-journey]');
+    if (!root || root.dataset.initialized) return;
+    root.dataset.initialized = 'true';
+    const select = root.querySelector<HTMLSelectElement>('[data-ancestry-select]')!;
+    select.addEventListener('change', () => {
+      root.querySelectorAll<HTMLElement>('[data-ancestry-path]').forEach(path => path.hidden = path.dataset.ancestryPath !== select.value);
+      root.querySelector('.ancestry-trail-window')?.scrollTo({top:0});
+      root.querySelector('[data-ancestry-status]')!.textContent = `${select.selectedOptions[0].textContent} · family-provided`;
+    });
+    const revealGap = () => {
+      const target = document.getElementById(location.hash.slice(1));
+      if (!target || target === root || !root.contains(target)) return;
+      let parent: HTMLElement | null = target;
+      while (parent && parent !== root) { if (parent instanceof HTMLDetailsElement) parent.open = true; parent = parent.parentElement; }
+      target.scrollIntoView({block:'center'});
+    };
+    root.addEventListener('click', event => {
+      const target = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href^="#gap-"]') : null;
+      if (target) { const gap = document.getElementById(target.hash.slice(1)); if (gap) { root.querySelector<HTMLDetailsElement>('.ancestry-gaps')!.open = true; (gap as HTMLDetailsElement).open = true; } }
+    });
+    window.addEventListener('hashchange', revealGap);
+    revealGap();
+    document.addEventListener('astro:before-swap', () => window.removeEventListener('hashchange', revealGap), {once:true});
+  }
+  initAncestry(); document.addEventListener('astro:page-load', initAncestry);
+</script>

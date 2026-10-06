@@ -52,3 +52,48 @@
 
 .shared-evidence-note > summary { cursor: pointer; padding: .35rem 1.5rem .7rem; font-size: .73rem; color: var(--color-muted); min-height: 36px; }
 .shared-evidence-note .family-map-note { padding-top: .5rem; }
+
+.ancestry-journey { border-top: 1px solid var(--color-line); padding: 2.5rem 0; margin-top: 2rem; }
+.ancestry-journey h2 { font: 600 clamp(1.7rem,4vw,2.4rem)/1.2 var(--font-display); margin: .5rem 0 1rem; }
+.ancestry-journey p { font-size: .85rem; line-height: 1.7; color: var(--color-muted); }
+.ancestry-stats { display: grid; grid-template-columns: repeat(3,1fr); border-block: 1px solid var(--color-line); margin-top: 1.5rem; }
+.ancestry-stats p { padding: 1rem .8rem; }
+.ancestry-stats strong { display: block; font: 600 2rem var(--font-display); color: var(--color-ink); }
+.ancestry-stats span { display: block; font-size: .73rem; }
+.ancestry-journey > details { border-top: 1px solid var(--color-line); }
+.ancestry-journey summary { cursor: pointer; min-height: 44px; padding: 1rem 0; font: 600 1rem var(--font-display); }
+.ancestry-select { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; font-size: .8rem; }
+.ancestry-select select { max-width: 100%; min-height: 44px; flex: 1 1 250px; padding: .5rem; border: 1px solid var(--color-line); background: var(--color-surface); color: var(--color-ink); }
+.ancestry-trail-help { margin: .8rem 0; }
+.ancestry-trail-window { max-height: 480px; overflow: auto; border: 1px solid var(--color-line); overscroll-behavior: contain; background: var(--color-surface); }
+.ancestry-trail { list-style: none; margin: 0; padding: .5rem 1rem; }
+.ancestry-trail li { display: grid; grid-template-columns: 2.5rem 1fr auto; gap: .7rem; align-items: center; min-height: 80px; border-bottom: 1px solid var(--color-line); }
+.ancestry-generation { font: .75rem var(--font-mono); color: var(--color-muted); }
+.ancestry-trail li > div > a { font: 600 .95rem var(--font-display); text-decoration: underline; display: inline-flex; align-items: center; min-height: 36px; }
+.ancestry-trail small { display: block; font-size: .68rem; color: var(--color-muted); }
+.ancestry-map-link { font-size: .7rem; padding: .5rem; min-height: 44px; display: flex; align-items: center; text-decoration: underline; }
+.ancestry-unknown, .ancestry-unresolved { border: 1px dashed var(--provisional); padding: 1.1rem; margin: 1rem; font-size: .85rem; }
+.ancestry-unknown ul { display: flex; flex-wrap: wrap; gap: .6rem 1.5rem; margin: .7rem 0; }
+.ancestry-trail-status { padding: .7rem 0; }
+.ancestry-gap-list { list-style: none; display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,290px),1fr)); gap: 1rem; margin-block: 1rem; }
+.ancestry-gap-list > li { padding: 1rem; border: 1px dashed var(--provisional); }
+.ancestry-gap-list > li > a { font-weight: 600; display: inline-flex; align-items: center; min-height: 44px; text-decoration: underline; }
+.ancestry-gap-list summary { font-size: .8rem; padding-block: .7rem; }
+.ancestry-gap-list small, .ancestry-bible-grid small { display: block; overflow-wrap: anywhere; font: .62rem/1.7 var(--font-mono); color: var(--color-muted); margin-top: .6rem; }
+.ancestry-research article { border-left: 3px solid var(--provisional); padding: .5rem 1rem; margin-block: 1.3rem; }
+.ancestry-journey h3 { font: 600 1.15rem/1.4 var(--font-display); margin-block: .3rem .6rem; }
+.ancestry-research article p + p { margin-top: .6rem; }
+.ancestry-citation a, .ancestry-bible-grid a { text-decoration: underline; overflow-wrap: anywhere; }
+.ancestry-person-link { display: inline-flex; align-items: center; min-height: 44px; margin-right: 1rem; text-decoration: underline; }
+.ancestry-unresolved { margin: 1.5rem 0; padding: 1.4rem; }
+.ancestry-bible-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,240px),1fr)); gap: 1rem; margin-block: 1rem; }
+.ancestry-bible-grid article { border: 1px dotted var(--color-muted); padding: 1rem; }
+.ancestry-bible-grid .editorial-kicker { font-size: .58rem; }
+.ancestry-bible-grid a { display: inline-flex; align-items: center; min-height: 44px; font-size: .75rem; }
+@media (max-width:600px) {
+  .ancestry-stats p { padding: .8rem .3rem; }
+  .ancestry-stats strong { font-size: 1.6rem; }
+  .ancestry-trail li { grid-template-columns: 1.8rem 1fr; gap: .3rem .6rem; padding-block: .6rem; }
+  .ancestry-map-link { grid-column: 2; padding: 0; min-height: 36px; }
+  .ancestry-trail-window { max-height: 420px; }
+}
