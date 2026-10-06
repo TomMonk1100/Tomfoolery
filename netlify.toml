@@ -13,6 +13,22 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+# Family history holds PII for living and recently-living relatives: it is
+# password-gated at the edge (family-gate), never indexed, and excluded from
+# the sitemap. The password lives in the FAMILY_PAGE_PASSWORD env var, set in
+# the Netlify dashboard — it is not in this repo.
+[[edge_functions]]
+  function = "family-gate"
+  path = "/family"
+
+[[edge_functions]]
+  function = "family-gate"
+  path = "/family/*"
+
+[[edge_functions]]
+  function = "family-gate"
+  path = "/images/family/*"
+
 # Photos/Retreats collections were folded into the "Now" blog
 # (2026-07-03 IA prune). Old links redirect instead of 404ing.
 #

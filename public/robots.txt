@@ -1,5 +1,8 @@
-# Tomfoolery — a personal site. Everything here is meant to be found.
+# Tomfoolery — a personal site. Everything here is meant to be found,
+# except the password-gated family history (PII): crawlers stay out.
 User-agent: *
 Allow: /
+Disallow: /family/
+Disallow: /images/family/
 
 Sitemap: https://tommuncie.com/sitemap-index.xml

@@ -12,7 +12,16 @@ import sitemap from '@astrojs/sitemap';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://tommuncie.com',
-  integrations: [sitemap()],
+  // The family-history section is password-gated and must never be indexed:
+  // keep its URLs out of the sitemap entirely.
+  integrations: [
+    sitemap({
+      filter: (page) => {
+        const { pathname } = new URL(page);
+        return !(pathname === "/family" || pathname.startsWith("/family/"));
+      },
+    }),
+  ],
   vite: {
     plugins: [tailwindcss()]
   }
