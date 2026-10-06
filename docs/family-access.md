@@ -55,8 +55,7 @@ records, and 686 places, with 95 imported images. It starts with Adam (Tom);
 Kevin remains his brother's person record. Keep the corrected Stockwell
 parentage and the distinction between imported claims and verified records.
 The ancestry explorer has 82 terminal trails, 173 recorded ancestors, and 175
-stable missing-parent positions. The biblical branch remains separate, with
-no proven link to the modern family.
+stable missing-parent positions. The biblical source layer remains distinct. A separately labelled chronicle tradition now makes the proposed research route navigable to Adam and Eve; it establishes no proven link to the modern family. Historical counts exclude the legendary bridge. See `ancestry-research-2026-10-06.md` for the current 752-person display overlay and its unresolved Boyd, Prather, immigrant and Warren links.
 
 The 1727 William Nedels estate account is retained in the research overlay
 from last night's work. It identifies administrators Adam Browne and his

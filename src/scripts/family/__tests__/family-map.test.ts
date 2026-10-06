@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { familyMapPeople, familyMapById, familyMapKnownCount, searchFamilyMap, mapProfileUrl, mapEdgeAssessment } from '../../../data/family-map';
+import { familyMapPeople, familyMapById, familyMapKnownCount, familyMapAncestorDepth, searchFamilyMap, mapProfileUrl, mapEdgeAssessment } from '../../../data/family-map';
 import { sharedPeople, sharedById, ADAM, MARK, PATRICK, FRED_RICHARD } from '../../../data/shared-family';
 import { people as researchPeople, relationships } from '../../../data/family';
-import { candidatePeople, ANDREA_GOTHAM, HENRY_GOTHAM, NEWMAN_PRATHER, JOSIAH_PRATHER, JOHN_SMITH_PRATHER, ELIZABETH_NUTHALL, MARY_HYDE, ROBERT_HYDE, JOHN_CROSS_MANOR, EDWARD_I, ELIZABETH_RHUDDLAN, candidateRelationships } from '../../../data/ancestry-candidates';
+import { candidatePeople, ANDREA_GOTHAM, HENRY_GOTHAM, NEWMAN_PRATHER, JOSIAH_PRATHER, JOHN_SMITH_PRATHER, ELIZABETH_NUTHALL, MARY_HYDE, ROBERT_HYDE, JOHN_CROSS_MANOR, EDWARD_I, EGBERT, ALFRED, ETHELWULF, ELIZABETH_RHUDDLAN, candidateRelationships } from '../../../data/ancestry-candidates';
 import { ancestryAudit } from '../ancestry';
 import { familyMapAncestryById } from '../../../data/family-map';
+import { legendaryPeople, legendaryChain, legendaryRelationships } from '../../../data/legendary-family';
 import { biblicalPeople } from '../../../data/biblical-family';
 import { sharedGraph, SHARED_CARD } from '../shared-graph';
 
 describe('all known people and explicit unknown positions on one map', () => {
   it('preserves every family person and adds all biblical people as distinct identities', () => {
-    expect(familyMapKnownCount).toBe(688);
+    expect(familyMapKnownCount).toBe(752);
     expect(new Set(familyMapPeople.map(p => p.id)).size).toBe(familyMapPeople.length);
     for (const p of sharedPeople) {
       expect(familyMapById[p.id]).toMatchObject({ name:p.name, kind:'family' });
@@ -35,7 +36,7 @@ describe('all known people and explicit unknown positions on one map', () => {
     expect(graph.edges.find(e=>e.from==='p022' && e.to==='p001')).toMatchObject({sourceKind:'original record'});
   });
   it('extends the research trail with explicitly provisional, sourced claims', () => {
-    expect(candidatePeople).toHaveLength(38);
+    expect(candidatePeople).toHaveLength(67);
     expect(sharedById[HENRY_GOTHAM].parents).toEqual([]);
     expect(familyMapAncestryById[HENRY_GOTHAM].parents).toEqual([ANDREA_GOTHAM]);
     expect(ancestryAudit(ADAM,familyMapAncestryById).ids).toContain(ANDREA_GOTHAM);
@@ -64,7 +65,8 @@ describe('all known people and explicit unknown positions on one map', () => {
   });
   it('traces the royal candidate route back to Tom while retaining its disputed bridges', () => {
     const audit=ancestryAudit(ADAM,familyMapAncestryById);
-    const path=audit.paths.find(p=>p.at(-1)===EDWARD_I)!;
+    const fullPath=audit.paths.find(p=>p.at(-1)===EGBERT)!;
+    const path=fullPath.slice(0,fullPath.indexOf(EDWARD_I)+1);
     expect(path).toBeDefined();
     expect(path[0]).toBe(ADAM);
     expect(path).toEqual(expect.arrayContaining([NEWMAN_PRATHER, JOSIAH_PRATHER, JOHN_CROSS_MANOR, MARY_HYDE, ELIZABETH_RHUDDLAN]));
@@ -72,6 +74,32 @@ describe('all known people and explicit unknown positions on one map', () => {
     for (let i=1;i<path.length;i++) expect(familyMapAncestryById[path[i-1]].parents).toContain(path[i]);
     expect(mapEdgeAssessment(MARY_HYDE,JOHN_CROSS_MANOR,'parent').confidence).toBe('provisional');
     expect(audit.ids).not.toContain('bible-adam');
+  });
+  it('keeps legend outside historical counts while providing a continuous sourced route to both Adam and Eve', () => {
+    const historical=ancestryAudit(ADAM,familyMapAncestryById);
+    const path=historical.paths.find(p=>p.at(-1)===EGBERT)!;
+    expect(path).toHaveLength(44);
+    expect(path).toEqual(expect.arrayContaining([ALFRED, ETHELWULF]));
+    expect(familyMapAncestryById[EGBERT].parents).toEqual([]);
+    for(const p of legendaryPeople) {
+      expect(familyMapAncestryById[p.id]).toBeUndefined();
+      expect(searchFamilyMap(p.name).some(hit=>hit.id===p.id)).toBe(true);
+    }
+    const bible=['bible-noah','bible-lamech','bible-methuselah','bible-enoch','bible-jared','bible-mahalaleel','bible-cainan','bible-enos','bible-seth'];
+    const route=[...path,...legendaryChain.slice(1,-1),...bible];
+    expect(new Set(route).size).toBe(route.length);
+    for(let i=1;i<route.length;i++) expect(familyMapById[route[i-1]].parents).toContain(route[i]);
+    expect(familyMapById[route.at(-1)!].parents).toEqual(['bible-adam','bible-eve']);
+    for(const r of legendaryRelationships) expect(mapEdgeAssessment(r.from,r.to,'parent')).toMatchObject({confidence:'provisional',sourceKind:'legendary tradition',evidenceUrl:'/family/#chronicle-legendary-route'});
+    expect(mapEdgeAssessment('mft-ac18e21f-8562-4540-a292-0014f7848951','mft-6e6822b7-100a-4225-8772-6f0893b9a5ad','parent')).toMatchObject({confidence:'provisional',evidenceUrl:'/family/#boyd-parent-date-conflict'});
+    expect(mapEdgeAssessment('bible-noah','legend-sceaf','parent').review).toContain('Genesis does not give Noah a son named Sceaf');
+    expect(historical.ids).not.toContain('bible-adam');
+    expect(ancestryAudit().longest).toHaveLength(26);
+  });
+  it('includes the entire proposed route beyond 30 generations in All ancestors scope', () => {
+    const graph=sharedGraph(ADAM,{ancestors:familyMapAncestorDepth,children:false,siblings:false,whole:false},familyMapById,mapEdgeAssessment);
+    for(const id of [EGBERT,...legendaryChain,'bible-adam','bible-eve']) expect(graph.nodes.some(n=>n.id===id)).toBe(true);
+    for(const r of legendaryRelationships) expect(graph.edges.find(e=>e.from===r.from && e.to===r.to)).toMatchObject({sourceKind:'legendary tradition',confidence:'provisional'});
   });
   it('adds only immediate ? positions, without invented parents for Adam and Eve or for placeholders', () => {
     for (const p of familyMapPeople.filter(p=>p.kind==='unknown')) {
@@ -84,12 +112,12 @@ describe('all known people and explicit unknown positions on one map', () => {
     expect(familyMapById['bible-eve'].parents).toEqual([]);
     expect(familyMapById['bible-seth'].parents).toEqual(['bible-adam','bible-eve']);
   });
-  it('keeps the biblical branch disconnected even in whole-tree mode', () => {
+  it('joins the whole map only through the explicitly labelled chronicle bridge', () => {
     const graph=sharedGraph(ADAM,{ancestors:30,children:true,siblings:true,whole:true},familyMapById,mapEdgeAssessment);
     expect(graph.nodes).toHaveLength(familyMapPeople.length);
     for (const edge of graph.edges) {
       const branch = (id:string):string => familyMapById[id].kind==='unknown' ? branch(familyMapById[id].child!) : familyMapById[id].kind === 'biblical' ? 'biblical' : 'modern';
-      expect(branch(edge.from)).toBe(branch(edge.to));
+      if(branch(edge.from)!==branch(edge.to)) expect(legendaryRelationships.some(r=>r.from===edge.from && r.to===edge.to)).toBe(true);
       if (familyMapById[edge.from].kind==='unknown') expect(edge).toMatchObject({confidence:'provisional',sourceKind:'inference'});
       if (familyMapById[edge.to].kind==='biblical' && familyMapById[edge.from].kind!=='unknown') expect(edge.sourceKind).toBe('biblical narrative');
     }

@@ -3,7 +3,7 @@ import { sharedPeople, sharedById, type SharedPerson } from '../../data/shared-f
 import { relationshipReview } from '../../data/ancestry-relationships';
 export const SHARED_CARD = { width: 224, height: 112 };
 export interface SharedNode { id:string; x:number; y:number; generation:number }
-export interface SharedEdge { from:string; to:string; kind:'parent'|'partner'; confidence:'supported'|'probable'|'provisional'; importedConfidence?:'supported'; review?:string; sourceKind:SourceKind|'biblical narrative'; sourcePerson:string; path:string }
+export interface SharedEdge { from:string; to:string; kind:'parent'|'partner'; confidence:'supported'|'probable'|'provisional'; importedConfidence?:'supported'; review?:string; sourceKind:SourceKind|'biblical narrative'|'legendary tradition'; sourcePerson:string; path:string }
 export interface SharedGraph { nodes:SharedNode[]; edges:SharedEdge[]; width:number; height:number; generations:{label:string;y:number}[] }
 export interface SharedGraphOptions { ancestors:number; children:boolean; siblings:boolean; whole:boolean }
 export const SHARED_DEFAULT:SharedGraphOptions = {ancestors:2,children:true,siblings:false,whole:false};

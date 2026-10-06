@@ -126,3 +126,8 @@
 }
 
 .family-map-person[data-person-kind="candidate"] { border-style: dashed; border-color: var(--provisional); }
+
+/* Chronicle claims remain visually distinct from historical candidates. */
+.family-map-person[data-person-kind="legendary"] { border-style: dashed; border-color: var(--provisional); border-top: 4px double var(--provisional); }
+.shared-tree path[data-source="legendary tradition"] { stroke-dasharray: 9 5 2 5; }
+.ancestry-route-jumps a { display: inline-block; padding: .3rem .15rem; text-decoration: underline; }

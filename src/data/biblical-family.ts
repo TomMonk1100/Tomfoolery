@@ -1,5 +1,5 @@
 // This is a separate textual genealogy. There are deliberately no shared-family
-// IDs or inferred edges joining it to the modern tree.
+// IDs. The display overlay separately labels the medieval legendary bridge.
 export interface BiblicalPerson { id: string; name: string; parents: string[]; verse: string; url: string; sourceKind: 'biblical narrative'; confidence: 'textual tradition' }
 const passage = (verse: string) => `https://www.biblegateway.com/passage/?search=${encodeURIComponent(verse)}&version=KJV`;
 const names = ['Adam', 'Seth', 'Enos', 'Cainan', 'Mahalaleel', 'Jared', 'Enoch', 'Methuselah', 'Lamech', 'Noah', 'Shem', 'Arphaxad', 'Salah', 'Eber', 'Peleg', 'Reu', 'Serug', 'Nahor', 'Terah', 'Abram'];

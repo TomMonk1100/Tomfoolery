@@ -78,7 +78,66 @@ export const HUMPHREY_BOHUN = 'candidate-humphrey-bohun-hereford';
 export const ELIZABETH_RHUDDLAN = 'candidate-elizabeth-rhuddlan';
 export const EDWARD_I = 'candidate-edward-i-england';
 export const ELEANOR_CASTILE = 'candidate-eleanor-castile';
+export const HENRY_III = "candidate-henry-iii";
+export const ELEANOR_PROVENCE = "candidate-eleanor-provence";
+export const JOHN_ENGLAND = "candidate-john-england";
+export const ISABELLA_ANGOULEME = "candidate-isabella-angouleme";
+export const HENRY_II = "candidate-henry-ii";
+export const ELEANOR_AQUITAINE = "candidate-eleanor-aquitaine";
+export const GEOFFREY_ANJOU = "candidate-geoffrey-anjou";
+export const EMPRESS_MATILDA = "candidate-empress-matilda";
+export const HENRY_I = "candidate-henry-i";
+export const MATILDA_SCOTLAND = "candidate-matilda-scotland";
+export const MALCOLM_III = "candidate-malcolm-iii";
+export const MARGARET_SCOTLAND = "candidate-margaret-scotland";
+export const EDWARD_EXILE = "candidate-edward-exile";
+export const AGATHA = "candidate-agatha";
+export const EDMUND_IRONSIDE = "candidate-edmund-ironside";
+export const EALDGYTH = "candidate-ealdgyth";
+export const ETHELRED_II = "candidate-ethelred-ii";
+export const ALFGIFU_ETHELRED = "candidate-alfgifu-ethelred";
+export const EDGAR = "candidate-edgar";
+export const AELFTHRYTH = "candidate-aelfthryth";
+export const EDMUND_I = "candidate-edmund-i";
+export const ALFGIFU_SHAFTESBURY = "candidate-alfgifu-shaftesbury";
+export const EDWARD_ELDER = "candidate-edward-elder";
+export const EADGIFU = "candidate-eadgifu";
+export const ALFRED = "candidate-alfred";
+export const EALHSWITH = "candidate-ealhswith";
+export const ETHELWULF = "candidate-ethelwulf";
+export const OSBURH = "candidate-osburh";
+export const EGBERT = "candidate-egbert";
 const extensions = [
+  [HENRY_III,"Henry III of England","13th century · royal research candidate"],
+  [ELEANOR_PROVENCE,"Eleanor of Provence","13th century · royal research candidate"],
+  [JOHN_ENGLAND,"John of England","12th–13th century · royal research candidate"],
+  [ISABELLA_ANGOULEME,"Isabella of Angoulême","12th–13th century · royal research candidate"],
+  [HENRY_II,"Henry II of England","12th century · royal research candidate"],
+  [ELEANOR_AQUITAINE,"Eleanor of Aquitaine","12th–13th century · royal research candidate"],
+  [GEOFFREY_ANJOU,"Geoffrey V of Anjou","12th century · royal research candidate"],
+  [EMPRESS_MATILDA,"Empress Matilda","12th century · royal research candidate"],
+  [HENRY_I,"Henry I of England","11th–12th century · royal research candidate"],
+  [MATILDA_SCOTLAND,"Matilda of Scotland","11th–12th century · royal research candidate"],
+  [MALCOLM_III,"Malcolm III of Scotland","11th century · royal research candidate"],
+  [MARGARET_SCOTLAND,"Margaret of Scotland","11th century · royal research candidate"],
+  [EDWARD_EXILE,"Edward the Exile","11th century · royal research candidate"],
+  [AGATHA,"Agatha (Edward the Exile’s wife)","11th century · royal research candidate"],
+  [EDMUND_IRONSIDE,"Edmund II Ironside","10th–11th century · royal research candidate"],
+  [EALDGYTH,"Ealdgyth (Edmund Ironside’s wife)","11th century · royal research candidate"],
+  [ETHELRED_II,"Æthelred II of England","10th–11th century · royal research candidate"],
+  [ALFGIFU_ETHELRED,"Ælfgifu? (Æthelred II’s first wife)","10th–11th century · given name uncertain · royal research candidate"],
+  [EDGAR,"Edgar of England","10th century · royal research candidate"],
+  [AELFTHRYTH,"Ælfthryth (Edgar’s wife)","10th–11th century · royal research candidate"],
+  [EDMUND_I,"Edmund I of England","10th century · royal research candidate"],
+  [ALFGIFU_SHAFTESBURY,"Ælfgifu of Shaftesbury","10th century · royal research candidate"],
+  [EDWARD_ELDER,"Edward the Elder","9th–10th century · royal research candidate"],
+  [EADGIFU,"Eadgifu (Edward the Elder’s wife)","10th century · royal research candidate"],
+  [ALFRED,"Alfred the Great","9th century · royal research candidate"],
+  [EALHSWITH,"Ealhswith (Alfred’s wife)","9th–early 10th century · royal research candidate"],
+  [ETHELWULF,"Æthelwulf of Wessex","9th century · royal research candidate"],
+  [OSBURH,"Osburh (Æthelwulf’s wife)","9th century · royal research candidate"],
+  [EGBERT,"Egbert (Ecgbeorht) of Wessex","8th–9th century · royal research candidate"],
+
   [MARGARET_LEGH,'Margaret Legh of Lyme (Warren)','late 15th–early 16th century · pedigree claim'],
   [PIERS_LEGH,'Sir Piers Legh of Lyme','15th century · visitation pedigree'],
   [ELEANOR_SAVAGE,'Eleanor Savage (Legh)','15th century · visitation pedigree'],
@@ -115,6 +174,22 @@ const extensions = [
   [BEATRIX_CALVERLEY,'Beatrix Calverley (Hyde)','16th–17th century · dates disputed'],
 ];
 const extensionClaims = [
+  {parents:[HENRY_III,ELEANOR_PROVENCE],child:EDWARD_I,finding:"royal-to-henry-ii",url:"https://www.thepeerage.com/p10191.htm#i101903",note:"Source-cited royal parent claim. Tom\u2019s connection remains provisional because the earlier Prather, immigrant and Warren bridges are unresolved. Original cited documents have not all been inspected."},
+  {parents:[JOHN_ENGLAND,ISABELLA_ANGOULEME],child:HENRY_III,finding:"royal-to-henry-ii",url:"https://www.thepeerage.com/p10193.htm#i101923",note:"Source-cited royal parent claim. Tom\u2019s connection remains provisional because the earlier Prather, immigrant and Warren bridges are unresolved. Original cited documents have not all been inspected."},
+  {parents:[HENRY_II,ELEANOR_AQUITAINE],child:JOHN_ENGLAND,finding:"royal-to-henry-ii",url:"https://www.thepeerage.com/p10201.htm#i102006",note:"Source-cited royal parent claim. Tom\u2019s connection remains provisional because the earlier Prather, immigrant and Warren bridges are unresolved. Original cited documents have not all been inspected."},
+  {parents:[GEOFFREY_ANJOU,EMPRESS_MATILDA],child:HENRY_II,finding:"henry-project-scottish-route",url:"https://fasg.org/projects/henryproject/data/henry002.htm",note:"Source-cited royal parent claim. Tom\u2019s connection remains provisional because the earlier Prather, immigrant and Warren bridges are unresolved. Original cited documents have not all been inspected."},
+  {parents:[HENRY_I,MATILDA_SCOTLAND],child:EMPRESS_MATILDA,finding:"henry-project-scottish-route",url:"https://fasg.org/projects/henryproject/data/matil002.htm",note:"Source-cited royal parent claim. Tom\u2019s connection remains provisional because the earlier Prather, immigrant and Warren bridges are unresolved. Original cited documents have not all been inspected."},
+  {parents:[MALCOLM_III,MARGARET_SCOTLAND],child:MATILDA_SCOTLAND,finding:"henry-project-scottish-route",url:"https://fasg.org/projects/henryproject/data/matil001.htm",note:"Source-cited royal parent claim. Tom\u2019s connection remains provisional because the earlier Prather, immigrant and Warren bridges are unresolved. Original cited documents have not all been inspected."},
+  {parents:[EDWARD_EXILE,AGATHA],child:MARGARET_SCOTLAND,finding:"henry-project-exile-route",url:"https://fasg.org/projects/henryproject/data/marga000.htm",note:"Source-cited royal parent claim. Tom\u2019s connection remains provisional because the earlier Prather, immigrant and Warren bridges are unresolved. Original cited documents have not all been inspected."},
+  {parents:[EDMUND_IRONSIDE,EALDGYTH],child:EDWARD_EXILE,finding:"henry-project-exile-route",url:"https://fasg.org/projects/henryproject/data/edwar000.htm",note:"Source-cited royal parent claim. Tom\u2019s connection remains provisional because the earlier Prather, immigrant and Warren bridges are unresolved. Original cited documents have not all been inspected."},
+  {parents:[ETHELRED_II,ALFGIFU_ETHELRED],child:EDMUND_IRONSIDE,finding:"henry-project-exile-route",url:"https://fasg.org/projects/henryproject/data/edmun002.htm",note:"Source-cited royal parent claim. Tom\u2019s connection remains provisional because the earlier Prather, immigrant and Warren bridges are unresolved. Original cited documents have not all been inspected. The mother\u2019s given name is uncertain; she is not Emma of Normandy."},
+  {parents:[EDGAR,AELFTHRYTH],child:ETHELRED_II,finding:"henry-project-wessex-route",url:"https://fasg.org/projects/henryproject/data/aethe002.htm",note:"Source-cited royal parent claim. Tom\u2019s connection remains provisional because the earlier Prather, immigrant and Warren bridges are unresolved. Original cited documents have not all been inspected."},
+  {parents:[EDMUND_I,ALFGIFU_SHAFTESBURY],child:EDGAR,finding:"henry-project-wessex-route",url:"https://fasg.org/projects/henryproject/data/edgar000.htm",note:"Source-cited royal parent claim. Tom\u2019s connection remains provisional because the earlier Prather, immigrant and Warren bridges are unresolved. Original cited documents have not all been inspected."},
+  {parents:[EDWARD_ELDER,EADGIFU],child:EDMUND_I,finding:"henry-project-wessex-route",url:"https://fasg.org/projects/henryproject/data/edmun001.htm",note:"Source-cited royal parent claim. Tom\u2019s connection remains provisional because the earlier Prather, immigrant and Warren bridges are unresolved. Original cited documents have not all been inspected."},
+  {parents:[ALFRED,EALHSWITH],child:EDWARD_ELDER,finding:"henry-project-wessex-route",url:"https://fasg.org/projects/henryproject/data/edwar001.htm",note:"Source-cited royal parent claim. Tom\u2019s connection remains provisional because the earlier Prather, immigrant and Warren bridges are unresolved. Original cited documents have not all been inspected."},
+  {parents:[ETHELWULF,OSBURH],child:ALFRED,finding:"henry-project-wessex-route",url:"https://fasg.org/projects/henryproject/data/aelfr000.htm",note:"Source-cited royal parent claim. Tom\u2019s connection remains provisional because the earlier Prather, immigrant and Warren bridges are unresolved. Original cited documents have not all been inspected."},
+  {parents:[EGBERT],child:ETHELWULF,finding:"henry-project-wessex-route",url:"https://fasg.org/projects/henryproject/data/aethe001.htm",note:"Source-cited royal parent claim. Tom\u2019s connection remains provisional because the earlier Prather, immigrant and Warren bridges are unresolved. Original cited documents have not all been inspected. His mother remains ?, rather than accepting the late R\u00e6dburh claim."},
+
   {parents:[MARGARET_LEGH],child:MARGARET_WARREN,
    finding:'warren-legh-mother-candidate',url:'https://www.multiwords.de/genealogy/Hy14HamnetHyde.htm',
    note:'A compiled Hyde pedigree names Margaret Legh as Margaret Warren’s mother. The scanned visitation shows Legh married to Lawrence but does not list the Hyde daughter. This identity and maternal assignment remain provisional.'},
