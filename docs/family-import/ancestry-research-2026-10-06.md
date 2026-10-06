@@ -132,3 +132,24 @@ Browser checks confirmed candidate profile/evidence navigation and the G26
 trail label. These follow-up changes are local and queued for a future batch;
 no new Netlify publishing credit was used. The preceding 650-person update
 is already live at production commit d59255b.
+
+### Prather branch — tentative extension, 6 October 2026
+
+Added three display-only candidates and three provisional parent edges, all
+linked to the new `prather-josiah-parent-candidate` evidence review. They
+extend the imported Newman branch by two generations. Each candidate is
+searchable and has its own source/review profile. Original imported parent
+arrays and dates are unchanged. No mother is inferred from a spouse list.
+Source inspected: https://multiwords.de/genealogy/Pr10%20Thomas%20Prather.html
+rows Pr7-4 and Pr7-4-2. See the site review for the names, identity matches,
+and date conflicts; linked RootsWeb source could not be retrieved. These
+are conditional compiled claims requiring parish/probate and Virginia checks.
+
+Overlay now 654 named people and 408 immediate unknown positions; the
+Prather endpoints appear at G12 in selectable trails from Tom. Longest
+candidate trail remains G26 through Andrea. The ancient connection remains
+unestablished. Browser verified All recorded includes the biblical people
+and each candidate, and candidate review navigation expands the correct
+section. Full verification passed: 324 tests, types, assets, 3,720-page build.
+Still local, queued with the preceding scope fix and Andrea candidate;
+no additional production publication or Netlify credit used in this turn.

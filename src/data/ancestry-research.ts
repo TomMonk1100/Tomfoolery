@@ -13,6 +13,15 @@ export interface AncestryFinding {
 const cartulary = 'https://www.cambridge.org/core/services/aop-cambridge-core/content/view/E7CE82B8FBBBC523A6785663BB57C36A/S0960116311000121a.pdf/beauchief_abbey_cartulary.pdf';
 export const ancestryFindings: AncestryFinding[] = [
   {
+    id: 'prather-josiah-parent-candidate', people: ['mft-a87ffd54-6551-42c3-9390-4c0c2dffc6d9', 'candidate-josiah-prather', 'candidate-john-smith-prather', 'candidate-elizabeth-nuthall'],
+    title: 'A tentative Prather extension through Josiah', confidence: 'provisional', sourceKind: 'compiled genealogy',
+    citation: 'Multiwords, Thomas Prather pedigree, rows Pr7-4 and Pr7-4-2; inspected 6 October 2026. Linked RootsWeb source unavailable; original records not inspected.',
+    url: 'https://multiwords.de/genealogy/Pr10%20Thomas%20Prather.html',
+    finding: 'This compilation places Newman/Ninian, born 29 November 1745 and married to Nancy Robinson, under Josiah Prather (1727–about 1755), and places Josiah under John Smith Prather and Elizabeth Nuthall. Newman’s exact birth date, spouse, and the downstream Celia Prater–William Boyd couple match the imported branch. Three candidate ancestors extend that branch by two generations.',
+    limit: 'The identity match is provisional: Nancy’s reported birth differs (about 1765 versus imported 1778), and Nehemiah’s reported death after March 1884 conflicts with imported 1860. These may be copying or identity errors. Imported dates are preserved. Every new edge is a compiled claim, not independent proof; the grandparents depend on the Newman/Josiah match. Newman’s mother remains unknown rather than being assigned from Josiah’s spouse list. No biblical connection is established.',
+    next: 'Inspect Queen Anne parish entries and John Smith Prather’s probate for Josiah; then seek Virginia records identifying Newman’s parents. Resolve the Nancy and Nehemiah conflicts before upgrading this branch.',
+  },
+  {
     id: 'gotham-andrea-parent-candidate', people: ['mft-fa80c8f6-5cd2-4356-91af-bc2f56f540b8'],
     title: 'A provisional parent candidate beyond Henry: Andrea deGotham', confidence: 'provisional', sourceKind: 'compiled genealogy',
     citation: 'WikiTree profiles DeGotham-11 (Andrea) and DeGotham-7 (Henry), relationship panels and Sources; directly inspected 6 October 2026. Andrea’s source is Ancestry tree 32350506/person/18862723017; Henry’s is tree 24051471/person/1981864041. Underlying trees and original medieval records are not inspected.',

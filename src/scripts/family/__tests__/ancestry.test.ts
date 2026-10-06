@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ancestryAudit, ancestryPaths, missingParents } from '../ancestry';
 import { sharedById, ADAM, MARK, PATRICK, type SharedPerson } from '../../../data/shared-family';
 import { biblicalPeople, ancientGap } from '../../../data/biblical-family';
+import { familyMapAncestryById } from '../../../data/family-map';
 import { ancestryFindings } from '../../../data/ancestry-research';
 import { relationshipReviews } from '../../../data/ancestry-relationships';
 import { sharedGraph } from '../shared-graph';
@@ -33,7 +34,7 @@ describe('ancestry trails and explicit gaps', () => {
     for (const p of biblicalPeople) { expect(sharedById[p.id]).toBeUndefined(); expect(p.sourceKind).toBe('biblical narrative'); for (const parent of p.parents) expect(ids.has(parent)).toBe(true); }
     expect(biblicalPeople.find(p=>p.name==='Seth')!.parents).toEqual(['bible-adam','bible-eve']);
     expect(ancientGap).toMatchObject({generations:null,connected:false});
-    for (const f of ancestryFindings) for (const id of f.people) expect(sharedById[id]).toBeDefined();
+    for (const f of ancestryFindings) for (const id of f.people) expect(familyMapAncestryById[id]).toBeDefined();
   });
   it('marks disputed parent links without replacing imported assertions or partners', () => {
     const graph = sharedGraph(ADAM,{ancestors:2,children:true,siblings:false,whole:true});
