@@ -144,3 +144,5 @@ body.family-map-open { overflow: hidden; }
   .family-dialog { inset: auto 0 0; width: 100%; height: 85dvh; border-left: 0; border-top: 1px solid var(--color-line); }
   .family-sources > ul { grid-template-columns: 1fr; }
 }
+
+.shared-key .shared-key-probable::before { border-color: var(--probable); border-top-style: dashed; }

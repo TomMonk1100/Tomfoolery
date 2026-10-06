@@ -2,7 +2,7 @@
 
 ## Map coverage
 
-The map now includes every existing family person (611) and all 21 previously
+The first overlay included the 611 imported family people and all 21 previously
 recorded biblical people from Genesis 4, 5 and 11. They have separate stable
 IDs, searchable names, source details, and distinct biblical styling. Genesis
 5 and 11 were checked against the King James text at
@@ -10,7 +10,7 @@ https://www.biblegateway.com/passage/?search=Genesis+5,Genesis+11&version=KJV .
 The displayed relationships follow that textual tradition; no independently
 documented connection to Tom has been established.
 
-An additive display overlay in `src/data/family-map.ts` adds 391 immediate
+That first additive display overlay in `src/data/family-map.ts` adds 391 immediate
 unknown parent positions across the family and biblical branches. Each appears
 as a ? with a stable ID derived from its child's ID and position. These are
 unfilled research positions, not new identified people or proven biological
@@ -54,3 +54,29 @@ This update includes Pip's original 1727 estate-account research from
 William's estate and the account mentions one unnamed child. Its identity,
 sex, age and later descendants remain unknown. The account does not establish
 that the child was Ann or the later Kent William.
+
+## Coverage audit and correction
+
+An audit against `src/data/family.ts` found 18 additional Italian research
+people missing from the imported index. All 23 Italian research identities
+are now represented in the main map: five existing IDs are reused and 18
+are added without merging similar names. Total: **650 named people**, including
+21 biblical people. Research parent and spouse assertions are added only
+to the display overlay. Their original supported/probable/provisional status,
+source type and explanation remain visible in relationship details. Original
+imported records remain unchanged. Sibling leads are not converted into
+additional parent assertions.
+
+There are now **404 immediate ? parent positions**. Unknown parent positions are recomputed after those recorded research links
+are added. Research profiles open their existing evidence section, including
+when it starts collapsed. Complete verification passed: 322 tests, type checks,
+asset checks and the 3,720-page production build. Browser checks confirmed
+Concezio's profile navigation and Emma's probable parents / provisional child
+links. Production publication still awaits explicit user approval after the
+automatic approval review rejected the earlier push.
+
+Liber 27 folio 339 (viewer image 281, left page) was also visually inspected.
+Talbot returns dated 20 September 1726 include William Needels's inventory
+of £133 9s 10d, matching the later estate-account amount. This entry adds
+no heir identity or parent-child link. Folios 81, 91, 189 and 198 remain
+research leads; nearby calibration scans are not evidence for those entries.

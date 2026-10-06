@@ -1,16 +1,21 @@
 import { sharedPeople, ADAM, personUrl, type SharedPerson } from './shared-family';
 import { biblicalPeople, biblicalById } from './biblical-family';
+import { people as researchPeople, relationships, sourceById, type SourceKind } from './family';
 import { missingParents } from '../scripts/family/ancestry';
 
 export interface MapPerson extends SharedPerson {
-  kind: 'family' | 'biblical' | 'unknown';
+  kind: 'family' | 'research' | 'biblical' | 'unknown';
   child?: string;
-  sourceKind: 'compiled genealogy' | 'biblical narrative' | 'inference';
+  sourceKind: SourceKind | 'biblical narrative';
 }
 
 // An additive display overlay. Original people and parent assertions stay intact.
 const known: MapPerson[] = [
   ...sharedPeople.map(p => ({ ...p, kind: 'family' as const, sourceKind: 'compiled genealogy' as const })),
+  ...researchPeople.filter(p => !sharedPeople.some(existing => existing.id === p.id)).map(p => ({
+    id: p.id, uuid: p.id, name: p.name, dates: p.dates, aliases: [...p.aliases], gender: '',
+    parents: [], partners: [], children: [], kind: 'research' as const, sourceKind: 'user supplied' as const,
+  })),
   ...biblicalPeople.map(p => ({
     id: p.id, uuid: p.id, name: p.name, dates: p.verse, parents: [...p.parents],
     partners: p.id === 'bible-adam' ? ['bible-eve'] : p.id === 'bible-eve' ? ['bible-adam'] : [],
@@ -19,6 +24,17 @@ const known: MapPerson[] = [
     kind: 'biblical' as const, sourceKind: 'biblical narrative' as const,
   })),
 ];
+// Display the recorded research assertions without changing imported records or upgrading certainty.
+for (const person of known) {
+  const union = (ids: string[], added: string[]) => [...new Set([...ids, ...added])];
+  person.parents = union(person.parents, relationships.filter(r => r.kind === 'parent' && r.to === person.id).map(r => r.from));
+  person.children = union(person.children, relationships.filter(r => r.kind === 'parent' && r.from === person.id).map(r => r.to));
+  person.partners = union(person.partners, relationships.filter(r => r.kind === 'spouse' && (r.from === person.id || r.to === person.id)).map(r => r.from === person.id ? r.to : r.from));
+}
+export function mapEdgeAssessment(from: string, to: string, kind: 'parent' | 'partner') {
+  const relation = relationships.find(r => kind === 'parent' ? r.kind === 'parent' && r.from === from && r.to === to : r.kind === 'spouse' && ((r.from === from && r.to === to) || (r.from === to && r.to === from)));
+  return relation ? { confidence: relation.confidence, sourceKind: sourceById[relation.sources[0]].kind, importedConfidence: undefined, review: relation.note } : {};
+}
 export const familyMapKnownCount = known.length;
 const unknown: MapPerson[] = [];
 export const familyMapPeople: MapPerson[] = known.map(p => {
@@ -33,7 +49,7 @@ export const familyMapPeople: MapPerson[] = known.map(p => {
 }).concat(unknown);
 export const familyMapById: Record<string, MapPerson> = Object.fromEntries(familyMapPeople.map(p => [p.id, p]));
 export const mapProfileUrl = (id: string) => familyMapById[id].kind === 'family'
-  ? personUrl(id) : `/family/#${familyMapById[id].kind === 'unknown' ? `map-${id}` : id}`;
+  ? personUrl(id) : `/family/#${familyMapById[id].kind === 'unknown' ? `map-${id}` : familyMapById[id].kind === 'research' ? `person-${id}` : id}`;
 export const mapPersonLabel = (id: string) => id === ADAM ? 'Adam Muncie (Tom)'
   : familyMapById[id].kind === 'unknown' ? `? · ${familyMapById[id].aliases[0]}` : familyMapById[id].name;
 export function searchFamilyMap(query: string) {
@@ -43,4 +59,4 @@ export function searchFamilyMap(query: string) {
 }
 export const mapSource = (id: string) => familyMapById[id].kind === 'biblical'
   ? `${biblicalById[id].verse} · biblical narrative` : familyMapById[id].kind === 'unknown'
-    ? 'Unknown immediate parent position; identity and relationship status unestablished.' : 'Family-provided record';
+    ? 'Unknown immediate parent position; identity and relationship status unestablished.' : familyMapById[id].kind === 'research' ? 'Research person · see profile for evidence and confidence' : 'Family-provided record';
