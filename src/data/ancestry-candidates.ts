@@ -61,7 +61,41 @@ export const MARGARET_WARREN = 'candidate-margaret-warren-hyde';
 export const LAWRENCE_WARREN = 'candidate-lawrence-warren-poynton';
 export const WILLIAM_DAVENPORT = 'candidate-william-davenport-bramhall';
 export const WILLIAM_CALVERLEY = 'candidate-william-calverley-yorkshire';
+export const MARGARET_LEGH = 'candidate-margaret-legh-warren';
+export const PIERS_LEGH = 'candidate-piers-legh-lyme';
+export const ELEANOR_SAVAGE = 'candidate-eleanor-savage-legh';
+export const JOHN_SAVAGE = 'candidate-john-savage-clifton';
+export const KATHERINE_STANLEY = 'candidate-katherine-stanley-savage';
+export const THOMAS_STANLEY = 'candidate-thomas-stanley-first-lord';
+export const JOAN_GOUSHILL = 'candidate-joan-goushill-stanley';
+export const ROBERT_GOUSHILL = 'candidate-robert-goushill';
+export const ELIZABETH_FITZALAN = 'candidate-elizabeth-fitzalan-goushill';
+export const RICHARD_FITZALAN = 'candidate-richard-fitzalan-arundel';
+export const ELIZABETH_BOHUN = 'candidate-elizabeth-bohun-fitzalan';
+export const WILLIAM_BOHUN = 'candidate-william-bohun-northampton';
+export const ELIZABETH_BADLESMERE = 'candidate-elizabeth-badlesmere-bohun';
+export const HUMPHREY_BOHUN = 'candidate-humphrey-bohun-hereford';
+export const ELIZABETH_RHUDDLAN = 'candidate-elizabeth-rhuddlan';
+export const EDWARD_I = 'candidate-edward-i-england';
+export const ELEANOR_CASTILE = 'candidate-eleanor-castile';
 const extensions = [
+  [MARGARET_LEGH,'Margaret Legh of Lyme (Warren)','late 15th–early 16th century · pedigree claim'],
+  [PIERS_LEGH,'Sir Piers Legh of Lyme','15th century · visitation pedigree'],
+  [ELEANOR_SAVAGE,'Eleanor Savage (Legh)','15th century · visitation pedigree'],
+  [JOHN_SAVAGE,'Sir John Savage of Clifton','15th century · visitation pedigree'],
+  [KATHERINE_STANLEY,'Katherine Stanley (Savage)','15th century · pedigree claim'],
+  [THOMAS_STANLEY,'Thomas Stanley, 1st Lord Stanley','15th century · compiled pedigree'],
+  [JOAN_GOUSHILL,'Joan Goushill (Stanley)','15th century · compiled pedigree'],
+  [ROBERT_GOUSHILL,'Sir Robert Goushill','late 14th–early 15th century · compiled pedigree'],
+  [ELIZABETH_FITZALAN,'Elizabeth Fitzalan (Goushill)','late 14th–early 15th century · compiled pedigree'],
+  [RICHARD_FITZALAN,'Richard Fitzalan, Earl of Arundel','14th century · compiled pedigree'],
+  [ELIZABETH_BOHUN,'Elizabeth de Bohun (Fitzalan)','14th century · compiled pedigree'],
+  [WILLIAM_BOHUN,'William de Bohun, Earl of Northampton','14th century · compiled pedigree'],
+  [ELIZABETH_BADLESMERE,'Elizabeth de Badlesmere (Bohun)','14th century · compiled pedigree'],
+  [HUMPHREY_BOHUN,'Humphrey de Bohun, Earl of Hereford','late 13th–early 14th century · compiled pedigree'],
+  [ELIZABETH_RHUDDLAN,'Elizabeth of Rhuddlan','1282–1316 · royal pedigree'],
+  [EDWARD_I,'Edward I of England','13th–early 14th century · royal pedigree'],
+  [ELEANOR_CASTILE,'Eleanor of Castile','13th century · royal pedigree'],
   [ROBERT_HYDE_ELDER,'Robert Hyde of Norbury (elder)','16th century · visitation pedigree'],
   [JANE_DAVENPORT,'Jane Davenport (Hyde)','16th century · visitation pedigree'],
   [HAMNET_HYDE,'Hamnet Hyde of Norbury','early 16th century · visitation pedigree'],
@@ -81,6 +115,28 @@ const extensions = [
   [BEATRIX_CALVERLEY,'Beatrix Calverley (Hyde)','16th–17th century · dates disputed'],
 ];
 const extensionClaims = [
+  {parents:[MARGARET_LEGH],child:MARGARET_WARREN,
+   finding:'warren-legh-mother-candidate',url:'https://www.multiwords.de/genealogy/Hy14HamnetHyde.htm',
+   note:'A compiled Hyde pedigree names Margaret Legh as Margaret Warren’s mother. The scanned visitation shows Legh married to Lawrence but does not list the Hyde daughter. This identity and maternal assignment remain provisional.'},
+  ...[
+    {parents:[PIERS_LEGH,ELEANOR_SAVAGE],child:MARGARET_LEGH},
+    {parents:[JOHN_SAVAGE,KATHERINE_STANLEY],child:ELEANOR_SAVAGE},
+  ].map(c=>({...c,finding:'legh-savage-visitation-route',
+    url:'https://archive.org/details/visitationchesh00fellgoog/page/n169/mode/1up',
+    note:'Parent lines inspected in the printed Cheshire visitation of 1580, pp. 153 and 203–204. This English pedigree is a conditional route from Tom because the earlier American identity links remain disputed.'})),
+  ...[
+    {parents:[THOMAS_STANLEY,JOAN_GOUSHILL],child:KATHERINE_STANLEY,url:'https://www.thepeerage.com/p70924.htm#i709239'},
+    {parents:[ROBERT_GOUSHILL,ELIZABETH_FITZALAN],child:JOAN_GOUSHILL,url:'https://www.thepeerage.com/p1385.htm#i13849'},
+    {parents:[RICHARD_FITZALAN,ELIZABETH_BOHUN],child:ELIZABETH_FITZALAN,url:'https://www.thepeerage.com/p196.htm#i1959'},
+  ].map(c=>({...c,finding:'stanley-goushill-fitzalan-route',
+    note:'An identified compiled peerage supplies this parent claim and cites published genealogies. The cited books and original records are not inspected here; Tom’s descent remains conditional on the earlier disputed bridges.'})),
+  ...[
+    {parents:[WILLIAM_BOHUN,ELIZABETH_BADLESMERE],child:ELIZABETH_BOHUN,url:'https://www.thepeerage.com/p10690.htm#i106899'},
+    {parents:[HUMPHREY_BOHUN,ELIZABETH_RHUDDLAN],child:WILLIAM_BOHUN,url:'https://www.thepeerage.com/p10182.htm#i101816'},
+    {parents:[EDWARD_I,ELEANOR_CASTILE],child:ELIZABETH_RHUDDLAN,url:'https://www.thepeerage.com/p10192.htm#i101916'},
+  ].map(c=>({...c,finding:'bohun-edward-i-candidate-route',
+    note:'The compiled royal pedigree explicitly names these parents and cites published works. This gives a candidate route to Edward I and Eleanor of Castile, not proof of Tom’s royal ancestry or a connection to biblical Adam and Eve.'})),
+
   ...[
     {parents:[ROBERT_HYDE_ELDER,JANE_DAVENPORT],child:ROBERT_HYDE},
     {parents:[HAMNET_HYDE,MARGARET_WARREN],child:ROBERT_HYDE_ELDER},

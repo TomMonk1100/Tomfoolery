@@ -206,3 +206,20 @@ Full verification: 325 tests, type checking, assets, 3,720-page build passed.
 Browser confirms all 671 names and 425 gaps in All recorded; new candidate
 profiles and G20/G19/G18 endpoints are discoverable. Changes remain local
 with the earlier queued batch; no new production publish or credit used.
+
+
+## Royal candidate extension — 6 October 2026
+
+Added 17 distinct candidates, bringing the additive map to 688 named people (38 candidates) and 442 immediate unknown-parent positions. The candidate ancestry audit contains 211 ancestors, 213 missing-parent positions, and a longest trail of 28 parent links to Edward I; Eleanor of Castile is an alternative endpoint at the same depth. All candidate edges remain provisional. Raw imported data is unchanged and the biblical branch remains disconnected.
+
+The displayed trail is Tom → Patrick → Gloria → Eleene White → Velma Miller → Walker Miller → Mary Sloan Boyd → James Boyd → Celia Prater → Nehemiah Prater → Newman Prather → Josiah Prather → John Smith Prather → Martha Sprigg → Eleanor Nuthall → John of Cross Manor → Mary Hyde → Robert Hyde → elder Robert Hyde → Margaret Warren → Margaret Legh → Eleanor Savage → Katherine Stanley → Joan Goushill → Elizabeth Fitzalan → Elizabeth de Bohun → William de Bohun → Elizabeth of Rhuddlan → Edward I. This is a chain of recorded assertions and conditional hypotheses, not independently proved descent.
+
+Evidence checked:
+
+- Cheshire visitation of 1580, Rylands edition 1882: printed p. 153 (PDF 170), Legh of Lyme, expressly connects Margaret, wife of Lawrence Warren, with Piers Legh and Eleanor Savage. Printed pp. 203–204 (PDF 220–221) show Eleanor under John Savage and Katherine Stanley. Printed p. 242 (PDF 259) independently shows Lawrence and Margaret Legh as a couple, and separates earlier Lawrences with other wives. The Warren chart does not list Margaret Warren/Hyde as their daughter: her maternal assignment is a compiled claim from Multiwords Hy14, supported only by marriage context, not upgraded to documentary proof.
+- Public scan: https://archive.org/details/visitationchesh00fellgoog/page/n169/mode/1up . Downloaded PDF `/private/tmp/muncie-cheshire-1580.pdf`; OCR `/private/tmp/muncie-cheshire-1580-ocr.txt`; inspected images `/private/tmp/muncie-legh-p153.png`, `/private/tmp/muncie-warren-p242.png`, `/private/tmp/muncie-savage-220.png`, `/private/tmp/muncie-savage-221.png`.
+- Multiwords Hy14: https://www.multiwords.de/genealogy/Hy14HamnetHyde.htm . The earlier Hyde material contains conflicting generations/dates; only the explicit Warren mother claim was used here.
+- John Ravilious, 26 November 1999, cites Barnes British Roots of Maryland Families and Cheshire visitation p. 153 for the Warren/Legh identities; the cited Barnes volume is uninspected: https://groups.google.com/g/soc.genealogy.medieval/c/xJtgkHZDrmI/m/hHuGjcWGdu8J . Other branches in that discussion have later corrections; none were copied into Tom’s tree.
+- Katherine Stanley parents: https://www.thepeerage.com/p70924.htm#i709239 . Joan Goushill parents: https://www.thepeerage.com/p1385.htm#i13849 . Elizabeth Fitzalan parents: https://www.thepeerage.com/p196.htm#i1959 . Elizabeth de Bohun parents: https://www.thepeerage.com/p10690.htm#i106899 . William de Bohun parents: https://www.thepeerage.com/p10182.htm#i101816 . Elizabeth of Rhuddlan parents: https://www.thepeerage.com/p10192.htm#i101916 . Each online parent claim was inspected, including its printed-source citations where supplied. The cited books and original records were not inspected; compiled claim status retained.
+
+Four evidence reviews expose the supporting material and limits. The trail summary now identifies the current candidate endpoint and names the unresolved Prather, immigrant and Warren bridges. A meaningful regression check traces Edward I to Tom through these same disputed bridges, and confirms the biblical branch is not silently joined. No medieval legendary bridge has been added; user preference is pending. This batch is local and queued with earlier research for minimal publication.

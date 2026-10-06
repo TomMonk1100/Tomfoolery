@@ -13,6 +13,43 @@ export interface AncestryFinding {
 const cartulary = 'https://www.cambridge.org/core/services/aop-cambridge-core/content/view/E7CE82B8FBBBC523A6785663BB57C36A/S0960116311000121a.pdf/beauchief_abbey_cartulary.pdf';
 export const ancestryFindings: AncestryFinding[] = [
   {
+    id:'warren-legh-mother-candidate', people:['candidate-margaret-warren-hyde','candidate-lawrence-warren-poynton','candidate-margaret-legh-warren'],
+    title:'Margaret Legh: a proposed mother on the Warren route', confidence:'provisional', sourceKind:'compiled genealogy',
+    citation:'Multiwords, Hamnet Hyde (Hy14), generation 12; John Ravilious, soc.genealogy.medieval, 26 November 1999, ancestor numbers 34–35, citing Barnes, British Roots of Maryland Families. Compared with Rylands, ed., Cheshire visitation of 1580 (1882), printed pp. 153 and 242; scans inspected 6 October 2026.',
+    url:'https://www.multiwords.de/genealogy/Hy14HamnetHyde.htm',
+    finding:'The Hyde compilation assigns Margaret Warren, Hamnet Hyde’s wife, to Lawrence Warren and Margaret Legh. The scanned visitation independently shows Lawrence married to Margaret, daughter of Piers Legh of Lyme. It distinguishes this couple from earlier Lawrences with different wives.',
+    limit:'The Warren chart does not list Margaret Warren among this couple’s children. The mother assignment therefore remains a compiled claim; the inspected marriage is supporting context, not proof of the daughter’s identity. Dates vary between compilations and remain broad. Tom’s earlier Newman and immigrant links remain unresolved.',
+    next:'Find the marriage settlement or probate naming the Hyde daughter and her mother. Compare Barnes’s cited documents before upgrading the maternal edge.',
+  },
+  {
+    id:'legh-savage-visitation-route', people:['candidate-margaret-legh-warren','candidate-piers-legh-lyme','candidate-eleanor-savage-legh','candidate-john-savage-clifton','candidate-katherine-stanley-savage'],
+    title:'The Legh and Savage pedigrees continue toward the Stanleys', confidence:'provisional', sourceKind:'transcription',
+    citation:'J. P. Rylands, ed., The Visitation of Cheshire in the Year 1580 (1882), printed pp. 153, 203–204 and 242; PDF pages 170, 220–221 and 259. Page images inspected 6 October 2026.',
+    url:'https://archive.org/details/visitationchesh00fellgoog/page/n169/mode/1up',
+    finding:'Page 153 places Margaret, wife of Lawrence Warren, under Piers Legh and Eleanor, John Savage’s daughter. Pages 203–204 place Eleanor, wife of Piers Legh, among the children of John Savage and Katherine Stanley. Katherine is described as the first Earl of Derby’s sister.',
+    limit:'This is a printed heraldic pedigree, not the original manuscript or independently proved vital records. Several Piers Legh and John Savage generations appear in it; these profiles identify the specific couples shown. Tom’s connection remains conditional on the disputed American bridge and the Warren maternal assignment.',
+    next:'Compare settlements for these couples and the Stanley pedigree. Keep the repeated names distinct when checking later source citations.',
+  },
+  {
+    id:'stanley-goushill-fitzalan-route', people:['candidate-katherine-stanley-savage','candidate-thomas-stanley-first-lord','candidate-joan-goushill-stanley','candidate-robert-goushill','candidate-elizabeth-fitzalan-goushill','candidate-richard-fitzalan-arundel','candidate-elizabeth-bohun-fitzalan'],
+    title:'A cited candidate route through Stanley, Goushill and Fitzalan', confidence:'provisional', sourceKind:'compiled genealogy',
+    citation:'Darryl Lundy, The Peerage, people 709239, 13849 and 1959; pages 70924, 1385 and 196, inspected 6 October 2026. Citations include Burke’s Peerage 2003, vol. 1 p. 1101, and The Complete Peerage, vol. I pp. 246 and 253; cited books uninspected.',
+    url:'https://www.thepeerage.com/p1385.htm#i13849',
+    finding:'The compilation names Thomas Stanley and Joan Goushill as Katherine’s parents; Robert Goushill and Elizabeth Fitzalan as Joan’s; and Richard Fitzalan and Elizabeth de Bohun as Elizabeth Fitzalan’s. These six parent claims continue the displayed candidate route.',
+    limit:'The online compilation and its source references were inspected, not the cited books or original documents. This conditional route does not establish Tom’s descent from the named medieval people. It retains every earlier disputed link rather than treating an established royal family as proof of a modern connection.',
+    next:'Check the cited peerage entries and Goushill’s inquisition post mortem, then verify each link with dated records. Resolve the immigrant identity independently.',
+  },
+  {
+    id:'bohun-edward-i-candidate-route', people:['candidate-elizabeth-bohun-fitzalan','candidate-william-bohun-northampton','candidate-elizabeth-badlesmere-bohun','candidate-humphrey-bohun-hereford','candidate-elizabeth-rhuddlan','candidate-edward-i-england','candidate-eleanor-castile'],
+    title:'The candidate trail now reaches Edward I and Eleanor of Castile', confidence:'provisional', sourceKind:'compiled genealogy',
+    citation:'The Peerage, people 106899, 101816 and 101916, pages 10690, 10182 and 10192; inspected 6 October 2026. Cites The Complete Peerage, vol. I pp. 244–246, and Alison Weir, Britain’s Royal Families (1999), pp. 78 and 83–85. Cited books uninspected.',
+    url:'https://www.thepeerage.com/p10192.htm#i101916',
+    finding:'Elizabeth de Bohun is assigned to William de Bohun and Elizabeth de Badlesmere. William is assigned to Humphrey de Bohun and Elizabeth of Rhuddlan. Elizabeth of Rhuddlan is assigned to Edward I and Eleanor of Castile. This extends the candidate trail to generation 28 from Tom.',
+    limit:'These are explicit compiled parent claims with published references, not newly inspected original records. The medieval segment does not remove the earlier Newman, immigrant and Warren uncertainties. No connection from these royal people to biblical Adam and Eve has been established; that gap stays open.',
+    next:'Inspect the cited royal pedigree sources, follow only explicitly sourced older parentage, and review medieval legendary pedigrees separately from historical family claims.',
+  },
+
+  {
     id: 'hyde-earlier-visitation-pedigree', people: ['candidate-robert-hyde-norbury','candidate-robert-hyde-elder-norbury','candidate-jane-davenport-hyde','candidate-hamnet-hyde-norbury','candidate-margaret-warren-hyde','candidate-lawrence-warren-poynton','candidate-william-davenport-bramhall','candidate-william-calverley-yorkshire'],
     title: 'Earlier Hyde generations in a scanned visitation pedigree', confidence: 'provisional', sourceKind: 'transcription',
     citation: 'G. J. Armytage and J. P. Rylands, eds., Pedigrees Made at the Visitation of Cheshire, 1613 (1909), printed p. 135, Hyde of Norbury, citing Harleian MS 1535, fol. 171b. Scan inspected 6 October 2026; PDF page 151.',
