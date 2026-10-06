@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { familyMapPeople, familyMapById, familyMapKnownCount, searchFamilyMap, mapProfileUrl, mapEdgeAssessment } from '../../../data/family-map';
 import { sharedPeople, sharedById, ADAM, MARK, PATRICK, FRED_RICHARD } from '../../../data/shared-family';
 import { people as researchPeople, relationships } from '../../../data/family';
-import { candidatePeople, ANDREA_GOTHAM, HENRY_GOTHAM, NEWMAN_PRATHER, JOSIAH_PRATHER, JOHN_SMITH_PRATHER, ELIZABETH_NUTHALL } from '../../../data/ancestry-candidates';
+import { candidatePeople, ANDREA_GOTHAM, HENRY_GOTHAM, NEWMAN_PRATHER, JOSIAH_PRATHER, JOHN_SMITH_PRATHER, ELIZABETH_NUTHALL, MARY_HYDE, ROBERT_HYDE, JOHN_CROSS_MANOR, candidateRelationships } from '../../../data/ancestry-candidates';
 import { ancestryAudit } from '../ancestry';
 import { familyMapAncestryById } from '../../../data/family-map';
 import { biblicalPeople } from '../../../data/biblical-family';
@@ -10,7 +10,7 @@ import { sharedGraph, SHARED_CARD } from '../shared-graph';
 
 describe('all known people and explicit unknown positions on one map', () => {
   it('preserves every family person and adds all biblical people as distinct identities', () => {
-    expect(familyMapKnownCount).toBe(654);
+    expect(familyMapKnownCount).toBe(671);
     expect(new Set(familyMapPeople.map(p => p.id)).size).toBe(familyMapPeople.length);
     for (const p of sharedPeople) {
       expect(familyMapById[p.id]).toMatchObject({ name:p.name, kind:'family' });
@@ -35,7 +35,7 @@ describe('all known people and explicit unknown positions on one map', () => {
     expect(graph.edges.find(e=>e.from==='p022' && e.to==='p001')).toMatchObject({sourceKind:'original record'});
   });
   it('extends the research trail with explicitly provisional, sourced claims', () => {
-    expect(candidatePeople).toHaveLength(4);
+    expect(candidatePeople).toHaveLength(21);
     expect(sharedById[HENRY_GOTHAM].parents).toEqual([]);
     expect(familyMapAncestryById[HENRY_GOTHAM].parents).toEqual([ANDREA_GOTHAM]);
     expect(ancestryAudit(ADAM,familyMapAncestryById).longest.at(-1)).toBe(ANDREA_GOTHAM);
@@ -51,6 +51,16 @@ describe('all known people and explicit unknown positions on one map', () => {
       expect(mapEdgeAssessment(from,to,'parent')).toMatchObject({confidence:'provisional',sourceKind:'compiled genealogy',evidenceUrl:'/family/#prather-josiah-parent-candidate'});
       expect(familyMapById[from].children).toContain(to);
     }
+  });
+  it('preserves source reviews on every earlier candidate edge and carries uncertainty through the English bridge', () => {
+    for (const r of candidateRelationships) {
+      expect(familyMapAncestryById[r.to].parents).toContain(r.from);
+      expect(familyMapById[r.from].children).toContain(r.to);
+      expect(mapEdgeAssessment(r.from,r.to,'parent')).toMatchObject({confidence:'provisional',sourceKind:'compiled genealogy',evidenceUrl:`/family/#${r.finding}`});
+    }
+    expect(mapEdgeAssessment(MARY_HYDE,JOHN_CROSS_MANOR,'parent').review).toContain('Disputed identity bridge');
+    expect(familyMapAncestryById[MARY_HYDE].parents).toContain(ROBERT_HYDE);
+    expect(ancestryAudit(ADAM,familyMapAncestryById).ids).toContain(ROBERT_HYDE);
   });
   it('adds only immediate ? positions, without invented parents for Adam and Eve or for placeholders', () => {
     for (const p of familyMapPeople.filter(p=>p.kind==='unknown')) {

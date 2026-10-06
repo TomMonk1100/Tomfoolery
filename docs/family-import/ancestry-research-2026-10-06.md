@@ -153,3 +153,56 @@ and each candidate, and candidate review navigation expands the correct
 section. Full verification passed: 324 tests, types, assets, 3,720-page build.
 Still local, queued with the preceding scope fix and Andrea candidate;
 no additional production publication or Netlify credit used in this turn.
+
+### Sprigg–Nuthall–Hyde route, 6 October 2026
+
+Added 17 further distinct display-only candidate identities, each with an
+explicit cited provisional parent edge and a linked review. This continues
+John Smith Prather's proposed maternal route through Martha Sprigg into the
+English pedigrees, without changing imported identities. The Newman/Josiah
+match remains unresolved; the immigrant-to-English-family bridge is disputed.
+No biblical connecting edge was added. Current overlay: 671 named people,
+21 candidate identities, 425 immediate unknown positions. The new Warren
+endpoint is G20 from Tom; longest overall trail remains G26 through Andrea.
+
+Five reviews separate the family context, colonial parent claims, English
+identity dispute, Hyde grouping, and earlier visitation generations. The
+Council edition in Archives of Maryland vol. 5 p. 34 was inspected as a scan:
+it names Eleanor among Cross Manor's John's children and identifies her
+husband Thomas Sprigg. It does not name her mother. The scanned visitation
+edition (Armytage/Rylands 1909), pp. 135–136 and 190, was inspected directly;
+it shows the English family relationships, but does not name the immigrant
+among the Nuthall children. Do not treat this omission alone as disproof or
+assume the unlisted immigrant is the English son. Underlying manuscripts and
+baptisms are still uninspected. Every proposed descent from Tom remains
+conditional; neither source proves a route to a biblical person.
+
+Sources and reproducible scan locations:
+- https://www.ffish.com/family_tree/pedigrees/4068.htm — compiled family notes
+  and quoted Thomas Prather will abstract, Liber 13 folio 379. Search-indexed
+  passage inspected; direct web fetch failed. Original will not inspected.
+- https://www.anamericanfamilyhistory.com/Maryland%20Families/Prather%20Family.html
+  — Martha Yoakley will abstract and Prather family context.
+- https://msa.maryland.gov/megafile/msa/speccol/sc2900/sc2908/000001/000426/html/am426--939.html
+  — official biographical dictionary corrigenda, Josiah's family context.
+- https://msa.maryland.gov/megafile/msa/speccol/sc2900/sc2908/000001/000005/pdf/am5--34.pdf
+  — scanned printed Council edition. Local PDF /private/tmp/muncie-nuthall-council-34.pdf;
+  embedded image extracted to /private/tmp/muncie-nuthall-council-source.png.
+- https://archive.org/details/recordsociety58recouoft — catalogue title verified.
+  Public download recordsociety58recouoft.pdf; local /private/tmp/muncie-cheshire-1613.pdf.
+  Printed pp. 135–136 = PDF pages 151–152; p. 190 = PDF page 206.
+  Rendered /private/tmp/muncie-hyde-p135.png, muncie-hyde-p136.png,
+  muncie-nuthall-p190.png. Layout OCR /private/tmp/muncie-cheshire-1613-layout.txt.
+
+Next: Warren of Poynton pp. 249–250 (PDF 265–266) has multiple Johns and
+Laurences; identify which Laurence is Margaret Hyde's father before adding
+his parents. The Hyde page identifies her father but gives no date or mother.
+Do not merge the two Laurence generations. The Nuthall page omits the
+immigrant; compare alleged baptism and 1644 family references. The Bacon
+royal-parent claim is disputed and was not added. The direct seekingmyroots
+Sprigg scan download timed out; never claim it was inspected.
+
+Full verification: 325 tests, type checking, assets, 3,720-page build passed.
+Browser confirms all 671 names and 425 gaps in All recorded; new candidate
+profiles and G20/G19/G18 endpoints are discoverable. Changes remain local
+with the earlier queued batch; no new production publish or credit used.

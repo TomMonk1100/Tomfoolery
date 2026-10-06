@@ -65,4 +65,4 @@ export function searchFamilyMap(query: string) {
 }
 export const mapSource = (id: string) => familyMapById[id].kind === 'biblical'
   ? `${biblicalById[id].verse} · biblical narrative` : familyMapById[id].kind === 'unknown'
-    ? 'Unknown immediate parent position; identity and relationship status unestablished.' : familyMapById[id].kind === 'research' ? 'Research person · see profile for evidence and confidence' : familyMapById[id].kind === 'candidate' ? 'Provisional contributor-tree claim · identity and parentage unverified' : 'Family-provided record';
+    ? 'Unknown immediate parent position; identity and relationship status unestablished.' : familyMapById[id].kind === 'research' ? 'Research person · see profile for evidence and confidence' : familyMapById[id].kind === 'candidate' ? 'Provisional compiled claim · identity and parentage unverified' : 'Family-provided record';
