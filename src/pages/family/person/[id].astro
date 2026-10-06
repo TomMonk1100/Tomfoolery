@@ -1,0 +1,12 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import SharedFamilyRecord from '../../../components/SharedFamilyRecord.astro';
+import { sharedRecords } from '../../../data/shared-family-records';
+import '../../../styles/family.css';
+import '../../../styles/shared-family.css';
+export function getStaticPaths() {
+  return Object.values(sharedRecords).filter(r => r.kind === 'person').map(record => ({ params: { id: record.id }, props: { record } }));
+}
+const { record } = Astro.props;
+---
+<Layout title={`${record.title} — Family history`} description={`Family-provided details, events, relationships and sources for ${record.title}.`} noindex><SharedFamilyRecord record={record} /></Layout>

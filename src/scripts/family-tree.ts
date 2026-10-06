@@ -104,6 +104,8 @@ function initFamilyTree() {
     if (refit) fit();
   }
   function revealPerson(id: string) {
+    const researchTree = root.querySelector<HTMLDetailsElement>('.shared-research-tree');
+    if (researchTree) researchTree.open = true;
     const person = personById[id];
     if (!person) return false;
     if (person.provisional) { toggles.parents.checked = true; toggles.earlier.checked = true; toggles.provisional.checked = true; }

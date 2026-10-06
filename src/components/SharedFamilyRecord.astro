@@ -1,0 +1,28 @@
+---
+import { sharedRecords, type SharedRecord } from '../data/shared-family-records';
+import { personById, sourceById } from '../data/family';
+import { ADAM, personUrl, sharedById } from '../data/shared-family';
+interface Props { record: SharedRecord }
+const { record } = Astro.props;
+const person = record.kind === 'person' ? sharedById[record.id] : undefined;
+const research = record.kind === 'person' ? personById[record.id] : undefined;
+const media = (url: string) => sharedRecords[`media:${url.split('/').filter(Boolean).at(-1)}`];
+---
+<article class="editorial-page family-page shared-record-page">
+  <a class="family-back" href={`/family/?focus=${person?.id || ''}`}>← Family tree</a>
+  <header class="family-lead"><span class="editorial-kicker">Muncie & Crook · {record.kind} record</span><h1>{record.title}</h1>{record.id===ADAM && <p>Preferred name: Tom · supplied by Adam</p>}{record.dates && <p>{record.dates}</p>}</header>
+  <p class="shared-provenance"><strong>Family-provided genealogy · imported 5 October 2026.</strong> These are your family’s recorded details and citations. A cited collection is not an original document inspected by this site. Repeated or conflicting entries are preserved.</p>
+  {person && <p><a href={`/family/?focus=${person.id}`}>Explore this person’s branches ↗</a>{research && <> · <a href={`/family/#person-${research.id}`}>Open researched profile ↗</a></>}</p>}
+  {record.images.map(src => <img class="shared-record-photo" src={src} alt={record.title === 'Unnamed Media' ? 'Photograph from the shared family tree; caption not recorded.' : record.title} loading="lazy" />)}
+  {record.sections.map(section => <section class="shared-record-section">
+    <h2>{section.title === 'Overview' ? 'Recorded details' : section.title}</h2>
+    {section.text && <p class="shared-record-text">{section.text}</p>}
+    {section.fields.length > 0 && <dl class="family-facts">{section.fields.map(field => <div><dt>{field.label} <span class="family-confidence" data-confidence={field.confidence}>{field.confidence} · family-provided</span></dt><dd>{field.links.length ? field.links.map(link => <a class="shared-field-link" href={link.url}>{link.name}</a>) : /^https?:\/\/\S+$/.test(field.value) ? <a href={field.value}>{field.value}</a> : field.value}</dd></div>)}</dl>}
+    {section.cards.length > 0 && <ul class="shared-record-cards">{section.cards.map(card => {
+      const itemMedia = card.url.includes('/record/media/') ? media(card.url) : undefined;
+      return <li><a href={card.url}>{card.name || 'Untitled entry'} ↗</a>{itemMedia?.images[0] && <a href={card.url}><img src={itemMedia.images[0]} alt={itemMedia.title === 'Unnamed Media' ? 'Shared family photograph' : itemMedia.title} loading="lazy" /></a>}{card.fields.length > 0 && <dl>{card.fields.map(field => <div><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl>}</li>;
+    })}</ul>}
+  </section>)}
+  {research && <section class="shared-record-section"><h2>Independent research & differing details</h2><p>The existing research record uses the same permanent person ID. Its original documents, hypotheses, and unresolved differences remain available alongside this family account.</p><dl class="family-facts">{research.facts.map(f => <div><dt>{f.label}<span class="family-confidence" data-confidence={f.confidence}>{f.confidence}</span></dt><dd>{f.value}{f.note && <small>{f.note}</small>}<span class="family-fact-sources">{f.sources.map(id => <a href={`/family/#source-${id}`}>{sourceById[id].kind} ↗</a>)}</span></dd></div>)}</dl></section>}
+  <p class="shared-record-origin"><a href={record.originalUrl}>Entry in Kevin’s shared MacFamilyTree ↗</a> · Stable ID: {record.id}</p>
+</article>

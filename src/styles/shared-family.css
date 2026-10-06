@@ -1,0 +1,54 @@
+.shared-tree { margin-bottom: 2rem; }
+.shared-tree-intro { border-left: 3px solid var(--supported); padding: .15rem 0 .15rem 1rem; margin: 0 0 1.4rem; font-size: .85rem; line-height: 1.7; color: var(--color-muted); }
+.shared-tree-intro p + p { margin-top: .4rem; }
+.shared-tree-intro strong { color: var(--color-ink); }
+.shared-tree .family-map-stage { height: clamp(500px, 62vh, 700px); }
+.shared-tree .family-map-person { width: 224px; height: 112px; }
+.shared-tree .family-node-name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.shared-tree .family-node-alias { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shared-tree .family-map-lines path { stroke-width: 2; }
+.shared-tree .family-map-lines path[data-kind="partner"] { stroke: var(--color-muted); stroke-dasharray: 7 4; }
+.shared-tree .family-map-lines path { vector-effect: non-scaling-stroke; }
+.shared-options select { min-height: 40px; background: var(--color-surface); border: 1px solid var(--color-line); color: var(--color-ink); font-size: .78rem; padding: .35rem; max-width: 140px; }
+.shared-shortcuts { display: flex; flex-wrap: wrap; gap: .35rem 1rem; align-items: center; border-bottom: 1px solid var(--color-line); padding: .35rem 1.5rem; font-size: .78rem; color: var(--color-muted); }
+.shared-shortcuts button, .shared-shortcuts a { min-height: 40px; display: inline-flex; align-items: center; text-decoration: underline; }
+.shared-key { display: flex; flex-wrap: wrap; gap: 1.4rem; font-size: .75rem; color: var(--color-muted); }
+.shared-key span::before { content: ''; display: inline-block; vertical-align: middle; width: 24px; border-top: 2px solid var(--supported); margin-right: .4rem; }
+.shared-key span + span::before { border-color: var(--color-muted); border-top-style: dashed; }
+.shared-directory { display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: .5rem 1.5rem; }
+.shared-directory li { padding: .7rem 0; border-bottom: 1px solid var(--color-line); font-size: .85rem; }
+.shared-directory small { display: block; font-size: .72rem; color: var(--color-muted); margin-top: .3rem; }
+.shared-explore, .shared-profile-link { display: block; width: 100%; text-align: center; min-height: 44px; margin: .65rem 0; border: 1px solid var(--color-line); background: var(--color-surface); padding: .65rem; font-size: .85rem; }
+.shared-person-dialog h4 { margin-top: 1.3rem; font: 600 1rem var(--font-display); }
+.shared-person-dialog .family-profile-relations { margin-top: .6rem; }
+.shared-person-dialog .family-profile-relations button { text-align: left; min-height: 44px; text-decoration: underline; }
+.shared-provenance { color: var(--color-muted); line-height: 1.7; font-size: .8rem; margin: 1.5rem 0; }
+.shared-record-page { max-width: 60rem; }
+.shared-record-section { padding: 1.5rem 0; border-top: 1px solid var(--color-line); overflow-wrap: anywhere; }
+.shared-record-section h2 { font-size: 1.5rem; }
+.shared-record-section > p { line-height: 1.7; font-size: .85rem; color: var(--color-muted); margin-top: 1rem; }
+.shared-record-text { white-space: pre-wrap; }
+.shared-record-photo { display: block; max-width: min(100%,600px); max-height: 700px; object-fit: contain; margin: 1.5rem 0; }
+.shared-record-cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,260px),1fr)); gap: 1rem; margin-top: 1rem; }
+.shared-record-cards li { padding: 1rem; border: 1px solid var(--color-line); background: var(--color-surface); font-size: .85rem; }
+.shared-record-cards li > a { display: block; min-height: 30px; }
+.shared-record-cards img { max-width: 100%; height: 180px; object-fit: contain; margin-top: .8rem; }
+.shared-record-cards dl { font-size: .78rem; margin-top: .6rem; }
+.shared-record-cards dl > div { margin-top: .35rem; }
+.shared-record-cards dt { color: var(--color-muted); font-size: .68rem; }
+.shared-field-link { display: block; min-height: 36px; }
+.shared-record-origin { font: .7rem/1.7 var(--font-mono); color: var(--color-muted); margin-top: 2rem; overflow-wrap: anywhere; }
+.shared-research-tree > summary { font: 600 1.1rem var(--font-display); padding-block: 1rem; min-height: 44px; cursor: pointer; }
+@media (max-width:700px) {
+  .shared-tree .family-map-stage { height: 440px; }
+  .shared-tree .family-zoom-controls { grid-template-columns: 40px 48px 40px 1fr; }
+  .shared-tree [data-shared-whole] { grid-column: 1/3; }
+  .shared-tree [data-shared-fullscreen] { grid-column: 3/5; }
+  .shared-tree .shared-options fieldset { display: flex; }
+  .shared-options label:first-child { flex-basis: 100%; }
+  .shared-shortcuts { padding-inline: 1rem; gap: .2rem .9rem; }
+  .shared-tree .family-map-count { white-space: normal; text-align: right; }
+}
+
+.shared-evidence-note > summary { cursor: pointer; padding: .35rem 1.5rem .7rem; font-size: .73rem; color: var(--color-muted); min-height: 36px; }
+.shared-evidence-note .family-map-note { padding-top: .5rem; }

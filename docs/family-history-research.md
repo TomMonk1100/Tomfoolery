@@ -224,3 +224,27 @@ After the Concezio research update, `npm run verify` again passed all gates, inc
 The live archive before and after release contains **30 distinct blog-post links**, with the featured essay linked a second time (31 link occurrences). The exact set of article links is unchanged. Existing game, weather, galleries, and archive implementation files were not edited.
 
 Production checks returned HTTP 200 for Family, Home, Coffee, Archive, Tweets, Now, About, Art, Pokémon, Game, Projects, the scores API, robots.txt, and the sitemap index. Live alternate-name search and keyboard profile selection worked without browser errors. Anchor targets have space above them to remain readable below the fixed site header.
+
+## 5 October 2026 — Kevin's shared tree and the Stockwell connection
+
+The full Muncie & Crook shared tree has now been captured and imported. See
+[the import audit](family-import/README.md) for counts, UUID matches, record
+provenance, preserved discrepancies and rebuild instructions. Adam clarified
+that he is Adam Thomas Muncie and goes by Tom; Kevin is his brother.
+
+The family-provided tree explicitly records Adam → Patrick Eugene Leslie
+Stockwell Muncie → Mark Allen Stockwell, with Gloria Jean Brown as Patrick's
+mother. Gloria's later family with Fred Richard Muncie is separate and does not
+list Patrick as their child. The site starts with Adam and keeps the Stockwell
+parent line distinct from Gloria's later Muncie partner line. This supplies a
+family-reported modern connection, not new proof of biological descent through
+Palmiero. The imported tree does not name Palmiero's parents or establish the
+Concezio / Mancini candidate chain; that original-record research remains open.
+
+The imported tree records Palmiero's death in Franklin, Warren County, contrary
+to the inspected Franklin County death record. It also records Victor's birth in
+1898, contrary to the older 1899 summary lead. These are retained alongside the
+independent research rather than silently reconciled. A useful next record task
+is to inspect the original records behind Mark's birth citation and the family
+entries for Dorothy Dean Macy and Eugene Howard Leslie, while continuing the
+Italian 1895 marriage and Concezio record work.
