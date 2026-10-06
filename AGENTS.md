@@ -8,6 +8,12 @@ astro dev --background
 
 Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
 
+## Publishing budget
+
+Netlify publishing allowance is limited. Batch completed changes into as few
+production pushes as possible, verify locally first, and check the resulting
+deployment without triggering another build. Avoid publishing intermediate work.
+
 ## Private family tree access
 
 For family work, read `docs/family-access.md` and, if present, the local
