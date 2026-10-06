@@ -14,7 +14,7 @@
 .shared-shortcuts button, .shared-shortcuts a { min-height: 40px; display: inline-flex; align-items: center; text-decoration: underline; }
 .shared-key { display: flex; flex-wrap: wrap; gap: 1.4rem; font-size: .75rem; color: var(--color-muted); }
 .shared-key span::before { content: ''; display: inline-block; vertical-align: middle; width: 24px; border-top: 2px solid var(--supported); margin-right: .4rem; }
-.shared-key span + span::before { border-color: var(--color-muted); border-top-style: dashed; }
+.shared-key .shared-key-partner::before { border-color: var(--color-muted); border-top-style: dashed; }
 .shared-directory { display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: .5rem 1.5rem; }
 .shared-directory li { padding: .7rem 0; border-bottom: 1px solid var(--color-line); font-size: .85rem; }
 .shared-directory small { display: block; font-size: .72rem; color: var(--color-muted); margin-top: .3rem; }
@@ -97,3 +97,8 @@
   .ancestry-map-link { grid-column: 2; padding: 0; min-height: 36px; }
   .ancestry-trail-window { max-height: 420px; }
 }
+
+.shared-tree .family-map-lines path[data-kind="parent"][data-confidence="provisional"] { stroke: var(--provisional); stroke-dasharray: 2 6; }
+.shared-key .shared-key-review::before { border-color: var(--provisional); border-top-style: dotted; }
+.shared-review-link { display: block; font-size: .75rem; text-decoration: underline; min-height: 44px; padding-block: .5rem; color: var(--color-muted); }
+.ancestry-trail li > div > .ancestry-review-link { font: .7rem/1.5 var(--font-body); min-height: 44px; color: var(--color-muted); }

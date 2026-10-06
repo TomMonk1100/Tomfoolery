@@ -1,6 +1,7 @@
 ---
 import { ancestryAudit, missingParents } from '../scripts/family/ancestry';
 import { sharedById, ADAM, personUrl } from '../data/shared-family';
+import { relationshipReview } from '../data/ancestry-relationships';
 import { ancestryFindings } from '../data/ancestry-research';
 import { biblicalPeople, biblicalById, ancientGap } from '../data/biblical-family';
 const audit = ancestryAudit();
@@ -15,7 +16,7 @@ const gapsByChild = audit.ids.filter(id => missingParents(sharedById[id]).length
     <label class="ancestry-select">Trail endpoint <select data-ancestry-select>{audit.paths.map((path, i) => <option value={i}>{i===0?'Longest · ':''}{sharedById[path.at(-1)!].name} · {path.length-1} parent links{i>0&&audit.paths.slice(0,i).some(p=>p.at(-1)===path.at(-1))?' · another route':''}</option>)}</select></label>
     <p class="ancestry-trail-help">Start at Tom and read downward into earlier generations. Open a name for its full profile, or “On the map” to explore that branch.</p>
     <div class="ancestry-trail-window" tabindex="0" aria-label="Ancestry trail; scroll to earlier generations">
-      {audit.paths.map((path, i) => <div data-ancestry-path={i} hidden={i!==0}><ol class="ancestry-trail">{path.map((id, generation) => <li><span class="ancestry-generation">{generation===0?'You':`G${generation}`}</span><div><a href={personUrl(id)}>{id===ADAM?'Adam Muncie (Tom)':sharedById[id].name}</a><small>{sharedById[id].dates || 'Dates not recorded'} · family-provided</small></div><a class="ancestry-map-link" href={`/family/?focus=${id}`}>On the map ↗</a></li>)}</ol>
+      {audit.paths.map((path, i) => <div data-ancestry-path={i} hidden={i!==0}><ol class="ancestry-trail">{path.map((id, generation) => <li><span class="ancestry-generation">{generation===0?'You':`G${generation}`}</span><div><a href={personUrl(id)}>{id===ADAM?'Adam Muncie (Tom)':sharedById[id].name}</a><small>{sharedById[id].dates || 'Dates not recorded'} · family-provided</small>{generation>0 && relationshipReview(id,path[generation-1]) && <a class="ancestry-review-link" href={`#${relationshipReview(id,path[generation-1])!.finding}`}>Parent link under review · evidence ↗</a>}</div><a class="ancestry-map-link" href={`/family/?focus=${id}`}>On the map ↗</a></li>)}</ol>
         <div class="ancestry-unknown"><strong>Next generation: parents not recorded</strong><ul>{missingParents(sharedById[path.at(-1)!]).map(g => <li><a href={`#${g.id}`}>Unknown parent {g.slot}</a> <span class="family-confidence" data-confidence="provisional">placeholder</span></li>)}</ul><p>Earlier generations remain an open gap. Their number has not been established.</p></div>
       </div>)}
     </div>

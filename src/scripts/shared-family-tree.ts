@@ -1,5 +1,6 @@
 import { sharedById, searchSharedPeople, ADAM, personUrl } from '../data/shared-family';
 import { sharedGraph, SHARED_DEFAULT, SHARED_CARD, sharedFit, sharedScale, type SharedGraphOptions } from './family/shared-graph';
+import { relationshipReview } from '../data/ancestry-relationships';
 import { directionalNode, type Viewport } from './family/graph';
 function init(){
   const found=document.querySelector<HTMLElement>('[data-shared-tree]');if(!found||found.dataset.initialized)return;const root=found;root.dataset.initialized='true';
@@ -18,7 +19,7 @@ function init(){
   function center(id:string){const n=graph.nodes.find(n=>n.id===id);if(!n)return;view={scale:Math.max(.65,view.scale),x:0,y:0};view.x=size().width/2-(n.x+SHARED_CARD.width/2)*view.scale;view.y=size().height/2-(n.y+SHARED_CARD.height/2)*view.scale;fitted=false;paint();}
   function draw(){
     graph=sharedGraph(focus,options);world.style.width=`${graph.width}px`;world.style.height=`${graph.height}px`;lines.setAttribute('width',String(graph.width));lines.setAttribute('height',String(graph.height));
-    lines.replaceChildren(...graph.edges.map(e=>{const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',e.path);p.dataset.kind=e.kind;return p;}));
+    lines.replaceChildren(...graph.edges.map(e=>{const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',e.path);p.dataset.kind=e.kind;p.dataset.confidence=e.confidence;return p;}));
     labels.replaceChildren(...graph.generations.map(g=>{const l=document.createElement('span');l.textContent=g.label;l.style.top=`${g.y-14}px`;return l;}));
     const byId=new Map(graph.nodes.map(n=>[n.id,n]));for(const [id,element]of nodes){const n=byId.get(id);element.hidden=!n;if(n){element.style.left=`${n.x}px`;element.style.top=`${n.y}px`;}if(id===focus)element.setAttribute('aria-current','true');else element.removeAttribute('aria-current');}
     get('[data-shared-title]').textContent=options.whole?'The complete family':focus===ADAM?'Tom’s family':`${sharedById[focus].name} · family`;
@@ -31,7 +32,7 @@ function init(){
     get('[data-shared-aliases]').textContent=p.aliases.length?`Also recorded as: ${p.aliases.join(' · ')}`:'';
     get<HTMLAnchorElement>('[data-shared-profile]').href=personUrl(id);
     const relatives=get('[data-shared-relatives]');relatives.replaceChildren();
-    for(const [label,ids]of [['Parents',p.parents],['Partners',p.partners],['Children',p.children]]as const){if(!ids.length)continue;const title=document.createElement('h4'),list=document.createElement('ul');title.textContent=label;list.className='family-profile-relations';for(const relative of ids){const li=document.createElement('li'),b=document.createElement('button');b.type='button';b.dataset.sharedOpen=relative;b.textContent=sharedById[relative].name;li.append(b);list.append(li);}relatives.append(title,list);}
+    for(const [label,ids]of [['Parents',p.parents],['Partners',p.partners],['Children',p.children]]as const){if(!ids.length)continue;const title=document.createElement('h4'),list=document.createElement('ul');title.textContent=label;list.className='family-profile-relations';for(const relative of ids){const li=document.createElement('li'),b=document.createElement('button');b.type='button';b.dataset.sharedOpen=relative;b.textContent=sharedById[relative].name;li.append(b);const review=label==='Parents'?relationshipReview(relative,id):label==='Children'?relationshipReview(id,relative):undefined;if(review){const link=document.createElement('a');link.className='shared-review-link';link.href=`/family/#${review.finding}`;link.textContent='Parent link under review · evidence ↗';li.append(link);}list.append(li);}relatives.append(title,list);}
     if(id===ADAM){const note=document.createElement('p');note.className='shared-provenance';note.textContent='Tom is Adam’s preferred name, supplied directly by Adam. His grandfather’s recorded line is Adam → Patrick → Mark Allen Stockwell.';relatives.prepend(note);}
     popup.hidden=true;if(!dialog.open)dialog.showModal();get('[data-shared-person-name]').focus({preventScroll:true});
   }

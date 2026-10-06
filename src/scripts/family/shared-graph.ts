@@ -1,7 +1,8 @@
 import { sharedPeople, sharedById, type SharedPerson } from '../../data/shared-family';
+import { relationshipReview } from '../../data/ancestry-relationships';
 export const SHARED_CARD = { width: 224, height: 112 };
 export interface SharedNode { id:string; x:number; y:number; generation:number }
-export interface SharedEdge { from:string; to:string; kind:'parent'|'partner'; confidence:'supported'; sourceKind:'compiled genealogy'; sourcePerson:string; path:string }
+export interface SharedEdge { from:string; to:string; kind:'parent'|'partner'; confidence:'supported'|'provisional'; importedConfidence:'supported'; review?:string; sourceKind:'compiled genealogy'; sourcePerson:string; path:string }
 export interface SharedGraph { nodes:SharedNode[]; edges:SharedEdge[]; width:number; height:number; generations:{label:string;y:number}[] }
 export interface SharedGraphOptions { ancestors:number; children:boolean; siblings:boolean; whole:boolean }
 export const SHARED_DEFAULT:SharedGraphOptions = {ancestors:2,children:true,siblings:false,whole:false};
@@ -55,8 +56,8 @@ export function sharedGraph(focus:string, options:SharedGraphOptions=SHARED_DEFA
   const edges:SharedEdge[]=[];
   for(const node of nodes){
     const p:SharedPerson=sharedById[node.id];
-    p.parents.forEach((id,i)=>{const parent=nodeMap.get(id);if(!parent)return;const sx=parent.x+SHARED_CARD.width/2,sy=parent.y+SHARED_CARD.height,tx=node.x+SHARED_CARD.width/2+(i-(p.parents.length-1)/2)*12,ty=node.y;const lane=sy+22+(i%3)*7;edges.push({from:id,to:p.id,kind:'parent',confidence:'supported',sourceKind:'compiled genealogy',sourcePerson:p.id,path:`M ${sx} ${sy} V ${lane} H ${tx} V ${ty}`});});
-    for(const id of p.partners){const partner=nodeMap.get(id);if(!partner||node.id>id)continue;const left=node.x<partner.x?node:partner,right=left===node?partner:node;const y=left.y+SHARED_CARD.height/2;edges.push({from:node.id,to:id,kind:'partner',confidence:'supported',sourceKind:'compiled genealogy',sourcePerson:p.id,path:left.generation===right.generation?`M ${left.x+SHARED_CARD.width} ${y} H ${right.x}`:`M ${left.x+SHARED_CARD.width} ${y} H ${right.x+SHARED_CARD.width/2} V ${right.y}`});}
+    p.parents.forEach((id,i)=>{const parent=nodeMap.get(id);if(!parent)return;const sx=parent.x+SHARED_CARD.width/2,sy=parent.y+SHARED_CARD.height,tx=node.x+SHARED_CARD.width/2+(i-(p.parents.length-1)/2)*12,ty=node.y;const lane=sy+22+(i%3)*7;edges.push({from:id,to:p.id,kind:'parent',confidence:relationshipReview(id,p.id)?.confidence||'supported',importedConfidence:'supported',review:relationshipReview(id,p.id)?.finding,sourceKind:'compiled genealogy',sourcePerson:p.id,path:`M ${sx} ${sy} V ${lane} H ${tx} V ${ty}`});});
+    for(const id of p.partners){const partner=nodeMap.get(id);if(!partner||node.id>id)continue;const left=node.x<partner.x?node:partner,right=left===node?partner:node;const y=left.y+SHARED_CARD.height/2;edges.push({from:node.id,to:id,kind:'partner',confidence:'supported',importedConfidence:'supported',sourceKind:'compiled genealogy',sourcePerson:p.id,path:left.generation===right.generation?`M ${left.x+SHARED_CARD.width} ${y} H ${right.x}`:`M ${left.x+SHARED_CARD.width} ${y} H ${right.x+SHARED_CARD.width/2} V ${right.y}`});}
   }
   return {nodes,edges,width,height:Math.max(...nodes.map(n=>n.y))+SHARED_CARD.height+40,generations:rows.map(([g])=>({label:options.whole?`Family depth ${g+1}`:g===0?'Selected person & family':g===1?'Children':g===-1?'Parents':g===-2?'Grandparents & partners':`${-g} generations earlier`,y:28+(g-rows[0][0])*180}))};
 }
