@@ -80,3 +80,55 @@ Talbot returns dated 20 September 1726 include William Needels's inventory
 of £133 9s 10d, matching the later estate-account amount. This entry adds
 no heir identity or parent-child link. Folios 81, 91, 189 and 198 remain
 research leads; nearby calibration scans are not evidence for those entries.
+
+## Renewed path research and scope correction
+
+Tom clarified that the aim is an actual sourced path toward biblical Adam and
+Eve, allowing slight evidence as long as uncertainty is clear. A disconnected
+biblical branch does not satisfy that research objective.
+
+The map's former “All recorded” option meant all ancestors linked to the
+selected person. It did not include unconnected branches. The corrected menu
+separates “All my recorded ancestors” from “All recorded people & biblical
+branch.” The latter selects whole-tree mode; `?view=all` preserves that scope
+in a direct link. Browser inspection confirmed Tom, Adam, Eve and the new
+candidate are all included.
+
+### Andrea deGotham — provisional contributor-tree claim
+
+Directly inspected WikiTree profiles:
+- https://www.wikitree.com/wiki/DeGotham-11 : Andrea, reported 1217; Henry as child.
+- https://www.wikitree.com/wiki/DeGotham-7 : Henry Gulielmus, reported 1247 at
+  Norton Lees; Andrea as father, mother unknown, Roger as child.
+
+The imported Henry (mft-fa80c8f6-5cd2-4356-91af-bc2f56f540b8) reports 1247 at
+Norton, Derbyshire, and Rogerus born 1279 as child. This gives a provisional
+identity match, not original-record proof. The public profiles cite Ancestry
+member trees only. Andrea's cited tree is 32350506/person/18862723017;
+Henry's is 24051471/person/1981864041. Opening Andrea's source led to the
+Ancestry sign-in page; no credentials were entered. User was asked whether
+Ancestry access is available; public research can continue independently.
+
+The new display-only candidate ID is `candidate-andrea-degotham`. Its parent
+claim has a dotted provisional edge and evidence link. The imported Henry's
+parent array remains empty. The ancestry trail now reaches G26, but labels
+Andrea and the extension as unverified. Existing Needles and Parker conflicts
+remain displayed. Andrea's parents are unknown. No biblical connecting edge
+was added. Current overlay: 651 named people / candidates and 405 immediate
+unknown positions. The goal remains incomplete.
+
+Competing source checked: Diana J. Muir, *Ancestors of Barbara Marilyn Austin*
+(June 2018), printed pp. 173 and 183 (PDF pages 176 and 186). It assigns Henry
+to Thomas de Dutton / Phillippa de Standon instead of Andrea. Its account is
+not independent proof and was not imported as another parent set. URL:
+https://www.researchgate.net/profile/Diana-Muir/publication/329991642_Ancestors_of_Barbara_Marilyn_Austin/links/5c280e7f92851c22a34e7f42/Ancestors-of-Barbara-Marilyn-Austin.pdf
+The older Dutton pedigree and medieval regional records should be compared
+before accepting that different claim. The Mary Ellen Roos and Alice
+Mauleverer royal-parent leads also have substantial name/date/source conflicts;
+no new royal parentage was assigned from those search results.
+
+Verification: 323 tests, type checking, asset checks, and 3,720-page build pass.
+Browser checks confirmed candidate profile/evidence navigation and the G26
+trail label. These follow-up changes are local and queued for a future batch;
+no new Netlify publishing credit was used. The preceding 650-person update
+is already live at production commit d59255b.

@@ -124,3 +124,5 @@
   .family-origin-route { grid-template-columns: 1fr; gap: .7rem; }
   .family-origin-route > * { padding: .8rem; }
 }
+
+.family-map-person[data-person-kind="candidate"] { border-style: dashed; border-color: var(--provisional); }

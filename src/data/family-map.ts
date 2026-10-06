@@ -1,10 +1,11 @@
 import { sharedPeople, ADAM, personUrl, type SharedPerson } from './shared-family';
 import { biblicalPeople, biblicalById } from './biblical-family';
 import { people as researchPeople, relationships, sourceById, type SourceKind } from './family';
+import { candidatePeople, candidateRelationships } from './ancestry-candidates';
 import { missingParents } from '../scripts/family/ancestry';
 
 export interface MapPerson extends SharedPerson {
-  kind: 'family' | 'research' | 'biblical' | 'unknown';
+  kind: 'family' | 'research' | 'candidate' | 'biblical' | 'unknown';
   child?: string;
   sourceKind: SourceKind | 'biblical narrative';
 }
@@ -16,6 +17,7 @@ const known: MapPerson[] = [
     id: p.id, uuid: p.id, name: p.name, dates: p.dates, aliases: [...p.aliases], gender: '',
     parents: [], partners: [], children: [], kind: 'research' as const, sourceKind: 'user supplied' as const,
   })),
+  ...candidatePeople.map(p => ({...p, kind:'candidate' as const, sourceKind:'compiled genealogy' as const})),
   ...biblicalPeople.map(p => ({
     id: p.id, uuid: p.id, name: p.name, dates: p.verse, parents: [...p.parents],
     partners: p.id === 'bible-adam' ? ['bible-eve'] : p.id === 'bible-eve' ? ['bible-adam'] : [],
@@ -27,14 +29,18 @@ const known: MapPerson[] = [
 // Display the recorded research assertions without changing imported records or upgrading certainty.
 for (const person of known) {
   const union = (ids: string[], added: string[]) => [...new Set([...ids, ...added])];
+  person.parents = union(person.parents, candidateRelationships.filter(r=>r.to===person.id).map(r=>r.from));
   person.parents = union(person.parents, relationships.filter(r => r.kind === 'parent' && r.to === person.id).map(r => r.from));
   person.children = union(person.children, relationships.filter(r => r.kind === 'parent' && r.from === person.id).map(r => r.to));
   person.partners = union(person.partners, relationships.filter(r => r.kind === 'spouse' && (r.from === person.id || r.to === person.id)).map(r => r.from === person.id ? r.to : r.from));
 }
 export function mapEdgeAssessment(from: string, to: string, kind: 'parent' | 'partner') {
+  const candidate = kind==='parent' && candidateRelationships.find(r=>r.from===from && r.to===to);
+  if(candidate) return {confidence:candidate.confidence, sourceKind:'compiled genealogy' as const, importedConfidence:undefined, review:candidate.note, evidenceUrl:`/family/#${candidate.finding}`};
   const relation = relationships.find(r => kind === 'parent' ? r.kind === 'parent' && r.from === from && r.to === to : r.kind === 'spouse' && ((r.from === from && r.to === to) || (r.from === to && r.to === from)));
   return relation ? { confidence: relation.confidence, sourceKind: sourceById[relation.sources[0]].kind, importedConfidence: undefined, review: relation.note } : {};
 }
+export const familyMapAncestryById: Record<string, SharedPerson> = Object.fromEntries(known.filter(p=>p.kind!=='biblical').map(p=>[p.id,p]));
 export const familyMapKnownCount = known.length;
 const unknown: MapPerson[] = [];
 export const familyMapPeople: MapPerson[] = known.map(p => {
@@ -59,4 +65,4 @@ export function searchFamilyMap(query: string) {
 }
 export const mapSource = (id: string) => familyMapById[id].kind === 'biblical'
   ? `${biblicalById[id].verse} · biblical narrative` : familyMapById[id].kind === 'unknown'
-    ? 'Unknown immediate parent position; identity and relationship status unestablished.' : familyMapById[id].kind === 'research' ? 'Research person · see profile for evidence and confidence' : 'Family-provided record';
+    ? 'Unknown immediate parent position; identity and relationship status unestablished.' : familyMapById[id].kind === 'research' ? 'Research person · see profile for evidence and confidence' : familyMapById[id].kind === 'candidate' ? 'Provisional contributor-tree claim · identity and parentage unverified' : 'Family-provided record';

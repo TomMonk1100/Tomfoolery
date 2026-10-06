@@ -25,8 +25,8 @@ export function missingParents(person: SharedPerson): MissingParent[] {
     confidence: 'provisional', sourceKind: 'inference', kind: 'missing parent position',
   }));
 }
-export function ancestryAudit(start = ADAM) {
-  const paths = ancestryPaths(start);
+export function ancestryAudit(start = ADAM, people: Record<string, SharedPerson> = sharedById) {
+  const paths = ancestryPaths(start, people);
   const ids = [...new Set(paths.flat())];
-  return { paths, ids, ancestors: ids.filter(id => id !== start), longest: paths[0] || [], gaps: ids.flatMap(id => missingParents(sharedById[id])) };
+  return { paths, ids, ancestors: ids.filter(id => id !== start), longest: paths[0] || [], gaps: ids.flatMap(id => missingParents(people[id])) };
 }

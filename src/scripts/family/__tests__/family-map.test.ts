@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { familyMapPeople, familyMapById, familyMapKnownCount, searchFamilyMap, mapProfileUrl, mapEdgeAssessment } from '../../../data/family-map';
 import { sharedPeople, sharedById, ADAM, MARK, PATRICK, FRED_RICHARD } from '../../../data/shared-family';
 import { people as researchPeople, relationships } from '../../../data/family';
+import { candidatePeople, ANDREA_GOTHAM, HENRY_GOTHAM } from '../../../data/ancestry-candidates';
+import { ancestryAudit } from '../ancestry';
+import { familyMapAncestryById } from '../../../data/family-map';
 import { biblicalPeople } from '../../../data/biblical-family';
 import { sharedGraph, SHARED_CARD } from '../shared-graph';
 
 describe('all known people and explicit unknown positions on one map', () => {
   it('preserves every family person and adds all biblical people as distinct identities', () => {
-    expect(familyMapKnownCount).toBe(650);
+    expect(familyMapKnownCount).toBe(651);
     expect(new Set(familyMapPeople.map(p => p.id)).size).toBe(familyMapPeople.length);
     for (const p of sharedPeople) {
       expect(familyMapById[p.id]).toMatchObject({ name:p.name, kind:'family' });
@@ -30,6 +33,14 @@ describe('all known people and explicit unknown positions on one map', () => {
       expect(graph.edges.find(e=>e.from===r.from && e.to===r.to)).toMatchObject({confidence:r.confidence,review:r.note});
     }
     expect(graph.edges.find(e=>e.from==='p022' && e.to==='p001')).toMatchObject({sourceKind:'original record'});
+  });
+  it('extends the research trail with one explicitly provisional, sourced claim', () => {
+    expect(candidatePeople).toHaveLength(1);
+    expect(sharedById[HENRY_GOTHAM].parents).toEqual([]);
+    expect(familyMapAncestryById[HENRY_GOTHAM].parents).toEqual([ANDREA_GOTHAM]);
+    expect(ancestryAudit(ADAM,familyMapAncestryById).longest.at(-1)).toBe(ANDREA_GOTHAM);
+    expect(mapEdgeAssessment(ANDREA_GOTHAM,HENRY_GOTHAM,'parent')).toMatchObject({confidence:'provisional',sourceKind:'compiled genealogy',evidenceUrl:'/family/#gotham-andrea-parent-candidate'});
+    expect(mapProfileUrl(ANDREA_GOTHAM)).toBe(`/family/#${ANDREA_GOTHAM}`);
   });
   it('adds only immediate ? positions, without invented parents for Adam and Eve or for placeholders', () => {
     for (const p of familyMapPeople.filter(p=>p.kind==='unknown')) {

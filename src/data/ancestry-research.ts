@@ -13,6 +13,15 @@ export interface AncestryFinding {
 const cartulary = 'https://www.cambridge.org/core/services/aop-cambridge-core/content/view/E7CE82B8FBBBC523A6785663BB57C36A/S0960116311000121a.pdf/beauchief_abbey_cartulary.pdf';
 export const ancestryFindings: AncestryFinding[] = [
   {
+    id: 'gotham-andrea-parent-candidate', people: ['mft-fa80c8f6-5cd2-4356-91af-bc2f56f540b8'],
+    title: 'A provisional parent candidate beyond Henry: Andrea deGotham', confidence: 'provisional', sourceKind: 'compiled genealogy',
+    citation: 'WikiTree profiles DeGotham-11 (Andrea) and DeGotham-7 (Henry), relationship panels and Sources; directly inspected 6 October 2026. Andrea’s source is Ancestry tree 32350506/person/18862723017; Henry’s is tree 24051471/person/1981864041. Underlying trees and original medieval records are not inspected.',
+    url: 'https://www.wikitree.com/wiki/DeGotham-11',
+    finding: 'Andrea’s profile reports birth in 1217 and names Henry Gulielmus deGotham as a child. Henry’s profile reports 1247 at Norton Lees, names Andrea as father, leaves the mother unknown, and names Roger as a child. The name, year and place give a provisional match to the imported Henry; this is a source-backed contributor-tree hypothesis, not established parentage.',
+    limit: 'Both profiles cite contributor trees only. They are not independent corroborating witnesses, and no medieval document is supplied. A competing compilation, Diana J. Muir, Ancestors of Barbara Marilyn Austin (2018), printed pp. 173 and 183, instead assigns Henry to Thomas de Dutton and Phillippa de Standon. Those mutually different claims remain unresolved. The Dutton claim has not been added as another set of parents, and Andrea’s own parents remain unknown. This candidate does not resolve the earlier Needles/Parker conflicts or connect Tom to a biblical person.',
+    next: 'Inspect the cited Ancestry tree sources and seek a dated Norton charter naming Henry and Andrea together. Compare the Dutton pedigrees and regional records before accepting either parent claim.',
+  },
+  {
     id: 'needles-william-identity-conflict', people: ['mft-de0177fb-c4b9-4ea5-b61e-875db6fdec47', 'mft-807ec9be-5d73-4829-841b-ef6f291c5a7f', 'mft-839c0600-46b6-4cc8-b075-d01d833d4564'],
     title: 'Which William Needles connects the colonial line?', confidence: 'provisional', sourceKind: 'compiled genealogy',
     citation: 'Maryland State Archives, A Biographical Dictionary of the Maryland Legislature, vol. 426, p. 609, Edward Needles entry. Scanned page inspected 5 October 2026.',
