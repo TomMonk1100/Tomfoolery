@@ -16,7 +16,7 @@ declare const Netlify: {
   env: { get: (key: string) => string | undefined };
 };
 
-import { gateResponse } from "./family-gate-lib.ts";
+import { gateResponse } from "../edge-functions-lib/family-gate-lib.ts";
 
 export default async function handler(
   request: Request,

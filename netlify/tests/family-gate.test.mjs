@@ -9,7 +9,7 @@ import {
   passwordMatches,
   safeNextPath,
   timingSafeEqual,
-} from "../edge-functions/family-gate-lib.ts";
+} from "../edge-functions-lib/family-gate-lib.ts";
 
 const PASSWORD = "correct horse batter staple";
 
