@@ -38,3 +38,15 @@ Checked 5 October 2026. No imported IDs, parent arrays, dates, or source asserti
 The John → William and William → Ann parent links now carry a separate provisional research assessment, with dotted map lines and links from the ancestry trail to the conflict. Imported confidence and claims remain stored separately. Other solid lines still mean family-provided assertions, not primary-record proof.
 
 Next: retrieve the Kent estate packet and distributions for named children; inspect John’s Maryland will and William’s estate; establish Ann’s marriage/parentage; compare Hannah’s later probate and original maiden-name evidence. The 1748 William must not silently be merged with the Maryland William reported dead circa 1726. The active goal continues; there is no established modern-to-biblical connection.
+
+## John Nedells’s original Maryland will
+
+Inspected the handwritten register copy in Maryland State Archives, Prerogative Court (Wills), MSA S538-26, Liber WD 1 / 18, numbered folios 198–199 (viewer images 200–201). The page-number field selects an image, which is two ahead of this numbered folio. Downloaded individual viewer PDFs, rather than the entire 116 MB volume. [Official series catalogue](https://guide.msa.maryland.gov/pages/series.aspx?id=S538).
+
+The will begins 11 May 1723, John Nedells of Talbot County. It names four children: Edward Nedells, William Nedells, Elizabeth Rankin (husband John Rankin), and Mary Dudley (husband Samuel Dudley). William receives the remainder of the land where John lives, described as part of the Clift tract, about 200 acres, with a remainder to Edward if William leaves no heirs. Edward and William are executors. Folio 199 records witness oaths on 30 October and 5 November 1723. No parent of John, birth date, or precise death date is stated. Original spelling varies Nedells/Nedels; preserve the imported Needels identity rather than manufacture a spelling duplicate.
+
+The record independently confirms John had a son William. It does **not** establish that the Maryland son is the 1748 Kent William, husband of Hannah and proposed father of Ann. No new people or parent assertions were merged. The research assessment for the imported John → William link stays provisional until the two Williams are reconciled. The newly named Rankin and Dudley families are leads for collateral probate and guardianship, not newly proved ancestors of Tom.
+
+Additional published-register scan checked: S. H. Needles (1876), printed p. 79, PDF p. 155. It transcribes John’s marriage to Elizabeth Man on 24 October 1682 and says John was son of Lieutenant John Needels and Frances of Pianketank River, Virginia. It gives William’s birth as 12 March 1697. This is a published transcription; the family register itself has not been inspected. A catalogue of the register’s present location and the Virginia father’s records are still needed before extending the older line.
+
+Website wording now presents this as Tom’s family tree; named source ownership has been removed from page introductions, counts, and source-link labels. Kevin’s actual person record and the unmodified source import remain intact.

@@ -22,6 +22,15 @@ export const ancestryFindings: AncestryFinding[] = [
     next: 'Inspect John’s 1723 Maryland will (Liber 18, folio 198) and William’s Talbot estate, and compare them with the nine-page Kent probate file. Establish Ann’s parents and Cranfill connection before relying on this medieval trail.',
   },
   {
+    id: 'needels-john-will-1723', people: ['mft-807ec9be-5d73-4829-841b-ef6f291c5a7f', 'mft-de0177fb-c4b9-4ea5-b61e-875db6fdec47'],
+    title: 'John’s original will names four children', confidence: 'probable', sourceKind: 'original record',
+    citation: 'Maryland State Archives, Prerogative Court (Wills), MSA S538-26, Liber WD 1 / 18, folios 198–199, viewer images 200–201. Handwriting inspected 5 October 2026.',
+    url: 'https://guide.msa.maryland.gov/pages/series.aspx?id=S538',
+    finding: 'John Nedells of Talbot County made his will on 11 May 1723. He names sons Edward and William and daughters Elizabeth Rankin and Mary Dudley. Elizabeth’s husband is John Rankin; Mary’s husband is Samuel Dudley. Edward and William are appointed executors. Witness oaths are recorded on 30 October and 5 November 1723.',
+    limit: 'This establishes John’s stated relationship to a son William in the Maryland family. It does not identify that son as the Kent, Delaware William with widow Hannah, or name John’s own parents. The will gives no birth dates and does not establish the imported 8 August death date.',
+    next: 'Inspect William’s Maryland inventory and the land assessment after his death. Compare that family with the Kent estate packet before merging either William.',
+  },
+  {
     id: 'needles-kent-administration-1748', people: ['mft-de0177fb-c4b9-4ea5-b61e-875db6fdec47', 'mft-9c19c8c6-de00-4730-924f-dc5a1fc30300'],
     title: 'An original record names William’s widow Hannah', confidence: 'probable', sourceKind: 'original record',
     citation: 'Kent County, Delaware, Wills H–I, 1730–1749; FamilySearch film 6486, DGS 7652919, image 423 of 460, left page. Handwriting inspected 5 October 2026.',

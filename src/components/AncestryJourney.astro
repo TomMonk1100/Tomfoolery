@@ -10,7 +10,7 @@ const gapsByChild = audit.ids.filter(id => missingParents(sharedById[id]).length
 <section class="ancestry-journey" id="ancestry-journey" aria-labelledby="ancestry-heading" data-ancestry-journey>
   <header><span class="editorial-kicker">The next chapter</span><h2 id="ancestry-heading">How far back can we go?</h2><p>Follow a single trail from Adam (Tom), see where names are missing, and check the records behind the oldest claims.</p></header>
   <div class="ancestry-stats"><p><strong>{audit.ancestors.length}</strong><span>recorded ancestors</span></p><p><strong>{audit.longest.length-1}</strong><span>parent links on the longest trail</span></p><p><strong>{audit.gaps.length}</strong><span>unfilled parent positions</span></p></div>
-  <p class="shared-provenance">These counts describe Kevin’s family account. They do not mean every generation has been independently proved. The longest recorded trail reaches Henry Degotham, whose birth is recorded there as 1247.</p>
+  <p class="shared-provenance">These counts describe the recorded family tree. They do not mean every generation has been independently proved. The longest recorded trail reaches Henry Degotham, whose birth is recorded there as 1247.</p>
   <details class="ancestry-trails" open>
     <summary>Follow one ancestry trail</summary>
     <label class="ancestry-select">Trail endpoint <select data-ancestry-select>{audit.paths.map((path, i) => <option value={i}>{i===0?'Longest · ':''}{sharedById[path.at(-1)!].name} · {path.length-1} parent links{i>0&&audit.paths.slice(0,i).some(p=>p.at(-1)===path.at(-1))?' · another route':''}</option>)}</select></label>
