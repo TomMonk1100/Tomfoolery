@@ -4,6 +4,7 @@ import { people as researchPeople, relationships, sourceById, type SourceKind } 
 import { candidatePeople, candidateRelationships } from './ancestry-candidates';
 import { legendaryPeople, legendaryRelationships } from './legendary-family';
 import { relationshipReview } from './ancestry-relationships';
+import { upbringing } from './close-family-evidence';
 import { missingParents } from '../scripts/family/ancestry';
 
 export interface MapPerson extends SharedPerson {
@@ -40,6 +41,7 @@ for (const person of known) {
   person.partners = union(person.partners, relationships.filter(r => r.kind === 'spouse' && (r.from === person.id || r.to === person.id)).map(r => r.from === person.id ? r.to : r.from));
 }
 export function mapEdgeAssessment(from: string, to: string, kind: 'parent' | 'partner') {
+  if(kind==='parent' && from===upbringing.biologicalFather && to===upbringing.child) return {confidence:'supported' as const,sourceKind:'user supplied' as const,importedConfidence:undefined,review:upbringing.note,evidenceUrl:'/family/#patrick-biological-and-raised-family'};
   const legend = kind==='parent' && legendaryRelationships.find(r=>r.from===from && r.to===to);
   if(legend) return {confidence:legend.confidence, sourceKind:legend.sourceKind, importedConfidence:undefined, review:legend.note, evidenceUrl:`/family/#${legend.finding}`};
   const candidate = kind==='parent' && candidateRelationships.find(r=>r.from===from && r.to===to);

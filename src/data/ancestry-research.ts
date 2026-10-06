@@ -3,7 +3,7 @@ export interface AncestryFinding {
   people: string[];
   title: string;
   confidence: 'supported' | 'probable' | 'provisional';
-  sourceKind: 'original record' | 'archival index' | 'transcription' | 'compiled genealogy';
+  sourceKind: 'original record' | 'archival index' | 'transcription' | 'compiled genealogy' | 'user supplied';
   citation: string;
   url: string;
   finding: string;
@@ -12,6 +12,42 @@ export interface AncestryFinding {
 }
 const cartulary = 'https://www.cambridge.org/core/services/aop-cambridge-core/content/view/E7CE82B8FBBBC523A6785663BB57C36A/S0960116311000121a.pdf/beauchief_abbey_cartulary.pdf';
 export const ancestryFindings: AncestryFinding[] = [
+  {
+    id:'patrick-biological-and-raised-family', people:['mft-58e475c7-22e9-4753-b563-8b06c4ff2dc5','mft-ec434d2f-e202-4a58-a16f-608ccd3d6fe7','mft-9a062353-8ce3-4bd7-9d22-0f7860e861f4'],
+    title:'Mark is Patrick’s biological father; Fred raised Patrick', confidence:'supported', sourceKind:'user supplied',
+    citation:'Adam (Tom) Muncie, direct family testimony, 6 October 2026: “Mark is my dads biological dad but Fred Richard Muncie raised him”.', url:'/family/#recent-family-review',
+    finding:'Tom directly confirms the biological connection to Mark and the upbringing connection to Fred Richard Muncie. Both families belong in his family history.',
+    limit:'This is family testimony, not an inspected birth certificate or adoption order. Fred is not added as a biological parent, and legal adoption is not inferred.',
+    next:'Corroborate Patrick’s parentage with his birth record and the family’s contemporary documents; preserve Fred’s role separately.',
+  },
+  {
+    id:'mark-marker-dates', people:['mft-ec434d2f-e202-4a58-a16f-608ccd3d6fe7'], title:'Mark’s marker corroborates his recorded dates', confidence:'supported', sourceKind:'original record',
+    citation:'Family-supplied photograph of Mark A Stockwell’s military grave marker, media b5337518-efdb-4011-83c6-a0a01a937b76; image inspected 6 October 2026.', url:'/images/family/6f5ae6c21441fdad.jpeg',
+    finding:'The photographed marker reads Mark A Stockwell, 5 November 1940–5 October 2012, A2C USAF Vietnam. These dates match the imported person.',
+    limit:'The marker supports commemorated dates and name. It does not name parents, establish the middle name Allen, or explain the Stockwell/Leslie surname difference.',
+    next:'Inspect Mark’s Indiana birth certificate (1940) for the named parents; compare Dorothy Macy and Eugene Leslie’s marriage and household records.',
+  },
+  {
+    id:'muncie-close-household-1940', people:['p002','p007','mft-0409914c-16fd-4485-baaa-31083b6a4b01','mft-9a062353-8ce3-4bd7-9d22-0f7860e861f4'], title:'The 1940 census identifies the close Muncie household', confidence:'probable', sourceKind:'original record',
+    citation:'1940 US census, Sharon Township, Franklin County, Ohio, ED 25-57, sheet 16A, household 294, lines 3–7; NARA T627. Saved image reinspected 6 October 2026.', url:'https://www.familysearch.org/ark:/61903/3:1:3QSQ-G9M1-943T',
+    finding:'Emma Muncie is head, Fred (25) is her son, Mae (19) her daughter-in-law, Fred Richard (1) her grandson, and Dora Jean (0) her granddaughter. Fred and the younger family members are recorded as born in Ohio.',
+    limit:'Son is a direct household relationship to Emma. Fred and Mae as Fred Richard’s parents is a probable household inference: relationships are to the head, not explicit father/mother fields. Matching Mae to Luneta Mae Etling still needs the marriage record. Palmiero is absent and is not proved as Fred’s father here.',
+    next:'Inspect Fred Victor and Luneta’s 16 March 1938 Franklin County marriage record and Fred Richard’s 1938 birth record; seek earlier households for Fred Victor.',
+  },
+  {
+    id:'brown-mother-date-conflict', people:['mft-e562d673-0941-4d90-82d4-c747c5db6db3','mft-1987620c-0044-4f35-9a91-1f3087279c84'], title:'Brown branch: a mother is dated after her son', confidence:'provisional', sourceKind:'compiled genealogy',
+    citation:'Family-provided entries for Mary Bolton Lamb and Hienz Rasmus Brown; Mary’s sole imported source is Ancestry Family Trees. Compared 6 October 2026.', url:'/family/person/mft-e562d673-0941-4d90-82d4-c747c5db6db3/',
+    finding:'Mary is recorded as born in 1892 and as Hienz’s mother; Hienz is recorded as born 21 January 1881. Those dates cannot describe a biological mother and son as written.',
+    limit:'Mary’s date, identity or relationship is wrong. Her source is a member tree, not an inspected vital record. The original assertion remains visible with a provisional map line; no replacement date or parent is invented.',
+    next:'Inspect Hienz’s Texas death certificate of 28 December 1963 and the Brown household in the 1900 Freestone County census, ED 0036, page 15B; corroborate the mother with earlier marriage records.',
+  },
+  {
+    id:'luneta-birth-and-parent-gaps', people:['mft-0409914c-16fd-4485-baaa-31083b6a4b01'], title:'Luneta’s birth year conflicts and both parents remain unknown', confidence:'provisional', sourceKind:'compiled genealogy',
+    citation:'Family-provided Luneta Mae Etling birth events and source references, compared with the inspected 1940 Muncie household, 6 October 2026.', url:'/family/person/mft-0409914c-16fd-4485-baaa-31083b6a4b01/',
+    finding:'The import retains 1921, about 1921 and 3 November 1923 birth entries. Mae’s age 19 in April 1940 favors approximately 1920–1921 if she is Luneta. Neither parent is named in the imported account.',
+    limit:'The census does not establish an exact birthday or maiden name. No year is silently selected. A same-name Pennsylvania Luneta Etling born in 1876 is not merged into this person.',
+    next:'Retrieve the original 16 March 1938 Franklin County marriage record, which may name the bride’s parents and age, then compare the Ohio birth and 1930 household records.',
+  },
   {
     id:'boyd-parent-date-conflict', people:['mft-ac18e21f-8562-4540-a292-0014f7848951','mft-6e6822b7-100a-4225-8772-6f0893b9a5ad'],
     title:'Boyd route: the imported parent and birth dates conflict', confidence:'provisional', sourceKind:'compiled genealogy',

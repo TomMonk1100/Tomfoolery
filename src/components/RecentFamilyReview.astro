@@ -1,0 +1,29 @@
+---
+import { stockwellReview, muncieReview, importedSourceInventory, recentRecordTargets } from '../data/recent-family-review';
+import { familyMapAncestryById } from '../data/family-map';
+import { upbringing } from '../data/close-family-evidence';
+const branches=[{name:'Stockwell biological branch and Gloria’s family',rows:stockwellReview},{name:'Muncie family that raised Patrick',rows:muncieReview}];
+---
+<section id="recent-family-review" class="recent-family-review" aria-labelledby="recent-family-heading">
+  <span class="editorial-kicker">Close family · evidence audit · 6 October 2026</span>
+  <h2 id="recent-family-heading">Strengthening the first five generations</h2>
+  <p>Counting parents as generation 1, grandparents as 2, through great-great-great-grandparents as 5. All 31 paternal positions have names recorded. A filled position is a family assertion, not a proved relationship. The Muncie upbringing branch is reviewed alongside it.</p>
+  <p><strong>Mark is Patrick’s biological father. Fred Richard Muncie raised Patrick.</strong> This is Tom’s family testimony, recorded 6 October 2026; legal adoption is not inferred. <a href="#patrick-biological-and-raised-family">Tom’s testimony ↗</a></p>
+  <ul>
+    <li><a href="#mark-marker-dates">Mark’s photographed marker corroborates his recorded birth and death dates.</a> It does not identify his parents.</li>
+    <li><a href="#muncie-close-household-1940">The inspected 1940 census names Emma, her son Fred, daughter-in-law Mae and grandson Fred Richard.</a> Fred Richard’s parentage and Mae’s maiden identity still need vital records.</li>
+    <li><a href="#brown-mother-date-conflict">Mary Bolton Lamb’s 1892 birth conflicts with her son Hienz’s 1881 birth.</a> The parent line is now flagged for review.</li>
+    <li><a href="#luneta-birth-and-parent-gaps">Luneta’s birth year conflicts, and her parents are still ?.</a> Her marriage record is the next useful lead.</li>
+  </ul>
+  {branches.map(branch=><details class="family-fallback"><summary>{branch.name} · {branch.rows.length} named positions reviewed</summary>
+    <p>Collection references below are the imported source inventory. Repeated references to the same collection are counted once; none of these counts means the underlying documents were inspected or the person’s parentage was proved.</p>
+    <div class="recent-audit-scroll"><table><thead><tr><th>Generation</th><th>Person &amp; recorded dates</th><th>Source leads &amp; relationship review</th></tr></thead><tbody>{branch.rows.map(row=>{
+      const p=familyMapAncestryById[row.id], inventory=importedSourceInventory(row.id);
+      return <tr><td>{row.generation}</td><td><a href={`/family/?focus=${p.id}`}>{p.name}</a><small>{p.dates}</small></td><td>
+        {row.id===upbringing.child?'Mark → Patrick: user-confirmed biological father; original birth record pending.':row.id==='p002'?'Emma → Fred Victor: son named in inspected 1940 census.':row.id===upbringing.biologicalFather?'Dates corroborated by marker; parents’ original records pending.':row.id==='mft-e562d673-0941-4d90-82d4-c747c5db6db3'?'Conflict: listed mother born after her son. Member-tree source only.':row.id==='mft-0409914c-16fd-4485-baaa-31083b6a4b01'?'Birth year conflict; both parents unknown.':row.id==='p001'?'Palmiero → Fred Victor remains provisional; census does not name Fred’s father.':p.id===upbringing.raisedBy?'Raised Patrick: user confirmed. Own parentage: probable census household inference.':['p022','p023','p008','p009'].includes(p.id)?'Named in the child’s Ohio death certificate; Italian identity and record matches remain under review.':'Original relationship evidence still needs inspection.'}
+        <details><summary>{inventory.collections.length} distinct imported source collections</summary><ul>{inventory.collections.map(c=><li><a href={c.url}>{c.name}</a></li>)}</ul>{!inventory.collections.length&&<p>See the independent research profile and its cited records.</p>}</details>
+      </td></tr>;
+    })}</tbody></table></div>
+  </details>)}
+  <details class="family-fallback"><summary>Prioritized records to check next</summary><ol>{recentRecordTargets.map(t=><li><strong>{t.name}.</strong> {t.target}<small>{t.limit}</small></li>)}</ol><p>For generations 4 and 5, compare each child’s birth or marriage record with the named parent household and probate. Names in the imported account stay provisional as proof until those documents are checked; no missing identities or dates are guessed.</p></details>
+</section>

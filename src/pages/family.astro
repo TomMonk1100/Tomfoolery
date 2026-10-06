@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import FamilyBranch from '../components/FamilyBranch.astro';
 import SharedFamilyMap from '../components/SharedFamilyMap.astro';
+import RecentFamilyReview from '../components/RecentFamilyReview.astro';
 import AncestryJourney from '../components/AncestryJourney.astro';
 import FamilyMap from '../components/FamilyMap.astro';
 import { familyBranch, people, relationships, personById, sourceById, sources } from '../data/family';
@@ -16,6 +17,7 @@ import '../styles/shared-family.css';
       <p>Start with Adam (Tom), follow the Stockwell and Muncie connections, or explore any of the 611 people in my family tree. The Italian research and its unresolved branches remain below.</p>
     </header>
     <SharedFamilyMap />
+    <RecentFamilyReview />
     <AncestryJourney />
     <details class="shared-research-tree" id="italian-research"><summary>Italian research tree · evidence & provisional branches</summary>
     <FamilyMap />
