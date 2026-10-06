@@ -239,3 +239,10 @@ The map now includes all 752 named identities (611 imported, 18 additional Itali
 
 
 The composite route also exposes an imported chronology conflict: Mary Elizabeth Sloan Boyd (1836) is linked to James Madison Boyd (1837). This raw edge is preserved but reviewed as provisional, with a dedicated finding and an evidence link on the map and route. Resolving it is essential to validating this branch. Route jump links make Tom, Edward I, Egbert, the legendary Woden, Noah and Adam/Eve directly reachable without scrolling all 88 steps. The user’s request for biblical/tentative sourced links was taken to include a clearly labelled chronicle tradition after the optional preference question remained unanswered; no historical proof was inferred from that silence.
+
+
+## Close-family original record batch after FamilySearch sign-in
+
+Six new Etling/Taladay research people fill the previously unknown Muncie positions through generation 5; the map has 758 named identities, including 24 research identities beyond the import. Source and relationship confidence is separate from name coverage. Original 1938 marriage, 1930 household, 1920 marriage, Hines Brown’s 1963 death and 1900 household, and Mark’s 1950 household inspected. Luneta and Hines’s own NUMIDENT entries were inspected as indexes with no images. Exact citations, readings, limits and screenshots are in the latest NEXT-SESSION section and research ledger.
+
+Luneta birth years remain disputed. The imported Mary Lamb maternity is contradicted by originals and the application; no replacement date is invented. Mark’s census names William Stockwell as household father; Eugene Leslie’s biological relationship remains unresolved and flagged. User testimony concerning Mark→Patrick and Fred’s upbringing role is preserved. The five-generation goal remains active because many imported relationships still need original-record corroboration. Changes are batched for one git-linked publication after all verification gates pass.

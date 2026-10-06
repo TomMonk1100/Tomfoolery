@@ -5,14 +5,14 @@ import { buildGraph, DEFAULT_GRAPH, CARD, fitGraph, zoomAt, centerOn, directiona
 describe('family overview geometry and evidence', () => {
   it('starts with the central family and immediate parents, hiding earlier research', () => {
     const graph = buildGraph();
-    expect(graph.nodes).toHaveLength(11);
+    expect(graph.nodes).toHaveLength(18);
     expect(graph.nodes.some(node => node.id === 'p014')).toBe(false);
     expect(graph.nodes.some(node => node.id === 'p010')).toBe(false);
     expect(graph.nodes.find(node => node.id === 'p022')!.y).toBeLessThan(graph.nodes.find(node => node.id === 'p001')!.y);
     expect(graph.nodes.find(node => node.id === 'p005')!.y).toBeGreaterThan(graph.nodes.find(node => node.id === 'p001')!.y);
   });
   it('expands earlier generations without silently showing provisional ancestors', () => {
-    expect(buildGraph({ ...DEFAULT_GRAPH, earlier: true }).nodes).toHaveLength(15);
+    expect(buildGraph({ ...DEFAULT_GRAPH, earlier: true }).nodes).toHaveLength(22);
     const full = buildGraph({ ...DEFAULT_GRAPH, provisional: true });
     expect(new Set(full.nodes.map(node => node.id))).toEqual(new Set(people.map(person => person.id)));
   });
@@ -32,7 +32,7 @@ describe('family overview geometry and evidence', () => {
     const graph = buildGraph({ ...DEFAULT_GRAPH, provisional: true });
     expect(graph.edges.map(edge => edge.relationship)).toEqual(relationships.filter(r => r.kind !== 'sibling'));
     const fred = graph.edges.filter(edge => edge.relationship.to === 'p007');
-    expect(fred.map(edge => edge.relationship.confidence)).toEqual(['provisional', 'supported']);
+    expect(fred.map(edge => edge.relationship.confidence)).toEqual(['probable', 'supported']);
     expect(fred[0].path).not.toEqual(fred[1].path);
     const nora = graph.edges.filter(edge => edge.relationship.to === 'p005');
     expect(nora[0].path).toEqual(nora[1].path);
@@ -80,7 +80,7 @@ describe('tree viewport navigation', () => {
     expect(directionalNode(graph.nodes, 'p003', 'left')).toBeUndefined();
   });
   it('keeps both central people fully visible in the focused phone view', () => {
-    const couple = buildGraph().nodes.filter(node => node.generation === 0);
+    const couple = buildGraph().nodes.filter(node => ['p001','p002'].includes(node.id));
     const size = { width: 340, height: 440 };
     const view = centerOn({ ...couple[0], x: (couple[0].x + couple[1].x) / 2 }, size, .7);
     for (const node of couple) {

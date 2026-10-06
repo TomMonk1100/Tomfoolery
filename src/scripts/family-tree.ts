@@ -61,7 +61,7 @@ function initFamilyTree() {
     fitted = false; view = centerOn(node, size(), scale); paintView();
   }
   function familyView() {
-    const couple = graph.nodes.filter(node => node.generation === 0);
+    const couple = graph.nodes.filter(node => ['p001','p002'].includes(node.id));
     const center = { ...couple[0], x: (couple[0].x + couple[1].x) / 2 };
     fitted = false;
     view = centerOn(center, size(), size().width < 600 ? .7 : 1);
@@ -110,7 +110,7 @@ function initFamilyTree() {
     if (!person) return false;
     if (person.provisional) { toggles.parents.checked = true; toggles.earlier.checked = true; toggles.provisional.checked = true; }
     else if (['p010', 'p011', 'p012', 'p013'].includes(id)) { toggles.parents.checked = true; toggles.earlier.checked = true; }
-    else if (['p022', 'p023', 'p008', 'p009'].includes(id)) toggles.parents.checked = true;
+    else if (['p022', 'p023', 'p008', 'p009', 'p026', 'p027', 'p028', 'p029'].includes(id)) toggles.parents.checked = true;
     else if (!['p001', 'p002'].includes(id)) toggles.children.checked = true;
     renderGraph(!graph.nodes.some(node => node.id === id));
     return true;

@@ -33,6 +33,8 @@ describe('first five generations review',()=>{
     expect(stockwellReview).toHaveLength(31);
     expect(stockwellReview.filter(r=>r.generation===5)).toHaveLength(16);
     expect(recentGenerations(PATRICK,6)).toEqual([]);
+    expect(muncieReview).toHaveLength(15);
+    expect(muncieReview.filter(r=>r.generation===5)).toHaveLength(8);
     expect(muncieReview.every(r=>r.generation>=2&&r.generation<=5)).toBe(true);
   });
   it('keeps upbringing distinct from biological descent',()=>{
@@ -42,7 +44,7 @@ describe('first five generations review',()=>{
     expect(mapEdgeAssessment(upbringing.biologicalFather,PATRICK,'parent')).toMatchObject({confidence:'supported',sourceKind:'user supplied'});
   });
   it('flags the impossible Brown parent link without inventing a replacement',()=>{
-    expect(mapEdgeAssessment('mft-e562d673-0941-4d90-82d4-c747c5db6db3','mft-1987620c-0044-4f35-9a91-1f3087279c84','parent')).toMatchObject({confidence:'provisional',review:'brown-mother-date-conflict'});
+    expect(mapEdgeAssessment('mft-e562d673-0941-4d90-82d4-c747c5db6db3','mft-1987620c-0044-4f35-9a91-1f3087279c84','parent')).toMatchObject({confidence:'provisional',review:'brown-original-parent-conflict'});
     expect(importedSourceInventory('mft-e562d673-0941-4d90-82d4-c747c5db6db3').collections).toHaveLength(1);
   });
 });

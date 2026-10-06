@@ -57,7 +57,7 @@ describe('family identity and evidence integrity', () => {
     expect(emmaParents.map(r => r.from)).toEqual(['p008', 'p009']);
     expect(emmaParents.every(r => r.confidence === 'probable' && r.sources.includes('emma-certificate'))).toBe(true);
     expect(relationships.find(r => r.from === 'p002' && r.to === 'p007')).toMatchObject({confidence: 'supported', sources: ['emma-census-1940']});
-    expect(relationships.find(r => r.from === 'p001' && r.to === 'p007')!.confidence).toBe('provisional');
+    expect(relationships.find(r => r.from === 'p001' && r.to === 'p007')).toMatchObject({confidence:'probable',sources:['fred-mae-marriage-1938','palmiero-county-certificate']});
     expect(people.find(p => p.id === 'p001')!.facts.find(f => f.label === 'Date hypothesis')!.confidence).toBe('provisional');
     expect(people.find(p => p.id === 'p001')!.facts.find(f => f.label === 'Birthplace lead')!.confidence).toBe('provisional');
     expect(sources.find(s => s.id === 'palmiero-certificate')).toMatchObject({kind: 'original record', inspected: true});

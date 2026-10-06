@@ -11,7 +11,7 @@ import { sharedGraph, SHARED_CARD } from '../shared-graph';
 
 describe('all known people and explicit unknown positions on one map', () => {
   it('preserves every family person and adds all biblical people as distinct identities', () => {
-    expect(familyMapKnownCount).toBe(752);
+    expect(familyMapKnownCount).toBe(758);
     expect(new Set(familyMapPeople.map(p => p.id)).size).toBe(familyMapPeople.length);
     for (const p of sharedPeople) {
       expect(familyMapById[p.id]).toMatchObject({ name:p.name, kind:'family' });

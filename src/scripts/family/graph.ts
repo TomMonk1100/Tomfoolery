@@ -12,6 +12,8 @@ export interface Size { width: number; height: number }
 // Presentation coordinates only: all connections come from the evidence ledger.
 // Empty spaces deliberately preserve unknown ancestors rather than inventing nodes.
 const positions: Record<string, [number, number]> = {
+  p026: [1200, -1], p027: [1440, -1], p028: [1680, -1], p029: [1920, -1],
+  p024: [1440, 0], p025: [1680, 0], 'mft-0409914c-16fd-4485-baaa-31083b6a4b01': [1200, 1],
   p018: [0, -5], p019: [240, -5],
   p016: [0, -4], p017: [240, -4], p020: [480, -4], p021: [720, -4],
   p014: [120, -3], p015: [600, -3],
@@ -20,7 +22,7 @@ const positions: Record<string, [number, number]> = {
   p001: [360, 0], p002: [600, 0],
   p003: [0, 1], p004: [240, 1], p005: [480, 1], p006: [720, 1], p007: [960, 1],
 };
-const generationLabel = (generation: number) => generation === 1 ? 'Children & family leads' : generation === 0 ? 'Palmiero & Emma' : generation === -1 ? 'Reported / probable parents' : generation === -2 ? 'Earlier parents · transcription' : 'Older ancestry · provisional';
+const generationLabel = (generation: number) => generation === 1 ? 'Children & family leads' : generation === 0 ? 'Palmiero & Emma · Earl & Belle' : generation === -1 ? 'Reported / probable parents' : generation === -2 ? 'Earlier parents · transcription' : 'Older ancestry · provisional';
 
 export function buildGraph(options: GraphOptions = DEFAULT_GRAPH): Graph {
   const visible = Object.entries(positions).filter(([id, [, generation]]) => {
@@ -55,7 +57,7 @@ export function buildGraph(options: GraphOptions = DEFAULT_GRAPH): Graph {
     const sx = from.x + CARD.width / 2 + (outgoing.indexOf(relationship) - (outgoing.length - 1) / 2) * 7;
     const tx = to.x + CARD.width / 2 + (incoming.indexOf(relationship) - (incoming.length - 1) / 2) * 14;
     const sy = from.y + CARD.height;
-    if (from.generation === 0 && to.generation === 1) {
+    if (['p001','p002'].includes(from.id) && to.generation === 1) {
       // A neutral family rail avoids ten overlapping routes across the overview.
       // Each child's stems retain BOTH source relationships and their confidence.
       // Matching evidence shares a stem; differing evidence (Fred) stays parallel.
@@ -66,7 +68,7 @@ export function buildGraph(options: GraphOptions = DEFAULT_GRAPH): Graph {
     const middle = sy + 18 + lane * (to.y - sy - 36) / Math.max(1, siblings.length - 1);
     return { relationship, path: `M ${sx} ${sy} V ${middle} H ${tx} V ${to.y}` };
   });
-  const children = nodes.filter(node => node.generation === 1);
+  const children = nodes.filter(node => ['p003','p004','p005','p006','p007'].includes(node.id));
   const palmiero = byId.get('p001')!, emma = byId.get('p002')!;
   const familyX = (palmiero.x + CARD.width + emma.x) / 2;
   const railY = palmiero.y + CARD.height + 32;
