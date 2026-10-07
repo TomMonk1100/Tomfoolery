@@ -4,7 +4,7 @@ import { people as researchPeople, relationships, sourceById, type SourceKind } 
 import { candidatePeople, candidateRelationships } from './ancestry-candidates';
 import { legendaryPeople, legendaryRelationships } from './legendary-family';
 import { relationshipReview } from './ancestry-relationships';
-import { upbringing } from './close-family-evidence';
+import { upbringing, closeFamilyRelationships } from './close-family-evidence';
 import { missingParents } from '../scripts/family/ancestry';
 
 export interface MapPerson extends SharedPerson {
@@ -33,6 +33,9 @@ const known: MapPerson[] = [
 // Display the recorded research assertions without changing imported records or upgrading certainty.
 for (const person of known) {
   const union = (ids: string[], added: string[]) => [...new Set([...ids, ...added])];
+  person.parents = union(person.parents, closeFamilyRelationships.filter(r=>r.kind==='parent' && r.to===person.id).map(r=>r.from));
+  person.children = union(person.children, closeFamilyRelationships.filter(r=>r.kind==='parent' && r.from===person.id).map(r=>r.to));
+  person.partners = union(person.partners, closeFamilyRelationships.filter(r=>r.kind==='partner' && (r.from===person.id || r.to===person.id)).map(r=>r.from===person.id ? r.to : r.from));
   person.parents = union(person.parents, legendaryRelationships.filter(r=>r.to===person.id).map(r=>r.from));
   person.children = union(person.children, legendaryRelationships.filter(r=>r.from===person.id).map(r=>r.to));
   person.parents = union(person.parents, candidateRelationships.filter(r=>r.to===person.id).map(r=>r.from));
@@ -48,6 +51,8 @@ export function mapEdgeAssessment(from: string, to: string, kind: 'parent' | 'pa
   if(candidate) return {confidence:candidate.confidence, sourceKind:'compiled genealogy' as const, importedConfidence:undefined, review:candidate.note, evidenceUrl:`/family/#${candidate.finding}`};
   const importedReview = kind==='parent' && relationshipReview(from,to);
   if(importedReview) return {confidence:importedReview.confidence,sourceKind:'compiled genealogy' as const,importedConfidence:'supported' as const,review:importedReview.finding,evidenceUrl:`/family/#${importedReview.finding}`};
+  const closeRecord = closeFamilyRelationships.find(r=>r.kind===kind && (kind==='parent' ? r.from===from && r.to===to : (r.from===from && r.to===to) || (r.from===to && r.to===from)));
+  if(closeRecord) return {confidence:closeRecord.confidence,sourceKind:closeRecord.sourceKind,importedConfidence:undefined,review:closeRecord.note,evidenceUrl:`/family/#${closeRecord.finding}`};
   const relation = relationships.find(r => kind === 'parent' ? r.kind === 'parent' && r.from === from && r.to === to : r.kind === 'spouse' && ((r.from === from && r.to === to) || (r.from === to && r.to === from)));
   return relation ? { confidence: relation.confidence, sourceKind: sourceById[relation.sources[0]].kind, importedConfidence: undefined, review: relation.note } : {};
 }

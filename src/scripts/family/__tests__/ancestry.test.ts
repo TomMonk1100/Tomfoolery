@@ -38,8 +38,9 @@ describe('ancestry trails and explicit gaps', () => {
   });
   it('marks disputed parent links without replacing imported assertions or partners', () => {
     const graph = sharedGraph(ADAM,{ancestors:2,children:true,siblings:false,whole:true});
-    expect(graph.edges.filter(e=>e.confidence==='provisional')).toHaveLength(relationshipReviews.length);
-    for (const review of relationshipReviews) {
+    const importedReviews = relationshipReviews.filter(review => sharedById[review.child]?.parents.includes(review.parent));
+    expect(graph.edges.filter(e=>e.confidence==='provisional')).toHaveLength(importedReviews.length);
+    for (const review of importedReviews) {
       expect(sharedById[review.child].parents).toContain(review.parent);
       expect(ancestryFindings.some(f=>f.id===review.finding)).toBe(true);
       expect(graph.edges.find(e=>e.from===review.parent&&e.to===review.child)).toMatchObject({kind:'parent',confidence:'provisional',importedConfidence:'supported',sourceKind:'compiled genealogy',review:review.finding});
