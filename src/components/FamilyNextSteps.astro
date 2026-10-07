@@ -1,0 +1,6 @@
+---
+import { recentRecordTargets } from '../data/recent-family-review';
+import { MARK, GLORIA, FRED_RICHARD } from '../data/shared-family';
+const tasks=[{id:MARK,index:0,title:'Establish Mark’s parents'},{id:GLORIA,index:1,title:'Confirm Gloria’s parent connections'},{id:FRED_RICHARD,index:7,title:'Connect Fred Richard to his parents'},{id:'mft-ee6ed11d-2031-451f-823a-5362114e84a6',index:2,title:'Resolve Dorothy’s birth-year conflict'}];
+---
+<section id="family-next-steps" class="family-next-steps" aria-labelledby="family-next-heading"><span class="editorial-kicker">The next useful records</span><h2 id="family-next-heading">What needs confirming next?</h2><p>Start close to home. Each task strengthens a specific connection before extending the older branches.</p><ol>{tasks.map(task=><li><h3><a href={`/family/?focus=${task.id}`}>{task.title}</a></h3><p>{recentRecordTargets[task.index].target}</p><details><summary>Why this matters</summary><p>{recentRecordTargets[task.index].limit}</p></details></li>)}</ol></section>

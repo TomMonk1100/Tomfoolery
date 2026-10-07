@@ -97,7 +97,7 @@ async function main() {
   const record = records.find(record => record.kind !== 'person');
   const image = records.flatMap(record => record.images).find(path => path.startsWith('/images/family/'));
   if (!person || !record || !image) throw new Error('Local import is missing a person, record, or image.');
-  const paths = ['/family/', `/family/person/${person.id}/`, `/family/record/${record.kind}/${record.id}/`, image];
+  const paths = ['/family/', `/family/person/${person.id}/`, `/family/details/${person.id}.json`, `/family/record/${record.kind}/${record.id}/`, image];
   for (const path of paths) {
     const anonymous = await fetch(familyUrl(path), { redirect: 'manual', signal: AbortSignal.timeout(30_000) });
     if (anonymous.status !== 401) {
@@ -106,7 +106,7 @@ async function main() {
     await anonymous.body?.cancel();
     const authenticated = await getFamily(path, cookie);
     const type = authenticated.headers.get('content-type') ?? '';
-    if (path.startsWith('/images/') ? !type.startsWith('image/') : !type.includes('text/html')) {
+    if (path.startsWith('/images/') ? !type.startsWith('image/') : path.endsWith('.json') ? !type.includes('application/json') : !type.includes('text/html')) {
       throw new Error('Protected route returned an unexpected content type.');
     }
     if ((await authenticated.arrayBuffer()).byteLength === 0) throw new Error('Protected route returned an empty body.');

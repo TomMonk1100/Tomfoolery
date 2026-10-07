@@ -144,3 +144,59 @@
 .recent-family-review table { width:100%; border-collapse:collapse; min-width:580px; text-align:left; }
 .recent-family-review th,.recent-family-review td { padding:.7rem; border-bottom:1px solid var(--color-line); vertical-align:top; }
 .recent-family-review th:first-child { width:6rem; }
+
+/* Family explorer: evidence controls, compact reading and a single details panel. */
+.family-view-bar { display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; padding:.8rem 1.5rem; border-block:1px solid var(--color-line); background:var(--color-surface); }
+.family-view-bar fieldset { display:flex; flex-wrap:wrap; gap:.6rem 1.3rem; align-items:center; }
+.family-view-bar legend { float:left; margin-right:1rem; font:600 .8rem var(--font-display); }
+.family-view-bar label { display:inline-flex; align-items:center; gap:.5rem; min-height:44px; font-size:.85rem; cursor:pointer; }
+.family-view-bar input { accent-color:var(--color-accent-ink); }
+.family-view-bar button { border:1px solid var(--color-line); padding:.5rem 1rem; min-height:44px; font-size:.8rem; }
+.family-view-description { padding:.7rem 1.5rem; font-size:.8rem; line-height:1.6; color:var(--color-muted); }
+.family-breadcrumb { display:flex; flex-wrap:wrap; gap:.2rem; align-items:center; padding:0 1.5rem .8rem; font-size:.75rem; color:var(--color-muted); max-height:140px; overflow:auto; }
+.family-breadcrumb button { min-height:36px; text-decoration:underline; color:var(--color-ink); }
+.family-breadcrumb button[aria-current] { font-weight:600; }
+.shared-tree .family-node-name { font-size:16px; line-height:1.25; }
+.shared-tree .family-node-badge { display:block; font:11px/1.3 var(--font-mono); color:var(--color-muted); margin-top:7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.shared-tree .family-map-person[aria-current] .family-node-badge { color:var(--color-accent-ink); }
+.shared-tree .family-map-lines path[data-role="biological"] { stroke:var(--color-moss-ink); stroke-width:3; }
+.shared-tree .family-map-lines path[data-role="raised"] { stroke:var(--color-gold-ink); stroke-width:3; stroke-dasharray:10 4 2 4; }
+.shared-key .shared-key-raised::before { border-color:var(--color-gold-ink); border-top-style:dashed; }
+.shared-key .shared-key-biological::before { border-color:var(--color-moss-ink); border-top-width:3px; }
+.family-compact { display:none; padding:1rem 1.5rem; background:var(--color-canvas); max-height:650px; overflow:auto; }
+[data-layout="list"] .family-compact { display:block; }
+[data-layout="list"] .family-map-stage, [data-layout="list"] .family-zoom-controls, [data-layout="list"] #shared-map-help { display:none; }
+.family-compact h3 { font:600 .85rem var(--font-display); margin:.6rem 0; color:var(--color-muted); }
+.family-compact ul { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr)); gap:.65rem; margin-bottom:1.5rem; }
+.family-compact button { display:block; width:100%; text-align:left; padding:.85rem; background:var(--color-surface); border:1px solid var(--color-line); min-height:84px; }
+.family-compact button[aria-current] { border-color:var(--color-accent-ink); background:var(--color-surface-2); }
+.family-compact strong,.family-compact span,.family-compact small { display:block; }
+.family-compact strong { font:600 .95rem var(--font-display); }
+.family-compact span,.family-compact small { font-size:.75rem; color:var(--color-muted); margin-top:.3rem; }
+.family-panel-tabs { display:flex; position:sticky; top:0; background:var(--color-canvas); border-bottom:1px solid var(--color-line); margin-block:1rem; z-index:1; }
+.family-panel-tabs button { flex:1; min-height:48px; font-size:.85rem; border-bottom:3px solid transparent; }
+.family-panel-tabs button[aria-selected="true"] { border-color:var(--color-accent-ink); font-weight:600; }
+.family-panel-tabs button:focus-visible { outline:2px solid var(--color-accent-ink); outline-offset:-4px; }
+.shared-person-dialog [role="tabpanel"] p { font-size:.85rem; line-height:1.65; margin-block:.65rem; }
+.shared-person-dialog [role="tabpanel"] a { display:inline-block; min-height:36px; text-decoration:underline; font-size:.8rem; overflow-wrap:anywhere; }
+.shared-person-dialog [data-person-sources] article { border-bottom:1px solid var(--color-line); padding-bottom:1rem; }
+.family-next-steps { margin-block:2.5rem; }
+.family-next-steps h2 { font:600 clamp(1.5rem,3vw,2rem) var(--font-display); margin:.6rem 0; }
+.family-next-steps > p { color:var(--color-muted); font-size:.85rem; line-height:1.65; }
+.family-next-steps ol { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; margin-top:1.3rem; list-style:none; padding:0; }
+.family-next-steps li { padding:1.2rem; border:1px solid var(--color-line); background:var(--color-surface); }
+.family-next-steps h3 { font:600 1rem var(--font-display); margin-bottom:.6rem; }
+.family-next-steps a { display:inline-flex; min-height:36px; text-decoration:underline; }
+.family-next-steps p,.family-next-steps summary { font-size:.8rem; line-height:1.65; }
+.family-next-steps details { margin-top:.6rem; color:var(--color-muted); }
+.family-next-steps summary { min-height:36px; cursor:pointer; }
+@media(max-width:600px) {
+  .family-view-bar,.family-view-description,.family-breadcrumb { padding-inline:1rem; }
+  .family-view-bar fieldset { gap:.3rem .8rem; }
+  .family-view-bar legend { float:none; width:100%; margin:0; }
+  .family-compact { padding:1rem; max-height:580px; }
+  .family-next-steps ol { grid-template-columns:1fr; }
+  .shared-options { align-items:flex-start; }
+  .shared-options fieldset { flex-wrap:wrap; }
+  .family-dialog .family-profile { padding-inline:1rem; }
+}

@@ -34,7 +34,7 @@ describe('ancestry trails and explicit gaps', () => {
     for (const p of biblicalPeople) { expect(sharedById[p.id]).toBeUndefined(); expect(p.sourceKind).toBe('biblical narrative'); for (const parent of p.parents) expect(ids.has(parent)).toBe(true); }
     expect(biblicalPeople.find(p=>p.name==='Seth')!.parents).toEqual(['bible-adam','bible-eve']);
     expect(ancientGap).toMatchObject({generations:null,connected:false});
-    for (const f of ancestryFindings) for (const id of f.people) expect(familyMapAncestryById[id]).toBeDefined();
+    expect(Object.keys(familyMapAncestryById).some(id=>id.startsWith('candidate-'))).toBe(false);
   });
   it('marks disputed parent links without replacing imported assertions or partners', () => {
     const graph = sharedGraph(ADAM,{ancestors:2,children:true,siblings:false,whole:true});

@@ -2,11 +2,12 @@
 import Layout from '../layouts/Layout.astro';
 import FamilyBranch from '../components/FamilyBranch.astro';
 import SharedFamilyMap from '../components/SharedFamilyMap.astro';
+import FamilyNextSteps from '../components/FamilyNextSteps.astro';
 import RecentFamilyReview from '../components/RecentFamilyReview.astro';
 import AncestryJourney from '../components/AncestryJourney.astro';
 import FamilyMap from '../components/FamilyMap.astro';
 import { familyBranch, people, relationships, personById, sourceById, sources } from '../data/family';
-import { familyMapById, mapProfileUrl } from '../data/family-map';
+import { familyMapAncestryById, mapProfileUrl } from '../data/family-map';
 import '../styles/family.css';
 import '../styles/shared-family.css';
 ---
@@ -15,12 +16,14 @@ import '../styles/shared-family.css';
     <header class="family-lead">
       <span class="editorial-kicker">The family notebook · Muncie / Stockwell / Crook</span>
       <h1>One family. Many names.</h1>
-      <p>Start with Adam (Tom), follow the Stockwell and Muncie connections, or explore any of the 611 people in my family tree. The Muncie and Etling research and unresolved branches remain below.</p>
+      <p>Explore the people, the families that raised them, and the records behind their connections. Start with Tom, follow a branch, or check what we need to confirm next.</p>
     </header>
     <SharedFamilyMap />
-    <RecentFamilyReview />
+    <FamilyNextSteps />
+    <details class="family-research" id="family-research-archive"><summary>Research archive · detailed audits, trails &amp; source notes</summary>
+    <details class="family-research"><summary>Detailed close-family evidence audit &amp; next records</summary><RecentFamilyReview /></details>
     <AncestryJourney />
-    <details class="shared-research-tree" id="italian-research"><summary>Muncie & Etling research tree · evidence & provisional branches</summary>
+    <details class="shared-research-tree" id="italian-research"><summary>Research archive · Muncie & Etling notes and unconfirmed branches</summary>
     <FamilyMap />
     <details class="family-fallback">
       <summary>Read the branches as a list</summary>
@@ -48,7 +51,7 @@ import '../styles/shared-family.css';
             {relations.length > 0 && <details class="family-person-section"><summary>Connections & evidence</summary><ul class="family-profile-relations">{relations.map(r => {
               const other = r.from === person.id ? r.to : r.from;
               const label = r.kind === 'parent' ? (r.from === person.id ? 'Child' : 'Parent') : r.kind === 'spouse' ? 'Spouse / working couple' : 'Sibling';
-              return <li data-confidence={r.confidence}><span class="family-confidence">{r.confidence}</span> {label}: <a href={personById[other] ? `#person-${other}` : mapProfileUrl(other)} data-person-link={other}>{personById[other]?.name ?? familyMapById[other].name}</a><small>{r.note}</small><span class="family-fact-sources">{r.sources.map(id => <a href={`#source-${id}`}>{sourceById[id].kind} ↗</a>)}</span></li>;
+              return <li data-confidence={r.confidence}><span class="family-confidence">{r.confidence}</span> {label}: <a href={personById[other] ? `#person-${other}` : mapProfileUrl(other)} data-person-link={other}>{personById[other]?.name ?? familyMapAncestryById[other].name}</a><small>{r.note}</small><span class="family-fact-sources">{r.sources.map(id => <a href={`#source-${id}`}>{sourceById[id].kind} ↗</a>)}</span></li>;
             })}</ul></details>}
             <details class="family-person-section"><summary>Sources for this person</summary><ul class="family-notes">{citations.map(id => <li><a href={`#source-${id}`}>{sourceById[id].title}</a> <small>· {sourceById[id].kind}</small></li>)}</ul></details>
             <a class="family-back" href="#tree-heading">Back to tree ↑</a>
@@ -71,6 +74,7 @@ import '../styles/shared-family.css';
     <details class="family-sources"><summary id="sources-heading">Sources & their limits</summary>
       <p>Original records, official indexes, transcriptions, compiled genealogies, supplied information, and inferences are recorded separately. A collection or access guide is not evidence of a matching person.</p>
       <ul>{sources.map(source => <li id={`source-${source.id}`}><span class="editorial-kicker">{source.kind}</span><h3>{source.title}</h3><p>{source.citation}</p>{source.url && <a href={source.url}>Visit source ↗</a>}</li>)}</ul>
+    </details>
     </details>
   </article>
   <script>

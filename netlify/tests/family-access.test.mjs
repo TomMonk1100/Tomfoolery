@@ -8,7 +8,7 @@ const successfulLogin = () => new Response(null, {
 });
 
 describe('private family access helper', () => {
-  it.each(['/family/', '/family/person/person-id/', '/family/record/source/source-id/', '/images/family/photo.jpg'])('allows a protected local path: %s', path => {
+  it.each(['/family/', '/family/person/person-id/', '/family/details/person-id.json', '/family/record/source/source-id/', '/images/family/photo.jpg'])('allows a protected local path: %s', path => {
     expect(familyUrl(path).href).toBe(`${ORIGIN}${path}`);
   });
 
