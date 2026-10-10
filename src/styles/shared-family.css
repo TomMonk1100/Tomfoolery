@@ -200,3 +200,13 @@
   .shared-options fieldset { flex-wrap:wrap; }
   .family-dialog .family-profile { padding-inline:1rem; }
 }
+
+.family-progress { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1px; background:var(--color-line); border:1px solid var(--color-line); margin:1.2rem 0; }
+.family-progress > div { padding:1rem; background:var(--color-surface); }
+.family-progress dt { font-size:.8rem; color:var(--color-muted); }
+.family-progress dd { margin:.5rem 0 0; font-size:.85rem; }
+.family-progress strong { display:block; font:600 1.5rem var(--font-display); color:var(--color-ink); }
+.family-next-title { margin-top:1.5rem; }
+.family-update ul { display:block; padding-left:1.2rem; }
+.family-update li { border:0; padding:.3rem 0; background:none; }
+@media(max-width:600px) { .family-progress { grid-template-columns:repeat(2,minmax(0,1fr)); } }

@@ -1,6 +1,23 @@
 ---
 import { recentRecordTargets } from '../data/recent-family-review';
-import { MARK, GLORIA, FRED_RICHARD } from '../data/shared-family';
-const tasks=[{id:MARK,index:0,title:'Establish Mark’s parents'},{id:GLORIA,index:1,title:'Confirm Gloria’s parent connections'},{id:FRED_RICHARD,index:7,title:'Connect Fred Richard to his parents'},{id:'mft-ee6ed11d-2031-451f-823a-5362114e84a6',index:2,title:'Resolve Dorothy’s birth-year conflict'}];
+import { MARK, GLORIA } from '../data/shared-family';
+import { generationReview } from '../scripts/family/generation-review';
+const rows=generationReview(undefined,0,4);
+const generations=['Parents','Grandparents','Great-grandparents','Great-great-grandparents'].map((name,i)=>({name,total:2**(i+1),supported:rows.filter(r=>r.generation===i+1&&r.status==='supported').length}));
+const remaining=rows.filter(r=>r.status!=='supported').length;
+const tasks=[{id:MARK,index:0,title:'Establish Mark’s parents'},{id:GLORIA,index:1,title:'Confirm Gloria’s parents'},{id:'mft-ee6ed11d-2031-451f-823a-5362114e84a6',index:2,title:'Resolve Dorothy’s birth year and parents'},{id:'mft-45146b40-d146-4f78-8e21-0500f316cb5d',index:4,title:'Check Eugene Leslie’s original marriage record'}];
 ---
-<section id="family-next-steps" class="family-next-steps" aria-labelledby="family-next-heading"><span class="editorial-kicker">The next useful records</span><h2 id="family-next-heading">What needs confirming next?</h2><p>Start close to home. Each task strengthens a specific connection before extending the older branches.</p><ol>{tasks.map(task=><li><h3><a href={`/family/?focus=${task.id}`}>{task.title}</a></h3><p>{recentRecordTargets[task.index].target}</p><details><summary>Why this matters</summary><p>{recentRecordTargets[task.index].limit}</p></details></li>)}</ol></section>
+<section id="family-next-steps" class="family-next-steps" aria-labelledby="family-next-heading">
+  <span class="editorial-kicker">Evidence reviewed · 10 October 2026</span>
+  <h2 id="family-next-heading">How much is supported?</h2>
+  <p>These counts assess individual biological parent connections from Tom. A supported connection can come from records or clearly labeled family testimony. Every connection along a branch must be supported before that whole trail is established.</p>
+  <dl class="family-progress">{generations.map(g=><div><dt>{g.name}</dt><dd><strong>{g.supported} of {g.total}</strong> supported</dd></div>)}</dl>
+  <p><strong>{remaining} connections still need stronger evidence through generation 4.</strong> Fred’s family is shown separately as the family that raised Patrick. <a href="#recent-family-review">See the connection checklist ↓</a></p>
+  <details class="family-update"><summary>What changed in the latest research?</summary><ul>
+    <li>Eugene Brown’s and Eleene White’s parents are now supported by their own application indexes and original childhood households. Name and date conflicts remain in the notes.</li>
+    <li>Dora Webster’s father Byron is now supported. Her mother’s full identity still needs the original birth or marriage record.</li>
+    <li>Mark and Gloria’s original marriage register confirms their ceremony on 15 January 1960, but names no parents. The 1956 passenger list links Gloria with Eleene’s traveling group without explicitly stating their relationship.</li>
+  </ul><p>Availability inquiries were sent to Tarrant County Archives and Wyoming State Archives on 10 October. Copies have not yet been obtained; the inquiries add no parentage proof.</p></details>
+  <h3 class="family-next-title">The next records that could close a gap</h3>
+  <ol>{tasks.map(task=><li><h3><a href={`/family/?focus=${task.id}`}>{task.title}</a></h3><p>{recentRecordTargets[task.index].target}</p><details><summary>Evidence and remaining question</summary><p>{recentRecordTargets[task.index].limit}</p></details></li>)}</ol>
+</section>

@@ -5,8 +5,8 @@ import { familyMapAncestryById } from '../data/family-map';
 const branches=[{name:'Stockwell biological branch and Gloria’s family',rows:stockwellReview},{name:'Reagles and Crook biological branch',rows:maternalReview},{name:'Muncie family that raised Patrick · Tom’s grandpa growing up',rows:muncieReview}];
 ---
 <section id="recent-family-review" class="recent-family-review" aria-labelledby="recent-family-heading">
-  <span class="editorial-kicker">Close family · evidence audit · 7 October 2026</span>
-  <h2 id="recent-family-heading">Verifying six generations of family</h2>
+  <span class="editorial-kicker">Close family · evidence audit · 10 October 2026</span>
+  <h2 id="recent-family-heading">Connection checklist and record notes</h2>
   <p>Counting parents as generation 1 through great-great-great-great-grandparents as 6. We are reviewing both biological branches and Fred’s family separately. A recorded name is a research lead; each child-to-parent connection needs its own evidence. Unknown positions and conflicting records remain open.</p>
   <p><strong>Mark is Patrick’s biological father. Fred Richard Muncie raised Patrick.</strong> Tom also confirms that Fred was the grandpa he grew up with and helped make him who he is (7 October 2026). These are family testimony; legal adoption is not inferred. <a href="#patrick-biological-and-raised-family">Tom’s testimony ↗</a></p>
   <details class="family-fallback"><summary>Six-generation connection checklist · biological and upbringing families</summary>
@@ -14,7 +14,7 @@ const branches=[{name:'Stockwell biological branch and Gloria’s family',rows:s
     {sixGenerationBranches.map(branch=><div><h3>{branch.name}</h3><div class="recent-audit-scroll"><table><thead><tr><th>Generation</th><th>Child → parent</th><th>Evidence status</th></tr></thead><tbody>{branch.rows.map(row=><tr><td>{row.generation}</td><td><a href={`/family/?focus=${row.child}`}>{familyMapAncestryById[row.child].name}</a> → {row.parent?<a href={`/family/?focus=${row.parent}`}>{familyMapAncestryById[row.parent].name}</a>:'Unknown parent'}</td><td><strong>{row.status}</strong><small>{row.note}</small>{row.citation&&<a href={row.citation}>Evidence notes ↗</a>}</td></tr>)}</tbody></table></div></div>)}
   </details>
   <ul>
-    <li><a href="#mark-marker-dates">Mark’s photographed marker corroborates his recorded birth and death dates.</a> The inspected 1950 census places him with William R. and Dorothy D. Stockwell; biological paternity remains unresolved.</li>
+    <li><a href="#mark-marker-dates">Mark’s photographed marker corroborates his recorded birth and death dates.</a> The inspected 1950 census places him with William R. and Dorothy D. Stockwell. The original 1960 marriage register confirms Mark and Gloria’s ceremony, but names no parents; biological paternity remains unresolved.</li>
     <li><a href="#muncie-close-household-1940">The inspected 1940 census names Emma, her son Fred, daughter-in-law Mae and grandson Fred Richard.</a> Mae Etling’s original 1938 marriage now names parents for both spouses. Fred Richard’s direct birth-parent record remains pending.</li>
     <li><a href="#brown-original-parent-conflict">Hines Brown’s death certificate and application index name Lacy as mother, contradicting Mary Lamb.</a> The imported parent line remains flagged for review.</li>
     <li><a href="#luneta-recorded-parents">Luneta’s parents are now Earl B. Etling and Blanche B. Taladay (Belle) in the research map.</a> Their 1920 marriage supplies four fifth-generation parent names; childhood households now corroborate probable Washington Etling and Ralph Taladay identities. Conflicting years remain open.</li>

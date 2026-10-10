@@ -34,7 +34,7 @@ describe('close-family record evidence and identity conflicts',()=>{
       const f=ancestryFindings.find(f=>f.id===r.finding);
       expect(f?.people).toEqual(expect.arrayContaining([r.from,r.to]));
       if(r.sourceKind==='user supplied') expect(f?.url).toBe(`/family/#${r.finding}`);
-      else if(r.sourceKind==='published local history') expect(f?.url).toMatch(/^https:\/\/archive\.org\/details\//);
+      else if(r.sourceKind==='published local history') expect(f?.url).toMatch(/^https:\/\/(?:archive\.org\/details\/|sail1620\.starchapter\.com\/images\/downloads\/)/);
       else expect(f?.url).toMatch(/^https:\/\/www\.familysearch\.org\//);
     }
     expect(recentEvidenceAssessment(CURTIS).findings.map(f=>f.id)).toContain('curtis-inez-marriage-1916');
