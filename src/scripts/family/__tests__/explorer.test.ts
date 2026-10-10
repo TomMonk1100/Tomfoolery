@@ -4,12 +4,15 @@ import { ADAM, PATRICK, MARK, FRED_RICHARD } from '../../../data/shared-family';
 import { familyMapAncestryById } from '../../../data/family-map';
 const options={ancestors:2,children:true,siblings:false,whole:false};
 describe('family explorer evidence and upbringing',()=>{
-  it('keeps known but unverified parents visible in the family account, excluding speculative additions',()=>{
+  it('includes confirmed maternal testimony while keeping unverified parents in the family account',()=>{
     const family=explorerPeople('family');const supported=explorerPeople('supported');
     const mother=familyMapAncestryById[ADAM].parents.find(id=>id!==PATRICK)!;
     expect(family[ADAM].parents).toContain(mother);
-    expect(supported[ADAM].parents).not.toContain(mother);
-    expect(connectionAssessment(mother,ADAM,'parent')).toMatchObject({confidence:'provisional',sourceKind:'compiled genealogy'});
+    expect(supported[ADAM].parents).toContain(mother);
+    expect(connectionAssessment(mother,ADAM,'parent')).toMatchObject({confidence:'supported',sourceKind:'user supplied'});
+    const unverified=familyMapAncestryById[MARK].parents[0];
+    expect(family[MARK].parents).toContain(unverified);
+    expect(supported[MARK].parents).not.toContain(unverified);
     expect(Object.keys(family).some(id=>/^(bible-|legend-|candidate-)/.test(id))).toBe(false);
   });
   it('hides gaps by default and regenerates the same positions without changing the source',()=>{
@@ -32,7 +35,7 @@ describe('family explorer evidence and upbringing',()=>{
     expect(pathFromTom(FRED_RICHARD,explorerPeople('supported')).map(s=>s.role)).toContain('Raised Patrick');
     const mother=browsePeople[ADAM].parents.find(id=>id!==PATRICK)!;
     expect(pathFromTom(mother,explorerPeople('family')).at(-1)?.id).toBe(mother);
-    expect(pathFromTom(mother,explorerPeople('supported'))).toEqual([]);
+    expect(pathFromTom(mother,explorerPeople('supported')).at(-1)?.id).toBe(mother);
   });
   it('keeps the complete graph finite and every displayed endpoint in its person set',()=>{
     for(const mode of ['family','supported'] as const){const people=explorerPeople(mode,true);const graph=explorerGraph(ADAM,{...options,whole:true},people);for(const edge of graph.edges){expect(people[edge.from]).toBeDefined();expect(people[edge.to]).toBeDefined();}expect(Number.isFinite(graph.width)).toBe(true);}

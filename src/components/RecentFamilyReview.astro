@@ -1,13 +1,18 @@
 ---
-import { stockwellReview, muncieReview, importedSourceInventory, recentRecordTargets, recentEvidenceAssessment } from '../data/recent-family-review';
+import { stockwellReview, maternalReview, muncieReview, importedSourceInventory, recentRecordTargets, recentEvidenceAssessment } from '../data/recent-family-review';
+import { sixGenerationBranches } from '../scripts/family/generation-review';
 import { familyMapAncestryById } from '../data/family-map';
-const branches=[{name:'Stockwell biological branch and Gloria’s family',rows:stockwellReview},{name:'Muncie family that raised Patrick',rows:muncieReview}];
+const branches=[{name:'Stockwell biological branch and Gloria’s family',rows:stockwellReview},{name:'Reagles and Crook biological branch',rows:maternalReview},{name:'Muncie family that raised Patrick · Tom’s grandpa growing up',rows:muncieReview}];
 ---
 <section id="recent-family-review" class="recent-family-review" aria-labelledby="recent-family-heading">
-  <span class="editorial-kicker">Close family · evidence audit · 6 October 2026</span>
-  <h2 id="recent-family-heading">Strengthening the first five generations</h2>
-  <p>Counting parents as generation 1, grandparents as 2, through great-great-great-grandparents as 5. All 31 paternal positions have names recorded. A filled position is a family assertion, not a proved relationship. The Muncie upbringing branch is reviewed alongside it.</p>
-  <p><strong>Mark is Patrick’s biological father. Fred Richard Muncie raised Patrick.</strong> This is Tom’s family testimony, recorded 6 October 2026; legal adoption is not inferred. <a href="#patrick-biological-and-raised-family">Tom’s testimony ↗</a></p>
+  <span class="editorial-kicker">Close family · evidence audit · 7 October 2026</span>
+  <h2 id="recent-family-heading">Verifying six generations of family</h2>
+  <p>Counting parents as generation 1 through great-great-great-great-grandparents as 6. We are reviewing both biological branches and Fred’s family separately. A recorded name is a research lead; each child-to-parent connection needs its own evidence. Unknown positions and conflicting records remain open.</p>
+  <p><strong>Mark is Patrick’s biological father. Fred Richard Muncie raised Patrick.</strong> Tom also confirms that Fred was the grandpa he grew up with and helped make him who he is (7 October 2026). These are family testimony; legal adoption is not inferred. <a href="#patrick-biological-and-raised-family">Tom’s testimony ↗</a></p>
+  <details class="family-fallback"><summary>Six-generation connection checklist · biological and upbringing families</summary>
+    <p>Each row checks one connection. “Supported” may be family testimony; the note identifies the evidence. A probable connection is still open, and an unknown parent stops that branch until an identity is found.</p>
+    {sixGenerationBranches.map(branch=><div><h3>{branch.name}</h3><div class="recent-audit-scroll"><table><thead><tr><th>Generation</th><th>Child → parent</th><th>Evidence status</th></tr></thead><tbody>{branch.rows.map(row=><tr><td>{row.generation}</td><td><a href={`/family/?focus=${row.child}`}>{familyMapAncestryById[row.child].name}</a> → {row.parent?<a href={`/family/?focus=${row.parent}`}>{familyMapAncestryById[row.parent].name}</a>:'Unknown parent'}</td><td><strong>{row.status}</strong><small>{row.note}</small>{row.citation&&<a href={row.citation}>Evidence notes ↗</a>}</td></tr>)}</tbody></table></div></div>)}
+  </details>
   <ul>
     <li><a href="#mark-marker-dates">Mark’s photographed marker corroborates his recorded birth and death dates.</a> The inspected 1950 census places him with William R. and Dorothy D. Stockwell; biological paternity remains unresolved.</li>
     <li><a href="#muncie-close-household-1940">The inspected 1940 census names Emma, her son Fred, daughter-in-law Mae and grandson Fred Richard.</a> Mae Etling’s original 1938 marriage now names parents for both spouses. Fred Richard’s direct birth-parent record remains pending.</li>
@@ -15,7 +20,7 @@ const branches=[{name:'Stockwell biological branch and Gloria’s family',rows:s
     <li><a href="#luneta-recorded-parents">Luneta’s parents are now Earl B. Etling and Blanche B. Taladay (Belle) in the research map.</a> Their 1920 marriage supplies four fifth-generation parent names; childhood households now corroborate probable Washington Etling and Ralph Taladay identities. Conflicting years remain open.</li>
     <li><a href="#dorothy-application-parents">Dorothy’s application index names Curtis Macy and Inez Beeler.</a> Their original marriage names the preceding parents, while raising Martha / Luella and Henry / William identity questions.</li>
   </ul>
-  {branches.map(branch=><details class="family-fallback"><summary>{branch.name} · {branch.rows.length} named positions reviewed</summary>
+  {branches.map(branch=><details class="family-fallback"><summary>{branch.name} · {branch.rows.length} recorded positions to verify</summary>
     <p>Collection references below are the imported source inventory. Repeated references to the same collection are counted once; none of these counts means the underlying documents were inspected or the person’s parentage was proved.</p>
     <div class="recent-audit-scroll"><table><thead><tr><th>Generation</th><th>Person &amp; recorded dates</th><th>Source leads &amp; relationship review</th></tr></thead><tbody>{branch.rows.map(row=>{
       const p=familyMapAncestryById[row.id], inventory=importedSourceInventory(row.id), assessment=recentEvidenceAssessment(row.id);
@@ -26,5 +31,5 @@ const branches=[{name:'Stockwell biological branch and Gloria’s family',rows:s
       </td></tr>;
     })}</tbody></table></div>
   </details>)}
-  <details class="family-fallback"><summary>Prioritized records to check next</summary><ol>{recentRecordTargets.map(t=><li><strong>{t.name}.</strong> {t.target}<small>{t.limit}</small></li>)}</ol><p>For generations 4 and 5, compare each child’s birth or marriage record with the named parent household and probate. Names in the imported account stay provisional as proof until those documents are checked; no missing identities or dates are guessed.</p></details>
+  <details class="family-fallback"><summary>Prioritized records to check next</summary><ol>{recentRecordTargets.map(t=><li><strong>{t.name}.</strong> {t.target}<small>{t.limit}</small></li>)}</ol><p>Through generation 6, compare each child’s birth or marriage record with the named parent household and probate. Names in the imported account stay provisional as proof until those documents are checked; no missing identities or dates are guessed.</p></details>
 </section>

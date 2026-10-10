@@ -46,9 +46,9 @@ describe('family identity and evidence integrity', () => {
       branch.children?.forEach(child => walk(child, hidden));
     }
     walk(familyBranch);
-    expect(rendered).toEqual(new Set(people.filter(p => !['p030','p031','p032','p033','p034','p035','p036','p037'].includes(p.id)).map(p => p.id)));
+    expect(rendered).toEqual(new Set(people.filter(p => !['p030','p031','p032','p033','p034','p035','p036','p037','p038','p039','p040','p041','p042','p043','p044','p045','p046','p047','p048','p049'].includes(p.id)).map(p => p.id)));
     // The separate Leslie candidates remain in the full map and profile ledger.
-    for (const id of ['p030','p031','p032','p033','p034','p035','p036','p037']) expect(personIds.has(id)).toBe(true);
+    for (const id of ['p030','p031','p032','p033','p034','p035','p036','p037','p038','p039','p040','p041','p042','p043','p044','p045','p046','p047','p048','p049']) expect(personIds.has(id)).toBe(true);
   });
   it('does not promote missing ancestry or inferred dates into supported facts', () => {
     const namedParents = relationships.filter(r => r.kind === 'parent' && r.to === 'p001');

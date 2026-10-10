@@ -3,16 +3,17 @@ import { sharedById, PATRICK, FRED_RICHARD } from './shared-family';
 import { sharedRecords } from './shared-family-records';
 import { familyMapAncestryById } from './family-map';
 import { ancestryFindings } from './ancestry-research';
-export function recentGenerations(root:string, generation:number, people=sharedById) {
+export function recentGenerations(root:string, generation:number, people=sharedById, maximum=6) {
   const rows:{id:string;generation:number}[]=[];
   const visit=(id:string,g:number,path:Set<string>)=>{
-    if(g>5 || path.has(id) || !people[id])return;
+    if(g>maximum || path.has(id) || !people[id])return;
     rows.push({id,generation:g});
     for(const parent of people[id].parents)visit(parent,g+1,new Set([...path,id]));
   };
   visit(root,generation,new Set());return rows;
 }
 export const stockwellReview=recentGenerations(PATRICK,1);
+export const maternalReview=recentGenerations('mft-977e3680-c40d-4c6c-aade-3562855e3e99',1,familyMapAncestryById);
 export const muncieReview=recentGenerations(FRED_RICHARD,2,familyMapAncestryById);
 export function importedSourceInventory(id:string) {
   const cards=sharedRecords[`person:${id}`]?.sections.find(s=>s.title==='Source Citations')?.cards || [];
@@ -24,7 +25,7 @@ export const recentRecordTargets = [
   {name:'Gloria → Eugene Brown / Eleene White', target:'Gloria’s 1940 birth record and her parents’ marriage record; compare the 1940 and 1950 households.', limit:'Imported parent assignments need originals identifying this child and couple.'},
   {name:'Dorothy → Curtis Macy / Inez Beeler', target:'Dorothy’s birth record and original Social Security application; the 1920 Macy household and 1916 Curtis/Inez marriage are now inspected.', limit:'Her application index reports 1917, while the import and nine-month age in 1920 favor 1919. The conflict remains open.'},
   {name:'Curtis / Inez → fifth-generation parents', target:'Curtis’s birth record, Samuel/Luella’s 1890 marriage and Inez’s birth record; compare the parent names in the original 1916 marriage.', limit:'Curtis names Martha Collins rather than Luella M. Collins; Inez names Henry Beeler rather than William H. Beeler. Possible name variants remain unproved.'},
-  {name:'Eugene Leslie → Harry Leslie / Ida Brechbiel', target:'Eugene’s birth record and 1943 marriage certificate; the original 1920 household is inspected. Compare the 1940 household and Ida’s 26 October 1959 Logansport obituary.', limit:'The 1920 index age suggests 1917 rather than the imported 1919; the identity and Ida’s maiden name still need direct corroboration.'},
+  {name:'Eugene Leslie → Harry Leslie / Ida Brechbiel', target:'Eugene’s birth record and original draft card; the uploaded 1943 marriage certificate, Wyoming archive index card and original 1920 household are now inspected. Compare the 1940 household and Ida’s 26 October 1959 Logansport obituary.', limit:'The certificate names Harry C. Leslie and Ida May Brechbiel, corroborating Ida’s maiden surname. The imported 1919 birthday and census age still conflict; the photographed marriage age digit needs a clearer copy.'},
   {name:'Eugene Brown → Hienz Brown / Mary Sterling', target:'Eugene’s 1916 birth record and the 1920 Wortham, Freestone County census, ED 22, page 7B.', limit:'Check the named child against the household; do not assume a surname match proves descent.'},
   {name:'Eleene White → Henry White / Velma Miller', target:'Eleene’s 1921 birth record and the White household in the 1930 census.', limit:'Both parent assignments need an independently inspected relationship record.'},
   {name:'Fred Richard → Fred Victor / Luneta Mae', target:'Fred Richard’s 1938 Ohio birth record ; his parents’ 1938 marriage original is now inspected.', limit:'The inspected 1940 household supports the couple provisionally, without directly naming this child’s parents.'},
@@ -36,7 +37,23 @@ export const recentRecordTargets = [
 // finding mentioning a person as proof of that person's parents.
 type RecentAssessment = { note: string; findings: string[] };
 const recentAssessments: Record<string, RecentAssessment> = {
-  "mft-45146b40-d146-4f78-8e21-0500f316cb5d": {"note": "The original 1920 household names Harry, wife Ida and son Eugene. The indexed age conflicts with the imported birth year, so parent identities remain provisional. The 1940 Dorothy marriage index does not prove Mark’s paternity.", "findings": ["eugene-leslie-household-1920", "dorothy-eugene-marriage-1940"]},
+  'mft-5141f558-0dac-4850-9878-246f3c464bff': {note:'Tom confirms Kenneth Crook and Winifred Chappell are Virginia’s biological parents. Original 1940 household corroborates the couple with baby Virginia; birth original not inspected.',findings:['tom-crook-parent-testimony','virginia-crook-household-1940']},
+  'mft-977e3680-c40d-4c6c-aade-3562855e3e99': {note:'Tom confirms Wendy is his biological mother and Thomas/Virginia are her biological parents. Supported direct testimony; birth originals remain pending.',findings:['tom-close-biological-family-testimony']},
+  'mft-081b6b3e-fe93-43f0-b44e-f2ef23d34738': {note:'Tom confirms Gloria is Patrick’s biological mother. Her own imported parents still need relationship records.',findings:['tom-close-biological-family-testimony']},
+  'mft-664a7bfb-2b53-47fc-b977-114b40f8c371': {note:'Marriage index names Able/Pressilla; original 1880 household corroborates Abel/Priscilla with son William. Parent links supported; exact birthday remains unresolved.',findings:['william-louise-marriage-parents-1890']},
+  'mft-b634a085-0249-4220-805e-85141e6876a3': {note:'Marriage index names Phillip/Elizabeth; original 1880 Rockbridge household corroborates both with daughter Louise. Parent links supported; surname variants retained.',findings:['william-louise-marriage-parents-1890']},
+  p038: {note:'Father Abram and mother Lucretia are named in the death index, with a probable identity match. Own parental evidence remains open.',findings:['abel-reagles-death-parents-1906','abel-priscilla-marriage-1844']},
+  p039: {note:'Original marriage confirms Priscilla E. Sippy. Death index names Joseph/Martha as parents; the 1884 printed biography independently corroborates both generation-six parents.',findings:['priscilla-sippy-biography-1884','priscilla-reagles-death-parents-1901','abel-priscilla-marriage-1844']},
+  p040: {note:'Named as Louise’s father in the marriage index, corroborated by the original 1880 household. His own parents are unidentified.',findings:['william-louise-marriage-parents-1890']},
+  p041: {note:'Named as Louise’s mother in the marriage index, corroborated by the original 1880 household. Her maiden surname and own parents remain unidentified.',findings:['william-louise-marriage-parents-1890']},
+  p042: {note:'Indexed father of Abel; no original or independent parental identity record inspected.',findings:['abel-reagles-death-parents-1906']},
+  p043: {note:'Indexed mother of Abel without surname; parental identity remains probable.',findings:['abel-reagles-death-parents-1906']},
+  p044: {note:'Father of Priscilla, supported by the death index and independently inspected 1884 biography.',findings:['priscilla-sippy-biography-1884','priscilla-reagles-death-parents-1901']},
+  p045: {note:'Mother of Priscilla, supported by two sources; the 1884 biography reports Cogswell as her maiden surname.',findings:['priscilla-sippy-biography-1884','priscilla-reagles-death-parents-1901']},
+  'mft-e238c8e7-0773-4a8b-a850-9c705c1699f3': {note:'His own application index names Donald Reagles and Dora Webster, corroborated by the original 1940 household and exact imported birth/death dates.',findings:['thomas-reagles-application-parents']},
+  'mft-df1cc011-4357-42cc-ad5f-26c8d2a20658': {note:'Birth index names William Shakespear Reagles and Louise Scholl, corroborated by the original 1910 household; birth original unavailable.',findings:['donald-reagles-birth-parents-1904','thomas-reagles-application-parents']},
+  'mft-fdad09b4-49fd-48c6-86c3-486c2becefb0': {note:'Named as Thomas’s parent in his application, corroborated by original 1940 household. Her own mother is missing; Clara Hickcox remains an uninspected locator lead.',findings:['thomas-reagles-application-parents']},
+  "mft-45146b40-d146-4f78-8e21-0500f316cb5d": {"note": "The inspected 1943 marriage certificate names Harry C. Leslie and Ida May Brechbiel, corroborating the 1920 household and Ida’s maiden surname. Its age digit needs archival comparison, and the imported birthday conflicts with the census; identity matches remain probable. Neither marriage proves Mark’s paternity.", "findings": ["eugene-leslie-marriage-parents-1943", "eugene-leslie-household-1920", "dorothy-eugene-marriage-1940"]},
   "mft-58e475c7-22e9-4753-b563-8b06c4ff2dc5": {"note": "Mark is Patrick’s biological father, confirmed by Tom; original birth record pending.", "findings": ["patrick-biological-and-raised-family"]},
   "mft-ec434d2f-e202-4a58-a16f-608ccd3d6fe7": {"note": "The 1950 household names William and Dorothy Stockwell; the 1940 marriage index names Dorothy and Eugene Leslie. Mark’s biological father remains unresolved.", "findings": ["mark-stockwell-household-1950", "dorothy-eugene-marriage-1940"]},
   "mft-ee6ed11d-2031-451f-823a-5362114e84a6": {"note": "Own application index names Curtis Macy and Inez Beeler, corroborated by the original 1920 household. Dorothy’s birth year conflicts (1917 / 1919).", "findings": ["dorothy-application-parents", "macy-household-1920"]},

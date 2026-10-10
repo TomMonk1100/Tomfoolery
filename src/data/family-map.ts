@@ -36,11 +36,11 @@ export function mapEdgeAssessment(from: string, to: string, kind: 'parent' | 'pa
   const closeRecord = closeFamilyRelationships.find(r=>r.kind===kind && (kind==='parent' ? r.from===from && r.to===to : (r.from===from && r.to===to) || (r.from===to && r.to===from)));
   if(closeRecord) return {confidence:closeRecord.confidence,sourceKind:closeRecord.sourceKind,importedConfidence:undefined,review:closeRecord.note,evidenceUrl:`/family/#${closeRecord.finding}`};
   const relation = relationships.find(r => kind === 'parent' ? r.kind === 'parent' && r.from === from && r.to === to : r.kind === 'spouse' && ((r.from === from && r.to === to) || (r.from === to && r.to === from)));
-  return relation ? { confidence: relation.confidence, sourceKind: sourceById[relation.sources[0]].inspected ? sourceById[relation.sources[0]].kind : 'research guide' as const, importedConfidence: undefined, review: relation.note } : {};
+  return relation ? { confidence: relation.confidence, sourceKind: sourceById[relation.sources[0]].inspected ? sourceById[relation.sources[0]].kind : 'research guide' as const, importedConfidence: undefined, review: relation.note, evidenceUrl: sourceById[relation.sources[0]].url } : {};
 }
 // Keep the import available for evidence audits, without treating its links as proof.
 export const familyMapAncestryById: Record<string, SharedPerson> = Object.fromEntries(known.map(p=>[p.id,{...p, parents:[...p.parents], children:[...p.children], partners:[...p.partners]}]));
-const supportedSources = new Set<SourceKind>(['original record', 'official index', 'transcription', 'user supplied']);
+const supportedSources = new Set<SourceKind>(['original record', 'official index', 'published local history', 'transcription', 'user supplied']);
 export function isConfirmedConnection(from: string, to: string, kind: 'parent' | 'partner') {
   const assessment = mapEdgeAssessment(from, to, kind);
   return assessment.confidence === 'supported' && !!assessment.sourceKind && supportedSources.has(assessment.sourceKind);
@@ -51,7 +51,6 @@ const confirmedIds = new Set([ADAM, upbringing.child, upbringing.biologicalFathe
 for (const p of known) {
   p.parents = p.parents.filter(id => isConfirmedConnection(id, p.id, 'parent'));
   p.partners = p.partners.filter(id => isConfirmedConnection(id, p.id, 'partner'));
-  if (p.id === ADAM) p.parents = [upbringing.child];
   for (const id of [...p.parents, ...p.partners]) { confirmedIds.add(p.id); confirmedIds.add(id); }
 }
 for (const p of known) p.children = known.filter(child=>child.parents.includes(p.id)).map(child=>child.id);

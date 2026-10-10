@@ -14,7 +14,7 @@ describe('family overview geometry and evidence', () => {
   it('expands earlier generations without silently showing provisional ancestors', () => {
     expect(buildGraph({ ...DEFAULT_GRAPH, earlier: true }).nodes).toHaveLength(22);
     const full = buildGraph({ ...DEFAULT_GRAPH, provisional: true });
-    expect(new Set(full.nodes.map(node => node.id))).toEqual(new Set(people.filter(person => !['p030','p031','p032','p033','p034','p035','p036','p037'].includes(person.id)).map(person => person.id)));
+    expect(new Set(full.nodes.map(node => node.id))).toEqual(new Set(people.filter(person => !['p030','p031','p032','p033','p034','p035','p036','p037','p038','p039','p040','p041','p042','p043','p044','p045','p046','p047','p048','p049'].includes(person.id)).map(person => person.id)));
   });
   it('does not leave orphan edges when branches are collapsed', () => {
     for (const parents of [true, false]) for (const children of [true, false]) {

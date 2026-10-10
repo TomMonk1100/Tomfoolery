@@ -28,14 +28,14 @@ describe('large tree viewport',()=>{
     expect(sharedWheelPixels({deltaX:-9000,deltaY:9000,deltaMode:0},500)).toEqual({x:-600,y:600});
   });
 });
-describe('first five generations review',()=>{
-  it('limits the audit to five parent generations',()=>{
-    expect(stockwellReview).toHaveLength(31);
+describe('six generations review',()=>{
+  it('includes the sixth generation and stops before the seventh',()=>{
+    expect(stockwellReview.some(r=>r.generation===6)).toBe(true);
     expect(stockwellReview.filter(r=>r.generation===5)).toHaveLength(16);
-    expect(recentGenerations(PATRICK,6)).toEqual([]);
-    expect(muncieReview).toHaveLength(15);
+    expect(recentGenerations(PATRICK,7)).toEqual([]);
+    expect(muncieReview.length).toBeGreaterThanOrEqual(15);
     expect(muncieReview.filter(r=>r.generation===5)).toHaveLength(8);
-    expect(muncieReview.every(r=>r.generation>=2&&r.generation<=5)).toBe(true);
+    expect(muncieReview.every(r=>r.generation>=2&&r.generation<=6)).toBe(true);
   });
   it('keeps upbringing distinct from biological descent',()=>{
     expect(upbringing.child).toBe(PATRICK);expect(upbringing.raisedBy).toBe(FRED_RICHARD);
