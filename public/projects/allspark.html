@@ -22,12 +22,47 @@
     color: rgba(180, 200, 220, 0.30); white-space: pre;
     user-select: none; pointer-events: none;
   }
+  #condition {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    font: 300 12px/1 "SFMono-Regular", Menlo, Consolas, monospace;
+    letter-spacing: 0.35em; text-transform: lowercase;
+    color: rgba(200, 215, 235, 0.34);
+    user-select: none; pointer-events: none; white-space: pre;
+  }
+  #wordmark { cursor: pointer; pointer-events: auto; }
+  #about {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    max-width: 430px; padding: 26px 30px;
+    background: rgba(6, 9, 16, 0.92);
+    border: 1px solid rgba(255, 217, 138, 0.18);
+    border-radius: 10px;
+    font: 300 13px/1.75 "SFMono-Regular", Menlo, Consolas, monospace;
+    color: rgba(215, 225, 240, 0.82);
+    display: none; z-index: 10;
+  }
+  #about h2 {
+    margin: 0 0 10px; font-size: 13px; font-weight: 300;
+    letter-spacing: 0.35em; text-transform: lowercase;
+    color: rgba(255, 217, 138, 0.75);
+  }
+  #about p { margin: 0 0 10px; }
+  #about .close { color: rgba(255, 217, 138, 0.5); cursor: pointer; }
 </style>
 </head>
 <body>
 <canvas id="stage"></canvas>
-<div id="wordmark">allspark</div>
+<div id="wordmark" title="how it grows">allspark</div>
 <div id="returns"></div>
+<div id="condition"></div>
+<div id="about">
+  <h2>lineage</h2>
+  <p>Every seeker carries a genome: <b>vigor</b> (speed), <b>pull</b> (homing), <b>thrift</b> (lifespan). A seeker that returns home replicates — its mutated genome plants the next spore. One that dissipates is replaced by the seed's baseline.</p>
+  <p>Every 40 returns, the seed genome drifts toward the mean of recent winners. The field learns what survives its own weather: drought selects for pull — only the sure-homed return; rain favors vigor; wind's selection is the weakest, punishing vigor more than rewarding any one trait.</p>
+  <p>Filaments inherit the freshest spore and record their generation. Tip glow shows the dominant trait — green for vigor, gold for pull, blue for thrift. Each generation is built from the last: recursive growth. And nothing is immortal: branches wither from the root once they've lived their span — drought withers faster, rain preserves — so the field turns over like a real mycelium and returns keep building forever.</p>
+  <p>A return fitter than the swarm's own mean recruits a new seeker — and the chance scales with headroom, so the bloom tracks the weather: eager when starved, tapering at the cap. Each weather sets a carrying capacity — rain blooms the swarm, drought starves it — and a neutral bottleneck culls the excess when the weather turns, genome-blind, so the breathing never rewrites selection. The chart at the bottom-right is the field's own history: population and trait means, the compounding made legible.</p>
+  <p>And the weather answers back. The field keeps two memories of its own canopy — a fast one and a slow one — and while the canopy is still growing into itself, it pulls rain toward the field and shortens the droughts: when the pill reads "field +35%", the field lengthened that weather itself. As the field matures, the weather settles back to its own rhythm. Calm and wind never move. The seed can't opt out of drought — but it can answer it.</p>
+  <p class="close">[ close ]</p>
+</div>
 <script>
 "use strict";
 //__CORE_START__
@@ -71,7 +106,94 @@ const TUNE = {
   maxSegments: 9000,
   softBound: 1.35,       // x max(w,h): beyond this, steer in
   boundForce: 60,
+  conditionTicks: 5400,  // ticks per world condition (90 s at 60 fps)
+  conditionBlend: 360,   // ticks of smooth transition into the next condition
+  // --- lineage (V3): genomes, selection, generations ---
+  mutationRate: 0.08,    // ±8% per trait per replication
+  genomeMin: 0.5,        // trait clamp floor
+  genomeMax: 2.0,        // trait clamp ceiling
+  adaptEvery: 40,        // returns between seed-genome adaptations
+  adaptRate: 0.25,       // how far the seed genome moves toward the winners' mean
+  sporeMemory: 24,       // recent successful-return genomes remembered
+  conditionLock: -1,     // >=0 pins one condition forever (tests); -1 = cycle
+  // --- bloom (V4): the swarm breathes with the weather ---
+  carrying: [1.0, 2.4, 1.7, 0.7], // per-condition multiplier on seekerCount (calm, rain, wind, drought)
+  recruitBase: 1.6,     // recruit chance per qualifying return at full headroom
+                        // (qualifying = genome sum above the swarm's own mean;
+                        // chance scales with (cap - pop)/cap so the bloom tracks the weather)
+  historyEvery: 600,    // ticks between population-history samples
+  historyMax: 360,      // samples kept
+  // --- senescence (V6): filaments turn over, so the budget never freezes ---
+  branchLife: 43200,    // ticks a branch lives before it begins to wither (2 weather cycles)
+  erodeEvery: 240,      // ticks per withered point at baseline wither (1.0)
+  // --- reciprocity (V7): the field makes its weather ---
+  climateGain: 0.35,   // max fractional stretch/shrink of rain & drought phases
+  canopyFastTau: 5400,  // ticks: fast canopy EMA (~1 weather phase)
+  canopySlowTau: 43200, // ticks: slow canopy EMA (~2 full cycles)
+  canopyFloor: 200,     // segments: slow EMA below this reads as empty (bias 0)
 };
+
+/* ============================================================
+   WORLD CONDITIONS — the field has weather. A slow deterministic
+   climate cycles calm -> rain -> wind -> drought, each bending the
+   same rules instead of replacing them: rain hurries seekers home
+   and feeds the filaments; wind scatters; drought starves growth.
+   The scheduler is stateful: each phase's length is set when the
+   phase begins (rain and drought are stretched or shrunk by the
+   field's own canopy — see RECIPROCITY), so save/load carries the
+   schedule: phaseIdx, phaseStart, phaseLen, and the canopy EMAs.
+
+   LINEAGE (V3) — recursive growth. Every seeker carries a genome:
+   {vigor (speed), pull (homing), thrift (life)}. A seeker that
+   returns home replicates: its mutated genome plants the next spore
+   and respawns in its own image. A seeker that dissipates is replaced
+   by the seed's baseline genome. Every `adaptEvery` returns, the seed
+   genome drifts toward the mean of recent winners — the field learns
+   what survives its own weather. Filaments inherit the freshest spore
+   and record {id, gen, parentId}: a family tree of growth, where each
+   generation is built from the last. That is the recursion: the
+   system's history reshapes its future.
+
+   BLOOM (V4) — the swarm itself breathes with the weather. Each condition
+   sets a carrying capacity: rain blooms the population, drought starves
+   it. Returns by seekers fitter than the swarm's own mean recruit a new
+   seeker — growth begets growth, and the chance scales with headroom, so
+   the bloom tracks the weather instead of lagging it — while a neutral
+   bottleneck culls the excess when the weather turns, genome-blind, so
+   the breathing never rewrites selection. The field keeps its own
+   history: sampled population and trait means, so the compounding is
+   legible.
+
+   SENESCENCE (V6) — filaments turn over. Branches older than branchLife
+   wither from the oldest (root-side) point; dead branches wither first.
+   The withered budget returns to the pool, so returns keep spending
+   forever and the segment cap becomes a cycle instead of a ceiling. The
+   weather bends the withering (drought withers, rain preserves), so the
+   filaments breathe with the weather too. The tip keeps extending while
+   the root withers: filaments walk. Removed branches keep their
+   {id, gen, parentId} records — the family tree outlives the wood.
+
+   RECIPROCITY (V7) — the field makes its weather. Everything so far
+   adapted to the climate; the climate answered to nothing. Now the
+   canopy talks back: a fast and a slow exponential moving average of
+   filament segments track how grown the field is against its own
+   recent past, and the bias between them stretches or shrinks the
+   coming rain and drought — bounded to ±35%, calm and wind never
+   move. In practice the field grows into its weather: a young,
+   still-growing canopy pulls rain toward itself and shortens its
+   droughts, and as the field matures the weather settles back to its
+   own rhythm. The response is symmetric — a collapsing canopy would
+   stretch droughts instead — but this field, which turns its wood
+   over instead of losing it, rarely collapses. The seed still can't
+   opt out of drought, but it can answer it. The weather is no longer
+   a schedule the field didn't write; it's a negotiation.
+   ============================================================ */
+const CONDITIONS = [
+  { name: "calm",    icon: "\u25CB", seekerSpeed: 1.00, wander: 1.00, home: 1.00, branchGrow: 1.00, life: 1.00, wind: 0,  wither: 1.0, bg: [10, 14, 24] },
+  { name: "rain",    icon: "\u2602", seekerSpeed: 1.25, wander: 1.10, home: 1.35, branchGrow: 1.50, life: 1.00, wind: 0,  wither: 0.6, bg: [8, 12, 23] },
+  { name: "wind",    icon: "\u224B", seekerSpeed: 1.10, wander: 1.60, home: 0.90, branchGrow: 1.00, life: 1.00, wind: 26, wither: 1.2, bg: [9, 13, 22] },
+  { name: "drought", icon: "\u2600", seekerSpeed: 0.95, wander: 1.30, home: 0.70, branchGrow: 0.50, life: 0.85, wind: 0,  wither: 1.8, bg: [17, 13, 17] },
+];
 
 function createCore(opts) {
   const o = Object.assign({}, TUNE, opts || {});
@@ -84,8 +206,51 @@ function createCore(opts) {
     branchDebt: 0,
     cx: 0, cy: 0,       // seed position (set by presentation)
     seekers: [],
-    branches: [],       // {pts:[[x,y]..], dir, born, tipX, tipY, carry}
+    branches: [],       // {id, gen, parentId, genome, pts:[[x,y]..], dir, born, tipX, tipY, carry}
+    seedGenome: { vigor: 1, pull: 1, thrift: 1 }, // baseline; adapts toward winners
+    spores: [],         // ring of recent successful-return genomes (mutated)
+    nextBranchId: 1,
+    maxGen: 0,          // deepest filament generation reached
+    returnsSinceAdapt: 0,
+    recruited: 0,       // seekers born from fit winners (bloom)
+    culled: 0,          // excess seekers lost when the weather turns (bloom)
+    eroded: 0,          // filament points withered by senescence (V6)
+    history: [],        // [tick, pop, meanVigor, meanPull, meanThrift] samples (bloom)
+    fitThreshold: 3.0,  // mean genome sum: returns above it earn a recruit (bloom V5)
+    // --- reciprocity (V7): the field makes its weather ---
+    phaseIdx: 0,        // current condition index in the climate schedule
+    phaseStart: 0,      // tick the current phase began
+    phaseLen: 5400,     // ticks the current phase lasts (modulated at phase start)
+    canopyFast: 0,      // fast EMA of filament segments (~1 phase)
+    canopySlow: 0,      // slow EMA of filament segments (~2 cycles)
+    climateBias: 0,     // (fast - slow) / slow, clamped to [-1, 1]
   };
+
+  function clampGenome(v) {
+    return Math.min(o.genomeMax, Math.max(o.genomeMin, isFinite(v) ? v : 1));
+  }
+
+  function normGenome(g) {
+    if (!g) return { vigor: 1, pull: 1, thrift: 1 };
+    return { vigor: clampGenome(g.vigor), pull: clampGenome(g.pull), thrift: clampGenome(g.thrift) };
+  }
+
+  function mutateGenome(g) {
+    g = normGenome(g);
+    const m = (v) => clampGenome(v * (1 + (rnd() * 2 - 1) * o.mutationRate));
+    return { vigor: m(g.vigor), pull: m(g.pull), thrift: m(g.thrift) };
+  }
+
+  function adaptSeedGenome() {
+    // the field learns: baseline drifts toward the mean of recent winners
+    if (S.spores.length === 0) return;
+    let v = 0, p = 0, t = 0;
+    for (const g of S.spores) { v += g.vigor; p += g.pull; t += g.thrift; }
+    const n = S.spores.length, k = o.adaptRate;
+    S.seedGenome.vigor = clampGenome(S.seedGenome.vigor + (v / n - S.seedGenome.vigor) * k);
+    S.seedGenome.pull = clampGenome(S.seedGenome.pull + (p / n - S.seedGenome.pull) * k);
+    S.seedGenome.thrift = clampGenome(S.seedGenome.thrift + (t / n - S.seedGenome.thrift) * k);
+  }
 
   function rnd() {
     let a = S.rng | 0; a = (a + 0x6D2B79F5) | 0;
@@ -95,17 +260,19 @@ function createCore(opts) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
 
-  function spawnSeeker(s) {
+  function spawnSeeker(s, P, genome) {
     const a = rnd() * Math.PI * 2;
-    const sp = o.seekerSpeed * (0.7 + 0.6 * rnd());
+    const G = normGenome(genome || S.seedGenome);
+    const sp = o.seekerSpeed * (P ? P.seekerSpeed : 1) * G.vigor * (0.7 + 0.6 * rnd());
     s = s || {};
     s.x = S.cx + Math.cos(a) * 5;
     s.y = S.cy + Math.sin(a) * 5;
     s.vx = Math.cos(a) * sp;
     s.vy = Math.sin(a) * sp;
     s.age = 0;
-    s.life = o.seekerLife * (0.75 + 0.5 * rnd());
+    s.life = o.seekerLife * (P ? P.life : 1) * G.thrift * (0.75 + 0.5 * rnd());
     s.away = false; // must leave home before it can return
+    s.genome = { vigor: G.vigor, pull: G.pull, thrift: G.thrift };
     return s;
   }
 
@@ -114,9 +281,110 @@ function createCore(opts) {
     return o.homeBase + o.homeGrowth * ageFrac;
   }
 
+  // --- reciprocity (V7): the field makes its weather ---
+  // The climate schedule is stateful now: each phase's length is decided
+  // when the phase begins, from the field's own canopy. A grown field
+  // stretches the coming rain and shrinks the coming drought; a barren
+  // field does the reverse. Deterministic: bias is a pure function of
+  // state, so replays and saves agree. Calm and wind never move.
+  function initClimate(tick) {
+    if (o.conditionLock >= 0) {
+      S.phaseIdx = o.conditionLock % CONDITIONS.length;
+      S.phaseStart = tick; S.phaseLen = o.conditionTicks;
+      return;
+    }
+    const n = CONDITIONS.length;
+    const period = o.conditionTicks * n;
+    // preserve the old seed offset: a fresh field starts where the
+    // stateless schedule would have put it
+    const tt = (((tick + (S.seed % period)) % period) + period) % period;
+    S.phaseIdx = Math.floor(tt / o.conditionTicks);
+    S.phaseStart = tick - (tt - S.phaseIdx * o.conditionTicks);
+    S.phaseLen = o.conditionTicks;
+  }
+
+  function phaseLengthFor(idx) {
+    const nominal = o.conditionTicks;
+    const g = o.climateGain * S.climateBias;
+    let m = 1;
+    if (idx === 1) m = 1 + g;      // rain: a grown field pulls rain toward itself
+    else if (idx === 3) m = 1 - g; // drought: a barren field bakes longer
+    const lo = nominal * 0.5, hi = nominal * 1.5;
+    return Math.max(lo, Math.min(hi, Math.round(nominal * m)));
+  }
+
+  function advanceClimate() {
+    if (o.conditionLock >= 0) return; // pinned: the schedule never moves
+    let guard = 0;
+    while (S.tick >= S.phaseStart + S.phaseLen && guard++ < 8) {
+      S.phaseStart += S.phaseLen;
+      S.phaseIdx = (S.phaseIdx + 1) % CONDITIONS.length;
+      S.phaseLen = phaseLengthFor(S.phaseIdx);
+    }
+  }
+
+  function conditionAt() {
+    if (o.conditionLock >= 0) {
+      const idx = o.conditionLock % CONDITIONS.length;
+      return { cur: idx, next: (idx + 1) % CONDITIONS.length, blend: 0, phaseMod: 1, bias: 0 };
+    }
+    const n = CONDITIONS.length;
+    const into = S.tick - S.phaseStart;
+    const b = o.conditionBlend;
+    const blend = into > S.phaseLen - b ? (into - (S.phaseLen - b)) / b : 0;
+    return {
+      cur: S.phaseIdx, next: (S.phaseIdx + 1) % n,
+      blend: Math.min(1, Math.max(0, blend)),
+      phaseMod: S.phaseLen / o.conditionTicks, // what the field did to this weather
+      bias: S.climateBias,
+    };
+  }
+
+  function updateCanopy() {
+    // reciprocity: the canopy talks back. Fast and slow EMAs of filament
+    // segments; bias is the field's growth measured against its own past.
+    let segs = 0;
+    for (const b of S.branches) segs += b.pts.length;
+    S.canopyFast += (segs - S.canopyFast) / o.canopyFastTau;
+    S.canopySlow += (segs - S.canopySlow) / o.canopySlowTau;
+    if (S.canopySlow < o.canopyFloor) { S.climateBias = 0; return; }
+    const raw = (S.canopyFast - S.canopySlow) / S.canopySlow;
+    S.climateBias = Math.max(-1, Math.min(1, raw));
+  }
+
+  function windAngle(tick) {
+    // golden-angle walk per full cycle: deterministic, never repeats a heading
+    const cycle = Math.floor(tick / (o.conditionTicks * CONDITIONS.length));
+    return (cycle * 2.399963) % (Math.PI * 2);
+  }
+
+  function effParams(tick) {
+    const ci = conditionAt();
+    const A = CONDITIONS[ci.cur], B = CONDITIONS[ci.next], f = ci.blend;
+    const L = (a, b) => a + (b - a) * f;
+    return {
+      info: ci,
+      cur: A, next: B,
+      seekerSpeed: L(A.seekerSpeed, B.seekerSpeed),
+      wander: L(A.wander, B.wander),
+      home: L(A.home, B.home),
+      branchGrow: L(A.branchGrow, B.branchGrow),
+      life: L(A.life, B.life),
+      wind: L(A.wind, B.wind),
+      windAngle: windAngle(tick),
+      // senescence V6: the weather bends the withering — drought withers
+      // old growth, rain preserves it — lerped across blends like the rest
+      wither: L(A.wither, B.wither),
+      // bloom: each weather sets a carrying capacity; lerped across blends
+      cap: Math.max(8, Math.round(o.seekerCount * L(o.carrying[ci.cur], o.carrying[ci.next], f))),
+      bg: [L(A.bg[0], B.bg[0]), L(A.bg[1], B.bg[1]), L(A.bg[2], B.bg[2])],
+    };
+  }
+
   function sproutPoint() {
-    // new filaments root on existing structure (mycelial), else the seed
-    if (S.branches.length === 0) return { x: S.cx, y: S.cy, dir: rnd() * Math.PI * 2 };
+    // new filaments root on existing structure (mycelial), else the seed.
+    // returns the parent branch too, so lineage can be recorded.
+    if (S.branches.length === 0) return { x: S.cx, y: S.cy, dir: rnd() * Math.PI * 2, parent: null };
     // pick a branch weighted by length, then a point along it
     let total = 0;
     for (const b of S.branches) total += b.pts.length;
@@ -126,34 +394,72 @@ function createCore(opts) {
         const p = b.pts[Math.floor(rnd() * b.pts.length)];
         const dx = p[0] - S.cx, dy = p[1] - S.cy;
         const outward = Math.atan2(dy, dx);
-        return { x: p[0], y: p[1], dir: outward + (rnd() - 0.5) * 3.2 };
+        return { x: p[0], y: p[1], dir: outward + (rnd() - 0.5) * 3.2, parent: b };
       }
     }
-    const b0 = S.branches[0].pts[0];
-    return { x: b0[0], y: b0[1], dir: rnd() * Math.PI * 2 };
+    const b0 = S.branches[0];
+    const p0 = b0.pts[0];
+    return { x: p0[0], y: p0[1], dir: rnd() * Math.PI * 2, parent: b0 };
   }
 
   function sprout() {
     if (S.branches.length >= o.maxBranches) return false;
     let segs = 0;
     for (const b of S.branches) segs += b.pts.length;
-    if (segs >= o.maxSegments) return false;
+    if (segs >= o.maxSegments) {
+      // senescence V6: new growth displaces the oldest wood. Wither a
+      // single point (dead branches first, then oldest-born) to make room,
+      // so a return's growth is never silently discarded. The family-tree
+      // record stays; only the wood is recycled. Deterministic: no rng.
+      let victim = null;
+      for (const b of S.branches) {
+        if (b.pts.length === 0) continue;
+        if (!victim || (b.dead && !victim.dead) || (b.dead === victim.dead && b.born < victim.born)) victim = b;
+      }
+      if (!victim) return false;
+      victim.pts.shift();
+      S.eroded++;
+      segs--;
+    }
     const sp = sproutPoint();
+    const parent = sp.parent || null;
+    const pid = parent && parent.id ? parent.id : -1;
+    const gen = parent ? (parent.gen || 0) + 1 : 1;
+    const genome = S.spores.length > 0
+      ? normGenome(S.spores[S.spores.length - 1])
+      : normGenome(S.seedGenome);
+    const id = S.nextBranchId++;
     S.branches.push({
+      id: id,
+      gen: gen,
+      parentId: pid,
+      genome: genome,
       pts: [[sp.x, sp.y]],
       dir: sp.dir,
       born: S.tick,
       tipX: sp.x, tipY: sp.y,
       carry: 0, // fractional extension accumulator
+      erodeAcc: 0, // fractional withering accumulator (senescence V6)
       tint: rnd() * 2 - 1, // -1 amber-leaning .. +1 green-leaning
       dead: false,
     });
+    if (gen > S.maxGen) S.maxGen = gen;
     return true;
   }
 
   function tick(dt) {
     S.tick++;
+    advanceClimate(); // reciprocity: the schedule may turn on the field's canopy
     const t = S.tick * dt;
+    const P = effParams(S.tick); // world conditions bend the rules this tick
+    // bloom: the weather sets a carrying capacity. Cull the excess with a
+    // neutral bottleneck — uniform random, genome-blind — so the breathing
+    // never rewrites the selection story; it only shrinks the stage.
+    while (S.seekers.length > P.cap) {
+      S.seekers.splice(Math.floor(rnd() * S.seekers.length), 1);
+      S.culled++;
+    }
+    const wob = Math.cos(P.windAngle), wobS = Math.sin(P.windAngle);
     // --- seekers ---
     for (let i = 0; i < S.seekers.length; i++) {
       const s = S.seekers[i];
@@ -162,12 +468,15 @@ function createCore(opts) {
       // deterministic wander field
       const w1 = Math.sin(s.y * 0.021 + t * 1.7) + Math.sin(s.x * 0.013 - t * 1.1);
       const w2 = Math.sin(s.x * 0.019 - t * 1.4) + Math.sin(s.y * 0.017 + t * 0.9);
-      let ax = w1 * o.wander * 0.5 - w2 * o.wander * 0.28;
-      let ay = w2 * o.wander * 0.5 + w1 * o.wander * 0.28;
-      // homing: strengthens with age
+      let ax = w1 * o.wander * P.wander * 0.5 - w2 * o.wander * P.wander * 0.28;
+      let ay = w2 * o.wander * P.wander * 0.5 + w1 * o.wander * P.wander * 0.28;
+      // wind: a steady push across the whole field
+      ax += wob * P.wind;
+      ay += wobS * P.wind;
+      // homing: strengthens with age, scaled by the seeker's pull
       const dx = S.cx - s.x, dy = S.cy - s.y;
       const d = Math.hypot(dx, dy) || 1;
-      const ha = homingAccel(ageFrac);
+      const ha = homingAccel(ageFrac) * P.home * (s.genome ? s.genome.pull : 1);
       ax += (dx / d) * ha;
       ay += (dy / d) * ha;
       // soft boundary
@@ -187,13 +496,38 @@ function createCore(opts) {
       if (rd < o.returnRadius && s.away && s.age > o.minReturnAge) {
         S.growth++;
         S.sinceBranch += o.growthPerReturn;
+        // lineage: winners replicate — plant a mutated spore, teach the seed
+        S.spores.push(mutateGenome(s.genome));
+        if (S.spores.length > o.sporeMemory) S.spores.shift();
+        S.returnsSinceAdapt++;
+        if (S.returnsSinceAdapt >= o.adaptEvery) {
+          S.returnsSinceAdapt = 0;
+          adaptSeedGenome();
+        }
         while (S.sinceBranch >= o.branchEvery) {
           S.sinceBranch -= o.branchEvery;
           if (!sprout()) { S.branchDebt++; break; }
         }
-        spawnSeeker(s);
+        spawnSeeker(s, P, mutateGenome(s.genome));
+        // bloom V5: a return fitter than the swarm's own mean earns a
+        // recruit — differential reproduction, relative by definition.
+        // The chance scales with headroom ((cap - pop)/cap) so the bloom
+        // tracks the weather: eager when starved, tapering at the cap.
+        const gsum = s.genome.vigor + s.genome.pull + s.genome.thrift;
+        const headroom = (P.cap - S.seekers.length) / P.cap;
+        if (headroom > 0 && gsum >= S.fitThreshold &&
+            rnd() < o.recruitBase * headroom) {
+          S.seekers.push(spawnSeeker(null, P, mutateGenome(s.genome)));
+          S.recruited++;
+        }
       } else if (s.age >= s.life) {
-        spawnSeeker(s); // dissipated: no growth
+        // dissipated: its lineage ends — replaced by a recent winner's
+        // lineage drawn from the spore pool (selection), or the seed
+        // baseline if no winners are recorded yet
+        const donor = S.spores.length > 0
+          ? S.spores[Math.floor(rnd() * S.spores.length)]
+          : S.seedGenome;
+        spawnSeeker(s, P, mutateGenome(donor));
       }
     }
     // --- filament tips ---
@@ -206,7 +540,7 @@ function createCore(opts) {
         b.dead = true;
         continue;
       }
-      b.carry += o.branchGrowRate * dt;
+      b.carry += o.branchGrowRate * P.branchGrow * dt;
       while (b.carry >= o.branchSegLen && segs < o.maxSegments) {
         b.carry -= o.branchSegLen;
         // drift the heading with deterministic noise
@@ -218,15 +552,69 @@ function createCore(opts) {
         segs++;
       }
     }
+    // senescence (V6): filaments turn over, so the segment budget never
+    // freezes the piece. Branches older than branchLife wither from the
+    // oldest (root-side) point; dead branches wither first, then the
+    // oldest-born. The withered budget returns to the pool, so returns
+    // keep spending forever — growth through return, without end. The
+    // weather bends the withering: drought withers, rain preserves.
+    // The tip keeps extending while the root withers: filaments walk.
+    // Deterministic: ordered by (dead, born), no rng.
+    const witherOrder = S.branches.slice().sort(function (x, y) {
+      return ((x.dead ? 0 : 1) - (y.dead ? 0 : 1)) || (x.born - y.born);
+    });
+    for (const b of witherOrder) {
+      if (S.tick - b.born <= o.branchLife) continue;
+      b.erodeAcc = (b.erodeAcc || 0) + P.wither;
+      // wither to nothing; newborn single-point branches are protected by
+      // the age check above, so only the genuinely old can reach zero
+      while (b.erodeAcc >= o.erodeEvery && b.pts.length > 0) {
+        b.erodeAcc -= o.erodeEvery;
+        b.pts.shift();
+        S.eroded++;
+      }
+    }
+    // remove exhausted branches; their family-tree records stay
+    for (let i = S.branches.length - 1; i >= 0; i--) {
+      if (S.branches[i].pts.length === 0) S.branches.splice(i, 1);
+    }
+    // bloom: sample the field's own history — population and trait means
+    if (S.tick % o.historyEvery === 0) {
+      let hv = 0, hp = 0, ht = 0;
+      for (const sk of S.seekers) {
+        const gm = sk.genome || { vigor: 1, pull: 1, thrift: 1 };
+        hv += gm.vigor; hp += gm.pull; ht += gm.thrift;
+      }
+      const hn = S.seekers.length || 1;
+      S.history.push([S.tick, S.seekers.length, hv / hn, hp / hn, ht / hn]);
+      if (S.history.length > o.historyMax) S.history.shift();
+      // bloom V5: refresh the relative fitness gate — the swarm's own mean
+      S.fitThreshold = (hv + hp + ht) / hn;
+    }
+    // reciprocity (V7): the canopy talks back — the field's growth,
+    // measured against its own past, will bend the next weather turn
+    updateCanopy();
   }
 
   function serialize() {
     return JSON.stringify({
-      v: 1, seed: S.seed, rng: S.rng, tick: S.tick, growth: S.growth,
+      v: 3, seed: S.seed, rng: S.rng, tick: S.tick, growth: S.growth,
       sinceBranch: S.sinceBranch, branchDebt: S.branchDebt,
       cx: S.cx, cy: S.cy, boundR: S.boundR || 0,
-      seekers: S.seekers.map(s => [s.x, s.y, s.vx, s.vy, s.age, s.life, s.away ? 1 : 0]),
-      branches: S.branches.map(b => ({ pts: b.pts, dir: b.dir, born: b.born, tipX: b.tipX, tipY: b.tipY, carry: b.carry, tint: b.tint || 0, dead: !!b.dead })),
+      seedGenome: [S.seedGenome.vigor, S.seedGenome.pull, S.seedGenome.thrift],
+      spores: S.spores.map(g => [g.vigor, g.pull, g.thrift]),
+      nextBranchId: S.nextBranchId, maxGen: S.maxGen,
+      returnsSinceAdapt: S.returnsSinceAdapt,
+      recruited: S.recruited, culled: S.culled, eroded: S.eroded, history: S.history,
+      fitThreshold: S.fitThreshold,
+      // reciprocity (V7): the climate schedule and the canopy's memory
+      phaseIdx: S.phaseIdx, phaseStart: S.phaseStart, phaseLen: S.phaseLen,
+      canopyFast: S.canopyFast, canopySlow: S.canopySlow, climateBias: S.climateBias,
+      seekers: S.seekers.map(s => [s.x, s.y, s.vx, s.vy, s.age, s.life, s.away ? 1 : 0,
+        s.genome.vigor, s.genome.pull, s.genome.thrift]),
+      branches: S.branches.map(b => ({ id: b.id || 0, gen: b.gen || 0, parentId: (b.parentId === undefined ? -1 : b.parentId),
+        genome: b.genome ? [b.genome.vigor, b.genome.pull, b.genome.thrift] : [1, 1, 1],
+        pts: b.pts, dir: b.dir, born: b.born, tipX: b.tipX, tipY: b.tipY, carry: b.carry, erodeAcc: b.erodeAcc || 0, tint: b.tint || 0, dead: !!b.dead })),
     });
   }
 
@@ -235,12 +623,34 @@ function createCore(opts) {
     try {
       d = typeof json === "string" ? JSON.parse(json) : json;
     } catch (e) { return false; }
-    if (!d || d.v !== 1 || !Array.isArray(d.seekers) || !Array.isArray(d.branches)) return false;
+    if (!d || (d.v !== 2 && d.v !== 3) || !Array.isArray(d.seekers) || !Array.isArray(d.branches)) return false;
     S.seed = d.seed; S.rng = (d.rng === undefined ? (d.seed >>> 0) : (d.rng | 0)); S.tick = d.tick; S.growth = d.growth;
     S.sinceBranch = d.sinceBranch; S.branchDebt = d.branchDebt;
     S.cx = d.cx; S.cy = d.cy; S.boundR = d.boundR || 0;
-    S.seekers = d.seekers.map(a => ({ x: a[0], y: a[1], vx: a[2], vy: a[3], age: a[4], life: a[5], away: !!a[6] }));
-    S.branches = d.branches.map(b => ({ pts: b.pts, dir: b.dir, born: b.born, tipX: b.tipX, tipY: b.tipY, carry: b.carry, tint: b.tint || 0, dead: !!b.dead }));
+    S.seedGenome = normGenome(d.seedGenome ? { vigor: d.seedGenome[0], pull: d.seedGenome[1], thrift: d.seedGenome[2] } : null);
+    S.spores = Array.isArray(d.spores) ? d.spores.map(a => normGenome({ vigor: a[0], pull: a[1], thrift: a[2] })) : [];
+    S.nextBranchId = d.nextBranchId || 1; S.maxGen = d.maxGen || 0;
+    S.returnsSinceAdapt = d.returnsSinceAdapt || 0;
+    S.recruited = d.recruited || 0; S.culled = d.culled || 0; S.eroded = d.eroded || 0;
+    S.history = Array.isArray(d.history) ? d.history : [];
+    S.fitThreshold = (typeof d.fitThreshold === "number" && isFinite(d.fitThreshold)) ? d.fitThreshold : 3.0;
+    // reciprocity (V7): old saves have no schedule state — rebuild it from
+    // the stateless position, so the climate resumes where it should be
+    if (typeof d.phaseIdx === "number" && typeof d.phaseStart === "number" && typeof d.phaseLen === "number") {
+      S.phaseIdx = d.phaseIdx; S.phaseStart = d.phaseStart; S.phaseLen = d.phaseLen;
+    } else {
+      initClimate(d.tick);
+    }
+    S.canopyFast = (typeof d.canopyFast === "number" && isFinite(d.canopyFast)) ? d.canopyFast : 0;
+    S.canopySlow = (typeof d.canopySlow === "number" && isFinite(d.canopySlow)) ? d.canopySlow : 0;
+    S.climateBias = (typeof d.climateBias === "number" && isFinite(d.climateBias)) ? d.climateBias : 0;
+    S.seekers = d.seekers.map(a => ({ x: a[0], y: a[1], vx: a[2], vy: a[3], age: a[4], life: a[5], away: !!a[6],
+      genome: normGenome({ vigor: a[7], pull: a[8], thrift: a[9] }) }));
+    S.branches = d.branches.map(b => ({ id: b.id || 0, gen: b.gen || 0, parentId: (b.parentId === undefined ? -1 : b.parentId),
+      genome: normGenome(b.genome ? { vigor: b.genome[0], pull: b.genome[1], thrift: b.genome[2] } : null),
+      pts: b.pts, dir: b.dir, born: (typeof b.born === "number" ? b.born : d.tick),
+      tipX: b.tipX, tipY: b.tipY, carry: b.carry, erodeAcc: (typeof b.erodeAcc === "number" ? b.erodeAcc : 0),
+      tint: b.tint || 0, dead: !!b.dead }));
     return true;
   }
 
@@ -248,14 +658,19 @@ function createCore(opts) {
     S.tick = 0; S.growth = 0; S.sinceBranch = 0; S.branchDebt = 0;
     S.rng = S.seed;
     S.cx = cx; S.cy = cy; S.boundR = boundR || 0;
+    S.seedGenome = { vigor: 1, pull: 1, thrift: 1 };
+    S.spores = []; S.nextBranchId = 1; S.maxGen = 0; S.returnsSinceAdapt = 0;
+    S.recruited = 0; S.culled = 0; S.eroded = 0; S.history = []; S.fitThreshold = 3.0;
+    S.canopyFast = 0; S.canopySlow = 0; S.climateBias = 0;
+    initClimate(0); // the schedule starts where the seed puts it
     S.seekers = [];
-    for (let i = 0; i < o.seekerCount; i++) S.seekers.push(spawnSeeker());
+    for (let i = 0; i < o.seekerCount; i++) S.seekers.push(spawnSeeker(null, null, mutateGenome(S.seedGenome)));
     // stagger ages so the field doesn't pulse on boot
     for (const s of S.seekers) s.age = rnd() * s.life * 0.9;
     S.branches = [];
   }
 
-  return { S, TUNE: o, tick, serialize, restore, reset, sprout, homingAccel, spawnSeeker };
+  return { S, TUNE: o, tick, serialize, restore, reset, sprout, homingAccel, spawnSeeker, conditionAt, effParams };
 }
 //__CORE_END__
 
@@ -266,8 +681,19 @@ function createCore(opts) {
   const canvas = document.getElementById("stage");
   const ctx = canvas.getContext("2d");
   const returnsEl = document.getElementById("returns");
-  const KEY = "allspark.v1";
+  const conditionEl = document.getElementById("condition");
+  const KEY = "allspark.v2";
   const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // lineage explainer overlay
+  const aboutEl = document.getElementById("about");
+  const wordmarkEl = document.getElementById("wordmark");
+  wordmarkEl.addEventListener("click", function () {
+    aboutEl.style.display = aboutEl.style.display === "block" ? "none" : "block";
+  });
+  aboutEl.querySelector(".close").addEventListener("click", function () {
+    aboutEl.style.display = "none";
+  });
 
   let W = 0, H = 0, DPR = 1;
   function fit() {
@@ -323,11 +749,15 @@ function createCore(opts) {
   let mx = -9999, my = -9999; // cursor weather only
   window.addEventListener("pointermove", function (e) { mx = e.clientX; my = e.clientY; });
 
-  function drawBackground(t) {
+  function drawBackground(t, P) {
+    const bg = (P && P.bg) || [10, 14, 24];
+    const css = function (k) {
+      return "rgb(" + Math.round(bg[0] * k) + "," + Math.round(bg[1] * k) + "," + Math.round(bg[2] * k) + ")";
+    };
     const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.75);
-    g.addColorStop(0, "#0a0e18");
-    g.addColorStop(0.55, "#060a13");
-    g.addColorStop(1, "#04060c");
+    g.addColorStop(0, css(1));
+    g.addColorStop(0.55, css(0.62));
+    g.addColorStop(1, css(0.38));
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
     // faint drifting dust: static field, slow shimmer (weather, not mechanic)
@@ -342,6 +772,26 @@ function createCore(opts) {
       ctx.fill();
     }
     ctx.restore();
+    // rain streaks: weather only, deterministic from frame time
+    if (P) {
+      const ci = P.info;
+      const rainF = (ci.cur === 1 ? 1 - ci.blend : 0) + (ci.next === 1 ? ci.blend : 0);
+      if (rainF > 0.02) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.strokeStyle = "rgba(150,180,230," + (0.10 * rainF).toFixed(3) + ")";
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 46; i++) {
+          const sx = ((i * 389.7 + 61) % (W + 120)) - 60;
+          const sy = ((i * 173.3 + t * 420) % (H + 60)) - 30;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(sx - 7, sy + 26);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
   }
 
   function drawBranches() {
@@ -369,10 +819,14 @@ function createCore(opts) {
         for (let i = i0 + 1; i <= i1; i++) ctx.lineTo(b.pts[i][0], b.pts[i][1]);
         ctx.stroke();
       }
-      // hot tip
+      // hot tip: glow color shows the filament's dominant trait —
+      // green vigor, gold pull, blue thrift
       const tip = b.pts[n - 1];
       const pulse = 0.6 + 0.4 * Math.sin(S.tick * 0.05 + b.born);
-      ctx.fillStyle = "rgba(190,255,200," + (0.5 * pulse).toFixed(3) + ")";
+      const bgm = b.genome || { vigor: 1, pull: 1, thrift: 1 };
+      const dom = bgm.vigor >= bgm.pull && bgm.vigor >= bgm.thrift ? [190, 255, 200]
+        : bgm.pull >= bgm.thrift ? [255, 214, 140] : [150, 200, 255];
+      ctx.fillStyle = "rgba(" + dom[0] + "," + dom[1] + "," + dom[2] + "," + (0.5 * pulse).toFixed(3) + ")";
       ctx.beginPath();
       ctx.arc(tip[0], tip[1], 2.2, 0, 6.2832);
       ctx.fill();
@@ -431,16 +885,93 @@ function createCore(opts) {
     ctx.restore();
   }
 
+  // bloom chart: the field's own history — population and trait means,
+  // faint, bottom-right. The compounding made legible.
+  function drawHistory() {
+    const S = core.S, hist = S.history;
+    if (!hist || hist.length < 2) return;
+    const pw = 190, ph = 56;
+    const x0 = W - pw - 18, y0 = H - ph - 56;
+    const maxPop = TUNE.seekerCount * Math.max.apply(null, TUNE.carrying);
+    const lo = TUNE.genomeMin, span = TUNE.genomeMax - TUNE.genomeMin;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.lineWidth = 1;
+    // frame
+    ctx.strokeStyle = "rgba(255,217,138,0.13)";
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.lineTo(x0 + pw, y0);
+    ctx.lineTo(x0 + pw, y0 + ph); ctx.lineTo(x0, y0 + ph);
+    ctx.closePath(); ctx.stroke();
+    const n = hist.length;
+    function line(idx, color, max) {
+      ctx.strokeStyle = color;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const p = hist[i];
+        const frac = Math.max(0, Math.min(1, p[idx] / max));
+        const x = x0 + 6 + (i * (pw - 12)) / (n - 1);
+        const y = y0 + ph - 6 - frac * (ph - 12);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    function traitLine(idx, color) {
+      ctx.strokeStyle = color;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const p = hist[i];
+        const frac = Math.max(0, Math.min(1, (p[idx] - lo) / span));
+        const x = x0 + 6 + (i * (pw - 12)) / (n - 1);
+        const y = y0 + ph - 6 - frac * (ph - 12);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    traitLine(4, "rgba(150,200,255,0.35)"); // thrift, blue
+    traitLine(3, "rgba(255,214,140,0.35)"); // pull, gold
+    traitLine(2, "rgba(190,255,200,0.35)"); // vigor, green
+    line(1, "rgba(255,217,138,0.55)", maxPop); // population, amber
+    ctx.restore();
+  }
+
   let lastSave = 0;
+  function conditionLabel(P) {
+    const ci = P.info;
+    const cur = CONDITIONS[ci.cur], next = CONDITIONS[ci.next];
+    let s = cur.icon + "  " + cur.name;
+    if (ci.blend > 0.02) s += "  \u2192  " + next.icon + " " + next.name;
+    // reciprocity (V7): show what the field did to this weather
+    const mod = ci.phaseMod || 1;
+    if (mod >= 1.03) s += "  \u00B7  field +" + Math.round((mod - 1) * 100) + "%";
+    else if (mod <= 0.97) s += "  \u00B7  field \u2212" + Math.round((1 - mod) * 100) + "%";
+    return s;
+  }
   function frame(nowMs) {
     const t = nowMs / 1000;
-    drawBackground(t);
+    const P = core.effParams(core.S.tick);
+    drawBackground(t, P);
     drawBranches();
     drawSeed(t);
     drawSeekers();
     drawCursor();
+    drawHistory();
     const g = core.S.growth;
-    returnsEl.textContent = "returns  " + g + (core.S.branchDebt > 0 ? "\nunsprouted  " + core.S.branchDebt : "");
+    let ret = "returns  " + g;
+    if (core.S.branchDebt > 0) ret += "\nunsprouted  " + core.S.branchDebt;
+    // lineage readout: deepest generation + population trait means
+    const SS = core.S;
+    let mv = 0, mp = 0, mt = 0;
+    for (const sk of SS.seekers) {
+      const gm = sk.genome || { vigor: 1, pull: 1, thrift: 1 };
+      mv += gm.vigor; mp += gm.pull; mt += gm.thrift;
+    }
+    const nn = SS.seekers.length || 1;
+    ret += "\nlineage  gen " + SS.maxGen +
+      " · v " + (mv / nn).toFixed(2) + " p " + (mp / nn).toFixed(2) + " t " + (mt / nn).toFixed(2) +
+      " · pop " + SS.seekers.length;
+    returnsEl.textContent = ret;
+    conditionEl.textContent = conditionLabel(P);
     if (nowMs - lastSave > 8000) {
       lastSave = nowMs;
       try { localStorage.setItem(KEY, core.serialize()); } catch (e) {}
@@ -450,8 +981,10 @@ function createCore(opts) {
   if (reduced) {
     // one static, well-aged frame: no motion
     for (let i = 0; i < 24000; i++) core.tick(1 / 60);
-    drawBackground(0); drawBranches(); drawSeed(0); drawSeekers();
-    returnsEl.textContent = "returns  " + core.S.growth;
+    const P0 = core.effParams(core.S.tick);
+    drawBackground(0, P0); drawBranches(); drawSeed(0); drawSeekers(); drawHistory();
+    returnsEl.textContent = "returns  " + core.S.growth + "\nlineage  gen " + core.S.maxGen;
+    conditionEl.textContent = conditionLabel(P0);
     try { localStorage.setItem(KEY, core.serialize()); } catch (e) {}
   } else {
     let last = performance.now();
