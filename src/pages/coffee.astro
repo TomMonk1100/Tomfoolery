@@ -1,6 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
 
+// The `-640.webp` thumbnails are resized to 640px on their longest edge, so
+// `thumbWidth` is the verified pixel width on disk (480, 489, 360, or 640).
 const newPhoto = (name: string, width: number, height: number, thumbWidth: number, alt: string, caption: string) => ({
   src: `/images/coffee/${name}.webp`,
   srcset: `/images/coffee/${name}-640.webp ${thumbWidth}w, /images/coffee/${name}.webp ${width}w`,
@@ -103,8 +105,18 @@ const photos = [
       const image = dialog.querySelector('[data-gallery-image]');
       const caption = dialog.querySelector('[data-gallery-caption]');
       const count = dialog.querySelector('[data-gallery-count]');
+      const preloaded = new Set();
       let current = 0;
       let returnFocus = null;
+
+      const preload = (index) => {
+        const target = photos[(index + photos.length) % photos.length];
+        if (!target || preloaded.has(target.src)) return;
+        preloaded.add(target.src);
+        const img = new Image();
+        img.decoding = 'async';
+        img.src = target.src;
+      };
 
       const show = (index) => {
         current = (index + photos.length) % photos.length;
@@ -113,6 +125,8 @@ const photos = [
         image.alt = photo.alt;
         caption.textContent = photo.caption;
         count.textContent = `Photograph ${current + 1} of ${photos.length}`;
+        preload(current - 1);
+        preload(current + 1);
       };
 
       document.querySelectorAll('[data-gallery-open]').forEach((button) => {

@@ -90,12 +90,24 @@ function fmt(date: Date) {
       if (corpus) return;
       if (!loading) {
         loading = (async () => {
-          const months = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
-          const [blog, ...tweetSets] = await Promise.all([
-            fetch('/archive/blog-index.json').then((r) => r.json()),
-            ...months.map((m) => fetch(`/archive/tweets-m${m}.json`).then((r) => (r.ok ? r.json() : []))),
-          ]);
-          corpus = { tweets: tweetSets.flat(), blog };
+          try {
+            const months = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
+            const [blog, ...tweetSets] = await Promise.all([
+              fetch('/archive/blog-index.json').then((r) => {
+                if (!r.ok) throw new Error(`Failed to load blog index (${r.status})`);
+                return r.json();
+              }),
+              ...months.map((m) =>
+                fetch(`/archive/tweets-m${m}.json`).then((r) => {
+                  if (!r.ok) throw new Error(`Failed to load tweets-m${m} (${r.status})`);
+                  return r.json();
+                })
+              ),
+            ]);
+            corpus = { tweets: tweetSets.flat(), blog };
+          } catch {
+            loading = null;
+          }
         })();
       }
       await loading;
@@ -162,6 +174,7 @@ function fmt(date: Date) {
     }
 
     document.addEventListener('astro:page-load', setupSearch);
+    setupSearch();
 
     function setupArchiveYear() {
       const select = document.getElementById('archive-year') as HTMLSelectElement | null;

@@ -62,7 +62,13 @@ export function parseCookies(header: string | null): Record<string, string> {
     if (idx < 0) continue;
     const name = part.slice(0, idx).trim();
     const value = part.slice(idx + 1).trim();
-    if (name && !(name in out)) out[name] = decodeURIComponent(value);
+    if (name && !(name in out)) {
+      try {
+        out[name] = decodeURIComponent(value);
+      } catch {
+        out[name] = value;
+      }
+    }
   }
   return out;
 }
@@ -150,7 +156,10 @@ export function gatePage(nextPath: string, failed = false): Response {
 </html>`;
   return new Response(html, {
     status: 401,
-    headers: { "content-type": "text/html; charset=utf-8" },
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "private, no-store",
+    },
   });
 }
 
@@ -161,7 +170,13 @@ function notConfiguredPage(): Response {
       "<h1>The family section isn\u2019t available right now.</h1>" +
       "<p>The password hasn\u2019t been configured on the server yet. Nothing here is readable until it is.</p>" +
       "</body></html>",
-    { status: 503, headers: { "content-type": "text/html; charset=utf-8" } },
+    {
+      status: 503,
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "private, no-store",
+      },
+    },
   );
 }
 
@@ -193,7 +208,10 @@ export async function gateResponse(
     if (await passwordMatches(attempt, password)) {
       const response = new Response(null, {
         status: 303,
-        headers: { Location: nextPath },
+        headers: {
+          Location: nextPath,
+          "Cache-Control": "private, no-store",
+        },
       });
       response.headers.set(
         "Set-Cookie",
@@ -212,5 +230,5 @@ export async function gateResponse(
   ) {
     return next();
   }
-  return gatePage(url.pathname);
+  return gatePage(url.pathname + url.search);
 }

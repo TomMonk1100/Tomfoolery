@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  aqiLabel,
   assessSunsetPotential,
   buildTemperatureTrace,
+  formatAirDetail,
+  parseOpenMeteoAirQuality,
   parseOpenMeteoHourly,
   validateForecastHours,
   type ForecastHour,
@@ -214,5 +217,53 @@ describe('sunset cloud-layer potential', () => {
       hour(8),
       hour(9, { highCloud: null }),
     ], sunsetAt)).toBeNull();
+  });
+});
+
+describe('Open-Meteo air quality parsing and formatting', () => {
+  it('maps US AQI bands to concise field-note labels', () => {
+    expect(aqiLabel(28)).toBe('good');
+    expect(aqiLabel(72)).toBe('moderate');
+    expect(aqiLabel(125)).toBe('sensitive');
+    expect(aqiLabel(175)).toBe('unhealthy');
+    expect(aqiLabel(250)).toBe('very unhealthy');
+    expect(aqiLabel(340)).toBe('hazardous');
+  });
+
+  it('parses both live Open-Meteo payloads and cached air-quality objects', () => {
+    expect(parseOpenMeteoAirQuality({
+      current: { us_aqi: 28, pm2_5: 6.4, dust: 12 },
+    })).toEqual({
+      usAqi: 28,
+      pm25: 6.4,
+      dust: 12,
+    });
+
+    expect(parseOpenMeteoAirQuality({
+      usAqi: 64,
+      pm25: 14.2,
+      dust: null,
+    })).toEqual({
+      usAqi: 64,
+      pm25: 14.2,
+      dust: null,
+    });
+  });
+
+  it('drops out-of-range or empty air-quality payloads', () => {
+    expect(parseOpenMeteoAirQuality(null)).toBeNull();
+    expect(parseOpenMeteoAirQuality({
+      current: { us_aqi: -5, pm2_5: 'bad', dust: 99999 },
+    })).toBeNull();
+  });
+
+  it('enriches humidity with AQI when available and falls back cleanly when offline', () => {
+    expect(formatAirDetail(42.4, { usAqi: 28, pm25: 5.1, dust: 8 })).toBe(
+      '42% humidity · AQI 28 good',
+    );
+    expect(formatAirDetail(42.4, null)).toBe('42% humidity');
+    expect(formatAirDetail(42.4, { usAqi: null, pm25: 5.1, dust: 8 })).toBe(
+      '42% humidity',
+    );
   });
 });

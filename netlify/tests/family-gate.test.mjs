@@ -47,11 +47,21 @@ describe("parseCookies", () => {
   it("handles a missing header", () => {
     expect(parseCookies(null)).toEqual({});
   });
+  it("tolerates malformed percent-encoding without throwing", () => {
+    const out = parseCookies("bad=%E0%A4%A; __Host-tf-family=valid123");
+    expect(out.bad).toBe("%E0%A4%A");
+    expect(out[COOKIE_NAME]).toBe("valid123");
+  });
 });
 
 describe("safeNextPath", () => {
   it("allows family paths", () => {
     expect(safeNextPath("/family/person/abc/")).toBe("/family/person/abc/");
+  });
+  it("preserves query strings while stripping fragments", () => {
+    expect(safeNextPath("/family/person/abc/?tab=sources&view=full#top")).toBe(
+      "/family/person/abc/?tab=sources&view=full",
+    );
   });
   it("blocks protocol-relative URLs", () => {
     expect(safeNextPath("//evil.com/x")).toBe("/family");
@@ -95,9 +105,10 @@ describe("buildAuthCookie", () => {
 });
 
 describe("gatePage", () => {
-  it("is never indexed and carries no PII", async () => {
+  it("is never indexed, never cached, and carries no PII", async () => {
     const res = gatePage("/family");
     expect(res.status).toBe(401);
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
     const html = await res.text();
     expect(html).toContain("noindex");
     expect(html).not.toContain("Muncie");
@@ -115,22 +126,26 @@ describe("gateResponse", () => {
       next,
     );
     expect(res.status).toBe(503);
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
   });
 
-  it("shows the gate to anonymous visitors", async () => {
+  it("shows the gate to anonymous visitors and preserves query strings in next", async () => {
     const res = await gateResponse(
-      new Request("https://tommuncie.com/family/person/x/"),
+      new Request("https://tommuncie.com/family/person/x/?tab=sources&sort=date"),
       PASSWORD,
       next,
     );
     expect(res.status).toBe(401);
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+    const html = await res.text();
+    expect(html).toContain('name="next" value="/family/person/x/?tab=sources&amp;sort=date"');
   });
 
-  it("serves content with a valid cookie", async () => {
+  it("serves content with a valid cookie even alongside a malformed cookie", async () => {
     const value = await expectedCookieValue(PASSWORD);
     const res = await gateResponse(
       new Request("https://tommuncie.com/family", {
-        headers: { cookie: `${COOKIE_NAME}=${value}` },
+        headers: { cookie: `broken=%ZZ; ${COOKIE_NAME}=${value}` },
       }),
       PASSWORD,
       next,
@@ -159,14 +174,15 @@ describe("gateResponse", () => {
     });
   }
 
-  it("sets the auth cookie on a correct password", async () => {
+  it("sets the auth cookie and no-store header on a correct password", async () => {
     const res = await gateResponse(
-      postForm({ password: PASSWORD, next: "/family/person/x/" }),
+      postForm({ password: PASSWORD, next: "/family/person/x/?tab=sources" }),
       PASSWORD,
       next,
     );
     expect(res.status).toBe(303);
-    expect(res.headers.get("location")).toBe("/family/person/x/");
+    expect(res.headers.get("location")).toBe("/family/person/x/?tab=sources");
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
     const setCookie = res.headers.get("set-cookie") ?? "";
     expect(setCookie).toContain(COOKIE_NAME);
   });

@@ -69,8 +69,18 @@ import photos from '../../data/snoopyPhotos.json';
 
       const image = dialog.querySelector('[data-gallery-image]');
       const count = dialog.querySelector('[data-gallery-count]');
+      const preloaded = new Set();
       let current = 0;
       let returnFocus = null;
+
+      const preload = (index) => {
+        const target = photos[(index + photos.length) % photos.length];
+        if (!target || preloaded.has(target.src)) return;
+        preloaded.add(target.src);
+        const img = new Image();
+        img.decoding = 'async';
+        img.src = target.src;
+      };
 
       const show = (index) => {
         current = (index + photos.length) % photos.length;
@@ -78,6 +88,8 @@ import photos from '../../data/snoopyPhotos.json';
         image.src = photo.src;
         image.alt = photo.alt;
         count.textContent = `Drawing ${current + 1} of ${photos.length}`;
+        preload(current - 1);
+        preload(current + 1);
       };
 
       document.querySelectorAll('[data-gallery-open]').forEach((button) => {

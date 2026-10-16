@@ -305,3 +305,58 @@ export function assessSunsetPotential(
     precipitationProbability,
   };
 }
+
+export interface AirQualityReading {
+  usAqi: number | null;
+  pm25: number | null;
+  dust: number | null;
+}
+
+export function aqiLabel(aqi: number): string {
+  if (aqi <= 50) return 'good';
+  if (aqi <= 100) return 'moderate';
+  if (aqi <= 150) return 'sensitive';
+  if (aqi <= 200) return 'unhealthy';
+  if (aqi <= 300) return 'very unhealthy';
+  return 'hazardous';
+}
+
+/**
+ * Parse and range-check either a live Open-Meteo Air Quality payload
+ * (`{ current: { us_aqi, pm2_5, dust } }`) or a serialized cache object
+ * (`{ usAqi, pm25, dust }`). Returns `null` when no valid readings exist.
+ */
+export function parseOpenMeteoAirQuality(
+  input: unknown,
+): AirQualityReading | null {
+  if (!input || typeof input !== 'object') return null;
+  const record = input as Record<string, unknown>;
+  const source =
+    record.current && typeof record.current === 'object'
+      ? (record.current as Record<string, unknown>)
+      : record;
+
+  const usAqi = ranged(source.us_aqi ?? source.usAqi, 0, 500);
+  const pm25 = ranged(source.pm2_5 ?? source.pm25, 0, 2000);
+  const dust = ranged(source.dust, 0, 5000);
+
+  if (usAqi === null && pm25 === null && dust === null) return null;
+  return { usAqi, pm25, dust };
+}
+
+/**
+ * Format the `02 Air` ledger detail line, progressively enhancing humidity
+ * with US AQI when available and falling back to `% humidity` alone offline.
+ */
+export function formatAirDetail(
+  humidity: number,
+  airQuality?: AirQualityReading | null,
+): string {
+  const base = `${Math.round(humidity)}% humidity`;
+  const aqi = airQuality?.usAqi;
+  if (typeof aqi !== 'number' || !Number.isFinite(aqi) || aqi < 0 || aqi > 500) {
+    return base;
+  }
+  const rounded = Math.round(aqi);
+  return `${base} · AQI ${rounded} ${aqiLabel(rounded)}`;
+}

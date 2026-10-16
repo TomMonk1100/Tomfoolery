@@ -19,12 +19,17 @@ function monthYear(date?: Date) {
   }) ?? 'Ongoing';
 }
 
-const [nowEntries, artEntries, pokemonEntries, archiveEntries] = await Promise.all([
-  getCollection('now'), getCollection('art'), getCollection('pokemon'), getCollection('pastBlog'),
+const [nowEntries, artEntries, pokemonEntries, projectEntries, archiveEntries] = await Promise.all([
+  getCollection('now'),
+  getCollection('art'),
+  getCollection('pokemon'),
+  getCollection('projects'),
+  getCollection('pastBlog'),
 ]);
 
 const currentNotes = [
   { section: 'Now', hrefBase: '/now', entry: newest(nowEntries, 'date'), key: 'date' as const },
+  { section: 'Projects', hrefBase: '/projects', entry: newest(projectEntries, 'date'), key: 'date' as const },
   { section: 'Art', hrefBase: '/art', entry: newest(artEntries, 'date'), key: 'date' as const },
   { section: 'Pokémon', hrefBase: '/pokemon', entry: newest(pokemonEntries, 'datePublished'), key: 'datePublished' as const },
 ];
@@ -37,8 +42,9 @@ const destinations = [
   { n: '02', href: '/coffee', title: 'Coffee', note: 'Lattes, foam doodles, and ritual' },
   { n: '03', href: '/pokemon', title: 'Pokémon', note: 'Cards and the stories attached to them' },
   { n: '04', href: '/art', title: 'Art', note: 'Drawings and visual experiments' },
-  { n: '05', href: '/archive', title: 'Archive', note: 'Old posts and ten years of tweets' },
-  { n: '06', href: '/about', title: 'About', note: 'Work, animals, hobbies, and this place' },
+  { n: '05', href: '/projects', title: 'Projects', note: 'Interactive toys, simulations, and games by Pip' },
+  { n: '06', href: '/archive', title: 'Archive', note: 'Old posts and ten years of tweets' },
+  { n: '07', href: '/about', title: 'About', note: 'Work, animals, hobbies, and this place' },
 ];
 ---
 

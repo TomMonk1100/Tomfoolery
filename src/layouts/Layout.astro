@@ -70,6 +70,12 @@ const currentMobileIndexItem = mobileIndexItems.find(({ href }) => isCurrent(hre
     {noindex && <meta name="robots" content="noindex, follow" />}
     <title>{title}</title>
     <link rel="canonical" href={canonicalURL} />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="Tomfoolery"
+      href={new URL('/rss.xml', Astro.site ?? Astro.url.origin)}
+    />
 
     <meta property="og:type" content={contentType} />
     <meta property="og:site_name" content="Tomfoolery" />
@@ -190,6 +196,7 @@ const currentMobileIndexItem = mobileIndexItems.find(({ href }) => isCurrent(hre
             {item.label}
           </a>
         ))}
+        <a href="/rss.xml" class="hover:text-ink transition-colors">rss</a>
       </nav>
       <p class="mt-5 text-xs text-muted font-mono">
         built with a little help from an AI, tended by hand
@@ -252,9 +259,39 @@ const currentMobileIndexItem = mobileIndexItems.find(({ href }) => isCurrent(hre
         kineticEls.forEach((el) => io.observe(el));
       }
 
+      // --- Mobile index (<details class="site-index">) auto-close ---
+      function closeSiteIndex() {
+        document.querySelectorAll<HTMLDetailsElement>('details.site-index[open]').forEach((el) => {
+          el.open = false;
+        });
+      }
+
+      let siteIndexListenersBound = false;
+      function setupSiteIndex() {
+        closeSiteIndex();
+        if (siteIndexListenersBound) return;
+        siteIndexListenersBound = true;
+        document.addEventListener('click', (event) => {
+          const target = event.target;
+          if (!(target instanceof Node)) return;
+          document.querySelectorAll<HTMLDetailsElement>('details.site-index[open]').forEach((el) => {
+            if (!el.contains(target)) el.open = false;
+          });
+        });
+        document.addEventListener('keydown', (event) => {
+          if (event.key !== 'Escape') return;
+          const openDetails = document.querySelector<HTMLDetailsElement>('details.site-index[open]');
+          if (!openDetails) return;
+          openDetails.open = false;
+          openDetails.querySelector('summary')?.focus();
+        });
+        document.addEventListener('astro:before-preparation', closeSiteIndex);
+      }
+
       function initAll() {
         setupReveal();
         setupKineticType();
+        setupSiteIndex();
       }
 
       document.addEventListener('astro:page-load', initAll);

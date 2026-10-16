@@ -42,8 +42,11 @@ import {
 import {
   assessSunsetPotential,
   buildTemperatureTrace,
+  formatAirDetail,
+  parseOpenMeteoAirQuality,
   parseOpenMeteoHourly,
   validateForecastHours,
+  type AirQualityReading,
   type ForecastHour,
   type SunsetPotentialBand,
 } from './forecast';
@@ -59,6 +62,7 @@ const CONDITION_CACHE_TTL_MS = 2 * 60 * 60_000;
 const CONDITION_CACHE_KEY = 'outside:breckenridge-condition';
 const WEATHER_CACHE_TTL_MS = 30 * 60_000;
 const WEATHER_CACHE_KEY = 'outside:breckenridge-weather';
+const ISS_CACHE_KEY = 'outside:breckenridge-iss';
 const MINUTE = 60_000;
 const RIBBON_LOOKBACK_MINUTES = 6 * 60;
 const RIBBON_DURATION_MINUTES = 24 * 60;
@@ -212,6 +216,7 @@ export interface Conditions {
   precipitationProbability: number;
   cloud: number;
   forecastHours: ForecastHour[];
+  airQuality?: AirQualityReading | null;
 }
 
 interface ConditionCache {
@@ -290,6 +295,7 @@ export function parseRecentWeatherCache(
     minAt: observedAt - 8 * 60 * 60_000,
     maxAt: observedAt + 36 * 60 * 60_000,
   });
+  const airQuality = parseOpenMeteoAirQuality(candidate.airQuality);
 
   return {
     observedAt,
@@ -307,6 +313,7 @@ export function parseRecentWeatherCache(
       precipitationProbability: candidate.precipitationProbability as number,
       cloud: candidate.cloud as number,
       forecastHours,
+      airQuality,
     },
   };
 }
@@ -335,6 +342,15 @@ export function weatherForecastUrl(): string {
   url.searchParams.set('past_hours', '6');
   url.searchParams.set('forecast_hours', '30');
   url.searchParams.set('forecast_days', '2');
+  return url.toString();
+}
+
+/** No-key Open-Meteo Air Quality request for Breckenridge (`02 Air` cell). */
+export function airQualityUrl(): string {
+  const url = new URL('https://air-quality-api.open-meteo.com/v1/air-quality');
+  url.searchParams.set('latitude', String(LATITUDE));
+  url.searchParams.set('longitude', String(LONGITUDE));
+  url.searchParams.set('current', 'us_aqi,pm2_5,dust');
   return url.toString();
 }
 
@@ -837,7 +853,7 @@ export function mountOutside(root: HTMLElement): () => void {
       'air-value',
       `${Math.round(current.windSpeed)} mph ${compass(current.windDirection)}`,
     );
-    setField('air-detail', `${Math.round(current.humidity)}% humidity`);
+    setField('air-detail', formatAirDetail(current.humidity, current.airQuality));
     setField(
       'water-value',
       `${Math.round(current.precipitationProbability)}% rain`,
@@ -1101,7 +1117,12 @@ export function mountOutside(root: HTMLElement): () => void {
     if (weatherInFlight) return;
     weatherInFlight = true;
     try {
-      const data = await requestJson(weatherForecastUrl());
+      const [data, airQuality] = await Promise.all([
+        requestJson(weatherForecastUrl()),
+        requestJson(airQualityUrl())
+          .then(parseOpenMeteoAirQuality)
+          .catch(() => conditions?.airQuality ?? null),
+      ]);
       const current = data.current;
       const daily = data.daily;
       const hourly = data.hourly ?? {};
@@ -1120,6 +1141,7 @@ export function mountOutside(root: HTMLElement): () => void {
         precipitationProbability: daily.precipitation_probability_max?.[0] ?? 0,
         cloud: current.cloud_cover,
         forecastHours: parseOpenMeteoHourly(hourly),
+        airQuality,
       };
       const validated = parseRecentWeatherCache({
         observedAt: receivedAt,
@@ -1174,13 +1196,59 @@ export function mountOutside(root: HTMLElement): () => void {
     }
   }
 
+  function applyIssPass(pass: {
+    rise: { time: string; compass?: string };
+    set?: { time?: string; compass?: string };
+    visible_duration_sec?: number;
+    duration_sec?: number;
+    culmination?: { elevation_deg?: number };
+  }) {
+    const rise = new Date(pass.rise.time);
+    const set = pass.set?.time ? new Date(pass.set.time) : new Date(NaN);
+    const durationSeconds = Math.max(
+      0,
+      Math.round(pass.visible_duration_sec ?? pass.duration_sec ?? 0),
+    );
+    const today = breckenridgeDateKey(new Date());
+    issPassAt = rise.valueOf();
+    issPassEndsAt = Number.isFinite(set.valueOf())
+      ? set.valueOf()
+      : rise.valueOf() + durationSeconds * 1000;
+    const day = breckenridgeDateKey(rise) === today
+      ? 'Tonight'
+      : new Intl.DateTimeFormat('en-US', {
+        timeZone: TIME_ZONE,
+        weekday: 'long',
+      }).format(rise);
+    const duration = `${Math.floor(durationSeconds / 60)}m ${durationSeconds % 60}s`;
+    const peak = Math.round(pass.culmination?.elevation_deg ?? 0);
+    const path = pass.rise.compass && pass.set?.compass
+      ? ` · ${pass.rise.compass} → ${pass.set.compass}`
+      : '';
+    lastIssSummary = `ISS · ${day} ${BRECKENRIDGE_TIME.format(rise)}${path}`
+      + `${peak ? ` · ${peak}° up` : ''} · visible ${duration}`;
+    setField('iss-summary', lastIssSummary);
+    renderRibbon(new Date());
+  }
+
   async function loadIss() {
     if (issInFlight) return;
     issInFlight = true;
     try {
       const url = `https://iss-api.polluxlabs.io/iss-pass?lat=${LATITUDE}&lon=${LONGITUDE}`
         + '&visible_only=true&n=3&days_ahead=10&min_elevation=10';
-      const passes = (await requestJson(url)).passes ?? [];
+      const rawPasses = (await requestJson(url)).passes;
+      const nowMs = Date.now();
+      const passes = Array.isArray(rawPasses)
+        ? rawPasses.filter((p) => {
+          const riseMs = Date.parse(p?.rise?.time ?? '');
+          const setMs = Date.parse(p?.set?.time ?? '');
+          return (
+            Number.isFinite(riseMs)
+            && (Number.isFinite(setMs) ? setMs > nowMs : riseMs > nowMs)
+          );
+        })
+        : [];
       if (!passes.length) {
         issPassAt = null;
         issPassEndsAt = null;
@@ -1191,30 +1259,31 @@ export function mountOutside(root: HTMLElement): () => void {
       }
 
       const pass = passes[0];
-      const rise = new Date(pass.rise.time);
-      const set = new Date(pass.set.time);
-      const durationSeconds = Math.round(
-        pass.visible_duration_sec ?? pass.duration_sec ?? 0,
-      );
-      const today = breckenridgeDateKey(new Date());
-      issPassAt = rise.valueOf();
-      issPassEndsAt = Number.isFinite(set.valueOf())
-        ? set.valueOf()
-        : rise.valueOf() + durationSeconds * 1000;
-      const day = breckenridgeDateKey(rise) === today
-        ? 'Tonight'
-        : new Intl.DateTimeFormat('en-US', {
-          timeZone: TIME_ZONE,
-          weekday: 'long',
-        }).format(rise);
-      const duration = `${Math.floor(durationSeconds / 60)}m ${durationSeconds % 60}s`;
-      const peak = Math.round(pass.culmination?.elevation_deg ?? 0);
-      lastIssSummary = `ISS · ${day} ${BRECKENRIDGE_TIME.format(rise)} · ${pass.rise.compass} → ${pass.set.compass}`
-        + `${peak ? ` · ${peak}° up` : ''} · visible ${duration}`;
-      setField('iss-summary', lastIssSummary);
-      renderRibbon(new Date());
+      try {
+        localStorage.setItem(ISS_CACHE_KEY, JSON.stringify(pass));
+      } catch {
+        // Storage is optional.
+      }
+      applyIssPass(pass);
     } catch {
       if (abortController.signal.aborted) return;
+      try {
+        const cachedRaw = localStorage.getItem(ISS_CACHE_KEY);
+        if (cachedRaw) {
+          const cachedPass = JSON.parse(cachedRaw);
+          const riseMs = Date.parse(cachedPass?.rise?.time ?? '');
+          const setMs = Date.parse(cachedPass?.set?.time ?? '');
+          if (
+            Number.isFinite(riseMs)
+            && (Number.isFinite(setMs) ? setMs > Date.now() : riseMs > Date.now())
+          ) {
+            applyIssPass(cachedPass);
+            return;
+          }
+        }
+      } catch {
+        // Ignore invalid cache.
+      }
       issPassAt = null;
       issPassEndsAt = null;
       lastIssSummary = 'ISS pass prediction temporarily unavailable';

@@ -98,7 +98,7 @@ import Layout from '../layouts/Layout.astro';
         <p data-controls-copy>Flight controls: rotate ← → · thrust Space</p>
         <div class="flex items-center gap-4">
           <button type="button" data-share aria-label="Share Moon Lander" title="Share this game" class="cursor-pointer hover:text-ink transition-colors">↗ share</button>
-          <button type="button" data-controls-toggle aria-label="Toggle touch control layout" title="Touch control layout" class="cursor-pointer hover:text-ink transition-colors sm:hidden">◇ controls</button>
+          <button type="button" data-controls-toggle aria-label="Toggle touch control layout" title="Touch control layout" class="cursor-pointer hover:text-ink transition-colors">◇ controls</button>
           <button type="button" data-pause aria-label="Pause" title="Pause (Esc/P)" class="cursor-pointer hover:opacity-80 transition-opacity">Ⅱ pause</button>
           <button type="button" data-settings class="cursor-pointer hover:opacity-80 transition-opacity">≡ settings</button>
         </div>
@@ -233,7 +233,12 @@ import Layout from '../layouts/Layout.astro';
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
   }
   .touch-btn.hidden { display: none; }
-  @media (min-width: 640px) { .touch-controls { display: none; } }
+  @media (min-width: 721px) and (pointer: fine) {
+    .touch-controls,
+    .game-command-bar [data-controls-toggle] {
+      display: none;
+    }
+  }
 
   /* Classic layout: one button per edge + thrust center — bigger targets
      since each sits alone under a thumb. */

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   OUTSIDE_PLATE_PRESENTATIONS,
+  airQualityUrl,
   moonEditorialCopy,
   nextSunsetAt,
   parseRecentWeatherCache,
@@ -130,6 +131,15 @@ describe('Outside weather request', () => {
       'cloud_cover_high',
       'precipitation_probability',
     ]));
+  });
+
+  it('requests Breckenridge current air quality from Open-Meteo', () => {
+    const url = new URL(airQualityUrl());
+    expect(url.origin).toBe('https://air-quality-api.open-meteo.com');
+    expect(url.pathname).toBe('/v1/air-quality');
+    expect(url.searchParams.get('latitude')).toBe('32.7557');
+    expect(url.searchParams.get('longitude')).toBe('-98.9023');
+    expect(url.searchParams.get('current')).toBe('us_aqi,pm2_5,dust');
   });
 });
 
