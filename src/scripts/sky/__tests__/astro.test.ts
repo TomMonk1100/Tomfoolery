@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sunPosition, moonPosition, moonIllumination, moonPhaseName, moonDarkPath } from '../astro';
+import { sunPosition, moonPosition, moonIllumination, moonPhaseName, moonDarkPath, moonDistanceKm } from '../astro';
 
 // Breckenridge, TX — the widget's default location.
 const LAT = 32.7557, LON = -98.9023;
@@ -140,3 +140,14 @@ describe('moonDarkPath', () => {
     expect(sweep(true)).toBe('0');  // waxing -> dark on left
   });
 });
+
+describe('moonDistanceKm', () => {
+  it('stays within the lunar perigee/apogee orbital band all year', () => {
+    for (let d = 0; d < 366; d += 3) {
+      const km = moonDistanceKm(new Date(Date.UTC(2026, 0, 1) + d * 86400000));
+      expect(km).toBeGreaterThan(350000);
+      expect(km).toBeLessThan(410000);
+    }
+  });
+});
+

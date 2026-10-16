@@ -44,6 +44,10 @@ export interface RibbonWindow {
 export interface RibbonModel {
   sunPath: string;
   moonPath: string;
+  /** Closed area polygon between the above-horizon solar curve and the horizon baseline. */
+  sunAreaPath: string;
+  /** Closed area polygon between the above-horizon lunar curve and the horizon baseline. */
+  moonAreaPath: string;
   /** Compressed, below-horizon continuation of the solar curve. */
   sunBelowPath: string;
   /** Compressed, below-horizon continuation of the lunar curve. */
@@ -128,6 +132,7 @@ function clippedCurve(
   g: RibbonGeometry,
   durationMinutes: number,
   side: 'above' | 'below',
+  closeToBaseline = false,
 ): string {
   if (samples.length === 0) return '';
   const includes = side === 'above'
@@ -175,15 +180,22 @@ function clippedCurve(
   }
   finish();
 
+  const baseY = g.baseline.toFixed(1);
   return segments
-    .map((points) =>
-      points
+    .filter((points) => !closeToBaseline || points.length >= 2)
+    .map((points) => {
+      const trace = points
         .map((sample, index) => {
           const x = timeToX(sample.m, g, durationMinutes).toFixed(1);
           const y = altToPlotY(sample.alt, g).toFixed(1);
           return `${index === 0 ? 'M' : 'L'}${x},${y}`;
         })
-        .join(' '))
+        .join(' ');
+      if (!closeToBaseline) return trace;
+      const firstX = timeToX(points[0].m, g, durationMinutes).toFixed(1);
+      const lastX = timeToX(points[points.length - 1].m, g, durationMinutes).toFixed(1);
+      return `${trace} L${lastX},${baseY} L${firstX},${baseY} Z`;
+    })
     .join(' ');
 }
 
@@ -301,6 +313,8 @@ function assembleRibbon(
   return {
     sunPath: clippedCurve(sun, g, duration, 'above'),
     moonPath: clippedCurve(moon, g, duration, 'above'),
+    sunAreaPath: clippedCurve(sun, g, duration, 'above', true),
+    moonAreaPath: clippedCurve(moon, g, duration, 'above', true),
     sunBelowPath: clippedCurve(sun, g, duration, 'below'),
     moonBelowPath: clippedCurve(moon, g, duration, 'below'),
     nightSpans: spansWhere(sun, (altitude) => altitude < -6, duration),

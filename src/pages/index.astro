@@ -56,8 +56,8 @@ const destinations = [
   <div class="editorial-home">
     <section class="editorial-hero" aria-labelledby="home-heading">
       <div class="editorial-hero__copy">
-        <span class="editorial-kicker">A personal journal from West Texas</span>
-        <h1 id="home-heading">Things I make, collect, notice, and keep.</h1>
+        <span class="editorial-kicker">A personal journal from West Texas · 32.76° N</span>
+        <h1 id="home-heading" data-kinetic>Things I make, collect, notice, and keep.</h1>
         <p>
           I’m Tom. This is where coffee rituals, Pokémon cards, old stories,
           new experiments, and the wide Texas sky end up together.
@@ -87,7 +87,17 @@ const destinations = [
             fetchpriority="high"
           />
         </div>
-        <span class="editorial-hero__stamp" aria-hidden="true">FIELD NOTES<br />NO. 001 <span>✳</span></span>
+        <button
+          type="button"
+          class="editorial-hero__stamp"
+          data-hero-stamp
+          aria-label="Stamp a new West Texas field note motto"
+          title="Click to stamp"
+        >
+          <small data-stamp-line1>FIELD NOTES</small>
+          <strong data-stamp-line2>NO. 001</strong>
+          <span data-stamp-glyph aria-hidden="true">✳</span>
+        </button>
         <figcaption>Tom Muncie · Breckenridge, Texas</figcaption>
       </figure>
     </section>
@@ -121,7 +131,7 @@ const destinations = [
         <span class="editorial-kicker">The living almanac</span>
         <h2>What the sky is doing.</h2>
       </div>
-      <p>Local light, weather, Moon, and the next useful thing to look up for.</p>
+      <p>Local light, weather, Moon, and the next useful thing to look up for. Drag across the 24-hour curve to inspect any hour.</p>
     </header>
   </div>
 
@@ -134,18 +144,21 @@ const destinations = [
           <span class="editorial-kicker">Recently tended</span>
           <h2 id="current-notes-heading">The current shelf.</h2>
         </div>
-        <p>Recent notes, kept separate from the older work below.</p>
+        <p>Fresh field slips from around the workbench, kept separate from the older archive below.</p>
       </header>
 
       <div class="editorial-notes__grid">
-        {currentNotes.map((item, index) => item.entry && (
+        {currentNotes.map((item) => item.entry && (
           <a href={`${item.hrefBase}/${item.entry.id}`} class="editorial-note reveal">
             <span class="editorial-note__meta">
-              <span>{String(index + 1).padStart(2, '0')} · {item.section}</span>
+              <span class="editorial-note__badge">{item.section}</span>
               <time datetime={item.entry.data[item.key]?.toISOString()}>{monthYear(item.entry.data[item.key])}</time>
             </span>
             <strong>{item.entry.data.title}</strong>
-            <span class="editorial-note__arrow" aria-hidden="true">↗</span>
+            <span class="editorial-note__footer">
+              <span>Read note</span>
+              <span class="editorial-note__arrow" aria-hidden="true">↗</span>
+            </span>
           </a>
         ))}
       </div>
@@ -162,18 +175,28 @@ const destinations = [
       </section>
     )}
 
+    <div class="chapter-divider" aria-hidden="true">
+      <span></span>
+      <svg viewBox="0 0 24 24" width="16" height="16">
+        <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8Z" fill="none" stroke="currentColor" stroke-width="1.5" />
+      </svg>
+      <span></span>
+    </div>
+
     <section class="editorial-index" aria-labelledby="site-index-heading">
       <header class="editorial-section-head">
         <div>
           <span class="editorial-kicker">The rest of the cabinet</span>
           <h2 id="site-index-heading">Keep wandering.</h2>
         </div>
+        <p>Every room in the house, indexed like an almanac table of contents.</p>
       </header>
       <nav aria-label="Explore Tomfoolery">
         {destinations.map((item) => (
           <a href={item.href}>
-            <span>{item.n}</span>
+            <span>§ {item.n}</span>
             <strong>{item.title}</strong>
+            <i class="editorial-index__leader" aria-hidden="true"></i>
             <small>{item.note}</small>
             <b aria-hidden="true">↗</b>
           </a>
@@ -181,4 +204,39 @@ const destinations = [
       </nav>
     </section>
   </div>
+
+  <script>
+    const STAMP_MOTTOS = [
+      { line1: 'FIELD NOTES', line2: 'NO. 001', glyph: '✳', angle: -7 },
+      { line1: 'DARK SKY', line2: 'BORTLE 3', glyph: '✦', angle: -4 },
+      { line1: 'ESPRESSO', line2: 'CALIBRATED', glyph: '☕', angle: -9 },
+      { line1: 'CERTIFIED', line2: 'TOMFOOLERY', glyph: '✷', angle: -5 },
+      { line1: 'SCOUT & THEO', line2: 'APPROVED', glyph: '🐾', angle: -8 },
+    ];
+
+    function initHomeStamp() {
+      const stamp = document.querySelector<HTMLButtonElement>('[data-hero-stamp]');
+      if (!stamp || stamp.dataset.bound) return;
+      stamp.dataset.bound = 'true';
+      let index = 0;
+      const l1 = stamp.querySelector<HTMLElement>('[data-stamp-line1]');
+      const l2 = stamp.querySelector<HTMLElement>('[data-stamp-line2]');
+      const glyph = stamp.querySelector<HTMLElement>('[data-stamp-glyph]');
+
+      stamp.addEventListener('click', () => {
+        index = (index + 1) % STAMP_MOTTOS.length;
+        const next = STAMP_MOTTOS[index];
+        if (l1) l1.textContent = next.line1;
+        if (l2) l2.textContent = next.line2;
+        if (glyph) glyph.textContent = next.glyph;
+        stamp.style.transform = `rotate(${next.angle}deg) scale(0.9)`;
+        window.setTimeout(() => {
+          stamp.style.transform = `rotate(${next.angle}deg) scale(1)`;
+        }, 120);
+      });
+    }
+
+    initHomeStamp();
+    document.addEventListener('astro:page-load', initHomeStamp);
+  </script>
 </Layout>

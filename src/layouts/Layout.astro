@@ -198,8 +198,16 @@ const currentMobileIndexItem = mobileIndexItems.find(({ href }) => isCurrent(hre
         ))}
         <a href="/rss.xml" class="hover:text-ink transition-colors">rss</a>
       </nav>
-      <p class="mt-5 text-xs text-muted font-mono">
-        built with a little help from an AI, tended by hand
+      <p class="mt-5 text-xs text-muted font-mono flex flex-wrap items-center gap-2">
+        <span>built with a little help from an AI, tended by hand</span>
+        <button
+          type="button"
+          class="colophon-easter-egg"
+          data-colophon-egg
+          aria-label="Inspect Breckenridge studio status"
+          title="Click for studio dispatch"
+        >✦</button>
+        <span class="colophon-easter-note" data-colophon-note hidden></span>
       </p>
     </footer>
 
@@ -288,10 +296,32 @@ const currentMobileIndexItem = mobileIndexItems.find(({ href }) => isCurrent(hre
         document.addEventListener('astro:before-preparation', closeSiteIndex);
       }
 
+      const COLOPHON_DISPATCHES = [
+        '· Scout is patrolling the yard 🐾',
+        '· Theo is asleep near the router 🐈',
+        '· Espresso machine: pre-heated ☕',
+        '· Approved by Joe Cool · Breckenridge, TX 🕶️',
+        '· Pip’s workshop instruments nominal 🧭',
+      ];
+      let colophonIdx = 0;
+
+      function setupColophonEgg() {
+        const btn = document.querySelector<HTMLButtonElement>('[data-colophon-egg]');
+        const note = document.querySelector<HTMLElement>('[data-colophon-note]');
+        if (!btn || !note || btn.dataset.bound) return;
+        btn.dataset.bound = 'true';
+        btn.addEventListener('click', () => {
+          note.hidden = false;
+          note.textContent = COLOPHON_DISPATCHES[colophonIdx % COLOPHON_DISPATCHES.length];
+          colophonIdx += 1;
+        });
+      }
+
       function initAll() {
         setupReveal();
         setupKineticType();
         setupSiteIndex();
+        setupColophonEgg();
       }
 
       document.addEventListener('astro:page-load', initAll);

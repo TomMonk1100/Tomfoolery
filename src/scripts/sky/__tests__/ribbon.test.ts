@@ -90,6 +90,14 @@ describe('buildRibbon in midsummer', () => {
     expect(alt).toBeGreaterThan(74);
     expect(alt).toBeLessThan(79);
   });
+
+  it('closes above-horizon solar and lunar area paths down to the baseline', () => {
+    expect(m.sunAreaPath.startsWith('M')).toBe(true);
+    expect(m.sunAreaPath.endsWith('Z')).toBe(true);
+    expect(m.sunAreaPath).toContain(`,${G.baseline.toFixed(1)} Z`);
+    expect(m.moonAreaPath.startsWith('M')).toBe(true);
+    expect(m.moonAreaPath.endsWith('Z')).toBe(true);
+  });
 });
 
 describe('wall-clock sampling', () => {

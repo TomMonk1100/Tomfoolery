@@ -59,11 +59,12 @@ import Layout from '../layouts/Layout.astro';
         </p>
         <p>
           When I am not working or tinkering with something, I am usually taking
-          care of Scout, my fourteen year old dog, and Theo, my new cat. I love
+          care of <button type="button" class="pet-cameo" data-pet="scout" title="Check on Scout">Scout 🐾</button>, my fourteen year old dog, and <button type="button" class="pet-cameo" data-pet="theo" title="Check on Theo">Theo 🐾</button>, my new cat. I love
           making coffee and collecting Pokémon cards. I also love to bake,
           although I have not made enough time for it lately. I would like to
           get back to it.
         </p>
+        <aside class="pet-dispatch" data-pet-dispatch hidden aria-live="polite"></aside>
         <p class="editorial-about__pullquote">
           This site is a place for all of it. The things I am learning, the
           things I collect, and the projects I keep convincing myself to start.
@@ -72,4 +73,41 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
   </article>
+
+  <script>
+    const PET_NOTES: Record<string, string[]> = {
+      scout: [
+        '🐕 SCOUT LOG · Fourteen years old, retired chief of backyard security, currently supervising from the softest rug in the house.',
+        '🐕 SCOUT LOG · Ears perked for kitchen wrapper noises; firmly believes every baking session includes a tax.',
+        '🐕 SCOUT LOG · Completed morning perimeter check of Breckenridge. All squirrels accounted for.',
+      ],
+      theo: [
+        '🐈 THEO LOG · Junior studio apprentice. Currently investigating why the cursor moves on the monitor.',
+        '🐈 THEO LOG · Curled in a West Texas sunbeam; will relocate to the keyboard the moment an important email is opened.',
+        '🐈 THEO LOG · Inspecting Pokémon card sleeves with suspiciously swat-ready paws.',
+      ],
+    };
+
+    function initPetCameos() {
+      const dispatch = document.querySelector<HTMLElement>('[data-pet-dispatch]');
+      if (!dispatch) return;
+      const counts: Record<string, number> = { scout: 0, theo: 0 };
+
+      document.querySelectorAll<HTMLButtonElement>('[data-pet]').forEach((btn) => {
+        if (btn.dataset.bound) return;
+        btn.dataset.bound = 'true';
+        btn.addEventListener('click', () => {
+          const pet = btn.dataset.pet ?? 'scout';
+          const list = PET_NOTES[pet] ?? PET_NOTES.scout;
+          const idx = counts[pet] % list.length;
+          counts[pet] += 1;
+          dispatch.hidden = false;
+          dispatch.textContent = list[idx];
+        });
+      });
+    }
+
+    initPetCameos();
+    document.addEventListener('astro:page-load', initPetCameos);
+  </script>
 </Layout>

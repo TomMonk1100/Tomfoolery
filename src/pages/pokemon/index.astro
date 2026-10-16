@@ -36,7 +36,12 @@ const entries = (await getCollection('pokemon')).sort((a, b) =>
     <div class="editorial-binder" aria-label="Pokémon collection entries">
       {entries.map((entry, index) => (
         <article class="editorial-binder__entry reveal">
-          <a href={`/pokemon/${entry.id}`} class:list={['editorial-card-record', entry.data.image && 'editorial-card-record--photo']}>
+          <a
+            href={`/pokemon/${entry.id}`}
+            data-binder-card
+            class:list={['editorial-card-record', entry.data.image && 'editorial-card-record--photo']}
+          >
+            <span class="editorial-card-record__sheen" aria-hidden="true"></span>
             {entry.data.image ? (
               <img src={entry.data.image} alt={entry.data.imageAlt ?? entry.data.title} loading={index === 0 ? 'eager' : 'lazy'} decoding="async" />
             ) : (
@@ -66,4 +71,38 @@ const entries = (await getCollection('pokemon')).sort((a, b) =>
       { href: '/art', label: 'Art shelf', note: 'another place for visual things' },
     ]} />
   </article>
+
+  <script>
+    function setupBinderTilt() {
+      if (!window.matchMedia('(pointer: fine) and (prefers-reduced-motion: no-preference)').matches) {
+        return;
+      }
+      document.querySelectorAll<HTMLElement>('[data-binder-card]').forEach((card) => {
+        if (card.dataset.bound) return;
+        card.dataset.bound = 'true';
+        const sheen = card.querySelector<HTMLElement>('.editorial-card-record__sheen');
+        card.addEventListener('pointermove', (event) => {
+          const rect = card.getBoundingClientRect();
+          const px = (event.clientX - rect.left) / rect.width - 0.5;
+          const py = (event.clientY - rect.top) / rect.height - 0.5;
+          card.style.transform =
+            `perspective(750px) rotateX(${(py * -8).toFixed(2)}deg) rotateY(${(px * 9).toFixed(2)}deg) translateY(-4px)`;
+          if (sheen) {
+            sheen.style.opacity = '1';
+            sheen.style.transform = `translate3d(${(px * 36).toFixed(1)}px, ${(py * 30).toFixed(1)}px, 0)`;
+          }
+        });
+        card.addEventListener('pointerleave', () => {
+          card.style.transform = '';
+          if (sheen) {
+            sheen.style.opacity = '0';
+            sheen.style.transform = 'translate3d(0, 0, 0)';
+          }
+        });
+      });
+    }
+
+    setupBinderTilt();
+    document.addEventListener('astro:page-load', setupBinderTilt);
+  </script>
 </Layout>

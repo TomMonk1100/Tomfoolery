@@ -9,6 +9,7 @@
 
 import {
   moonDarkPath,
+  moonDistanceKm,
   moonIllumination,
   moonPosition,
   moonPhaseName,
@@ -37,6 +38,7 @@ import {
   timeToX,
   type HorizonEvent,
   type RibbonGeometry,
+  type RibbonModel,
   type RibbonWindow,
 } from './ribbon';
 import {
@@ -578,8 +580,38 @@ function drawTexturedMoon(
 
   const size = canvas.width;
   const center = size / 2;
-  const radius = size * 0.465;
+  const radius = size * 0.42;
+  const bezelRadius = size * 0.475;
   context.clearRect(0, 0, size, size);
+
+  // Brass observatory bezel ring + 24 degree ticks
+  context.save();
+  context.strokeStyle = 'rgba(189, 132, 42, 0.34)';
+  context.lineWidth = Math.max(1, size * 0.006);
+  context.beginPath();
+  context.arc(center, center, bezelRadius, 0, Math.PI * 2);
+  context.stroke();
+  for (let tick = 0; tick < 24; tick++) {
+    const angle = (tick * Math.PI) / 12;
+    const isCardinal = tick % 6 === 0;
+    const inner = bezelRadius - size * (isCardinal ? 0.036 : 0.02);
+    context.beginPath();
+    context.moveTo(
+      center + Math.cos(angle) * inner,
+      center + Math.sin(angle) * inner,
+    );
+    context.lineTo(
+      center + Math.cos(angle) * bezelRadius,
+      center + Math.sin(angle) * bezelRadius,
+    );
+    context.strokeStyle = isCardinal
+      ? 'rgba(189, 132, 42, 0.65)'
+      : 'rgba(33, 26, 19, 0.24)';
+    context.lineWidth = Math.max(1, size * (isCardinal ? 0.01 : 0.006));
+    context.stroke();
+  }
+  context.restore();
+
   context.save();
   context.beginPath();
   context.arc(center, center, radius, 0, Math.PI * 2);
@@ -610,7 +642,7 @@ function drawTexturedMoon(
 
   context.beginPath();
   context.arc(center, center, radius, 0, Math.PI * 2);
-  context.strokeStyle = 'rgba(255, 248, 225, .42)';
+  context.strokeStyle = 'rgba(255, 248, 225, .52)';
   context.lineWidth = Math.max(1, size * 0.008);
   context.stroke();
 }
@@ -828,6 +860,9 @@ export function mountOutside(root: HTMLElement): () => void {
     );
   }
 
+  let activeRibbonModel: RibbonModel | null = null;
+  let activeRibbonGeometry: RibbonGeometry = RIBBON_DESKTOP;
+
   function renderCelestial(now: Date) {
     const { fraction, waxing } = moonIllumination(now);
     const phase = moonPhaseName(fraction, waxing);
@@ -837,6 +872,14 @@ export function mountOutside(root: HTMLElement): () => void {
     setField('moon-fraction', `${illuminated}%`);
     const portrait = query<HTMLCanvasElement>('[data-moon-portrait]');
     drawTexturedMoon(portrait, moonTexture, fraction, waxing);
+
+    const telemetryEl = query<HTMLElement>('[data-field="moon-telemetry"]');
+    if (telemetryEl && !telemetryEl.hidden) {
+      const distKm = moonDistanceKm(now);
+      const pos = moonPosition(now, LATITUDE, LONGITUDE);
+      telemetryEl.textContent =
+        `${distKm.toLocaleString('en-US')} km away · ${Math.round(pos.altitude)}° alt ${compass(pos.azimuth)}`;
+    }
   }
 
   function renderWeather(now: Date) {
@@ -864,6 +907,60 @@ export function mountOutside(root: HTMLElement): () => void {
         ? `${current.precipitation.toFixed(1)} mm falling now`
         : 'No rain falling now',
     );
+
+    // 01 Exposure: UV semicircular gauge needle (-90deg to +90deg for UV 0..11)
+    const uvNeedle = query<SVGGElement>('[data-gauge="uv-needle"]');
+    if (uvNeedle) {
+      const uvClamped = Math.max(0, Math.min(11, current.uv));
+      const uvAngle = -90 + (uvClamped / 11) * 180;
+      uvNeedle.setAttribute(
+        'transform',
+        `translate(24, 22) rotate(${uvAngle.toFixed(1)})`,
+      );
+    }
+
+    // 02 Air: Wind compass needle
+    const windNeedle = query<SVGGElement>('[data-gauge="wind-needle"]');
+    if (windNeedle) {
+      const windDeg = ((current.windDirection % 360) + 360) % 360;
+      windNeedle.setAttribute(
+        'transform',
+        `translate(16, 16) rotate(${windDeg.toFixed(1)})`,
+      );
+    }
+
+    // 03 Water: 12-hour precipitation probability spark-bars
+    const rainSpark = query<SVGSVGElement>('[data-gauge="rain-spark"]');
+    if (rainSpark) {
+      const nowMs = now.valueOf();
+      const upcoming = current.forecastHours
+        .filter((h) => h.at >= nowMs - 45 * MINUTE)
+        .slice(0, 12);
+      const bars: string[] = [
+        '<line x1="1" y1="20" x2="59" y2="20" stroke="currentColor" stroke-opacity="0.22" stroke-width="1" />',
+      ];
+      const count = Math.max(1, upcoming.length);
+      for (let i = 0; i < 12; i++) {
+        const sample = upcoming[Math.min(i, count - 1)];
+        const prob = Math.max(
+          0,
+          Math.min(
+            100,
+            sample?.precipitationProbability ?? current.precipitationProbability,
+          ),
+        );
+        const barH = Math.max(2, (prob / 100) * 16.5);
+        const barX = 2 + i * 4.8;
+        const barY = 20 - barH;
+        const fill = prob >= 50 ? 'var(--outside-sun-line)' : 'currentColor';
+        const opacity = (0.28 + (prob / 100) * 0.68).toFixed(2);
+        bars.push(
+          `<rect x="${barX.toFixed(1)}" y="${barY.toFixed(1)}" width="3.1" height="${barH.toFixed(1)}" rx="1" fill="${fill}" fill-opacity="${opacity}" />`,
+        );
+      }
+      rainSpark.innerHTML = bars.join('');
+    }
+
     ensureSchedule(now);
     const nextSunset = nextSunsetAt(schedule, now);
     const sunsetPotential = nextSunset !== null
@@ -882,6 +979,27 @@ export function mountOutside(root: HTMLElement): () => void {
         'sunset-detail',
         `H ${Math.round(sunsetPotential.highCloud)} · M ${Math.round(sunsetPotential.midCloud)} · L ${Math.round(sunsetPotential.lowCloud)}%`,
       );
+      const highEl = query<SVGElement>('[data-gauge="cloud-high"]');
+      const midEl = query<SVGElement>('[data-gauge="cloud-mid"]');
+      const lowEl = query<SVGElement>('[data-gauge="cloud-low"]');
+      if (highEl) {
+        highEl.setAttribute(
+          'opacity',
+          (0.18 + (sunsetPotential.highCloud / 100) * 0.82).toFixed(2),
+        );
+      }
+      if (midEl) {
+        midEl.setAttribute(
+          'opacity',
+          (0.18 + (sunsetPotential.midCloud / 100) * 0.82).toFixed(2),
+        );
+      }
+      if (lowEl) {
+        lowEl.setAttribute(
+          'opacity',
+          (0.16 + (sunsetPotential.lowCloud / 100) * 0.84).toFixed(2),
+        );
+      }
     } else {
       setField('sunset-value', 'Layer data unavailable');
       setField('sunset-detail', 'No cloud-layer estimate');
@@ -908,6 +1026,9 @@ export function mountOutside(root: HTMLElement): () => void {
       durationMinutes: RIBBON_DURATION_MINUTES,
       stepMinutes: 6,
     });
+    activeRibbonModel = model;
+    activeRibbonGeometry = geometry;
+
     const temperatureTop =
       geometry.baseline + (geometry.belowBand ?? 0)
       + (geometry.height === RIBBON_DESKTOP.height ? 7 : 9);
@@ -996,11 +1117,34 @@ export function mountOutside(root: HTMLElement): () => void {
           <stop offset="58%" stop-color="#fff" stop-opacity=".52"/>
           <stop offset="100%" stop-color="#fff" stop-opacity=".92"/>
         </linearGradient>
+        <linearGradient id="outside-sun-area-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--outside-sun-line)" stop-opacity=".26"/>
+          <stop offset="68%" stop-color="var(--outside-sun-line)" stop-opacity=".08"/>
+          <stop offset="100%" stop-color="var(--outside-sun-line)" stop-opacity="0"/>
+        </linearGradient>
+        <linearGradient id="outside-moon-area-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--outside-moon-line)" stop-opacity=".12"/>
+          <stop offset="100%" stop-color="var(--outside-moon-line)" stop-opacity="0"/>
+        </linearGradient>
         <mask id="outside-horizon-mask" maskUnits="userSpaceOnUse" x="0" y="${geometry.baseline - 40}" width="${geometry.width}" height="40">
           <rect x="0" y="${geometry.baseline - 40}" width="${geometry.width}" height="40" fill="url(#outside-horizon-fade)"/>
         </mask>
       </defs>`,
       `<rect x="0" y="${geometry.baseline - 40}" width="${geometry.width}" height="40" fill="url(#outside-day-wash)" mask="url(#outside-horizon-mask)"/>`,
+    );
+
+    if (model.moonAreaPath) {
+      fragments.push(
+        `<path d="${pathEscape(model.moonAreaPath)}" fill="url(#outside-moon-area-grad)"/>`,
+      );
+    }
+    if (model.sunAreaPath) {
+      fragments.push(
+        `<path d="${pathEscape(model.sunAreaPath)}" fill="url(#outside-sun-area-grad)"/>`,
+      );
+    }
+
+    fragments.push(
       `<line x1="0" y1="${geometry.baseline}" x2="${geometry.width}" y2="${geometry.baseline}" stroke="var(--outside-line)" stroke-width="${strokeWidth(1)}" vector-effect="non-scaling-stroke"/>`,
     );
 
@@ -1046,11 +1190,26 @@ export function mountOutside(root: HTMLElement): () => void {
       );
     }
 
+    const currentMinute =
+      model.window.focusMinute ?? RIBBON_LOOKBACK_MINUTES;
+    const currentX = x(currentMinute);
+
     for (const event of model.sunEvents) {
       const eventX = x(event.minute);
       fragments.push(
-        `<circle cx="${eventX.toFixed(1)}" cy="${geometry.baseline}" r="${radius(2.7)}" fill="var(--outside-sun-line)" stroke="var(--outside-plate-edge)" stroke-width="${strokeWidth(1)}" vector-effect="non-scaling-stroke"/>`,
+        `<circle cx="${eventX.toFixed(1)}" cy="${geometry.baseline}" r="${radius(3.2)}" fill="var(--outside-sun-line)" stroke="var(--outside-plate-edge)" stroke-width="${strokeWidth(1.2)}" vector-effect="non-scaling-stroke"/>`,
       );
+      if (
+        Math.abs(eventX - currentX) > 76
+        && eventX > 52
+        && eventX < geometry.width - 52
+      ) {
+        const arrow = event.kind === 'rise' ? '↑' : '↓';
+        const label = `${arrow} ${BRECKENRIDGE_TIME.format(event.at)}`;
+        fragments.push(
+          `<text x="${eventX.toFixed(1)}" y="${(geometry.baseline - 8).toFixed(1)}" text-anchor="middle" font-size="${fontSize(10.5)}" font-family="var(--font-mono)" fill="var(--outside-sun-line)" opacity="0.92">${label}</text>`,
+        );
+      }
     }
     for (const event of model.moonEvents) {
       const eventX = x(event.minute);
@@ -1073,18 +1232,35 @@ export function mountOutside(root: HTMLElement): () => void {
       );
     }
 
-    const currentMinute =
-      model.window.focusMinute ?? RIBBON_LOOKBACK_MINUTES;
-    const currentX = x(currentMinute);
     const sunAltitude = sunPosition(now, LATITUDE, LONGITUDE).altitude;
+    const sunY = altToPlotY(sunAltitude, geometry);
+    const moonY = altToPlotY(moonAltitude, geometry);
     const nowLabel = `NOW · ${BRECKENRIDGE_TIME.format(now)}`;
     fragments.push(
       `<text x="${currentX.toFixed(1)}" y="20" text-anchor="middle" font-size="${fontSize(13)}" font-family="var(--font-mono)" font-weight="650" letter-spacing=".25" fill="var(--outside-now)" paint-order="stroke" stroke="var(--outside-plate-edge)" stroke-width="${strokeWidth(3)}" stroke-linejoin="round">${nowLabel}</text>`,
       `<line x1="${currentX.toFixed(1)}" y1="31" x2="${currentX.toFixed(1)}" y2="${geometry.baseline}" stroke="var(--outside-now)" stroke-width="${strokeWidth(1.25)}" vector-effect="non-scaling-stroke"/>`,
     );
+
+    // Rich Solar Compass-Ray Emblem & Lunar Orbital Ring
+    const sunRays = sunAltitude > 0
+      ? `<circle cx="0" cy="0" r="${radius(9.2)}" fill="none" stroke="var(--outside-sun-line)" stroke-opacity=".35" stroke-width="${strokeWidth(1)}" stroke-dasharray="1.5 2.5" vector-effect="non-scaling-stroke"/>
+         <path d="M0,-12 L0,-8.5 M0,8.5 L0,12 M-12,0 L-8.5,0 M8.5,0 L12,0 M-8.2,-8.2 L-5.8,-5.8 M5.8,5.8 L8.2,8.2 M8.2,-8.2 L5.8,-5.8 M-5.8,5.8 L-8.2,8.2" stroke="var(--outside-sun-line)" stroke-opacity=".75" stroke-width="${strokeWidth(1.15)}" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`
+      : '';
     fragments.push(
-      `<circle cx="${currentX.toFixed(1)}" cy="${altToPlotY(sunAltitude, geometry).toFixed(1)}" r="${radius(sunAltitude > 0 ? 4.4 : 3.2)}" fill="${sunAltitude > 0 ? 'var(--outside-sun-line)' : 'var(--outside-plate-edge)'}" fill-opacity="${sunAltitude > 0 ? '1' : '.72'}" stroke="var(--outside-sun-line)" stroke-width="${strokeWidth(1.1)}" vector-effect="non-scaling-stroke"/>`,
-      `<circle cx="${currentX.toFixed(1)}" cy="${altToPlotY(moonAltitude, geometry).toFixed(1)}" r="${radius(moonAltitude > 0 ? 4 : 3)}" fill="var(--outside-plate-edge)" fill-opacity="${moonAltitude > 0 ? '1' : '.68'}" stroke="var(--outside-moon-line)" stroke-opacity="${moonAltitude > 0 ? '1' : '.55'}" stroke-width="${strokeWidth(1.7)}" vector-effect="non-scaling-stroke"/>`,
+      `<g transform="translate(${currentX.toFixed(1)}, ${sunY.toFixed(1)})">
+        ${sunRays}
+        <circle cx="0" cy="0" r="${radius(sunAltitude > 0 ? 4.8 : 3.4)}" fill="${sunAltitude > 0 ? 'var(--outside-sun-line)' : 'var(--outside-plate-edge)'}" fill-opacity="${sunAltitude > 0 ? '1' : '.72'}" stroke="var(--outside-sun-line)" stroke-width="${strokeWidth(1.3)}" vector-effect="non-scaling-stroke"/>
+      </g>`,
+      `<g transform="translate(${currentX.toFixed(1)}, ${moonY.toFixed(1)})">
+        <circle cx="0" cy="0" r="${radius(moonAltitude > 0 ? 7.2 : 4.8)}" fill="none" stroke="var(--outside-moon-line)" stroke-opacity="${moonAltitude > 0 ? '.35' : '.2'}" stroke-width="${strokeWidth(1)}" vector-effect="non-scaling-stroke"/>
+        <circle cx="0" cy="0" r="${radius(moonAltitude > 0 ? 4.2 : 3)}" fill="var(--outside-plate-edge)" fill-opacity="${moonAltitude > 0 ? '1' : '.68'}" stroke="var(--outside-moon-line)" stroke-opacity="${moonAltitude > 0 ? '1' : '.55'}" stroke-width="${strokeWidth(1.7)}" vector-effect="non-scaling-stroke"/>
+      </g>`,
+      `<g data-scrub-group style="opacity:0; pointer-events:none; transition:opacity 140ms ease">
+        <line data-scrub-line x1="0" y1="24" x2="0" y2="${(temperatureBottom + 4).toFixed(1)}" stroke="var(--outside-sun-line)" stroke-opacity=".78" stroke-width="${strokeWidth(1.15)}" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"/>
+        <circle data-scrub-sun cx="0" cy="${geometry.baseline}" r="${radius(4.6)}" fill="none" stroke="var(--outside-sun-line)" stroke-width="${strokeWidth(1.6)}" vector-effect="non-scaling-stroke"/>
+        <circle data-scrub-moon cx="0" cy="${geometry.baseline}" r="${radius(4.2)}" fill="none" stroke="var(--outside-moon-line)" stroke-width="${strokeWidth(1.5)}" vector-effect="non-scaling-stroke"/>
+      </g>`,
+      `<g data-shooting-star-layer style="pointer-events:none"></g>`,
     );
 
     svg.innerHTML = fragments.join('');
@@ -1291,6 +1467,105 @@ export function mountOutside(root: HTMLElement): () => void {
     } finally {
       issInFlight = false;
     }
+  }
+
+  // Interactive 24-hour Time-Scrubber Loupe
+  const ribbonSvg = query<SVGSVGElement>('[data-ribbon]');
+  const scrubPill = query<HTMLElement>('[data-field="ribbon-scrub"]');
+  if (ribbonSvg && scrubPill) {
+    const updateScrub = (clientX: number) => {
+      if (!activeRibbonModel) return;
+      const rect = ribbonSvg.getBoundingClientRect();
+      if (rect.width <= 0) return;
+      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const minute = ratio * activeRibbonModel.window.durationMinutes;
+      const sampleAt = new Date(
+        activeRibbonModel.window.start.valueOf() + minute * MINUTE,
+      );
+      const sunPos = sunPosition(sampleAt, LATITUDE, LONGITUDE);
+      const moonPos = moonPosition(sampleAt, LATITUDE, LONGITUDE);
+      const svgX = ratio * activeRibbonGeometry.width;
+      const sunY = altToPlotY(sunPos.altitude, activeRibbonGeometry);
+      const moonY = altToPlotY(moonPos.altitude, activeRibbonGeometry);
+
+      const scrubGroup = ribbonSvg.querySelector<SVGGElement>('[data-scrub-group]');
+      const scrubSun = ribbonSvg.querySelector<SVGCircleElement>('[data-scrub-sun]');
+      const scrubMoon = ribbonSvg.querySelector<SVGCircleElement>('[data-scrub-moon]');
+      if (scrubGroup) {
+        scrubGroup.style.opacity = '1';
+        scrubGroup.setAttribute('transform', `translate(${svgX.toFixed(1)}, 0)`);
+      }
+      if (scrubSun) scrubSun.setAttribute('cy', sunY.toFixed(1));
+      if (scrubMoon) scrubMoon.setAttribute('cy', moonY.toFixed(1));
+
+      scrubPill.hidden = false;
+      scrubPill.textContent =
+        `${BRECKENRIDGE_TIME.format(sampleAt)} · Sun ${Math.round(sunPos.altitude)}° ${compass(sunPos.azimuth)} · Moon ${Math.round(moonPos.altitude)}° ${compass(moonPos.azimuth)}`;
+    };
+
+    const clearScrub = () => {
+      const scrubGroup = ribbonSvg.querySelector<SVGGElement>('[data-scrub-group]');
+      if (scrubGroup) scrubGroup.style.opacity = '0';
+      scrubPill.hidden = true;
+    };
+
+    ribbonSvg.addEventListener(
+      'pointermove',
+      (e: PointerEvent) => updateScrub(e.clientX),
+      { signal: abortController.signal },
+    );
+    ribbonSvg.addEventListener(
+      'pointerdown',
+      (e: PointerEvent) => updateScrub(e.clientX),
+      { signal: abortController.signal },
+    );
+    ribbonSvg.addEventListener('pointerleave', clearScrub, {
+      signal: abortController.signal,
+    });
+    ribbonSvg.addEventListener('pointercancel', clearScrub, {
+      signal: abortController.signal,
+    });
+  }
+
+  // Easter Egg: Night Watch Moon Medallion -> Lunar Distance Telemetry + Shooting Star
+  const moonTrigger = query<HTMLButtonElement>('[data-moon-trigger]');
+  if (moonTrigger) {
+    moonTrigger.addEventListener(
+      'click',
+      () => {
+        const now = new Date();
+        const telemetryEl = query<HTMLElement>('[data-field="moon-telemetry"]');
+        if (telemetryEl) {
+          const distKm = moonDistanceKm(now);
+          const pos = moonPosition(now, LATITUDE, LONGITUDE);
+          telemetryEl.hidden = false;
+          telemetryEl.textContent =
+            `✦ ${distKm.toLocaleString('en-US')} km away · ${Math.round(pos.altitude)}° alt ${compass(pos.azimuth)}`;
+        }
+        const starLayer = query<SVGGElement>('[data-shooting-star-layer]');
+        if (
+          starLayer
+          && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ) {
+          const startX = Math.round(activeRibbonGeometry.width * (0.18 + Math.random() * 0.45));
+          const startY = Math.round(14 + Math.random() * 24);
+          starLayer.innerHTML = `<g transform="translate(${startX}, ${startY})">
+            <line x1="-52" y1="-12" x2="0" y2="0" stroke="var(--outside-sun-line)" stroke-width="1.8" stroke-linecap="round" opacity="0.85" />
+            <circle cx="0" cy="0" r="2.6" fill="#fffaf0" />
+          </g>`;
+          const meteor = starLayer.firstElementChild as SVGGElement | null;
+          meteor?.animate(
+            [
+              { transform: `translate(${startX}px, ${startY}px) scale(0.7)`, opacity: 0 },
+              { transform: `translate(${startX + 70}px, ${startY + 16}px) scale(1)`, opacity: 1, offset: 0.22 },
+              { transform: `translate(${startX + 260}px, ${startY + 58}px) scale(0.85)`, opacity: 0 },
+            ],
+            { duration: 920, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'forwards' },
+          );
+        }
+      },
+      { signal: abortController.signal },
+    );
   }
 
   const onTextureReady = () => {

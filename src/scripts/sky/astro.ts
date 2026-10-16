@@ -86,6 +86,11 @@ export function moonPosition(date: Date, lat: number, lon: number): Horizontal {
   return { altitude: altitude(H, phi, c.dec) / RAD, azimuth: (azimuth(H, phi, c.dec) / RAD) % 360 };
 }
 
+/** Geocentric Earth-Moon distance in kilometers (~356,500–406,700 km). */
+export function moonDistanceKm(date: Date): number {
+  return Math.round(moonCoords(toDays(date)).dist);
+}
+
 /**
  * Illuminated fraction (0–1) and whether the moon is waxing.
  * `waxing` decides which limb is lit, which is what the terminator drawing needs.
