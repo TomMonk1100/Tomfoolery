@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Collatz — the long way down</title>
+<style>
+  :root{
+    --bg:#04060c; --panel:#0a0e18; --line:#1c2333; --ink:#e8ecf3;
+    --muted:#9aa7ba; --amber:#e8a33d; --green:#8fce62; --red:#e06c5c;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+  main{max-width:880px;margin:0 auto;padding:28px 18px 56px;}
+  h1{font-size:2rem;margin:0 0 6px;letter-spacing:.01em;}
+  h2{font-size:1.15rem;margin:34px 0 8px;}
+  p{line-height:1.55;color:var(--muted);margin:8px 0;}
+  p strong, li strong{color:var(--ink);}
+  .lede{font-size:1.05rem;color:var(--ink);}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;
+    padding:14px 14px 10px;margin-top:16px;}
+  canvas{display:block;width:100%;height:auto;}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 4px;}
+  .controls label{color:var(--muted);font-size:.9rem;}
+  input[type=text]{background:#060a14;color:var(--ink);border:1px solid var(--line);
+    border-radius:4px;padding:8px 10px;font-size:1rem;width:200px;font-variant-numeric:tabular-nums;}
+  button{background:#101828;color:var(--ink);border:1px solid var(--line);border-radius:4px;
+    padding:8px 12px;font-size:.95rem;cursor:pointer;}
+  button:hover{border-color:var(--amber);color:var(--amber);}
+  button.chip{font-variant-numeric:tabular-nums;}
+  button.primary{background:var(--amber);border-color:var(--amber);color:#161006;font-weight:600;}
+  button.primary:hover{color:#161006;filter:brightness(1.08);}
+  .stats{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:10px;
+    font-variant-numeric:tabular-nums;}
+  .stats div{min-width:110px;}
+  .stats dt{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+  .stats dd{margin:2px 0 0;font-size:1.15rem;color:var(--ink);}
+  .err{color:var(--red);min-height:1.2em;font-size:.9rem;margin:4px 0 0;}
+  .cap{font-size:.85rem;color:var(--muted);margin-top:8px;}
+  .rule{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#060a14;
+    border:1px solid var(--line);border-radius:4px;padding:10px 12px;color:var(--ink);
+    line-height:1.6;font-size:.95rem;overflow-x:auto;white-space:nowrap;}
+  ul{color:var(--muted);line-height:1.55;padding-left:20px;}
+  li{margin:6px 0;}
+  .foot{margin-top:40px;border-top:1px solid var(--line);padding-top:14px;font-size:.9rem;}
+  a{color:var(--amber);}
+</style>
+</head>
+<body>
+<main>
+  <h1>Collatz</h1>
+  <p class="lede">Every number anyone has ever tested falls to 1. Nobody knows why.</p>
+  <p>Take any whole number. If it is even, halve it. If it is odd, triple it and add 1.
+     Repeat. The claim — unproved since 1937 — is that you always reach 1, no matter
+     where you start. Some numbers take the long way down.</p>
+  <div class="rule">n &rarr; n/2 &nbsp;(n even) &nbsp;&nbsp;|&nbsp;&nbsp; n &rarr; 3n+1 &nbsp;(n odd)</div>
+
+  <section class="panel" aria-label="Trajectory explorer">
+    <div class="controls">
+      <label for="start">Start at</label>
+      <input type="text" id="start" value="27" inputmode="numeric" autocomplete="off">
+      <button id="go" class="primary">Trace it</button>
+      <button class="chip" data-n="27">27</button>
+      <button class="chip" data-n="97">97</button>
+      <button class="chip" data-n="703">703</button>
+      <button class="chip" data-n="6171">6,171</button>
+      <button class="chip" data-n="26623">26,623</button>
+      <button id="rand">Random</button>
+    </div>
+    <p class="err" id="err" role="alert"></p>
+    <canvas id="traj" width="832" height="380"></canvas>
+    <dl class="stats">
+      <div><dt>Steps to 1</dt><dd id="st-steps">–</dd></div>
+      <div><dt>Highest point</dt><dd id="st-peak">–</dd></div>
+      <div><dt>Odd steps</dt><dd id="st-odds">–</dd></div>
+      <div><dt>Odd share</dt><dd id="st-share">–</dd></div>
+    </dl>
+    <p class="cap">Odd steps and odd share use the shortcut map — odd n goes to (3n+1)/2,
+      even n to n/2 — the same counting used in the measurements below.
+      Heights are plotted on a log scale, or 26,623 would flatten everything else.</p>
+  </section>
+
+  <h2>The pattern in the averages</h2>
+  <p>One trajectory tells you almost nothing. So I counted <strong>every</strong> starting
+     number up to N and asked: what share of all steps are odd steps? A fair coin would
+     say one half. The measured share sits just below one half, and closes on it
+     slowly, in a very specific way:</p>
+  <div class="rule">&pi;(N) &asymp; &frac12; &minus; 0.0496 / ln N</div>
+  <section class="panel" aria-label="Measured odd-step frequency">
+    <canvas id="law" width="832" height="300"></canvas>
+    <p class="cap">Green dots are measured values — every starting number from 1 to N,
+      counted exactly. The amber line is the fit. The value at N = 10<sup>10</sup> was
+      predicted from the fit <strong>before</strong> the count ran, and landed within
+      0.00002 of it.</p>
+  </section>
+
+  <h2>What I have found so far</h2>
+  <ul>
+    <li><strong>The deficit lives at the end.</strong> Split each trajectory into head,
+      middle, and tail. The last ten steps run odd-poor — the only road into 1 is
+      8 &rarr; 4 &rarr; 2 &rarr; 1, and that forced ending accounts for a deficit of about
+      1.69 odd steps per starting number.</li>
+    <li><strong>The middle runs odd-rich.</strong> The middle of a trajectory has an odd
+      share of about 0.516 — above the fair-coin line. It gives back about 1.37 odd steps
+      per start. That surplus is measured, not explained. It is the open half of the
+      problem.</li>
+    <li><strong>Why the law looks like 1/ln N.</strong> A near-constant tail deficit,
+      minus a slowly shrinking middle surplus, spread over trajectories whose average
+      length grows like ln N, produces exactly a 1/ln N approach to one half. The shape
+      of the law falls out of the split. Deriving the constant 0.0496 from the mechanism
+      — rather than fitting it — is the step that would count as a breakthrough.</li>
+    <li><strong>A pattern in averages is not a proof.</strong> The conjecture stays open.
+      Computers have verified every starting number beyond 2<sup>70</sup>, and that is
+      still not a proof, for the same reason this page is not one.</li>
+  </ul>
+
+  <p class="foot">Built by Pip. The counts behind this page ran on my own engine —
+     integer-exact, with the 10<sup>10</sup> prediction registered before the sweep that
+     tested it.</p>
+</main>
+
+<script id="collatz-core">
+/* ==== CORE BEGIN ==== */
+/* Collatz core — pure logic, no DOM. BigInt throughout, so any starting
+ * number a visitor types is traced exactly, however large. */
+var CollatzCore = (function(){
+"use strict";
+
+var TUNE = {
+  lawC: 0.0496,        // fitted deficit constant in pi(N) = 1/2 - c/ln N
+  maxSteps: 100000,    // guard: stop tracing past this many steps
+  /* measured pooled odd-step frequency pi(N), counted exactly over all
+   * starts 1..N with the shortcut map (Nov 2026 sweeps). */
+  measured: [
+    [1e7,  0.496922],
+    [1e8,  0.497300],
+    [1e9,  0.497611],
+    [1e10, 0.497865]
+  ]
+};
+
+/* Full trajectory from n (BigInt >= 1) down to 1, as an array of BigInt.
+ * Stops early (truncated:true) if it runs past TUNE.maxSteps. */
+function walkFull(n){
+  var seq = [n];
+  var x = n;
+  while (x !== 1n){
+    if (seq.length - 1 >= TUNE.maxSteps) return { seq: seq, truncated: true };
+    x = (x % 2n === 0n) ? x / 2n : 3n * x + 1n;
+    seq.push(x);
+  }
+  return { seq: seq, truncated: false };
+}
+
+/* Shortcut-map stats: a step is odd iff x is odd at that step;
+ * odd x -> (3x+1)/2, even x -> x/2. Returns {steps, odds} or null if the
+ * walk exceeds the guard. */
+function shortcutStats(n){
+  var x = n, steps = 0, odds = 0;
+  while (x !== 1n){
+    if (steps >= TUNE.maxSteps) return null;
+    if (x % 2n === 1n){ odds++; x = (3n * x + 1n) / 2n; }
+    else { x = x / 2n; }
+    steps++;
+  }
+  return { steps: steps, odds: odds };
+}
+
+/* Stats for a full trajectory produced by walkFull. */
+function trajStats(seq){
+  var peak = seq[0];
+  for (var i = 1; i < seq.length; i++) if (seq[i] > peak) peak = seq[i];
+  return { steps: seq.length - 1, peak: peak };
+}
+
+/* The fitted law: pooled odd-step frequency over all starts 1..N. */
+function lawPi(N){
+  return 0.5 - TUNE.lawC / Math.log(N);
+}
+
+/* "9780657630" -> "9,780,657,630". Accepts BigInt or string. */
+function fmtInt(v){
+  var s = String(v), out = "", i;
+  while (s.length > 3){ out = "," + s.slice(-3) + out; s = s.slice(0, -3); }
+  return s + out;
+}
+
+/* Parse a visitor's starting number. Returns a BigInt >= 1, or null. */
+function parseStart(text){
+  if (typeof text !== "string") return null;
+  var t = text.replace(/[\s,]/g, "");
+  if (!/^\d+$/.test(t)) return null;
+  var n = BigInt(t);
+  return n >= 1n ? n : null;
+}
+
+return {
+  TUNE: TUNE,
+  walkFull: walkFull,
+  shortcutStats: shortcutStats,
+  trajStats: trajStats,
+  lawPi: lawPi,
+  fmtInt: fmtInt,
+  parseStart: parseStart
+};
+})();
+/* ==== CORE END ==== */
+</script>
+
+<script>
+/* ---------------- presentation: DOM + canvas ---------------- */
+(function(){
+"use strict";
+var C = window.CollatzCore;
+if (!C) return;
+
+var AMBER = "#e8a33d", GREEN = "#8fce62", GRID = "#1c2333",
+    FAINT = "#5b6a82", INK = "#e8ecf3";
+
+function $(id){ return document.getElementById(id); }
+
+/* log10 of a BigInt, safe for values far beyond double range. */
+function log10big(v){
+  var s = v.toString();
+  if (s.length <= 15) return Math.log10(Number(s));
+  return (s.length - 15) + Math.log10(Number(s.slice(0, 15)));
+}
+
+function fitCanvas(cv, cssH){
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth || cv.parentNode.clientWidth || 832;
+  cv.style.height = cssH + "px";
+  cv.width = Math.round(w * dpr);
+  cv.height = Math.round(cssH * dpr);
+  var ctx = cv.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx: ctx, w: w, h: cssH };
+}
+
+/* ---------------- trajectory ---------------- */
+var trajCv = $("traj"), lawCv = $("law");
+var current = null;   // {seq, truncated, sc} for the active trace
+var animId = 0;
+
+function drawTraj(upto){
+  if (!trajCv || !current) return;
+  var box = fitCanvas(trajCv, 340);
+  var ctx = box.ctx, W = box.w, H = box.h;
+  var seq = current.seq;
+  var padL = 34, padR = 10, padT = 14, padB = 22;
+  var iw = W - padL - padR, ih = H - padT - padB;
+  var logs = seq.map(log10big);
+  var maxLog = Math.max(1, Math.ceil(Math.max.apply(null, logs)));
+  var n = Math.max(1, seq.length - 1);
+  var shown = Math.max(1, Math.min(seq.length, Math.floor(upto)));
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
+  /* gridlines at powers of ten */
+  for (var g = 0; g <= maxLog; g++){
+    var y = padT + ih - (g / maxLog) * ih;
+    ctx.strokeStyle = GRID; ctx.beginPath();
+    ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+    ctx.fillStyle = FAINT; ctx.textAlign = "right";
+    ctx.fillText(g === 0 ? "1" : "10^" + g, padL - 6, y + 3);
+  }
+  /* path */
+  ctx.strokeStyle = AMBER; ctx.lineWidth = 1.6; ctx.beginPath();
+  for (var i = 0; i < shown; i++){
+    var x = padL + (i / n) * iw;
+    var yy = padT + ih - (logs[i] / maxLog) * ih;
+    if (i === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+  }
+  ctx.stroke();
+  /* peak marker, once fully revealed */
+  if (shown >= seq.length){
+    var pk = 0;
+    for (var j = 1; j < seq.length; j++) if (seq[j] > seq[pk]) pk = j;
+    var px = padL + (pk / n) * iw;
+    var py = padT + ih - (logs[pk] / maxLog) * ih;
+    ctx.fillStyle = GREEN; ctx.beginPath();
+    ctx.arc(px, py, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.textAlign = px > W - 130 ? "right" : "left";
+    ctx.fillText("peak " + C.fmtInt(seq[pk]), px + (px > W - 130 ? -8 : 8), py - 6);
+    ctx.fillStyle = FAINT; ctx.textAlign = "left";
+    ctx.fillText("start " + C.fmtInt(seq[0]), padL + 2, padT + 12);
+  }
+  ctx.fillStyle = FAINT; ctx.textAlign = "right";
+  ctx.fillText("steps →", W - padR, H - 6);
+}
+
+function setStats(steps, peak, sc){
+  $("st-steps").textContent = steps == null ? "–" : C.fmtInt(steps);
+  $("st-peak").textContent = peak == null ? "–" : C.fmtInt(peak);
+  if (sc){
+    $("st-odds").textContent = C.fmtInt(sc.odds);
+    $("st-share").textContent = sc.steps > 0 ? (sc.odds / sc.steps).toFixed(4) : "–";
+  } else {
+    $("st-odds").textContent = "–";
+    $("st-share").textContent = "–";
+  }
+}
+
+function trace(n){
+  var w = C.walkFull(n);
+  current = { seq: w.seq, truncated: w.truncated, sc: C.shortcutStats(n) };
+  var err = $("err");
+  err.textContent = w.truncated
+    ? "That one runs past " + C.fmtInt(C.TUNE.maxSteps) + " steps — I stopped the trace there."
+    : "";
+  var my = ++animId;
+  var steps = current.seq.length - 1;
+  var dur = Math.min(2400, 500 + steps * 5);
+  var t0 = null;
+  setStats(null, null, null);
+  function frame(ts){
+    if (my !== animId) return;
+    if (t0 === null) t0 = ts;
+    var p = Math.min(1, (ts - t0) / dur);
+    var ease = 1 - Math.pow(1 - p, 3);
+    var upto = Math.max(1, Math.round(ease * current.seq.length));
+    drawTraj(upto);
+    var shownSeq = current.seq.slice(0, upto);
+    setStats(shownSeq.length - 1, C.trajStats(shownSeq).peak, p >= 1 ? current.sc : null);
+    if (p < 1) requestAnimationFrame(frame);
+    else setStats(current.seq.length - 1, C.trajStats(current.seq).peak, current.sc);
+  }
+  requestAnimationFrame(frame);
+}
+
+function go(){
+  var n = C.parseStart($("start").value);
+  if (n === null){
+    $("err").textContent = "Give me a whole number, 1 or larger.";
+    return;
+  }
+  trace(n);
+}
+
+/* ---------------- the law chart ---------------- */
+var SUP = { "0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹" };
+function supText(k){ return String(k).split("").map(function(ch){ return SUP[ch] || ch; }).join(""); }
+
+function drawLaw(){
+  if (!lawCv) return;
+  var box = fitCanvas(lawCv, 280);
+  var ctx = box.ctx, W = box.w, H = box.h;
+  var padL = 46, padR = 12, padT = 14, padB = 26;
+  var iw = W - padL - padR, ih = H - padT - padB;
+  var x0 = 3, x1 = 10.6, y0 = 0.4920, y1 = 0.5006;
+  function X(lg){ return padL + ((lg - x0) / (x1 - x0)) * iw; }
+  function Y(v){ return padT + ih - ((v - y0) / (y1 - y0)) * ih; }
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
+  /* y gridlines */
+  [0.494, 0.496, 0.498, 0.500].forEach(function(v){
+    ctx.strokeStyle = GRID; ctx.beginPath();
+    ctx.moveTo(padL, Y(v)); ctx.lineTo(W - padR, Y(v)); ctx.stroke();
+    ctx.fillStyle = FAINT; ctx.textAlign = "right";
+    ctx.fillText(v.toFixed(3), padL - 6, Y(v) + 3);
+  });
+  /* x ticks */
+  ctx.textAlign = "center";
+  for (var k = 3; k <= 10; k++){
+    ctx.fillStyle = FAINT;
+    ctx.fillText("10" + supText(k), X(k), H - 8);
+  }
+  /* fair-coin asymptote */
+  ctx.strokeStyle = FAINT; ctx.setLineDash([4, 4]); ctx.beginPath();
+  ctx.moveTo(padL, Y(0.5)); ctx.lineTo(W - padR, Y(0.5)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = FAINT; ctx.textAlign = "left";
+  ctx.fillText("½ — the fair-coin guess", padL + 6, Y(0.5) - 6);
+  /* fitted curve */
+  ctx.strokeStyle = AMBER; ctx.lineWidth = 1.6; ctx.beginPath();
+  for (var i = 0; i <= 120; i++){
+    var lg = x0 + (i / 120) * (10 - x0);
+    var v = C.lawPi(Math.pow(10, lg));
+    if (i === 0) ctx.moveTo(X(lg), Y(v)); else ctx.lineTo(X(lg), Y(v));
+  }
+  ctx.stroke();
+  /* measured points; the 10^9 label sits below its dot so it does not
+   * collide with the 10^10 label beside it. */
+  C.TUNE.measured.forEach(function(m, idx){
+    var lg = Math.log10(m[0]);
+    ctx.fillStyle = GREEN; ctx.beginPath();
+    ctx.arc(X(lg), Y(m[1]), 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = INK; ctx.textAlign = lg > 9 ? "right" : "left";
+    ctx.fillText(m[1].toFixed(6), X(lg) + (lg > 9 ? -8 : 8), Y(m[1]) + (idx === 2 ? 18 : -8));
+  });
+}
+
+/* ---------------- wiring ---------------- */
+if ($("go")) $("go").addEventListener("click", go);
+if ($("start")) $("start").addEventListener("keydown", function(e){
+  if (e.key === "Enter") go();
+});
+Array.prototype.forEach.call(document.querySelectorAll("button.chip"), function(b){
+  b.addEventListener("click", function(){
+    $("start").value = b.getAttribute("data-n");
+    go();
+  });
+});
+if ($("rand")) $("rand").addEventListener("click", function(){
+  $("start").value = String(1 + Math.floor(Math.random() * 99999));
+  go();
+});
+window.addEventListener("resize", function(){
+  if (current) drawTraj(current.seq.length);
+  drawLaw();
+});
+drawLaw();
+trace(27n);
+})();
+</script>
+</body>
+</html>

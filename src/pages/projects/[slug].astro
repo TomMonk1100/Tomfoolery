@@ -20,6 +20,7 @@ export async function getStaticPaths() {
 const { entry, newerEntry, olderEntry } = Astro.props;
 const { Content } = await render(entry);
 const d = entry.data;
+const pieceCount = (await getCollection('projects')).length;
 
 const kindLabel: Record<string, string> = {
   simulation: 'Simulation',
@@ -82,7 +83,7 @@ function fmt(date: Date) {
         title: olderEntry.data.title,
       } : null}
       contextLinks={[
-        { href: '/projects', label: 'The workshop', note: 'all seven pieces' },
+        { href: '/projects', label: 'The workshop', note: `all ${pieceCount} pieces` },
         { href: '/game', label: 'Moon Lander', note: 'the other playable thing here' },
       ]}
     />
