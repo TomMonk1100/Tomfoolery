@@ -73,8 +73,22 @@
   .weekDot{width:11px; height:11px; border-radius:50%; border:1px solid var(--line); background:transparent}
   .weekDot.done{background:var(--gold)}
 
+  /* ---------- week layout: board and cards side by side ---------- */
+  .weekLayout{display:flex; gap:16px; align-items:flex-start; justify-content:center}
+  .sideCol{flex:1 1 340px; max-width:520px; min-width:300px}
+  .sideCol #skyStrip{flex-direction:column; margin-bottom:10px}
+  .sideCol #infoBar{text-align:left; margin-top:2px; background:rgba(10,22,13,.78); border:1px solid var(--line); border-radius:10px; padding:8px 12px}
+  .sideCol #handBar .muted{color:#20381d; font-weight:700}
+  .sideCol #handBar{margin-top:10px}
+  .sideCol #handFan{justify-content:flex-start}
+  @media (max-width:900px){
+    .weekLayout{flex-direction:column; align-items:center}
+    .sideCol{max-width:640px; width:100%}
+    #boardWrap{width:min(480px, 94vw)}
+  }
+
   /* ---------- the garden board ---------- */
-  #boardWrap{position:relative; padding:18px; border-radius:20px;
+  #boardWrap{position:relative; padding:18px; border-radius:20px; flex:0 0 auto; width:min(460px, 92vw);
     background:linear-gradient(170deg, rgba(46,84,40,.92), rgba(28,54,26,.95));
     border:1px solid var(--line); box-shadow:var(--shadow)}
   body.season-4 #boardWrap{box-shadow:var(--shadow), inset 0 0 60px rgba(190,220,255,.28)}
@@ -755,6 +769,7 @@ function renderWeek(){
   if (willWilt) endLine += ' ⚠ ' + willWilt + ' will wilt!';
   if (S.hand.length) endLine += ' Unplanted seeds compost for 🪙' + spCompostRate(S) + ' each.';
   $stage.innerHTML =
+    '<div class="weekLayout"><div id="boardWrap"><div id="board">' + S.board.map((_, i) => plotHTML(i)).join('') + '</div></div><div class="sideCol">' +
     '<div id="skyStrip">' +
       '<div class="skyCard"><div class="weatherNow"><span class="wIcon">' + w.icon + '</span>' +
         '<div><div style="font-weight:900; font-size:19px">' + season.name + ' — ' + w.name + '</div>' +
@@ -767,7 +782,6 @@ function renderWeek(){
         '<div class="quotaBar"><i style="width:' + quotaPct + '%"></i></div>' +
         '<div class="muted" style="font-size:13px; margin-top:7px">Beat the quota to reach the next season. Anything extra becomes coins.</div></div>' +
     '</div>' +
-    '<div id="boardWrap"><div id="board">' + S.board.map((_, i) => plotHTML(i)).join('') + '</div></div>' +
     '<div id="infoBar">' + infoHTML() + '</div>' +
     '<div id="handBar"><div class="center muted" style="font-size:13px; margin-bottom:6px">YOUR SEED PACKET — click a seed, then a plot. Click a plant to inspect it.</div>' +
     '<div id="handFan">' + (S.hand.length ? S.hand.map(c => seedCardHTML(c, { sel: selCard === c.uid })).join('') : '<span class="muted">No seeds in hand — end the week to draw fresh ones.</span>') + '</div></div>' +
@@ -775,7 +789,7 @@ function renderWeek(){
       (S.tools.includes('wateringcan') ? '<button class="btn secondary" id="canBtn"' + (S.canUsed ? ' disabled' : '') + '>💧 Watering can' + (S.canUsed ? ' (used)' : '') + '</button>' : '') +
       '<button class="btn" id="endWeekBtn">End week →</button>' +
     '</div>' +
-    '<div class="center muted" style="font-size:13.5px; margin-top:8px">' + esc(endLine) + '</div>';
+    '<div class="muted" style="font-size:13.5px; margin-top:8px">' + esc(endLine) + '</div></div></div>';
   wireWeek();
 }
 function infoHTML(){
