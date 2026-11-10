@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sunpatch — a tiny garden roguelite</title>
+<style>
+  :root{
+    --ink:#f3ecd9; --ink-dim:#cfc7ab; --gold:#f2c14e; --panel:rgba(20,34,22,.88);
+    --line:rgba(242,193,78,.35); --soil:#4a3421; --soil2:#5d422a;
+    --sky1:#79b5d9; --sky2:#cfe8d9; --accent:#8fd07a;
+    --shadow:0 12px 34px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Avenir Next","Segoe UI",system-ui,-apple-system,sans-serif;
+    color:var(--ink); min-height:100vh; overflow-x:hidden;
+    background:linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 34%, #2c5b34 78%, #1d4023 100%);
+    transition:background 1.2s ease;
+  }
+  body.season-1{background:linear-gradient(180deg,#8fc3e8 0%,#d8efdc 34%,#2c5b34 78%,#1d4023 100%)}
+  body.season-2{background:linear-gradient(180deg,#5ea9dd 0%,#bfe6c8 30%,#2f6b2f 74%,#1e4a1e 100%)}
+  body.season-3{background:linear-gradient(180deg,#7d94b8 0%,#e8cf9e 36%,#6b4a26 80%,#453014 100%)}
+  body.season-4{background:linear-gradient(180deg,#5d748f 0%,#b9c9d4 36%,#3d4f42 80%,#27352b 100%)}
+  button{font-family:inherit; cursor:pointer}
+  .hidden{display:none !important}
+
+  /* ---------- top bar ---------- */
+  #topbar{
+    position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    padding:8px 16px; background:rgba(10,22,13,.86); backdrop-filter:blur(6px); border-bottom:1px solid var(--line);
+  }
+  #topbar .brand{font-weight:800; letter-spacing:.05em; color:var(--gold); font-size:15px; white-space:nowrap}
+  .stat{display:flex; align-items:center; gap:6px; font-size:14px; white-space:nowrap}
+  .stat b{font-variant-numeric:tabular-nums}
+  #toolTray{display:flex; gap:5px; flex-wrap:wrap; margin-left:auto}
+  .toolChip{width:30px; height:30px; border-radius:8px; border:1px solid rgba(242,193,78,.5);
+    background:linear-gradient(160deg,#3c5a35,#243d20); display:flex; align-items:center; justify-content:center; font-size:16px}
+  .iconbtn{background:#243d20; color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:5px 10px; font-size:13px}
+  .iconbtn:hover{border-color:var(--gold)}
+
+  /* ---------- layout & panels ---------- */
+  #stage{max-width:1020px; margin:0 auto; padding:20px 16px 80px}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); padding:22px}
+  h1.title{font-size:clamp(42px,7vw,74px); margin:4px 0 2px; line-height:1; font-weight:900; letter-spacing:.01em;
+    color:var(--gold); text-shadow:0 3px 0 #7a5a12, 0 12px 30px rgba(0,0,0,.5)}
+  .tagline{font-size:clamp(15px,2.4vw,19px); color:var(--ink-dim); margin:6px 0 18px; line-height:1.5}
+  .btn{background:linear-gradient(180deg,#f6cd63,#dfa92e); color:#241a04; border:1px solid #8a6410; font-weight:800;
+    padding:12px 22px; border-radius:12px; font-size:16px; box-shadow:0 4px 0 #8a6410, 0 10px 20px rgba(0,0,0,.35);
+    transition:transform .08s, box-shadow .08s}
+  .btn:hover{transform:translateY(-1px)}
+  .btn:active{transform:translateY(3px); box-shadow:0 1px 0 #8a6410}
+  .btn.secondary{background:linear-gradient(180deg,#3c5a35,#2a4726); color:var(--ink); border-color:#557d49; box-shadow:0 4px 0 #16280f}
+  .btn:disabled{opacity:.45; cursor:not-allowed; transform:none}
+  .btn.small{padding:8px 14px; font-size:14px}
+  .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+  .center{text-align:center}
+  .muted{color:var(--ink-dim)}
+  .gold{color:var(--gold)}
+  input.seedIn{background:rgba(8,18,10,.8); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:9px 12px; font-size:14px; width:170px}
+
+  /* ---------- weather & quota strip ---------- */
+  #skyStrip{display:flex; gap:14px; align-items:stretch; flex-wrap:wrap; margin-bottom:14px}
+  .skyCard{flex:1; min-width:250px; background:rgba(10,22,13,.72); border:1px solid var(--line); border-radius:14px; padding:12px 16px; backdrop-filter:blur(4px)}
+  .weatherNow{display:flex; align-items:center; gap:12px}
+  .weatherNow .wIcon{font-size:40px; line-height:1}
+  .forecast{display:flex; gap:8px; margin-top:8px}
+  .fcChip{border:1px solid var(--line); border-radius:9px; padding:4px 9px; font-size:12.5px; background:rgba(0,0,0,.25)}
+  .quotaBar{height:18px; background:rgba(0,0,0,.45); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-top:8px}
+  .quotaBar>i{display:block; height:100%; width:0%; background:linear-gradient(90deg,#8fd07a,#f2c14e); transition:width .8s cubic-bezier(.2,.9,.25,1)}
+  .weekDots{display:flex; gap:5px}
+  .weekDot{width:11px; height:11px; border-radius:50%; border:1px solid var(--line); background:transparent}
+  .weekDot.done{background:var(--gold)}
+
+  /* ---------- the garden board ---------- */
+  #boardWrap{position:relative; padding:18px; border-radius:20px;
+    background:linear-gradient(170deg, rgba(46,84,40,.92), rgba(28,54,26,.95));
+    border:1px solid var(--line); box-shadow:var(--shadow)}
+  body.season-4 #boardWrap{box-shadow:var(--shadow), inset 0 0 60px rgba(190,220,255,.28)}
+  #board{display:grid; grid-template-columns:repeat(3,1fr); gap:12px}
+  .plot{position:relative; aspect-ratio:1/0.92; border-radius:14px; border:2px solid rgba(0,0,0,.35);
+    background:radial-gradient(120% 120% at 50% 30%, var(--soil2), var(--soil));
+    box-shadow:inset 0 6px 14px rgba(0,0,0,.5), inset 0 -3px 8px rgba(255,235,190,.12);
+    display:flex; align-items:center; justify-content:center; transition:box-shadow .2s, border-color .2s; overflow:hidden}
+  .plot.empty::after{content:'+'; color:rgba(255,255,255,.16); font-size:34px; font-weight:300}
+  .plot.targetable{border-color:var(--gold); box-shadow:inset 0 6px 14px rgba(0,0,0,.5), 0 0 0 2px var(--gold), 0 0 22px rgba(242,193,78,.45); cursor:pointer; animation:pulseGlow 1.4s ease-in-out infinite}
+  @keyframes pulseGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}
+  .plot.selected{border-color:#fff; box-shadow:0 0 0 2px #fff, 0 0 24px rgba(255,255,255,.5)}
+  .plantEmoji{font-size:clamp(38px,7vw,58px); line-height:1; transition:transform .7s cubic-bezier(.34,1.56,.64,1); filter:drop-shadow(0 5px 6px rgba(0,0,0,.4)); background:none; border:none; cursor:pointer; padding:0}
+  .plot .stagePips{position:absolute; left:8px; bottom:7px; display:flex; gap:3px}
+  .stagePips i{width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.25); border:1px solid rgba(0,0,0,.3)}
+  .stagePips i.on{background:var(--accent)}
+  .stagePips i.peak{background:var(--gold)}
+  .valueBadge{position:absolute; top:6px; right:6px; min-width:34px; text-align:center; padding:2px 7px; border-radius:99px;
+    background:rgba(10,20,8,.82); border:1px solid var(--line); font-weight:900; font-size:16px; color:var(--ink); font-variant-numeric:tabular-nums}
+  .valueBadge.peak{border-color:var(--gold); color:var(--gold); box-shadow:0 0 14px rgba(242,193,78,.65); animation:pulseGlow 1.2s ease-in-out infinite}
+  .valueBadge.danger{border-color:#e4572e; color:#ff9d7a}
+  .traitTag{position:absolute; top:6px; left:6px; font-size:14px; filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+  .peakTag{position:absolute; bottom:6px; right:8px; font-size:10.5px; font-weight:900; letter-spacing:.08em; color:var(--gold)}
+  .catNap{position:absolute; right:4px; bottom:2px; font-size:22px; transform:rotate(-8deg); filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+  .floater{position:absolute; z-index:5; font-weight:900; font-size:22px; color:var(--gold); text-shadow:0 2px 0 rgba(90,64,10,.9), 0 6px 14px rgba(0,0,0,.5);
+    pointer-events:none; animation:floatUp 1.15s ease-out forwards}
+  .floater.small{font-size:15px; color:var(--ink)}
+  @keyframes floatUp{0%{opacity:0; transform:translateY(8px) scale(.8)}15%{opacity:1; transform:translateY(0) scale(1.1)}30%{transform:translateY(-4px) scale(1)}100%{opacity:0; transform:translateY(-46px)}}
+  .petal{position:absolute; z-index:4; width:9px; height:9px; border-radius:60% 40% 60% 40%; pointer-events:none; animation:petalFall 1.3s ease-out forwards}
+  @keyframes petalFall{0%{opacity:1; transform:translate(0,0) rotate(0)}100%{opacity:0; transform:translate(var(--dx), var(--dy)) rotate(200deg)}}
+
+  /* ---------- hand of seed cards ---------- */
+  #handBar{margin-top:16px}
+  #handFan{display:flex; justify-content:center; align-items:flex-end; gap:10px; flex-wrap:wrap; min-height:158px}
+  .seedCard{width:136px; border-radius:13px; border:2px solid #a68d5b; padding:8px 9px; text-align:left; cursor:pointer;
+    background:linear-gradient(168deg,#fdf6df,#eeddb4); color:#2a2110;
+    box-shadow:0 8px 18px rgba(0,0,0,.4); transition:transform .13s ease, box-shadow .13s ease; position:relative}
+  .seedCard:hover{transform:translateY(-8px)}
+  .seedCard.sel{transform:translateY(-16px); border-color:var(--gold); box-shadow:0 16px 26px rgba(0,0,0,.5), 0 0 0 2px var(--gold)}
+  .seedCard .scTop{display:flex; align-items:center; justify-content:space-between}
+  .seedCard .scIcon{font-size:26px}
+  .seedCard .scType{font-size:15px}
+  .seedCard .scName{font-weight:800; font-size:13.5px; margin-top:2px; line-height:1.15; min-height:31px; display:block}
+  .seedCard .scTrack{font-size:10.5px; color:#6b5a33; margin-top:4px; font-variant-numeric:tabular-nums; line-height:1.35; white-space:nowrap; letter-spacing:-.3px}
+  .seedCard .scTrack b{color:#9a7414}
+  .seedCard .scTrait{font-size:10.5px; color:#4d5a2e; margin-top:3px; line-height:1.3; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .seedCard .scPrice{position:absolute; top:-9px; right:-7px; background:#2a2110; color:var(--gold); border-radius:99px; padding:1px 8px; font-size:12px; font-weight:800}
+
+  /* ---------- intermission / offers ---------- */
+  .offerGrid{display:flex; gap:16px; justify-content:center; flex-wrap:wrap; margin-top:14px}
+  .offerCol{display:flex; flex-direction:column; align-items:center; gap:10px}
+  .toolOffer{width:215px; background:linear-gradient(165deg,#33512c,#1f3619); border:1px solid rgba(242,193,78,.5);
+    border-radius:14px; padding:16px; text-align:center}
+  .toolOffer .tIco{font-size:38px}
+  .toolOffer .tName{font-weight:800; margin:6px 0 4px}
+  .toolOffer .tDesc{font-size:13px; color:var(--ink-dim); line-height:1.45}
+  #deckGrid{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
+  .deckMini{width:86px; border-radius:10px; border:1.5px solid #a68d5b; background:linear-gradient(168deg,#fdf6df,#eeddb4); color:#2a2110;
+    padding:6px; font-size:11px; cursor:pointer; text-align:left}
+  .deckMini .scIcon{font-size:20px}
+  .deckMini .scName{font-weight:800; font-size:11px; line-height:1.15}
+
+  /* ---------- modal / toast / misc ---------- */
+  #modalWrap{position:fixed; inset:0; background:rgba(6,14,7,.8); z-index:80; display:flex; align-items:flex-start; justify-content:center; overflow:auto; padding:26px 12px}
+  #modalBox{max-width:840px; width:100%}
+  .rulesText{line-height:1.6; font-size:15px}
+  .rulesText li{margin-bottom:7px}
+  #toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); z-index:90;
+    background:rgba(10,22,13,.95); border:1px solid var(--gold); color:var(--ink); padding:11px 20px; border-radius:12px;
+    font-weight:700; opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; max-width:92vw; text-align:center}
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  #seasonSplash{position:fixed; inset:0; z-index:70; display:flex; align-items:center; justify-content:center; pointer-events:none; opacity:0}
+  #seasonSplash.show{animation:splashAnim 2.6s ease forwards}
+  #seasonSplash .spInner{text-align:center}
+  #seasonSplash .spName{font-size:clamp(44px,9vw,84px); font-weight:900; color:var(--gold); text-shadow:0 4px 0 #7a5a12, 0 16px 44px rgba(0,0,0,.65)}
+  #seasonSplash .spSub{font-size:19px; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.7)}
+  @keyframes splashAnim{0%{opacity:0; transform:scale(.94)}14%{opacity:1; transform:scale(1)}80%{opacity:1}100%{opacity:0; transform:scale(1.02)}}
+  .gardenPortrait{font-size:34px; letter-spacing:6px; line-height:1.5; background:rgba(0,0,0,.3); border:1px solid var(--line); border-radius:14px; padding:16px; display:inline-block}
+  footer{max-width:1020px; margin:0 auto; padding:0 16px 30px; color:rgba(20,30,16,.75); font-size:13px; font-weight:600}
+  #infoBar{min-height:30px; margin-top:12px; text-align:center; font-size:15px}
+  @media (max-width:640px){ .seedCard{width:118px} .seedCard .scTrack{font-size:9.5px} .plot{gap:8px} }
+</style>
+</head>
+<body>
+
+<header id="topbar">
+  <span class="brand">🌱 SUNPATCH</span>
+  <span class="stat">🌞 <b id="scoreText">0</b></span>
+  <span class="stat">🪙 <b id="coinText">0</b></span>
+  <span class="stat" id="seasonText">Spring · Week 1</span>
+  <div id="toolTray"></div>
+  <button class="iconbtn" id="deckBtn">Seeds (0)</button>
+  <button class="iconbtn" id="soundBtn" title="Toggle sound">🔊</button>
+  <button class="iconbtn" id="helpBtn">How to play</button>
+</header>
+
+<main id="stage"></main>
+
+<div id="seasonSplash"><div class="spInner"><div class="spName"></div><div class="spSub"></div></div></div>
+<div id="modalWrap" class="hidden"><div id="modalBox" class="panel"></div></div>
+<div id="toast"></div>
+
+<footer>
+  Sunpatch — a tiny garden roguelite from the Tomfoolery workshop. Plant, watch it grow, pick it when it glows.
+</footer>
+
+<script>
+/*__CORE_START__*/
+'use strict';
+/* ================= SUNPATCH — pure game core (no DOM) ================= */
+const SP_TUNE = {
+  plots: 9, handSize: 5, startCoins: 10,
+  compostPay: 1, excessCoinRate: 5, mulchPrice: 8, draftSkipCoins: 5,
+};
+const SP_TYPES = {
+  sun:   { name:'Sun',   icon:'☀️' },
+  water: { name:'Water', icon:'💧' },
+  moon:  { name:'Moon',  icon:'🌙' },
+};
+/* track = harvest value at each growth stage. Peak = the highest value. */
+const SP_PLANTS = [
+  { key:'daisy',     name:'Daisy',          icon:'🌼', type:'water', track:[1,3,6,2],    trait:null,        price:8 },
+  { key:'clover',    name:'Clover',         icon:'🍀', type:'water', track:[1,2,5,2],    trait:'social',    price:8 },
+  { key:'tomato',    name:'Tomato',         icon:'🍅', type:'sun',   track:[2,4,9,3],    trait:'social',    price:12 },
+  { key:'turnip',    name:'Turnip',         icon:'🥕', type:'water', track:[1,4,7,2],    trait:'earlybird', price:9 },
+  { key:'mushroom',  name:'Mushroom',       icon:'🍄', type:'moon',  track:[1,6,2],      trait:null,        price:9 },
+  { key:'sunflower', name:'Sunflower',      icon:'🌻', type:'sun',   track:[2,6,11,4],   trait:'generous',  price:14 },
+  { key:'catnip',    name:'Catnip',         icon:'🌿', type:'moon',  track:[1,5,2],      trait:'earlybird', price:8 },
+  { key:'melon',     name:'Slowpoke Melon', icon:'🍉', type:'water', track:[1,2,5,16],   trait:null,        price:16 },
+  { key:'pumpkin',   name:'Pumpkin',        icon:'🎃', type:'sun',   track:[2,5,9,14,4], trait:'lonely',    price:15 },
+  { key:'moonflower',name:'Moonflower',     icon:'🌸', type:'moon',  track:[2,5,11,3],   trait:'lonely',    price:13 },
+  { key:'chili',     name:'Chili',          icon:'🌶️', type:'sun',   track:[1,4,8,3],    trait:'rootbound', price:11 },
+  { key:'blueberry', name:'Blueberry',      icon:'🫐', type:'water', track:[2,4,8,11,3], trait:'slowburn',  price:14 },
+  { key:'rose',      name:'Rose',           icon:'🌹', type:'moon',  track:[3,7,13,5],   trait:'golden',    price:15 },
+  { key:'agave',     name:'Desert Agave',   icon:'🪴', type:'sun',   track:[1,4,10],     trait:'rootbound', price:12 },
+  { key:'corn',      name:'Corn',           icon:'🌽', type:'sun',   track:[2,5,9,3],    trait:'social',    price:11 },
+  { key:'lavender',  name:'Lavender',       icon:'🪻', type:'water', track:[2,5,10,3],   trait:'generous',  price:13 },
+  { key:'tulip',     name:'Tulip',          icon:'🌷', type:'sun',   track:[2,6,10,3],   trait:'earlybird', price:10 },
+];
+function spDef(key){ return SP_PLANTS.find(p => p.key === key); }
+const SP_TRAITS = {
+  generous:  { icon:'🐝', label:'Generous',  text:'Neighbours are worth +2 when picked (this plant does not gain it).' },
+  social:    { icon:'👥', label:'Social',    text:'+1 for each planted neighbour.' },
+  lonely:    { icon:'🏝️', label:'Solitary',  text:'+4 if it has no planted neighbours.' },
+  rootbound: { icon:'🧱', label:'Corner-loving', text:'Worth double in a corner plot.' },
+  earlybird: { icon:'⏰', label:'Early bird', text:'Sprouts one stage ahead when planted.' },
+  slowburn:  { icon:'🕯️', label:'Slow glow',  text:'Its peak lasts one extra week.' },
+  golden:    { icon:'✨', label:'Golden',     text:'Worth +3.' },
+};
+const SP_TOOLS = [
+  { id:'wateringcan', icon:'💧', name:'Watering Can', price:30, text:'Once a week, grow one plant a stage instantly.' },
+  { id:'beehive',     icon:'🐝', name:'Beehive',      price:35, text:'Generous neighbours give +3 instead of +2.' },
+  { id:'trellis',     icon:'🪜', name:'Trellis',      price:30, text:'Plants in corner plots are worth +2.' },
+  { id:'compostbin',  icon:'♻️', name:'Compost Bin',  price:25, text:'Composting seeds pays 2 coins each instead of 1.' },
+  { id:'glasshouse',  icon:'🏠', name:'Glasshouse',   price:35, text:'Draw 6 seeds each week instead of 5.' },
+  { id:'rainbarrel',  icon:'🛢️', name:'Rain Barrel',  price:30, text:'On rainy weeks, Sun plants also grow an extra stage.' },
+  { id:'sunlamp',     icon:'🔆', name:'Sun Lamp',     price:30, text:'On sunny weeks, Moon plants also grow an extra stage.' },
+  { id:'widebasket',  icon:'🧺', name:'Wide Basket',  price:35, text:'Every plant\u2019s peak lasts one extra week.' },
+  { id:'theo',        icon:'🐈‍⬛', name:'Theo, Garden Cat', price:30, text:'Each week Theo naps on a plant. It is worth +3. Supervised.' },
+  { id:'trowel',      icon:'✨', name:'Golden Trowel', price:25, text:'Everything you pick is worth +1.' },
+];
+function spTool(id){ return SP_TOOLS.find(t => t.id === id); }
+
+const SP_WEATHERS = {
+  sunny:    { name:'Sunny',    icon:'☀️', boost:'sun',   text:'Sun plants grow an extra stage.' },
+  rain:     { name:'Rain',     icon:'🌧️', boost:'water', text:'Water plants grow an extra stage.' },
+  overcast: { name:'Overcast', icon:'☁️', boost:'moon',  text:'Moon plants grow an extra stage.' },
+  breezy:   { name:'Breezy',   icon:'🌬️', boost:null,    text:'Composting seeds pays double this week.' },
+  mild:     { name:'Mild',     icon:'⛅', boost:null,    text:'A quiet week. Everything grows as usual.' },
+};
+const SP_SEASONS = [
+  { name:'Spring', weeks:5, quota:90,  weather:{ sunny:.25, rain:.35, overcast:.20, mild:.20, breezy:0 } },
+  { name:'Summer', weeks:5, quota:135, weather:{ sunny:.45, rain:.15, overcast:.10, mild:.15, breezy:.15 } },
+  { name:'Autumn', weeks:5, quota:165, weather:{ sunny:.20, rain:.30, overcast:.25, mild:.10, breezy:.15 } },
+  { name:'Winter', weeks:5, quota:190, weather:{ sunny:.15, rain:.10, overcast:.40, mild:.20, breezy:.15 } },
+];
+
+/* seeded RNG (mulberry32), state carried as a plain number */
+function spRng(state){
+  state.rngState = (state.rngState + 0x6D2B79F5) >>> 0;
+  let t = state.rngState;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+function spPick(state, arr){ return arr[Math.floor(spRng(state) * arr.length)]; }
+function spShuffle(state, arr){
+  for (let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(spRng(state) * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function spSeedFromString(str){
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function spWeightedWeather(state, table){
+  let r = spRng(state), acc = 0;
+  for (const k of Object.keys(table)){ acc += table[k]; if (r < acc) return k; }
+  return 'mild';
+}
+
+let SP_SEQ = 1;
+function spMakeCard(defKey){ return { uid:'s' + (SP_SEQ++), def: defKey }; }
+function spStarterDeck(){
+  const keys = ['daisy','daisy','daisy','clover','clover','tomato','tomato','turnip','turnip','mushroom','sunflower','catnip'];
+  return keys.map(spMakeCard);
+}
+function spPeakIndex(def){ let best = 0; def.track.forEach((v, i) => { if (v > def.track[best]) best = i; }); return best; }
+function spIsCorner(i){ return i === 0 || i === 2 || i === 6 || i === 8; }
+function spNeighbours(i){
+  const out = [];
+  const r = Math.floor(i / 3), c = i % 3;
+  if (r > 0) out.push(i - 3);
+  if (r < 2) out.push(i + 3);
+  if (c > 0) out.push(i - 1);
+  if (c < 2) out.push(i + 1);
+  return out;
+}
+
+function spNewRun(seedLabel){
+  const state = {
+    rngState: spSeedFromString(seedLabel || ('garden-' + Date.now())),
+    seedLabel: seedLabel || '',
+    season: 0, week: 1, globalWeek: 0, phase: 'week',
+    seasonScore: 0, coins: SP_TUNE.startCoins,
+    deck: spStarterDeck(), hand: [], discard: [],
+    board: Array(SP_TUNE.plots).fill(null),
+    tools: [], canUsed: false, catPlot: -1,
+    weatherQueue: [], draft: null, shop: null,
+    stats: { totalPoints: 0, bestHarvest: 0, harvested: 0, withered: 0, planted: 0 },
+    lastWeek: null,
+  };
+  // pre-roll the whole year's weather so the forecast is honest
+  for (let s = 0; s < SP_SEASONS.length; s++)
+    for (let w = 0; w < SP_SEASONS[s].weeks + 2; w++)
+      state.weatherQueue.push(spWeightedWeather(state, SP_SEASONS[s].weather));
+  spStartWeek(state);
+  return state;
+}
+function spWeather(state, ahead){
+  return state.weatherQueue[state.globalWeek + (ahead || 0)] || 'mild';
+}
+function spHandSize(state){ return SP_TUNE.handSize + (state.tools.includes('glasshouse') ? 1 : 0); }
+function spDraw(state, n){
+  for (let i = 0; i < n; i++){
+    if (!state.deck.length){
+      if (!state.discard.length) break;
+      state.deck = spShuffle(state, state.discard); state.discard = [];
+    }
+    state.hand.push(state.deck.pop());
+  }
+}
+function spStartWeek(state){
+  state.canUsed = false;
+  spDraw(state, spHandSize(state) - state.hand.length);
+  const plantedIdx = state.board.map((p, i) => p ? i : -1).filter(i => i >= 0);
+  state.catPlot = (state.tools.includes('theo') && plantedIdx.length) ? spPick(state, plantedIdx) : -1;
+}
+function spPlant(state, handUid, plotIdx){
+  if (state.phase !== 'week') return false;
+  if (plotIdx < 0 || plotIdx >= SP_TUNE.plots || state.board[plotIdx]) return false;
+  const hi = state.hand.findIndex(c => c.uid === handUid);
+  if (hi < 0) return false;
+  const card = state.hand[hi];
+  const def = spDef(card.def);
+  state.hand.splice(hi, 1);
+  const plant = {
+    uid: card.uid, def: card.def,
+    stage: def.trait === 'earlybird' ? 1 : 0,
+    extraLife: (def.trait === 'slowburn' ? 1 : 0) + (state.tools.includes('widebasket') ? 1 : 0),
+  };
+  if (plant.stage >= def.track.length) plant.stage = def.track.length - 1;
+  state.board[plotIdx] = plant;
+  state.stats.planted += 1;
+  return true;
+}
+
+/* Current pick value of the plant on a plot, with every modifier applied.
+   This exact number is what the player sees on the tile — no hidden maths. */
+function spHarvestValue(state, plotIdx){
+  const plant = state.board[plotIdx];
+  if (!plant) return 0;
+  const def = spDef(plant.def);
+  const lastIdx = def.track.length - 1;
+  const stageIdx = Math.min(plant.stage, lastIdx);
+  let v = def.track[stageIdx];
+  const nbs = spNeighbours(plotIdx).filter(i => state.board[i]);
+  if (def.trait === 'social') v += Math.min(4, nbs.length);
+  if (def.trait === 'lonely' && nbs.length === 0) v += 4;
+  if (def.trait === 'golden') v += 3;
+  // generous neighbours feed this plant
+  const genBonus = state.tools.includes('beehive') ? 3 : 2;
+  for (const i of nbs) if (spDef(state.board[i].def).trait === 'generous') v += genBonus;
+  if (state.tools.includes('trellis') && spIsCorner(plotIdx)) v += 2;
+  if (state.tools.includes('trowel')) v += 1;
+  if (state.catPlot === plotIdx) v += 3;
+  if (def.trait === 'rootbound' && spIsCorner(plotIdx)) v *= 2;
+  return v;
+}
+function spIsPeak(state, plotIdx){
+  const plant = state.board[plotIdx];
+  if (!plant) return false;
+  return plant.stage === spPeakIndex(spDef(plant.def));
+}
+/* One growth step. Extra life holds the plant AT its peak stage (or at the
+   final stage when the peak is last) instead of letting it slide past. */
+function spAdvanceStage(def, stage, extraLife){
+  const lastIdx = def.track.length - 1;
+  const peakIdx = spPeakIndex(def);
+  if (stage < lastIdx){
+    if (stage === peakIdx && extraLife > 0) return { stage, extraLife: extraLife - 1, died: false, held: true };
+    return { stage: stage + 1, extraLife, died: false, held: false };
+  }
+  if (extraLife > 0) return { stage, extraLife: extraLife - 1, died: false, held: true };
+  return { stage, extraLife, died: true, held: false };
+}
+function spHarvest(state, plotIdx){
+  if (state.phase !== 'week') return 0;
+  const plant = state.board[plotIdx];
+  if (!plant) return 0;
+  const v = spHarvestValue(state, plotIdx);
+  state.seasonScore += v; state.stats.totalPoints += v;
+  state.stats.bestHarvest = Math.max(state.stats.bestHarvest, v);
+  state.stats.harvested += 1;
+  state.discard.push(spMakeCard(plant.def)); // the plant returns as seed stock
+  state.board[plotIdx] = null;
+  if (state.catPlot === plotIdx) state.catPlot = -1;
+  return v;
+}
+function spWater(state, plotIdx){
+  if (state.phase !== 'week' || state.canUsed || !state.tools.includes('wateringcan')) return false;
+  const plant = state.board[plotIdx];
+  if (!plant) return false;
+  const def = spDef(plant.def);
+  if (plant.stage >= def.track.length - 1) return false;
+  plant.stage += 1;
+  state.canUsed = true;
+  return true;
+}
+function spGrowthFor(state, plant){
+  const w = SP_WEATHERS[spWeather(state, 0)];
+  let g = 1;
+  if (w.boost && spDef(plant.def).type === w.boost) g += 1;
+  if (state.tools.includes('rainbarrel') && spWeather(state, 0) === 'rain' && spDef(plant.def).type === 'sun') g += 1;
+  if (state.tools.includes('sunlamp') && spWeather(state, 0) === 'sunny' && spDef(plant.def).type === 'moon') g += 1;
+  return g;
+}
+/* What happens to a plot if the week ends now: {kind:'grow', value} | {kind:'wither'} | {kind:'same'} */
+function spGrowthPreview(state, plotIdx){
+  const plant = state.board[plotIdx];
+  if (!plant) return null;
+  const def = spDef(plant.def);
+  let stage = plant.stage, extra = plant.extraLife;
+  const g = spGrowthFor(state, plant);
+  for (let s = 0; s < g; s++){
+    const step = spAdvanceStage(def, stage, extra);
+    if (step.died) return { kind:'wither' };
+    stage = step.stage; extra = step.extraLife;
+  }
+  // value after growth (adjacency may change, so preview uses current neighbours)
+  const savedStage = plant.stage, savedExtra = plant.extraLife;
+  plant.stage = stage; plant.extraLife = extra;
+  const v = spHarvestValue(state, plotIdx);
+  const peak = stage === spPeakIndex(def);
+  plant.stage = savedStage; plant.extraLife = savedExtra;
+  return { kind:'grow', value: v, stage, peak };
+}
+function spCompostRate(state){
+  let r = state.tools.includes('compostbin') ? 2 : SP_TUNE.compostPay;
+  if (spWeather(state, 0) === 'breezy') r *= 2;
+  return r;
+}
+function spEndWeek(state){
+  if (state.phase !== 'week') return null;
+  const season = SP_SEASONS[state.season];
+  const report = { composted: 0, coinsGained: 0, grew: [], withered: [] };
+  // compost the unplanted hand
+  const rate = spCompostRate(state);
+  report.composted = state.hand.length;
+  report.coinsGained = state.hand.length * rate;
+  state.coins += report.coinsGained;
+  while (state.hand.length) state.discard.push(state.hand.pop());
+  // growth
+  for (let i = 0; i < SP_TUNE.plots; i++){
+    const plant = state.board[i];
+    if (!plant) continue;
+    const def = spDef(plant.def);
+    const g = spGrowthFor(state, plant);
+    let died = false;
+    for (let s = 0; s < g; s++){
+      const step = spAdvanceStage(def, plant.stage, plant.extraLife);
+      if (step.died){ died = true; break; }
+      plant.stage = step.stage; plant.extraLife = step.extraLife;
+    }
+    if (died){
+      report.withered.push(i);
+      state.discard.push(spMakeCard(plant.def));
+      state.board[i] = null;
+      state.stats.withered += 1;
+      if (state.catPlot === i) state.catPlot = -1;
+    } else report.grew.push(i);
+  }
+  state.lastWeek = report;
+  state.globalWeek += 1;
+  state.week += 1;
+  if (state.week > season.weeks){
+    // season ends
+    if (state.seasonScore >= season.quota){
+      state.coins += Math.floor((state.seasonScore - season.quota) / SP_TUNE.excessCoinRate);
+      if (state.season === SP_SEASONS.length - 1){ state.phase = 'victory'; return report; }
+      spStartDraft(state);
+    } else {
+      state.phase = 'gameover';
+    }
+    return report;
+  }
+  spStartWeek(state);
+  return report;
+}
+
+/* ---------- intermission: draft + shop ---------- */
+function spStartDraft(state){
+  state.phase = 'draft';
+  const pool = SP_PLANTS.map(p => p.key);
+  const choices = [];
+  while (choices.length < 3){
+    const k = spPick(state, pool);
+    if (!choices.includes(k)) choices.push(k);
+  }
+  const shopSeeds = [];
+  while (shopSeeds.length < 2){
+    const k = spPick(state, pool);
+    if (!shopSeeds.includes(k) && !choices.includes(k)) shopSeeds.push(k);
+  }
+  const owned = new Set(state.tools);
+  const toolPool = SP_TOOLS.filter(t => !owned.has(t.id));
+  state.draft = { choices };
+  state.shop = {
+    seeds: shopSeeds.map(k => ({ def: k, price: spDef(k).price, sold: false })),
+    tool: toolPool.length ? { id: spPick(state, toolPool).id, sold: false } : null,
+  };
+  state.draftPicked = false;
+}
+function spDraftPick(state, defKey){
+  if (state.phase !== 'draft' || state.draftPicked) return false;
+  if (defKey){
+    if (!state.draft.choices.includes(defKey)) return false;
+    state.deck.push(spMakeCard(defKey));
+  } else {
+    state.coins += SP_TUNE.draftSkipCoins;
+  }
+  state.draftPicked = true;
+  return true;
+}
+function spShopBuySeed(state, idx){
+  if (state.phase !== 'draft' || !state.shop) return false;
+  const slot = state.shop.seeds[idx];
+  if (!slot || slot.sold || state.coins < slot.price) return false;
+  state.coins -= slot.price; slot.sold = true;
+  state.deck.push(spMakeCard(slot.def));
+  return true;
+}
+function spShopBuyTool(state){
+  if (state.phase !== 'draft' || !state.shop || !state.shop.tool || state.shop.tool.sold) return false;
+  const t = spTool(state.shop.tool.id);
+  if (state.coins < t.price) return false;
+  state.coins -= t.price; state.shop.tool.sold = true;
+  state.tools.push(t.id);
+  return true;
+}
+function spMulch(state, uid){
+  if (state.phase !== 'draft' || state.coins < SP_TUNE.mulchPrice) return false;
+  const all = [...state.deck, ...state.discard, ...state.hand];
+  const i = all.findIndex(c => c.uid === uid);
+  if (i < 0) return false;
+  if (state.deck.length + state.discard.length + state.hand.length <= 8) return false;
+  state.coins -= SP_TUNE.mulchPrice;
+  state.deck = state.deck.filter(c => c.uid !== uid);
+  state.discard = state.discard.filter(c => c.uid !== uid);
+  state.hand = state.hand.filter(c => c.uid !== uid);
+  return true;
+}
+function spNextSeason(state){
+  if (state.phase !== 'draft') return;
+  state.season += 1;
+  state.week = 1;
+  state.seasonScore = 0;
+  state.draft = null; state.shop = null; state.draftPicked = false;
+  state.phase = 'week';
+  spStartWeek(state);
+}
+function spRestoreSeq(state){
+  let max = 0;
+  const scan = c => { const n = parseInt(String(c.uid).slice(1), 10); if (!isNaN(n) && n > max) max = n; };
+  state.deck.forEach(scan); state.hand.forEach(scan); state.discard.forEach(scan);
+  state.board.forEach(p => { if (p) scan(p); });
+  SP_SEQ = max + 1;
+}
+/*__CORE_END__*/
+</script>
+<script>
+/* ================= presentation ================= */
+'use strict';
+const $stage = document.getElementById('stage');
+const $modalWrap = document.getElementById('modalWrap');
+const $modalBox = document.getElementById('modalBox');
+let S = null;
+let selCard = null;      // uid of selected hand card
+let selPlot = -1;        // selected plot index (for info/harvest)
+let canMode = false;     // watering-can targeting
+let mulchMode = false;
+let soundOn = true;
+const LS_KEY = 'sunpatch-save-v1';
+const LS_STATS_KEY = 'sunpatch-lifetime-v1';
+const PENTA = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25];
+
+function esc(s){ return String(s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch])); }
+function toast(msg, ms){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), ms || 2400);
+}
+let AC = null;
+function pluck(freq, dur, gain, type){
+  if (!soundOn) return;
+  try{
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type || 'triangle'; o.frequency.value = freq * (1 + (Math.random() - 0.5) * 0.06);
+    g.gain.setValueAtTime(gain || 0.05, AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + (dur || 0.25));
+    o.connect(g); g.connect(AC.destination); o.start(); o.stop(AC.currentTime + (dur || 0.25));
+  }catch(e){ /* silence is fine in a garden */ }
+}
+function sfx(kind, step){
+  if (kind === 'plant') pluck(PENTA[1], 0.2, 0.05);
+  if (kind === 'pick') pluck(PENTA[2], 0.12, 0.03);
+  if (kind === 'grow') pluck(PENTA[Math.min(7, 2 + (step || 0))], 0.3, 0.045);
+  if (kind === 'harvest') pluck(PENTA[4], 0.3, 0.055);
+  if (kind === 'peak'){ [4,5,6,7].forEach((n, i) => setTimeout(() => pluck(PENTA[n], 0.35, 0.05), i * 70)); }
+  if (kind === 'coin'){ pluck(PENTA[6], 0.15, 0.04); setTimeout(() => pluck(PENTA[7], 0.2, 0.035), 60); }
+  if (kind === 'wither') pluck(196, 0.4, 0.04, 'sine');
+  if (kind === 'season'){ [0,2,4,5,7].forEach((n, i) => setTimeout(() => pluck(PENTA[n], 0.4, 0.05), i * 110)); }
+  if (kind === 'water') pluck(740, 0.18, 0.035, 'sine');
+}
+
+function saveRun(){
+  try{ if (S && S.phase !== 'gameover' && S.phase !== 'victory') localStorage.setItem(LS_KEY, JSON.stringify(S)); else localStorage.removeItem(LS_KEY); }catch(e){}
+}
+function loadRun(){
+  try{ const raw = localStorage.getItem(LS_KEY); if (!raw) return null; const s = JSON.parse(raw); spRestoreSeq(s); return s; }catch(e){ return null; }
+}
+function clearSave(){ try{ localStorage.removeItem(LS_KEY); }catch(e){} }
+function lifetime(){
+  try{ return JSON.parse(localStorage.getItem(LS_STATS_KEY)) || { runs:0, years:0, bestScore:0 }; }catch(e){ return { runs:0, years:0, bestScore:0 }; }
+}
+function recordLifetime(won){
+  const l = lifetime();
+  l.runs += 1; if (won) l.years += 1;
+  l.bestScore = Math.max(l.bestScore, S.stats.totalPoints);
+  try{ localStorage.setItem(LS_STATS_KEY, JSON.stringify(l)); }catch(e){}
+}
+
+function syncTopbar(){
+  const season = S ? SP_SEASONS[S.season] : null;
+  document.getElementById('scoreText').textContent = S ? S.stats.totalPoints : 0;
+  document.getElementById('coinText').textContent = S ? S.coins : 0;
+  document.getElementById('seasonText').textContent = S ? (season.name + ' · Week ' + Math.min(S.week, season.weeks) + ' of ' + season.weeks) : '–';
+  document.getElementById('toolTray').innerHTML = S ? S.tools.map(id => { const t = spTool(id); return '<span class="toolChip" title="' + esc(t.name + ' — ' + t.text) + '">' + t.icon + '</span>'; }).join('') : '';
+  const deckCount = S ? (S.deck.length + S.hand.length + S.discard.length + S.board.filter(Boolean).length) : 0;
+  document.getElementById('deckBtn').textContent = 'Seeds (' + deckCount + ')';
+  document.body.className = S ? 'season-' + (S.season + 1) : '';
+}
+function trackHTML(def){
+  const peak = spPeakIndex(def);
+  return def.track.map((v, i) => i === peak ? '<b>' + v + '★</b>' : String(v)).join(' → ');
+}
+function seedCardHTML(card, opts){
+  opts = opts || {};
+  const def = spDef(card.def);
+  const tr = def.trait ? SP_TRAITS[def.trait] : null;
+  return '<button class="seedCard' + (opts.sel ? ' sel' : '') + '" data-uid="' + card.uid + '"' + (opts.onclick === false ? ' disabled' : '') + '>' +
+    (opts.price != null ? '<span class="scPrice">🪙 ' + opts.price + '</span>' : '') +
+    '<span class="scTop"><span class="scIcon">' + def.icon + '</span><span class="scType">' + SP_TYPES[def.type].icon + '</span></span>' +
+    '<span class="scName">' + esc(def.name) + '</span>' +
+    '<span class="scTrack">' + trackHTML(def) + '</span>' +
+    (tr ? '<span class="scTrait">' + tr.icon + ' ' + esc(tr.label) + '</span>' : '') +
+    '</button>';
+}
+function render(){
+  syncTopbar();
+  if (!S){ renderTitle(); return; }
+  if (S.phase === 'week') renderWeek();
+  else if (S.phase === 'draft') renderDraft();
+  else if (S.phase === 'gameover') renderEnd(false);
+  else if (S.phase === 'victory') renderEnd(true);
+  saveRun();
+}
+function renderTitle(){
+  const saved = loadRun();
+  const l = lifetime();
+  const ladder = SP_SEASONS.map(s => '<span class="fcChip">' + s.name + ': 🌞 ' + s.quota + '</span>').join(' ');
+  $stage.innerHTML =
+    '<div class="panel center" style="margin-top:26px">' +
+      '<div style="font-size:42px">🌱 🌻 🍉</div>' +
+      '<h1 class="title">SUNPATCH</h1>' +
+      '<p class="tagline">A tiny garden roguelite. Plant seeds, watch them grow, and pick each one<br>' +
+      'in the short week when it glows. Four seasons, four quotas, one small patch of earth.</p>' +
+      '<div class="row" style="justify-content:center">' +
+        (saved ? '<button class="btn" id="continueBtn">Continue — ' + SP_SEASONS[saved.season].name + ', week ' + saved.week + '</button>' : '') +
+        '<button class="btn" id="newRunBtn">' + (saved ? 'New garden' : 'Start planting') + '</button>' +
+        '<button class="btn secondary" id="howBtn2">How to play</button>' +
+      '</div>' +
+      '<div style="margin-top:16px"><div class="muted" style="font-size:13px; margin-bottom:6px">THE YEAR\u2019S QUOTAS</div>' + ladder + '</div>' +
+      '<div class="row" style="justify-content:center; margin-top:16px">' +
+        '<input class="seedIn" id="seedIn" placeholder="Seed (optional)">' +
+        '<span class="muted" style="font-size:13px">Same seed, same weather. Leave blank for a fresh year.</span>' +
+      '</div>' +
+      (l.runs ? '<p class="muted" style="margin-top:16px">Lifetime: ' + l.runs + ' gardens · ' + l.years + ' full years · best harvest 🌞 ' + l.bestScore + '</p>' : '') +
+    '</div>';
+  document.getElementById('newRunBtn').onclick = () => startRun(document.getElementById('seedIn').value.trim());
+  const cb = document.getElementById('continueBtn');
+  if (cb) cb.onclick = () => { S = saved; selCard = null; selPlot = -1; toast('Back to the garden.'); render(); };
+  document.getElementById('howBtn2').onclick = showHelp;
+}
+function startRun(seedLabel){
+  if (!seedLabel) seedLabel = 'patch-' + Math.floor(Math.random() * 999999);
+  S = spNewRun(seedLabel);
+  selCard = null; selPlot = -1; canMode = false;
+  sfx('season');
+  toast('Seed: ' + seedLabel);
+  render();
+}
+</script>
+<script>
+/* ================= presentation, part 2: the week ================= */
+function weatherChip(wKey, label){
+  const w = SP_WEATHERS[wKey];
+  return '<span class="fcChip">' + label + ' ' + w.icon + ' ' + w.name + '</span>';
+}
+function plotHTML(i){
+  const plant = S.board[i];
+  if (!plant){
+    return '<div class="plot empty' + (selCard ? ' targetable' : '') + '" data-plot="' + i + '"></div>';
+  }
+  const def = spDef(plant.def);
+  const v = spHarvestValue(S, i);
+  const peak = spIsPeak(S, i);
+  const preview = spGrowthPreview(S, i);
+  const danger = preview && preview.kind === 'wither';
+  const scale = 0.55 + (plant.stage / Math.max(1, def.track.length - 1)) * 0.75;
+  const pips = def.track.map((_, s) => '<i class="' + (s < plant.stage ? 'on' : (s === plant.stage && peak ? 'peak' : (s === plant.stage ? 'on' : ''))) + '"></i>').join('');
+  const tr = def.trait ? SP_TRAITS[def.trait] : null;
+  return '<div class="plot' + (selPlot === i ? ' selected' : '') + (canMode ? ' targetable' : '') + '" data-plot="' + i + '">' +
+    '<span class="valueBadge' + (peak ? ' peak' : '') + (danger ? ' danger' : '') + '" title="' + (danger ? 'Wilts if the week ends!' : 'Pick value now') + '">' + v + '</span>' +
+    (tr ? '<span class="traitTag" title="' + esc(tr.label + ' — ' + tr.text) + '">' + tr.icon + '</span>' : '') +
+    '<button class="plantEmoji" data-plant="' + i + '" style="transform:scale(' + scale.toFixed(2) + ')" title="' + esc(def.name) + '">' + def.icon + '</button>' +
+    '<span class="stagePips">' + pips + '</span>' +
+    (peak ? '<span class="peakTag">PEAK ✦</span>' : '') +
+    (S.catPlot === i ? '<span class="catNap" title="Theo is supervising (+3)">🐈‍⬛</span>' : '') +
+    '</div>';
+}
+function renderWeek(){
+  const season = SP_SEASONS[S.season];
+  const wKey = spWeather(S, 0);
+  const w = SP_WEATHERS[wKey];
+  const quotaPct = Math.min(100, Math.round(S.seasonScore / season.quota * 100));
+  const dots = Array.from({ length: season.weeks }, (_, i) => '<span class="weekDot' + (i < S.week - 1 ? ' done' : '') + '"></span>').join('');
+  // what ending the week does, in plain words
+  let endLine = 'Everything grows a stage.';
+  const previews = S.board.map((p, i) => p ? spGrowthPreview(S, i) : null);
+  const willPeak = previews.filter(p => p && p.kind === 'grow' && p.peak).length;
+  const willWilt = previews.filter(p => p && p.kind === 'wither').length;
+  if (willPeak) endLine += ' ' + willPeak + ' plant' + (willPeak > 1 ? 's' : '') + ' will be at peak.';
+  if (willWilt) endLine += ' ⚠ ' + willWilt + ' will wilt!';
+  if (S.hand.length) endLine += ' Unplanted seeds compost for 🪙' + spCompostRate(S) + ' each.';
+  $stage.innerHTML =
+    '<div id="skyStrip">' +
+      '<div class="skyCard"><div class="weatherNow"><span class="wIcon">' + w.icon + '</span>' +
+        '<div><div style="font-weight:900; font-size:19px">' + season.name + ' — ' + w.name + '</div>' +
+        '<div class="muted" style="font-size:13.5px">' + esc(w.text) + '</div>' +
+        '<div class="forecast">' + weatherChip(spWeather(S, 1), 'Next') + weatherChip(spWeather(S, 2), 'Then') + '</div></div>' +
+        '<div style="margin-left:auto; text-align:center"><div class="muted" style="font-size:11.5px">WEEK</div><div class="weekDots">' + dots + '</div></div>' +
+      '</div></div>' +
+      '<div class="skyCard"><div class="row" style="justify-content:space-between"><span style="font-weight:800">🌞 Season harvest</span>' +
+        '<span><b class="gold">' + S.seasonScore + '</b> <span class="muted">/ ' + season.quota + ' needed by end of ' + season.name + '</span></span></div>' +
+        '<div class="quotaBar"><i style="width:' + quotaPct + '%"></i></div>' +
+        '<div class="muted" style="font-size:13px; margin-top:7px">Beat the quota to reach the next season. Anything extra becomes coins.</div></div>' +
+    '</div>' +
+    '<div id="boardWrap"><div id="board">' + S.board.map((_, i) => plotHTML(i)).join('') + '</div></div>' +
+    '<div id="infoBar">' + infoHTML() + '</div>' +
+    '<div id="handBar"><div class="center muted" style="font-size:13px; margin-bottom:6px">YOUR SEED PACKET — click a seed, then a plot. Click a plant to inspect it.</div>' +
+    '<div id="handFan">' + (S.hand.length ? S.hand.map(c => seedCardHTML(c, { sel: selCard === c.uid })).join('') : '<span class="muted">No seeds in hand — end the week to draw fresh ones.</span>') + '</div></div>' +
+    '<div class="row" style="justify-content:center; margin-top:16px">' +
+      (S.tools.includes('wateringcan') ? '<button class="btn secondary" id="canBtn"' + (S.canUsed ? ' disabled' : '') + '>💧 Watering can' + (S.canUsed ? ' (used)' : '') + '</button>' : '') +
+      '<button class="btn" id="endWeekBtn">End week →</button>' +
+    '</div>' +
+    '<div class="center muted" style="font-size:13.5px; margin-top:8px">' + esc(endLine) + '</div>';
+  wireWeek();
+}
+function infoHTML(){
+  if (canMode) return '<span class="gold"><b>Watering can:</b> click a plant to grow it one stage, right now.</span>';
+  if (selCard){
+    const card = S.hand.find(c => c.uid === selCard);
+    if (card){ const def = spDef(card.def); return 'Planting <b>' + esc(def.name) + '</b> ' + def.icon + ' — pick a glowing plot. Its numbers are what it pays at each growth stage; ★ is its peak.'; }
+  }
+  if (selPlot >= 0 && S.board[selPlot]){
+    const plant = S.board[selPlot];
+    const def = spDef(plant.def);
+    const v = spHarvestValue(S, selPlot);
+    const preview = spGrowthPreview(S, selPlot);
+    const tr = def.trait ? ' · ' + SP_TRAITS[def.trait].icon + ' ' + esc(SP_TRAITS[def.trait].text) : '';
+    let next = '';
+    if (preview) next = preview.kind === 'wither' ? ' · <span style="color:#ff9d7a"><b>wilts if the week ends</b></span>' : ' · after this week: worth <b>' + preview.value + '</b>' + (preview.peak ? ' (peak ✦)' : '');
+    return '<b>' + esc(def.name) + '</b> ' + SP_TYPES[def.type].icon + ' — worth <b class="gold">' + v + '</b> now' + next + tr +
+      ' <button class="btn small" id="harvestBtn" style="margin-left:10px">Pick it (+' + v + ')</button>';
+  }
+  return '<span class="muted">The number on each plant is exactly what you get for picking it. Gold ring = peak week.</span>';
+}
+function wireWeek(){
+  $stage.querySelectorAll('#handFan .seedCard').forEach(el => {
+    el.onclick = () => { selCard = selCard === el.dataset.uid ? null : el.dataset.uid; selPlot = -1; canMode = false; sfx('pick'); renderWeek(); };
+  });
+  $stage.querySelectorAll('.plot').forEach(el => {
+    el.onclick = () => {
+      const i = parseInt(el.dataset.plot, 10);
+      if (canMode){
+        if (spWater(S, i)){ canMode = false; sfx('water'); floater(i, '💧+1 stage', true); render(); }
+        else toast('That plant cannot grow further right now.');
+        return;
+      }
+      if (selCard && !S.board[i]){
+        const uid = selCard;
+        if (spPlant(S, uid, i)){ selCard = null; selPlot = i; sfx('plant'); render(); }
+        return;
+      }
+      if (S.board[i]){ selPlot = selPlot === i ? -1 : i; sfx('pick'); renderWeek(); }
+    };
+  });
+  const hb = document.getElementById('harvestBtn');
+  if (hb) hb.onclick = doHarvest;
+  const cb = document.getElementById('canBtn');
+  if (cb) cb.onclick = () => { canMode = !canMode; selPlot = -1; renderWeek(); };
+  document.getElementById('endWeekBtn').onclick = doEndWeek;
+}
+function plotEl(i){ return $stage.querySelector('.plot[data-plot="' + i + '"]'); }
+function floater(i, text, small){
+  const el = plotEl(i);
+  if (!el) return;
+  const f = document.createElement('span');
+  f.className = 'floater' + (small ? ' small' : '');
+  f.textContent = text;
+  f.style.left = '50%'; f.style.top = '26%'; f.style.transform = 'translateX(-50%)';
+  el.appendChild(f);
+  setTimeout(() => f.remove(), 1200);
+}
+function petals(i, n){
+  const el = plotEl(i);
+  if (!el) return;
+  const colors = ['#f2c14e', '#f6a8c1', '#a8d97c', '#fdf6df'];
+  for (let k = 0; k < (n || 6); k++){
+    const p = document.createElement('span');
+    p.className = 'petal';
+    p.style.background = colors[k % colors.length];
+    p.style.left = (30 + Math.random() * 40) + '%';
+    p.style.top = '40%';
+    p.style.setProperty('--dx', (Math.random() * 90 - 45) + 'px');
+    p.style.setProperty('--dy', (40 + Math.random() * 50) + 'px');
+    el.appendChild(p);
+    setTimeout(() => p.remove(), 1350);
+  }
+}
+function doHarvest(){
+  if (selPlot < 0) return;
+  const i = selPlot;
+  const wasPeak = spIsPeak(S, i);
+  const v = spHarvest(S, i);
+  if (v <= 0) return;
+  selPlot = -1;
+  render();
+  floater(i, '+' + v + ' 🌞');
+  petals(i, wasPeak ? 10 : 5);
+  if (wasPeak) sfx('peak'); else sfx('harvest');
+  const season = SP_SEASONS[S.season];
+  if (S.seasonScore >= season.quota) toast('Quota met for ' + season.name + '! Anything more becomes coins.');
+}
+function doEndWeek(){
+  const before = S.board.map(p => p ? p.stage : -1);
+  const seasonBefore = S.season, phaseBefore = S.phase;
+  const report = spEndWeek(S);
+  selCard = null; selPlot = -1; canMode = false;
+  if (!report){ render(); return; }
+  render();
+  // celebrate the growth step by step
+  let step = 0;
+  for (const i of report.grew){
+    if (S.board[i] && before[i] >= 0 && S.board[i].stage !== before[i]){
+      const idx = i;
+      setTimeout(() => { sfx('grow', step++); const el = plotEl(idx); if (el){ el.style.transform = 'scale(1.04)'; setTimeout(() => el.style.transform = '', 220); } }, 130 * step);
+    }
+  }
+  for (const i of report.withered) setTimeout(() => sfx('wither'), 130 * step + 100);
+  if (report.coinsGained > 0) setTimeout(() => { sfx('coin'); toast('Composted ' + report.composted + ' seed' + (report.composted > 1 ? 's' : '') + ' for 🪙' + report.coinsGained + '.'); }, 500);
+  if (S.phase === 'draft') setTimeout(() => { showSplash(SP_SEASONS[seasonBefore].name + ' complete!', 'The garden rests. Time to trade seeds.'); sfx('season'); render(); }, 900);
+  else if (S.phase === 'victory' || S.phase === 'gameover') setTimeout(() => render(), 900);
+  void phaseBefore;
+}
+function showSplash(name, sub){
+  const sp = document.getElementById('seasonSplash');
+  sp.querySelector('.spName').textContent = name;
+  sp.querySelector('.spSub').textContent = sub;
+  sp.classList.remove('show'); void sp.offsetWidth; sp.classList.add('show');
+}
+</script>
+<script>
+/* ================= presentation, part 3: intermission, endings, help ================= */
+function renderDraft(){
+  const next = SP_SEASONS[S.season + 1];
+  const draftArea = S.draftPicked
+    ? '<p class="muted">Seed chosen. The market is still open below.</p>'
+    : '<p class="muted">Take one new seed variety into your packet — free — or pass for 🪙' + SP_TUNE.draftSkipCoins + '.</p>' +
+      '<div class="offerGrid">' + S.draft.choices.map(k => {
+        const card = { uid: 'draft-' + k, def: k };
+        return '<div class="offerCol">' + seedCardHTML(card, { onclick: false }) +
+          '<button class="btn small" data-draft="' + k + '">Add ' + esc(spDef(k).name) + '</button></div>';
+      }).join('') + '</div>' +
+      '<div style="margin-top:12px"><button class="btn secondary small" id="draftSkip">Pass (+🪙' + SP_TUNE.draftSkipCoins + ')</button></div>';
+  const tool = S.shop.tool ? spTool(S.shop.tool.id) : null;
+  $stage.innerHTML =
+    '<div class="panel">' +
+      '<h2 style="margin-top:0">🌾 Between seasons — next: ' + next.name + ' (quota 🌞 ' + next.quota + ')</h2>' +
+      draftArea +
+      '<h3 style="margin-bottom:4px">The seed market <span class="muted" style="font-size:14px">· you hold 🪙' + S.coins + '</span></h3>' +
+      '<div class="offerGrid">' +
+        S.shop.seeds.map((slot, i) =>
+          '<div class="offerCol">' + seedCardHTML({ uid: 'shop-' + i, def: slot.def }, { onclick: false }) +
+          (slot.sold ? '<span class="muted">Sold</span>' : '<button class="btn small" data-shop-seed="' + i + '"' + (S.coins < slot.price ? ' disabled' : '') + '>Buy · 🪙' + slot.price + '</button>') + '</div>').join('') +
+        (tool ? '<div class="offerCol"><div class="toolOffer"><div class="tIco">' + tool.icon + '</div><div class="tName">' + esc(tool.name) + '</div>' +
+          '<div class="tDesc">' + esc(tool.text) + '</div></div>' +
+          (S.shop.tool.sold ? '<span class="muted">Sold</span>' : '<button class="btn small" data-shop-tool="1"' + (S.coins < tool.price ? ' disabled' : '') + '>Buy · 🪙' + tool.price + '</button>') + '</div>' : '') +
+        '<div class="offerCol"><div class="toolOffer"><div class="tIco">✂️</div><div class="tName">Mulch a seed</div>' +
+          '<div class="tDesc">Remove one seed from your packet forever. A thinner packet cycles your best plants faster.</div></div>' +
+          '<button class="btn small" id="mulchBtn"' + (S.coins < SP_TUNE.mulchPrice ? ' disabled' : '') + '>' + (mulchMode ? 'Choose below…' : 'Mulch · 🪙' + SP_TUNE.mulchPrice) + '</button></div>' +
+      '</div>' +
+      (mulchMode ? '<p class="gold" style="margin-top:14px"><b>Click a seed to mulch it</b> (gone for good):</p><div id="deckGrid">' +
+        [...S.deck, ...S.discard, ...S.hand].map(c => { const def = spDef(c.def); return '<button class="deckMini" data-mulch="' + c.uid + '"><span class="scIcon">' + def.icon + '</span><br><span class="scName">' + esc(def.name) + '</span></button>'; }).join('') + '</div>' : '') +
+      '<div class="center" style="margin-top:20px"><button class="btn" id="nextSeasonBtn">Begin ' + next.name + ' →</button></div>' +
+    '</div>';
+  $stage.querySelectorAll('[data-draft]').forEach(el => { el.onclick = () => { if (spDraftPick(S, el.dataset.draft)){ sfx('coin'); render(); } }; });
+  const ds = document.getElementById('draftSkip');
+  if (ds) ds.onclick = () => { if (spDraftPick(S, null)){ sfx('coin'); render(); } };
+  $stage.querySelectorAll('[data-shop-seed]').forEach(el => { el.onclick = () => { if (spShopBuySeed(S, parseInt(el.dataset.shopSeed, 10))){ sfx('coin'); render(); } }; });
+  const tb = $stage.querySelector('[data-shop-tool]');
+  if (tb) tb.onclick = () => { if (spShopBuyTool(S)){ sfx('coin'); toast(spTool(S.tools[S.tools.length - 1]).name + ' joins the garden.'); render(); } };
+  const mb = document.getElementById('mulchBtn');
+  if (mb) mb.onclick = () => { mulchMode = !mulchMode; render(); };
+  if (mulchMode) $stage.querySelectorAll('[data-mulch]').forEach(el => { el.onclick = () => { if (spMulch(S, el.dataset.mulch)){ mulchMode = false; sfx('wither'); render(); } else toast('That mulch did not work — packet minimum is 8 seeds.'); }; });
+  document.getElementById('nextSeasonBtn').onclick = () => {
+    if (!S.draftPicked){ toast('Pick your free seed first (or pass for coins).'); return; }
+    mulchMode = false;
+    spNextSeason(S);
+    showSplash(SP_SEASONS[S.season].name, 'Quota: 🌞 ' + SP_SEASONS[S.season].quota + ' in ' + SP_SEASONS[S.season].weeks + ' weeks.');
+    sfx('season');
+    render();
+  };
+}
+function gardenPortrait(){
+  return S.board.map(p => p ? spDef(p.def).icon : '🟫').join('');
+}
+function renderEnd(won){
+  if (!S._recorded){ S._recorded = true; recordLifetime(won); }
+  if (won) clearSave();
+  const st = S.stats;
+  const portrait = [0, 3, 6].map(start => S.board.slice(start, start + 3).map(p => p ? spDef(p.def).icon : '🟫').join(' ')).join('<br>');
+  $stage.innerHTML =
+    '<div class="panel center" style="margin-top:22px">' +
+      '<div style="font-size:50px">' + (won ? '🌻🏆' : '🍂') + '</div>' +
+      '<h1 class="title" style="font-size:clamp(32px,6vw,52px)">' + (won ? 'A FULL YEAR IN BLOOM' : 'THE GARDEN RESTS') + '</h1>' +
+      '<p class="tagline">' + (won
+        ? 'Spring to winter, every quota met. The patch goes quiet under the frost, proud of itself.'
+        : SP_SEASONS[S.season].name + ' asked for 🌞 ' + SP_SEASONS[S.season].quota + ' and the patch gave ' + S.seasonScore + '. It will try again next year — gardens are patient.') + '</p>' +
+      '<div class="gardenPortrait">' + portrait + '</div>' +
+      '<p style="font-size:16.5px; line-height:1.9; margin-top:16px">' +
+        'Total harvest <b class="gold">🌞 ' + st.totalPoints + '</b> · Best single pick <b class="gold">' + st.bestHarvest + '</b><br>' +
+        'Plants picked ' + st.harvested + ' · withered ' + st.withered + ' · planted ' + st.planted + ' · Tools ' + S.tools.length + '<br>' +
+        '<span class="muted">Seed: ' + esc(S.seedLabel) + ' — same seed, same weather. Garden differently.</span></p>' +
+      '<div class="row" style="justify-content:center"><button class="btn" id="againBtn">New garden</button></div>' +
+    '</div>';
+  document.getElementById('againBtn').onclick = () => { S = null; clearSave(); render(); };
+}
+function showHelp(){
+  $modalBox.innerHTML =
+    '<h2 style="margin-top:0">How to play Sunpatch</h2>' +
+    '<div class="rulesText"><ul>' +
+    '<li><b>One job:</b> meet each season\u2019s harvest quota before its weeks run out. The full year: ' + SP_SEASONS.map(s => s.name + ' 🌞' + s.quota).join(' · ') + '.</li>' +
+    '<li><b>Plant.</b> Each week you draw seeds. Click a seed, then a glowing plot. Planting is free — space is not.</li>' +
+    '<li><b>Grow.</b> Press End Week and every plant grows one stage (two for plants matching the weather). The numbers on a seed card are what it pays at each stage; the ★ week is its peak.</li>' +
+    '<li><b>Pick when it glows.</b> Click a plant to see exactly what it pays now and what it will pay after this week. Past its peak a plant fades — and one stage past the end, it wilts. The number on the tile is always the truth.</li>' +
+    '<li><b>Weather is a forecast, not a surprise.</b> The next two weeks are shown. Plant Sun seeds ahead of sun, Water seeds ahead of rain, Moon seeds ahead of grey skies.</li>' +
+    '<li><b>Neighbours matter.</b> Some plants feed their neighbours (🐝 Generous), some love company (👥 Social), some want space (🏝️ Solitary), some double in corners (🧱). Bonuses are already inside the number on the tile.</li>' +
+    '<li><b>Between seasons</b> you draft a free seed, shop for tools, and can mulch weak seeds out of your packet forever. Over-quota harvest turns into coins.</li>' +
+    '<li><b>Unplanted seeds</b> compost at week\u2019s end for coins — sometimes the coin is worth more than the plant.</li>' +
+    '</ul></div>' +
+    '<div class="center"><button class="btn" id="closeModal">Back to the garden</button></div>';
+  $modalWrap.classList.remove('hidden');
+  document.getElementById('closeModal').onclick = closeModal;
+}
+function showDeck(){
+  if (!S){ toast('No garden in progress.'); return; }
+  const all = [...S.deck, ...S.hand, ...S.discard];
+  const counts = {};
+  for (const c of all) counts[c.def] = (counts[c.def] || 0) + 1;
+  for (const p of S.board) if (p) counts[p.def] = (counts[p.def] || 0) + 1;
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  $modalBox.innerHTML =
+    '<h2 style="margin-top:0">Your seed packet (' + (all.length + S.board.filter(Boolean).length) + ' seeds)</h2>' +
+    '<div id="deckGrid">' + entries.map(([k, n]) => { const def = spDef(k); return '<div class="deckMini"><span class="scIcon">' + def.icon + '</span><br><span class="scName">' + esc(def.name) + '</span><br>× ' + n + '<br><span style="color:#6b5a33">' + trackHTML(def) + '</span></div>'; }).join('') + '</div>' +
+    '<div class="center" style="margin-top:16px"><button class="btn" id="closeModal">Close</button></div>';
+  $modalWrap.classList.remove('hidden');
+  document.getElementById('closeModal').onclick = closeModal;
+}
+function closeModal(){ $modalWrap.classList.add('hidden'); }
+$modalWrap.addEventListener('click', e => { if (e.target === $modalWrap) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.getElementById('deckBtn').onclick = showDeck;
+document.getElementById('helpBtn').onclick = showHelp;
+document.getElementById('soundBtn').onclick = (e) => { soundOn = !soundOn; e.target.textContent = soundOn ? '🔊' : '🔇'; if (soundOn) sfx('pick'); };
+render();
+</script>
+</body>
+</html>
