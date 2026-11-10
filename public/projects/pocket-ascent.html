@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pocket Ascent — a tiny deck-building roguelite</title>
+<style>
+  :root{
+    --ink:#0b201d; --felt:#10302b; --felt2:#0d2823; --gold:#e8b84b; --gold2:#c9932b;
+    --cream:#f7f1e1; --cream-dim:#e5dcc4; --red:#e4572e; --panel:#123832;
+    --line:rgba(232,184,75,.35);
+    --ember:#ff7847; --wave:#4db2ff; --leaf:#62d27a; --bolt:#ffd84d;
+    --shadow:0 10px 30px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Avenir Next","Segoe UI",system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 700px at 50% -10%, #175448 0%, var(--felt) 45%, var(--ink) 100%);
+    color:var(--cream); min-height:100vh; overflow-x:hidden;
+  }
+  button{font-family:inherit; cursor:pointer}
+  .hidden{display:none !important}
+
+  /* ---------- top bar ---------- */
+  #topbar{
+    position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:14px;
+    padding:8px 16px; background:rgba(7,24,21,.85); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line); flex-wrap:wrap;
+  }
+  #topbar .brand{font-weight:800; letter-spacing:.06em; color:var(--gold); font-size:15px; white-space:nowrap}
+  .stat{display:flex; align-items:center; gap:6px; font-size:14px; white-space:nowrap}
+  .stat b{font-variant-numeric:tabular-nums}
+  .hpbar{width:110px; height:10px; background:#2a1512; border:1px solid rgba(255,255,255,.25); border-radius:6px; overflow:hidden}
+  .hpbar>i{display:block; height:100%; background:linear-gradient(90deg,#e4572e,#f0863c); transition:width .5s ease}
+  #relicTray{display:flex; gap:5px; flex-wrap:wrap; margin-left:auto}
+  .relicChip{
+    width:30px; height:30px; border-radius:8px; border:1px solid var(--gold2);
+    background:linear-gradient(160deg,#2a4d3f,#173b31); display:flex; align-items:center; justify-content:center;
+    font-size:16px; position:relative; cursor:default;
+  }
+  .iconbtn{
+    background:#173b31; color:var(--cream); border:1px solid var(--line); border-radius:8px;
+    padding:5px 10px; font-size:13px;
+  }
+  .iconbtn:hover{border-color:var(--gold)}
+
+  /* ---------- layout ---------- */
+  #stage{max-width:1060px; margin:0 auto; padding:22px 16px 90px}
+  .panel{
+    background:linear-gradient(170deg, rgba(23,59,49,.92), rgba(13,35,30,.94));
+    border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); padding:22px;
+  }
+  h1.title{
+    font-size:clamp(40px,7vw,72px); margin:6px 0 2px; letter-spacing:.02em; line-height:1;
+    color:var(--gold); text-shadow:0 3px 0 #7a5a12, 0 10px 28px rgba(0,0,0,.5); font-weight:900;
+  }
+  .tagline{font-size:clamp(15px,2.4vw,19px); color:var(--cream-dim); margin:4px 0 18px}
+  .btn{
+    background:linear-gradient(180deg,#f0c95e,#d9a52f); color:#231806; border:1px solid #8a6410;
+    font-weight:800; padding:12px 22px; border-radius:12px; font-size:16px; letter-spacing:.02em;
+    box-shadow:0 4px 0 #8a6410, 0 10px 20px rgba(0,0,0,.35); transition:transform .08s, box-shadow .08s;
+  }
+  .btn:hover{transform:translateY(-1px)}
+  .btn:active{transform:translateY(3px); box-shadow:0 1px 0 #8a6410}
+  .btn.secondary{background:linear-gradient(180deg,#2c5a4c,#1d4438); color:var(--cream); border-color:#3f7a64; box-shadow:0 4px 0 #122e26}
+  .btn.danger{background:linear-gradient(180deg,#e4704e,#c94f2a); color:#fff; border-color:#7e2d13; box-shadow:0 4px 0 #7e2d13}
+  .btn:disabled{opacity:.45; cursor:not-allowed; transform:none}
+  .btn.small{padding:8px 14px; font-size:14px}
+  .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+  .center{text-align:center}
+  .muted{color:var(--cream-dim)}
+  .gold{color:var(--gold)}
+  input.seedIn{
+    background:#0a1f1b; color:var(--cream); border:1px solid var(--line); border-radius:8px;
+    padding:9px 12px; font-size:14px; width:170px;
+  }
+
+  /* ---------- map / node choices ---------- */
+  .nodeGrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:16px; margin-top:16px}
+  .nodeCard{
+    text-align:left; background:linear-gradient(165deg,#1b4a3e,#122e27); color:var(--cream);
+    border:1px solid var(--line); border-radius:14px; padding:18px; transition:transform .12s, border-color .12s;
+  }
+  .nodeCard:hover{transform:translateY(-3px); border-color:var(--gold)}
+  .nodeCard .nIcon{font-size:34px}
+  .nodeCard .nName{font-weight:800; font-size:19px; margin:6px 0 2px}
+  .nodeCard .nDesc{font-size:13.5px; color:var(--cream-dim); line-height:1.45}
+  .pathTrail{display:flex; gap:6px; flex-wrap:wrap; margin:10px 0 2px}
+  .pathDot{width:26px; height:26px; border-radius:50%; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:13px; background:#0d2823}
+  .pathDot.done{background:#2c5a4c; border-color:var(--gold2)}
+  .pathDot.boss{border-color:var(--red); color:#ffb59d}
+
+  /* ---------- battle ---------- */
+  #foePanel{display:flex; gap:18px; align-items:center; flex-wrap:wrap}
+  #foeFace{font-size:58px; line-height:1; filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
+  .targetWrap{flex:1; min-width:240px}
+  .targetBar{height:16px; background:#081713; border:1px solid var(--line); border-radius:9px; overflow:hidden}
+  .targetBar>i{display:block; height:100%; width:0%; background:linear-gradient(90deg,#e8b84b,#f6d47c); transition:width .6s ease}
+  #scoreReadout{display:flex; gap:16px; align-items:baseline; flex-wrap:wrap; margin-top:8px}
+  #scoreReadout .big{font-size:30px; font-weight:900; color:var(--gold); font-variant-numeric:tabular-nums}
+  #handTypeRead{font-size:17px; font-weight:700; min-height:24px}
+  #handTypeRead .calc{color:var(--cream-dim); font-weight:600; font-size:15px}
+  #playedZone{min-height:118px; display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap;
+    border:1.5px dashed rgba(232,184,75,.25); border-radius:14px; margin:14px 0; padding:10px}
+  #playedZone .placeholder{color:rgba(247,241,225,.4); font-size:14px}
+  #handFan{display:flex; justify-content:center; align-items:flex-end; min-height:190px; padding:16px 4px 4px; flex-wrap:nowrap}
+  #battleBtns{display:flex; gap:12px; justify-content:center; margin-top:10px; flex-wrap:wrap}
+  .pill{display:inline-block; padding:3px 10px; border-radius:99px; border:1px solid var(--line); font-size:12.5px; background:rgba(0,0,0,.25)}
+
+  /* ---------- cards ---------- */
+  .card{
+    width:104px; height:148px; border-radius:12px; background:linear-gradient(168deg,#fdf8ec,#efe4c8);
+    color:#221a10; position:relative; border:2px solid #b8a888; box-shadow:0 8px 18px rgba(0,0,0,.45);
+    padding:7px 8px; user-select:none; cursor:pointer; flex:0 0 auto;
+    transition:transform .14s ease, box-shadow .14s ease; text-align:left;
+  }
+  .card .band{height:26px; border-radius:7px; display:flex; align-items:center; justify-content:space-between; padding:0 6px; color:#10130f; font-weight:900}
+  .card .rank{font-size:19px}
+  .card .suitIco{font-size:16px}
+  .card .cname{font-weight:800; font-size:13px; margin-top:5px; line-height:1.15}
+  .card .fx{font-size:10.5px; line-height:1.3; color:#4d4231; margin-top:3px}
+  .card .bigSuit{position:absolute; right:6px; bottom:2px; font-size:30px; opacity:.16}
+  .card .upg{position:absolute; top:32px; right:5px; color:#b97f10; font-size:12px; font-weight:900}
+  .card.sel{transform:translateY(-26px); border-color:var(--gold); box-shadow:0 16px 26px rgba(0,0,0,.55), 0 0 0 2px var(--gold)}
+  .card.small{width:88px; height:126px; cursor:default}
+  .card.small .rank{font-size:16px}
+  .card.mini{width:70px; height:100px; padding:5px 6px}
+  .card.mini .cname{font-size:10.5px} .card.mini .fx{display:none} .card.mini .rank{font-size:14px} .card.mini .band{height:21px}
+  .suit-ember .band{background:var(--ember)} .suit-wave .band{background:var(--wave)}
+  .suit-leaf .band{background:var(--leaf)} .suit-bolt .band{background:var(--bolt)}
+  .card.special{border-color:var(--gold2); background:linear-gradient(168deg,#fffbe9,#f3e3ae)}
+  #handFan .card{margin:0 -14px}
+  #handFan .card:hover{transform:translateY(-12px)}
+  #handFan .card.sel{transform:translateY(-30px)}
+  #handFan .card.sel:hover{transform:translateY(-30px)}
+
+  /* ---------- reward / shop ---------- */
+  .offerGrid{display:flex; gap:16px; justify-content:center; flex-wrap:wrap; margin-top:14px}
+  .offerCol{display:flex; flex-direction:column; align-items:center; gap:10px}
+  .priceTag{font-weight:800; color:var(--gold)}
+  .relicOffer{
+    width:210px; background:linear-gradient(165deg,#2a4d3f,#173b31); border:1px solid var(--gold2);
+    border-radius:14px; padding:16px; text-align:center;
+  }
+  .relicOffer .rIco{font-size:38px}
+  .relicOffer .rName{font-weight:800; margin:6px 0 4px}
+  .relicOffer .rDesc{font-size:13px; color:var(--cream-dim); line-height:1.45}
+
+  /* ---------- deck viewer / modal ---------- */
+  #modalWrap{position:fixed; inset:0; background:rgba(4,12,10,.78); z-index:80; display:flex; align-items:flex-start; justify-content:center; overflow:auto; padding:26px 12px}
+  #modalBox{max-width:880px; width:100%}
+  #deckGrid{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
+  .rulesText{line-height:1.6; font-size:15px}
+  .rulesText li{margin-bottom:7px}
+  kbd{background:#0a1f1b; border:1px solid var(--line); border-bottom-width:2px; border-radius:5px; padding:0 6px; font-size:12.5px}
+
+  /* ---------- toast / floaters ---------- */
+  #toast{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); z-index:90;
+    background:#0a1f1b; border:1px solid var(--gold); color:var(--cream); padding:11px 20px; border-radius:12px;
+    font-weight:700; opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; max-width:92vw; text-align:center;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  #scorePop{
+    position:fixed; left:50%; top:34%; transform:translate(-50%,-50%) scale(.7); z-index:70; text-align:center;
+    font-weight:900; pointer-events:none; opacity:0;
+  }
+  #scorePop .popMain{font-size:64px; color:var(--gold); text-shadow:0 4px 0 #7a5a12, 0 14px 34px rgba(0,0,0,.6)}
+  #scorePop .popSub{font-size:20px; color:var(--cream)}
+  #scorePop.show{animation:popAnim 1.5s ease forwards}
+  @keyframes popAnim{
+    0%{opacity:0; transform:translate(-50%,-50%) scale(.7)}
+    18%{opacity:1; transform:translate(-50%,-50%) scale(1.08)}
+    30%{transform:translate(-50%,-50%) scale(1)}
+    78%{opacity:1} 100%{opacity:0; transform:translate(-50%,-58%) scale(1)}
+  }
+  .shake{animation:shk .4s ease}
+  @keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+  footer{max-width:1060px; margin:0 auto; padding:0 16px 30px; color:rgba(247,241,225,.45); font-size:13px}
+  @media (max-width:640px){
+    #handFan .card{margin:0 -22px}
+    .card{width:92px; height:134px}
+    #foeFace{font-size:44px}
+    #scorePop .popMain{font-size:46px}
+  }
+</style>
+</head>
+<body>
+
+<header id="topbar">
+  <span class="brand">🃏 POCKET ASCENT</span>
+  <span class="stat" id="statHp">❤️ <span class="hpbar"><i id="hpFill" style="width:100%"></i></span> <b id="hpText">80/80</b></span>
+  <span class="stat">🪙 <b id="goldText">0</b></span>
+  <span class="stat">🏔️ Floor <b id="floorText">–</b></span>
+  <span class="stat muted">Score <b id="runScoreText">0</b></span>
+  <div id="relicTray"></div>
+  <button class="iconbtn" id="deckBtn">Deck (0)</button>
+  <button class="iconbtn" id="soundBtn" title="Toggle sound">🔊</button>
+  <button class="iconbtn" id="helpBtn">How to play</button>
+</header>
+
+<main id="stage"></main>
+
+<div id="modalWrap" class="hidden"><div id="modalBox" class="panel"></div></div>
+<div id="scorePop"><div class="popMain"></div><div class="popSub"></div></div>
+<div id="toast"></div>
+
+<footer>
+  Pocket Ascent — a tiny deck-building roguelite from the Tomfoolery workshop. Part card sharp, part tower climb.
+  Built with a seeded engine: every run is reproducible from its seed.
+</footer>
+
+<script>
+/*__CORE_START__*/
+'use strict';
+/* ================= POCKET ASCENT — pure game core (no DOM) ================= */
+const PA_TUNE = {
+  startHp: 80, startGold: 12, handSize: 8, maxSelect: 5,
+  handsPerBattle: 4, discardsPerBattle: 3,
+  floorsPerAct: 5, acts: 3,
+  targetBase: 240, targetGrowth: 1.20, bossMult: 1.08, eliteMult: 1.45,
+  restHealPct: 0.35, snackHeal: 12, snackPrice: 7, removeBasePrice: 12,
+};
+
+const PA_SUITS = [
+  { id:'ember', name:'Ember', icon:'🔥' },
+  { id:'wave',  name:'Wave',  icon:'💧' },
+  { id:'leaf',  name:'Leaf',  icon:'🌿' },
+  { id:'bolt',  name:'Bolt',  icon:'⚡' },
+];
+const PA_SUIT_IDS = PA_SUITS.map(s => s.id);
+
+const PA_HAND_TYPES = [
+  { id:'fivekind',  name:'Five of a Kind',  base:120, mult:16 },
+  { id:'straightflush', name:'Straight Flush', base:100, mult:14 },
+  { id:'fourkind',  name:'Four of a Kind',  base:60,  mult:10 },
+  { id:'fullhouse', name:'Full House',      base:50,  mult:8 },
+  { id:'flush',     name:'Flush',           base:45,  mult:6 },
+  { id:'straight',  name:'Straight',        base:40,  mult:5 },
+  { id:'splash',    name:'Splash',          base:30,  mult:5 },
+  { id:'run',       name:'Run',             base:25,  mult:4 },
+  { id:'threekind', name:'Three of a Kind', base:30,  mult:4 },
+  { id:'twopair',   name:'Two Pair',        base:20,  mult:3 },
+  { id:'pair',      name:'Pair',            base:10,  mult:2 },
+  { id:'highcard',  name:'High Card',       base:5,   mult:1 },
+];
+function paHandType(id){ return PA_HAND_TYPES.find(h => h.id === id); }
+
+/* Special cards: the deck's characters. fx keys are interpreted by the scorer. */
+const PA_SPECIALS = [
+  { key:'slowpoke', name:'Slowpoke', suit:'wave', rank:8,  icon:'🦥', fx:'encore',
+    text:'Encore — this card scores twice.' },
+  { key:'eevee',    name:'Eevee',    suit:'leaf', rank:5,  icon:'🦊', fx:'adapt',
+    text:'Adapt — copies the chips of the strongest other card played.' },
+  { key:'meowth',   name:'Meowth',   suit:'bolt', rank:4,  icon:'🐱', fx:'payday',
+    text:'Pay Day — gain $4 when scored.' },
+  { key:'lugia',    name:'Lugia',    suit:'wave', rank:11, icon:'🕊️', fx:'aeromult',
+    text:'Aero Blast — +3 Mult.' },
+  { key:'theo',     name:'Theo',     suit:'ember', rank:6, icon:'🐈‍⬛', fx:'chaoscat',
+    text:'Chaos Cat — +1 Mult for each other Ember card in this hand.' },
+  { key:'ash',      name:'Ash',      suit:'bolt', rank:7,  icon:'🚗', fx:'autopilot',
+    text:'Autopilot — draw 1 card when scored.' },
+  { key:'domino',   name:'Domino',   suit:'leaf', rank:3,  icon:'🁢', fx:'chain',
+    text:'Chain — +2 chips for each card scored before it this hand.' },
+  { key:'pip',      name:'Pip',      suit:'leaf', rank:2,  icon:'🌱', fx:'sprout',
+    text:'Sprout — +2 Mult on your final hand of a battle.' },
+];
+function paSpecial(key){ return PA_SPECIALS.find(s => s.key === key); }
+
+const PA_RELICS = [
+  { id:'theosbell', icon:'🔔', name:"Theo's Bell", price:45,
+    text:'+1 Mult on your first hand of each battle.' },
+  { id:'magsafe', icon:'🧲', name:'MagSafe Ring', price:40,
+    text:'Flushes and Splashes gain +2 Mult.' },
+  { id:'collatz', icon:'🔢', name:'Collatz Charm', price:40,
+    text:'Hands of exactly 3 cards gain +3 Mult.' },
+  { id:'dominotile', icon:'🁣', name:'Domino Tile', price:45,
+    text:'Straights and Runs: the lowest card scores twice.' },
+  { id:'acorn', icon:'🌰', name:'Golden Acorn', price:35,
+    text:'After each battle, earn $1 per $10 you hold (up to $5).' },
+  { id:'teslacoil', icon:'🗼', name:'Tesla Coil', price:40,
+    text:'Bolt cards gain +2 chips.' },
+  { id:'feather', icon:'🪶', name:'Lugia Feather', price:35,
+    text:'+1 discard in every battle.' },
+  { id:'fsd', icon:'🤖', name:'FSD Chip', price:55,
+    text:'+1 hand in every battle.' },
+  { id:'mug', icon:'☕', name:'Coffee Mug', price:30,
+    text:'Shop prices are 20% off.' },
+  { id:'pokeball', icon:'🔴', name:'Poké Ball', price:35,
+    text:'Card rewards offer 4 choices instead of 3.' },
+  { id:'slowtail', icon:'🍖', name:'Slowpoke Tail', price:40,
+    text:'Slowpoke cards gain +2 Mult.' },
+  { id:'blanket', icon:'🛌', name:'Warm Blanket', price:30,
+    text:'Rest sites heal 15 more HP.' },
+  { id:'sock', icon:'🧦', name:'Lucky Sock', price:35,
+    text:'Your first discard of each battle is free.' },
+  { id:'helping', icon:'🍲', name:'Second Helping', price:35,
+    text:'Heal 2 HP after winning a battle.' },
+  { id:'bighat', icon:'🎩', name:'Big Hat', price:40,
+    text:'Two Pair and Full House gain +2 Mult.' },
+];
+function paRelic(id){ return PA_RELICS.find(r => r.id === id); }
+
+const PA_FOES = [
+  { name:'Grumbly Turnip', face:'🥕', flavor:'It did not ask to be harvested.' },
+  { name:'Armordillo', face:'🦔', flavor:'Rolls everywhere. Pays for nothing.' },
+  { name:'Coupon Kraken', face:'🦑', flavor:'Expired in 2019. Still furious.' },
+  { name:'Toll Road Troll', face:'🌉', flavor:'Exact change only. Forever.' },
+  { name:'Inbox Ghost', face:'👻', flavor:'Eleven thousand unread. All of them his.' },
+  { name:'Sump Pump Golem', face:'🪨', flavor:'It gurgles in iambic pentameter.' },
+  { name:'Heat Wave', face:'🌡️', flavor:'Breckenridge in August. Weaponized.' },
+  { name:'HOA Dragon', face:'🐉', flavor:'Your grass is one inch too tall.' },
+  { name:'Middle Manager Wraith', face:'🧟', flavor:'This duel could have been an email.' },
+  { name:'Possum Impostor', face:'🦝', flavor:'Playing dead. Playing cards. Both.' },
+];
+const PA_ELITES = [
+  { name:'The Landscaper', face:'🌳', flavor:'Trims hedges. Trims decks.' },
+  { name:'Captain Committee', face:'📋', flavor:'Motion passes: you lose.' },
+  { name:'The Night Auditor', face:'🛎️', flavor:'Checks every receipt. Twice.' },
+];
+const PA_BOSSES = [
+  { floor:5, name:'THE FOREMAN', face:'👷', rule:'overtime',
+    ruleText:'Overtime — your first hand of the battle scores half.',
+    flavor:'Clock in. Climb later.' },
+  { floor:10, name:'THE AUDITOR', face:'🧾', rule:'itemized',
+    ruleText:'Itemized — cards ranked 4 or lower score 0 chips.',
+    flavor:'Every chip must be accounted for.' },
+  { floor:15, name:'THE FINAL BELL', face:'🔔', rule:'lastbell',
+    ruleText:'Last Bell — you get 3 hands instead of 4.',
+    flavor:'It rings for every climber. Ring it back.' },
+];
+
+/* Seeded RNG: mulberry32 with the state carried as a plain number. */
+function paRng(state){
+  state.rngState = (state.rngState + 0x6D2B79F5) >>> 0;
+  let t = state.rngState;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+function paRandInt(state, lo, hi){ return lo + Math.floor(paRng(state) * (hi - lo + 1)); }
+function paPick(state, arr){ return arr[Math.floor(paRng(state) * arr.length)]; }
+function paShuffle(state, arr){
+  for (let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(paRng(state) * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function paSeedFromString(str){
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+
+/* ---------- cards ---------- */
+let PA_CARD_SEQ = 1;
+function paMakeCard(suit, rank, specialKey){
+  const card = { uid: 'c' + (PA_CARD_SEQ++), suit, rank, special: specialKey || null, upg: 0, bonusChips: 0, bonusMult: 0 };
+  return card;
+}
+function paCardName(card){
+  if (card.special) return paSpecial(card.special).name;
+  return PA_SUITS.find(s => s.id === card.suit).name + ' ' + card.rank;
+}
+function paCardChips(card){ return card.rank + card.bonusChips; }
+function paStarterDeck(){
+  const deck = [];
+  for (const suit of PA_SUIT_IDS) for (const rank of [2,3,4,5,6]) deck.push(paMakeCard(suit, rank));
+  return deck;
+}
+function paRandomPoolCard(state, act){
+  const roll = paRng(state);
+  if (roll < 0.20){
+    const sp = paPick(state, PA_SPECIALS);
+    return paMakeCard(sp.suit, sp.rank, sp.key);
+  }
+  const suit = paPick(state, PA_SUIT_IDS);
+  const maxRank = 8 + act; // acts widen the rank pool: 9, 10, 11
+  const rank = paRandInt(state, 4, maxRank);
+  const card = paMakeCard(suit, rank);
+  if (act >= 2 && paRng(state) < 0.25){
+    card.upg = 1; card.bonusChips = 4;
+  }
+  return card;
+}
+function paCardPrice(card){
+  let p = 6 + card.rank * 2 + (card.special ? 14 : 0) + card.upg * 6;
+  return p;
+}
+
+/* ---------- hand evaluation ---------- */
+function paEvaluate(cards){
+  // cards: 1..5 card objects. Returns {typeId, isFlush, isStraight, highRank}
+  const n = cards.length;
+  const ranks = cards.map(c => c.rank).slice().sort((a,b) => a-b);
+  const counts = {};
+  for (const r of ranks) counts[r] = (counts[r] || 0) + 1;
+  const countVals = Object.values(counts).sort((a,b) => b-a);
+  const isFlush = n >= 4 && cards.every(c => c.suit === cards[0].suit);
+  let isStraight = false;
+  if (n >= 4){
+    const uniq = [...new Set(ranks)];
+    if (uniq.length === n){
+      isStraight = (ranks[n-1] - ranks[0] === n - 1);
+    }
+  }
+  let typeId = 'highcard';
+  if (n === 5 && countVals[0] === 5) typeId = 'fivekind';
+  else if (isStraight && isFlush && n === 5) typeId = 'straightflush';
+  else if (countVals[0] === 4) typeId = 'fourkind';
+  else if (countVals[0] === 3 && countVals[1] === 2) typeId = 'fullhouse';
+  else if (isFlush && n === 5) typeId = 'flush';
+  else if (isStraight && n === 5) typeId = 'straight';
+  else if (isFlush && n === 4) typeId = 'splash';
+  else if (isStraight && n === 4) typeId = 'run';
+  else if (countVals[0] === 3) typeId = 'threekind';
+  else if (countVals[0] === 2 && countVals[1] === 2) typeId = 'twopair';
+  else if (countVals[0] === 2) typeId = 'pair';
+  return { typeId, isFlush, isStraight, counts };
+}
+
+/* Score a played hand inside a battle context.
+   ctx: { relics:Set/array of ids, handsPlayed, handsTotal, foeRule }
+   Returns { total, chips, mult, handType, perCard:[{uid, chips, note}], goldGain, draws } */
+function paScoreHand(cards, ctx){
+  const relics = new Set(ctx.relics || []);
+  const ev = paEvaluate(cards);
+  const ht = paHandType(ev.typeId);
+  let chips = ht.base;
+  let mult = ht.mult;
+  const perCard = [];
+  let goldGain = 0, draws = 0;
+
+  const bossItemized = ctx.foeRule === 'itemized';
+  const maxOtherChips = cards.reduce((m, c) => Math.max(m, paCardChips(c)), 0);
+
+  cards.forEach((card, idx) => {
+    let c = paCardChips(card);
+    let note = '';
+    if (bossItemized && card.rank <= 4){ c = 0; note = 'itemized to 0'; }
+    if (relics.has('teslacoil') && card.suit === 'bolt'){ c += 2; note = note || '+2 coil'; }
+    if (card.special){
+      const fx = paSpecial(card.special).fx;
+      if (fx === 'encore'){ c *= 2; note = 'scores twice'; }
+      if (fx === 'adapt'){ c = maxOtherChips; note = 'copies ' + maxOtherChips; }
+      if (fx === 'payday'){ goldGain += 4; note = '+$4'; }
+      if (fx === 'aeromult'){ mult += 3; note = '+3 Mult'; }
+      if (fx === 'chaoscat'){
+        const others = cards.filter((o, i) => i !== idx && o.suit === 'ember').length;
+        mult += others; if (others) note = '+' + others + ' Mult';
+      }
+      if (fx === 'autopilot'){ draws += 1; note = 'draw 1'; }
+      if (fx === 'chain'){ c += 2 * idx; if (idx) note = '+' + (2 * idx) + ' chain'; }
+      if (fx === 'sprout' && ctx.handsPlayed === ctx.handsTotal - 1){ mult += 2; note = '+2 Mult (final hand)'; }
+    }
+    if (card.bonusMult) mult += card.bonusMult;
+    // Domino Tile: lowest card of a straight/run scores twice
+    if (relics.has('dominotile') && (ev.typeId === 'straight' || ev.typeId === 'run' || ev.typeId === 'straightflush')){
+      const minRank = Math.min(...cards.map(x => x.rank));
+      if (card.rank === minRank && !perCard.some(p => p.doubled)) { c *= 2; note = (note ? note + ' · ' : '') + 'tile double'; perCard.push({ uid: card.uid, chips: c, note, doubled: true }); chips += c; return; }
+    }
+    chips += c;
+    perCard.push({ uid: card.uid, chips: c, note });
+  });
+
+  // hand-level relic bonuses
+  if (relics.has('theosbell') && ctx.handsPlayed === 0) mult += 1;
+  if (relics.has('magsafe') && (ev.typeId === 'flush' || ev.typeId === 'splash')) mult += 2;
+  if (relics.has('collatz') && cards.length === 3) mult += 3;
+  if (relics.has('bighat') && (ev.typeId === 'twopair' || ev.typeId === 'fullhouse')) mult += 2;
+  if (relics.has('slowtail') && cards.some(c => c.special === 'slowpoke')) mult += 2;
+
+  let total = chips * mult;
+  if (ctx.foeRule === 'overtime' && ctx.handsPlayed === 0) total = Math.floor(total / 2);
+  return { total, chips, mult, handType: ev.typeId, handName: ht.name, perCard, goldGain, draws };
+}
+
+
+/* ================= run state machine ================= */
+function paActForFloor(floor){ return Math.min(3, Math.ceil(floor / PA_TUNE.floorsPerAct)); }
+function paIsBossFloor(floor){ return floor % 5 === 0; }
+function paBossForFloor(floor){
+  const idx = (Math.floor(floor / 5) - 1) % PA_BOSSES.length;
+  const base = PA_BOSSES[idx];
+  return { name: base.name, face: base.face, rule: base.rule, ruleText: base.ruleText, flavor: base.flavor, boss: true };
+}
+function paTargetFor(state, kind){
+  let t = PA_TUNE.targetBase * Math.pow(PA_TUNE.targetGrowth, state.floor - 1);
+  if (kind === 'elite') t *= PA_TUNE.eliteMult;
+  if (kind === 'boss') t *= PA_TUNE.bossMult;
+  t *= 0.92 + paRng(state) * 0.16;
+  return Math.round(t / 5) * 5;
+}
+function paAttackFor(state, kind){
+  let a = 10 + state.floor * 1.9;
+  if (kind === 'elite') a *= 1.5;
+  if (kind === 'boss') a = 24 + state.floor * 1.6;
+  return Math.round(a);
+}
+
+function paNewRun(seedLabel){
+  const state = {
+    rngState: paSeedFromString(seedLabel || ('run-' + Date.now())),
+    seedLabel: seedLabel || '',
+    floor: 0, hp: PA_TUNE.startHp, maxHp: PA_TUNE.startHp, gold: PA_TUNE.startGold,
+    deck: paStarterDeck(), relics: [], phase: 'map', lossStreak: 0, fellAtFinal: false,
+    totalScore: 0, removesUsed: 0, endless: false,
+    stats: { won: 0, lost: 0, bestHand: 0, earned: 0, relicsFound: 0 },
+    nodeChoices: [], battle: null, reward: null, shop: null, event: null,
+    lastEventText: '',
+  };
+  paAdvanceFloor(state);
+  return state;
+}
+
+function paGenNodes(state){
+  if (paIsBossFloor(state.floor)){
+    const b = paBossForFloor(state.floor);
+    return [{ type: 'boss', name: b.name, face: b.face, desc: b.ruleText + ' ' + b.flavor }];
+  }
+  const pool = [
+    { type:'battle', name:'Battle', face:'⚔️', desc:'Beat the target score. Win gold and a card.' },
+    { type:'battle', name:'Battle', face:'⚔️', desc:'Beat the target score. Win gold and a card.' },
+    { type:'elite', name:'Elite Foe', face:'💀', desc:'Higher target, heavier hit — but a relic awaits.' },
+    { type:'shop', name:'Shop', face:'🛒', desc:'Cards, a relic, snacks and deck trimming.' },
+    { type:'rest', name:'Rest Site', face:'🏕️', desc:'Heal, or upgrade one of your cards.' },
+    { type:'event', name:'Something Odd', face:'❓', desc:'The tower provides. Probably.' },
+  ];
+  const picks = [];
+  // always offer a battle so a run can never soft-lock
+  picks.push(pool[0]);
+  const rest = paShuffle(state, pool.slice(1)).slice(0, state.floor >= 11 ? 2 : 1);
+  for (const p of rest) if (!picks.some(x => x.type === p.type && p.type !== 'battle')) picks.push(p);
+  while (picks.length < 2) picks.push(pool[1]);
+  return paShuffle(state, picks);
+}
+
+function paAdvanceFloor(state){
+  state.floor += 1;
+  state.battle = null; state.reward = null; state.shop = null; state.event = null;
+  if (state.floor === 16 && !state.endless){ state.phase = 'victory'; return; }
+  state.phase = 'map';
+  state.nodeChoices = paGenNodes(state);
+}
+
+function paStartBattle(state, kind){
+  let foe;
+  if (kind === 'boss') foe = paBossForFloor(state.floor);
+  else if (kind === 'elite'){ const e = paPick(state, PA_ELITES); foe = { name: e.name, face: e.face, flavor: e.flavor, rule: null, ruleText: '' }; }
+  else { const f = paPick(state, PA_FOES); foe = { name: f.name, face: f.face, flavor: f.flavor, rule: null, ruleText: '' }; }
+  let handsTotal = PA_TUNE.handsPerBattle + (state.relics.includes('fsd') ? 1 : 0);
+  if (foe.rule === 'lastbell') handsTotal = 3;
+  const fatigue = state.lossStreak || 0;
+  const battle = {
+    kind, foe, fatigue,
+    target: paTargetFor(state, kind),
+    attack: Math.round(paAttackFor(state, kind) * (1 + 0.25 * fatigue)),
+    goldReward: kind === 'boss' ? 40 : kind === 'elite' ? paRandInt(state, 20, 30) : paRandInt(state, 9, 16),
+    drawPile: paShuffle(state, state.deck.slice()),
+    hand: [], discardPile: [],
+    handsTotal, handsLeft: handsTotal, handsPlayed: 0,
+    discardsLeft: PA_TUNE.discardsPerBattle + (state.relics.includes('feather') ? 1 : 0),
+    freeDiscardUsed: false,
+    score: 0, lastPlay: null, over: false,
+  };
+  state.battle = battle;
+  paBattleDraw(state, PA_TUNE.handSize);
+  state.phase = 'battle';
+  return battle;
+}
+function paBattleDraw(state, n){
+  const b = state.battle;
+  for (let i = 0; i < n; i++){
+    if (!b.drawPile.length){
+      if (!b.discardPile.length) break;
+      b.drawPile = paShuffle(state, b.discardPile); b.discardPile = [];
+    }
+    b.hand.push(b.drawPile.pop());
+  }
+}
+function paChooseNode(state, idx){
+  const node = state.nodeChoices[idx];
+  if (!node) return;
+  if (node.type === 'battle' || node.type === 'elite' || node.type === 'boss') paStartBattle(state, node.type);
+  else if (node.type === 'shop'){ state.shop = paGenShop(state); state.phase = 'shop'; }
+  else if (node.type === 'rest'){ state.phase = 'rest'; }
+  else if (node.type === 'event'){ const ev = paPick(state, PA_EVENTS); state.event = { id: ev.id, done: false }; state.phase = 'event'; }
+}
+
+/* Play selected cards (array of uids, in scoring order). Returns the score result or null. */
+function paPlayHand(state, uids){
+  const b = state.battle;
+  if (!b || b.over || !uids.length || uids.length > PA_TUNE.maxSelect) return null;
+  const cards = [];
+  for (const uid of uids){
+    const c = b.hand.find(x => x.uid === uid);
+    if (!c) return null;
+    cards.push(c);
+  }
+  const res = paScoreHand(cards, { relics: state.relics, handsPlayed: b.handsPlayed, handsTotal: b.handsTotal, foeRule: b.foe.rule });
+  state.gold += res.goldGain; state.stats.earned += res.goldGain;
+  b.score += res.total; state.totalScore += res.total;
+  state.stats.bestHand = Math.max(state.stats.bestHand, res.total);
+  b.handsPlayed += 1; b.handsLeft -= 1;
+  b.lastPlay = { cards: cards.map(c => c.uid), res };
+  b.hand = b.hand.filter(x => !uids.includes(x.uid));
+  b.discardPile.push(...cards);
+  if (b.score >= b.target){ paWinBattle(state); return res; }
+  paBattleDraw(state, PA_TUNE.handSize - b.hand.length + res.draws);
+  // extra effect draws may push hand above size; that is fine and fun
+  if (b.handsLeft <= 0){
+    b.over = true;
+    state.lossStreak = (state.lossStreak || 0) + 1;
+    state.hp -= b.attack; state.stats.lost += 1;
+    if (state.hp <= 0){ state.hp = 0; state.phase = 'gameover'; }
+    else if (state.floor === 15 && !state.endless){ state.fellAtFinal = true; state.phase = 'gameover'; }
+    else paAdvanceFloor(state);
+  }
+  return res;
+}
+function paDiscardCards(state, uids){
+  const b = state.battle;
+  if (!b || b.over || !uids.length) return false;
+  const free = state.relics.includes('sock') && !b.freeDiscardUsed;
+  if (!free && b.discardsLeft <= 0) return false;
+  const cards = uids.map(uid => b.hand.find(x => x.uid === uid)).filter(Boolean);
+  if (cards.length !== uids.length) return false;
+  if (free) b.freeDiscardUsed = true; else b.discardsLeft -= 1;
+  b.hand = b.hand.filter(x => !uids.includes(x.uid));
+  b.discardPile.push(...cards);
+  paBattleDraw(state, cards.length);
+  return true;
+}
+function paWinBattle(state){
+  const b = state.battle;
+  b.over = true;
+  state.lossStreak = 0;
+  state.stats.won += 1;
+  let gold = b.goldReward;
+  if (state.relics.includes('acorn')) gold += Math.min(5, Math.floor(state.gold / 10));
+  state.gold += gold; state.stats.earned += gold;
+  if (state.relics.includes('helping')) state.hp = Math.min(state.maxHp, state.hp + 2);
+  if (b.kind === 'boss'){
+    const owned = new Set(state.relics);
+    const choices = paShuffle(state, PA_RELICS.filter(r => !owned.has(r.id))).slice(0, 3).map(r => r.id);
+    state.reward = { kind: 'relic', relicChoices: choices, gold };
+  } else {
+    const n = state.relics.includes('pokeball') ? 4 : 3;
+    const act = paActForFloor(state.floor);
+    const choices = [];
+    for (let i = 0; i < n; i++) choices.push(paRandomPoolCard(state, act));
+    state.reward = { kind: 'card', cardChoices: choices, gold };
+  }
+  state.phase = 'reward';
+}
+function paPickCardReward(state, uid){
+  if (!state.reward || state.reward.kind !== 'card') return;
+  if (uid){
+    const c = state.reward.cardChoices.find(x => x.uid === uid);
+    if (c) state.deck.push(c);
+  } else {
+    state.gold += 5; state.stats.earned += 5;
+  }
+  state.reward = null;
+  paAdvanceFloor(state);
+}
+function paPickRelicReward(state, relicId){
+  if (!state.reward || state.reward.kind !== 'relic') return;
+  if (relicId && state.reward.relicChoices.includes(relicId)){
+    state.relics.push(relicId); state.stats.relicsFound += 1;
+  }
+  state.reward = null;
+  if (state.floor === 15 && !state.endless){ state.phase = 'victory'; return; }
+  paAdvanceFloor(state);
+}
+
+/* ---------- shop ---------- */
+function paShopPrice(state, base){ return state.relics.includes('mug') ? Math.floor(base * 0.8) : base; }
+function paGenShop(state){
+  const act = paActForFloor(state.floor);
+  const cards = [];
+  for (let i = 0; i < 3; i++){ const c = paRandomPoolCard(state, act); cards.push({ card: c, price: paShopPrice(state, paCardPrice(c)), sold: false }); }
+  const owned = new Set(state.relics);
+  const relicPool = PA_RELICS.filter(r => !owned.has(r.id));
+  const relic = relicPool.length ? { id: paPick(state, relicPool).id, sold: false } : null;
+  if (relic) relic.price = paShopPrice(state, paRelic(relic.id).price);
+  return { cards, relic, snacks: 2, removePrice: paShopPrice(state, PA_TUNE.removeBasePrice + state.removesUsed * 4) };
+}
+function paShopBuyCard(state, idx){
+  const s = state.shop; if (!s) return false;
+  const slot = s.cards[idx]; if (!slot || slot.sold || state.gold < slot.price) return false;
+  state.gold -= slot.price; slot.sold = true; state.deck.push(slot.card); return true;
+}
+function paShopBuyRelic(state){
+  const s = state.shop; if (!s || !s.relic || s.relic.sold || state.gold < s.relic.price) return false;
+  state.gold -= s.relic.price; s.relic.sold = true;
+  state.relics.push(s.relic.id); state.stats.relicsFound += 1; return true;
+}
+function paShopBuySnack(state){
+  const s = state.shop; if (!s || s.snacks <= 0) return false;
+  const price = paShopPrice(state, PA_TUNE.snackPrice);
+  if (state.gold < price || state.hp >= state.maxHp) return false;
+  state.gold -= price; s.snacks -= 1;
+  state.hp = Math.min(state.maxHp, state.hp + PA_TUNE.snackHeal); return true;
+}
+function paShopRemoveCard(state, uid){
+  const s = state.shop; if (!s || state.gold < s.removePrice) return false;
+  const i = state.deck.findIndex(c => c.uid === uid);
+  if (i < 0 || state.deck.length <= 10) return false;
+  state.gold -= s.removePrice; state.removesUsed += 1;
+  state.deck.splice(i, 1);
+  s.removePrice = paShopPrice(state, PA_TUNE.removeBasePrice + state.removesUsed * 4);
+  return true;
+}
+function paLeaveShop(state){ state.shop = null; paAdvanceFloor(state); }
+
+/* ---------- rest ---------- */
+function paRestHeal(state){
+  const amt = Math.round(state.maxHp * PA_TUNE.restHealPct) + (state.relics.includes('blanket') ? 15 : 0);
+  state.hp = Math.min(state.maxHp, state.hp + amt);
+  paAdvanceFloor(state);
+  return amt;
+}
+function paRestUpgrade(state, uid){
+  const c = state.deck.find(x => x.uid === uid);
+  if (!c || c.upg >= 2) return false;
+  c.upg += 1;
+  if (c.upg === 1) c.bonusChips += 4; else c.bonusMult += 1;
+  paAdvanceFloor(state);
+  return true;
+}
+
+/* ---------- events ---------- */
+const PA_EVENTS = [
+  { id:'cat', icon:'🐈‍⬛', title:'A Black Cat Crosses Your Path',
+    body:'He sits down in the middle of the trail and begins, slowly and deliberately, to lick one paw. This is Theo. You know this cat.',
+    choices:[
+      { label:'Pet him', hint:'He allows it. Barely.' },
+      { label:'Walk around him', hint:'He will remember this.' },
+    ]},
+  { id:'vending', icon:'🥤', title:'A Buzzing Vending Machine',
+    body:'Against all logic, halfway up a tower, a vending machine hums. One slot glows faintly gold.',
+    choices:[
+      { label:'Insert $8', hint:'Something rare rattles inside.' },
+      { label:'Shake it', hint:'Fify-fifty. Like all good plans.' },
+    ]},
+  { id:'slowpoke', icon:'🦥', title:'A Lost Slowpoke',
+    body:'He has been walking in a small circle for what might be days. He seems thrilled about it.',
+    choices:[
+      { label:'Carry him home', hint:'He weighs nothing. He weighs everything.' },
+      { label:'Wave goodbye', hint:'Rest a moment in his calm.' },
+    ]},
+  { id:'garage', icon:'🏷️', title:'Garage Sale at the Trailhead',
+    body:'A folding table, a handwritten sign, and a box marked MYSTERY in three colors of marker.',
+    choices:[
+      { label:'Buy the mystery box ($25)', hint:'Could be a relic. Could be spoons.' },
+      { label:'Sell a card ($10)', hint:'They pay cash. No questions.' },
+      { label:'Just browse', hint:'The spoons were lovely.' },
+    ]},
+];
+function paEventDef(id){ return PA_EVENTS.find(e => e.id === id); }
+function paEventChoice(state, idx){
+  const ev = state.event; if (!ev || ev.done) return '';
+  const id = ev.id; let text = '';
+  if (id === 'cat'){
+    if (idx === 0){ const sp = paSpecial('theo'); state.deck.push(paMakeCard(sp.suit, sp.rank, 'theo')); text = 'He headbutts your shin exactly once. Theo joins your deck.'; }
+    else { state.gold += 10; state.hp = Math.max(1, state.hp - 2); text = 'You step around. He watches. You gain $10 from a dropped wallet and lose 2 HP to pure guilt.'; }
+  } else if (id === 'vending'){
+    if (idx === 0){
+      if (state.gold >= 8){ state.gold -= 8; const sp = paPick(state, PA_SPECIALS); state.deck.push(paMakeCard(sp.suit, sp.rank, sp.key)); text = 'The machine thunks. Out rolls ' + sp.name + '! Added to your deck.'; }
+      else text = 'You are short on cash. The machine hums sympathetically.';
+    } else {
+      if (paRng(state) < 0.5){ state.gold += 15; text = 'A cascade of coins! +$15.'; }
+      else { state.hp = Math.max(1, state.hp - 5); text = 'The machine tips, bonks you for 5 HP, and rights itself. Fair trade, it seems to say.'; }
+    }
+  } else if (id === 'slowpoke'){
+    if (idx === 0){ const sp = paSpecial('slowpoke'); state.deck.push(paMakeCard(sp.suit, sp.rank, 'slowpoke')); state.gold += 6; text = 'His owner tips you $6 and eternal gratitude. Slowpoke joins your deck — he will catch up eventually.'; }
+    else { state.hp = Math.min(state.maxHp, state.hp + 8); text = 'You sit with him a while. Nothing happens, beautifully. Heal 8 HP.'; }
+  } else if (id === 'garage'){
+    if (idx === 0){
+      const owned = new Set(state.relics);
+      const pool = PA_RELICS.filter(r => !owned.has(r.id));
+      if (state.gold >= 25 && pool.length){ state.gold -= 25; const r = paPick(state, pool); state.relics.push(r.id); state.stats.relicsFound += 1; text = 'Inside the box: ' + r.name + '! ' + r.text; }
+      else if (state.gold >= 25){ text = 'The box contains only spoons. Beautiful spoons. You leave them.'; }
+      else text = 'You cannot afford the box. The spoons gleam, unbought.';
+    } else if (idx === 1){
+      const plain = state.deck.filter(c => !c.special);
+      if (state.deck.length > 12 && plain.length){ const c = paPick(state, plain); state.deck = state.deck.filter(x => x.uid !== c.uid); state.gold += 10; text = 'Sold: ' + paCardName(c) + '. The buyer nods like it was their plan all along. +$10.'; }
+      else text = 'Your deck is too lean to sell from. The buyer shrugs.';
+    } else text = 'You browse. The spoons were, in fact, lovely.';
+  }
+  ev.done = true;
+  state.lastEventText = text;
+  return text;
+}
+function paEventContinue(state){ if (state.event && state.event.done){ state.event = null; paAdvanceFloor(state); } }
+
+function paRestoreSeq(state){
+  let max = 0;
+  const scan = c => { const n = parseInt(String(c.uid).slice(1), 10); if (!isNaN(n) && n > max) max = n; };
+  state.deck.forEach(scan);
+  if (state.battle){ state.battle.hand.forEach(scan); state.battle.drawPile.forEach(scan); state.battle.discardPile.forEach(scan); }
+  if (state.reward && state.reward.cardChoices) state.reward.cardChoices.forEach(scan);
+  if (state.shop) state.shop.cards.forEach(s => scan(s.card));
+  PA_CARD_SEQ = max + 1;
+}
+/*__CORE_END__*/
+</script>
+<script>
+/* ================= presentation ================= */
+'use strict';
+const $stage = document.getElementById('stage');
+const $modalWrap = document.getElementById('modalWrap');
+const $modalBox = document.getElementById('modalBox');
+const SUIT_MAP = { ember:'🔥', wave:'💧', leaf:'🌿', bolt:'⚡' };
+let S = null;            // run state
+let selected = [];       // selected uids (in click order) during battle
+let shopRemoving = false;
+let soundOn = true;
+const LS_KEY = 'pocket-ascent-save-v1';
+const LS_STATS_KEY = 'pocket-ascent-lifetime-v1';
+
+function esc(s){ return String(s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch])); }
+function suitIcon(suit){ return SUIT_MAP[suit] || '◆'; }
+function toast(msg, ms){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), ms || 2400);
+}
+/* tiny synth blips */
+let AC = null;
+function blip(freq, dur, type, gain){
+  if (!soundOn) return;
+  try{
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type || 'triangle'; o.frequency.value = freq;
+    g.gain.setValueAtTime(gain || 0.06, AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + (dur || 0.12));
+    o.connect(g); g.connect(AC.destination); o.start(); o.stop(AC.currentTime + (dur || 0.12));
+  }catch(e){ /* no audio, no problem */ }
+}
+function sfx(kind){
+  if (kind === 'pick') blip(660, 0.07);
+  if (kind === 'play'){ blip(440, 0.1); setTimeout(() => blip(660, 0.12), 70); }
+  if (kind === 'win'){ [523,659,784,1046].forEach((f,i) => setTimeout(() => blip(f, 0.16), i * 90)); }
+  if (kind === 'lose'){ blip(220, 0.25, 'sawtooth', 0.05); }
+  if (kind === 'coin'){ blip(988, 0.08); setTimeout(() => blip(1319, 0.1), 60); }
+  if (kind === 'hurt'){ blip(160, 0.2, 'square', 0.05); }
+}
+
+/* ---------- persistence ---------- */
+function saveRun(){
+  try{ if (S && S.phase !== 'gameover') localStorage.setItem(LS_KEY, JSON.stringify(S)); else localStorage.removeItem(LS_KEY); }catch(e){}
+}
+function loadRun(){
+  try{ const raw = localStorage.getItem(LS_KEY); if (!raw) return null; const s = JSON.parse(raw); paRestoreSeq(s); return s; }catch(e){ return null; }
+}
+function clearSave(){ try{ localStorage.removeItem(LS_KEY); }catch(e){} }
+function lifetime(){
+  try{ return JSON.parse(localStorage.getItem(LS_STATS_KEY)) || { runs:0, wins:0, bestFloor:0, bestScore:0 }; }catch(e){ return { runs:0, wins:0, bestFloor:0, bestScore:0 }; }
+}
+function recordLifetime(wonGame){
+  const l = lifetime();
+  l.runs += 1; if (wonGame) l.wins += 1;
+  l.bestFloor = Math.max(l.bestFloor, S.floor); l.bestScore = Math.max(l.bestScore, S.totalScore);
+  try{ localStorage.setItem(LS_STATS_KEY, JSON.stringify(l)); }catch(e){}
+}
+
+/* ---------- shared bits ---------- */
+function cardHTML(card, opts){
+  opts = opts || {};
+  const sp = card.special ? paSpecial(card.special) : null;
+  const name = sp ? sp.name : paCardName(card);
+  const fx = sp ? sp.text : '';
+  const upg = card.upg ? '<span class="upg">' + '⬆'.repeat(card.upg) + '</span>' : '';
+  const cls = ['card', 'suit-' + card.suit, sp ? 'special' : '', opts.cls || ''].join(' ');
+  const sel = opts.selected ? ' sel' : '';
+  return '<button class="' + cls + sel + '" data-uid="' + card.uid + '"' + (opts.onclick === false ? ' disabled' : '') + '>' +
+    '<span class="band"><span class="rank">' + card.rank + '</span><span class="suitIco">' + suitIcon(card.suit) + '</span></span>' +
+    upg +
+    '<span class="cname">' + esc(name) + '</span>' +
+    (fx ? '<span class="fx">' + esc(fx) + '</span>' : '') +
+    '<span class="bigSuit">' + suitIcon(card.suit) + '</span>' +
+    '</button>';
+}
+function relicChipHTML(id){
+  const r = paRelic(id);
+  return '<span class="relicChip" title="' + esc(r.name + ' — ' + r.text) + '">' + r.icon + '</span>';
+}
+function syncTopbar(){
+  document.getElementById('hpText').textContent = S ? (S.hp + '/' + S.maxHp) : '–';
+  document.getElementById('hpFill').style.width = S ? Math.max(0, S.hp / S.maxHp * 100) + '%' : '100%';
+  document.getElementById('goldText').textContent = S ? S.gold : 0;
+  document.getElementById('floorText').textContent = S ? (S.floor + (S.endless && S.floor > 15 ? ' ∞' : ' / 15')) : '–';
+  document.getElementById('runScoreText').textContent = S ? S.totalScore.toLocaleString() : 0;
+  document.getElementById('relicTray').innerHTML = S ? S.relics.map(relicChipHTML).join('') : '';
+  document.getElementById('deckBtn').textContent = 'Deck (' + (S ? S.deck.length : 0) + ')';
+}
+function foeTargetLine(b){
+  return 'Target <b>' + b.target.toLocaleString() + '</b> · If you fall short: <b>' + b.attack + ' damage</b>' +
+    (b.fatigue ? ' · <span class="gold">The tower presses (loss streak ×' + (1 + 0.25 * b.fatigue).toFixed(2).replace(/\.?0+$/, '') + ')</span>' : '');
+}
+
+/* ---------- screens ---------- */
+function render(){
+  syncTopbar();
+  if (!S){ renderTitle(); return; }
+  if (S.phase === 'map') renderMap();
+  else if (S.phase === 'battle') renderBattle();
+  else if (S.phase === 'reward') renderReward();
+  else if (S.phase === 'shop') renderShop();
+  else if (S.phase === 'rest') renderRest();
+  else if (S.phase === 'event') renderEvent();
+  else if (S.phase === 'gameover') renderEnd(false);
+  else if (S.phase === 'victory') renderEnd(true);
+  saveRun();
+}
+function renderTitle(){
+  const saved = loadRun();
+  const l = lifetime();
+  $stage.innerHTML =
+    '<div class="panel center" style="margin-top:26px">' +
+      '<div style="font-size:44px">🦥 🐈‍⬛ 🌱</div>' +
+      '<h1 class="title">POCKET ASCENT</h1>' +
+      '<p class="tagline">A tiny deck-building roguelite. Part card sharp, part tower climb.<br>' +
+      'Fifteen floors. One bell at the top. Bring a good deck — and mind the cat.</p>' +
+      '<div class="row" style="justify-content:center">' +
+        (saved ? '<button class="btn" id="continueBtn">Continue — floor ' + saved.floor + '</button>' : '') +
+        '<button class="btn" id="newRunBtn">' + (saved ? 'New run' : 'Start the climb') + '</button>' +
+        '<button class="btn secondary" id="howBtn2">How to play</button>' +
+      '</div>' +
+      '<div class="row" style="justify-content:center; margin-top:16px">' +
+        '<input class="seedIn" id="seedIn" placeholder="Seed (optional)">' +
+        '<span class="muted" style="font-size:13px">Same seed, same tower. Leave blank for a random one.</span>' +
+      '</div>' +
+      (l.runs ? '<p class="muted" style="margin-top:18px">Lifetime: ' + l.runs + ' runs · ' + l.wins + ' summits · best floor ' + l.bestFloor + ' · best score ' + l.bestScore.toLocaleString() + '</p>' : '') +
+    '</div>';
+  const nb = document.getElementById('newRunBtn');
+  nb.onclick = () => { startRun(document.getElementById('seedIn').value.trim()); };
+  const cb = document.getElementById('continueBtn');
+  if (cb) cb.onclick = () => { S = saved; selected = []; toast('Welcome back, climber.'); render(); };
+  document.getElementById('howBtn2').onclick = showHelp;
+}
+function startRun(seedLabel){
+  if (!seedLabel) seedLabel = 'tower-' + Math.floor(Math.random() * 999999);
+  S = paNewRun(seedLabel);
+  selected = [];
+  sfx('win');
+  toast('Seed: ' + seedLabel);
+  render();
+}
+function renderMap(){
+  const act = paActForFloor(S.floor);
+  const actNames = { 1:'Act I — The Foothills', 2:'Act II — The Crags', 3:'Act III — The Belfry' };
+  let trail = '<div class="pathTrail">';
+  for (let f = 1; f <= 15; f++){
+    const cls = f < S.floor ? 'done' : (paIsBossFloor(f) ? 'boss' : '');
+    trail += '<span class="pathDot ' + cls + '" title="Floor ' + f + '">' + (paIsBossFloor(f) ? '👑' : f) + '</span>';
+  }
+  trail += '</div>';
+  const nodes = S.nodeChoices.map((n, i) =>
+    '<button class="nodeCard" data-node="' + i + '">' +
+      '<div class="nIcon">' + n.face + '</div>' +
+      '<div class="nName">' + esc(n.name) + (n.type === 'boss' ? ' — Floor ' + S.floor + ' Boss' : '') + '</div>' +
+      '<div class="nDesc">' + esc(n.desc) + '</div>' +
+    '</button>').join('');
+  $stage.innerHTML =
+    '<div class="panel">' +
+      '<h2 style="margin:0">🏔️ Floor ' + S.floor + ' <span class="muted" style="font-size:15px">' + actNames[act] + (S.endless && S.floor > 15 ? ' · Endless' : '') + '</span></h2>' +
+      trail +
+      '<p class="muted">Choose your next step, climber. Seed: <b>' + esc(S.seedLabel) + '</b></p>' +
+      '<div class="nodeGrid">' + nodes + '</div>' +
+    '</div>';
+  $stage.querySelectorAll('[data-node]').forEach(el => {
+    el.onclick = () => { paChooseNode(S, parseInt(el.dataset.node, 10)); selected = []; sfx('pick'); render(); };
+  });
+}
+</script>
+<script>
+/* ================= presentation, part 2: battle & rewards ================= */
+function selCards(){ return selected.map(uid => S.battle.hand.find(c => c.uid === uid)).filter(Boolean); }
+function liveEval(){
+  const cards = selCards();
+  if (!cards.length || !S.battle) return null;
+  return paScoreHand(cards, { relics: S.relics, handsPlayed: S.battle.handsPlayed, handsTotal: S.battle.handsTotal, foeRule: S.battle.foe.rule });
+}
+function renderBattle(){
+  const b = S.battle;
+  const pct = Math.min(100, Math.round(b.score / b.target * 100));
+  const played = b.lastPlay
+    ? b.lastPlay.cards.map(uid => findAnyCard(uid)).filter(Boolean).map(c => cardHTML(c, { cls:'mini', onclick:false })).join('')
+    : '<span class="placeholder">Cards you play land here. Pick up to 5 from your hand.</span>';
+  const lastLine = b.lastPlay
+    ? '<div class="center muted" style="margin-top:2px">Last hand: <b class="gold">' + esc(b.lastPlay.res.handName) + '</b> — ' +
+      b.lastPlay.res.chips + ' chips × ' + b.lastPlay.res.mult + ' = <b class="gold">' + b.lastPlay.res.total.toLocaleString() + '</b></div>'
+    : '';
+  $stage.innerHTML =
+    '<div class="panel" id="battlePanel">' +
+      '<div id="foePanel">' +
+        '<div id="foeFace">' + b.foe.face + '</div>' +
+        '<div class="targetWrap">' +
+          '<div style="font-weight:900; font-size:22px">' + esc(b.foe.name) +
+            (b.kind !== 'battle' ? ' <span class="pill">' + b.kind.toUpperCase() + '</span>' : '') + '</div>' +
+          '<div class="muted" style="font-size:13.5px">' + esc(b.foe.flavor || '') + (b.foe.ruleText ? ' <b class="gold">' + esc(b.foe.ruleText) + '</b>' : '') + '</div>' +
+          '<div class="targetBar" style="margin-top:8px"><i style="width:' + pct + '%"></i></div>' +
+          '<div id="scoreReadout"><span class="big">' + b.score.toLocaleString() + '</span><span class="muted">' + foeTargetLine(b) + '</span></div>' +
+        '</div>' +
+        '<div style="text-align:center">' +
+          '<div class="pill">🤲 Hands left: <b>' + b.handsLeft + '</b></div><br>' +
+          '<div class="pill" style="margin-top:6px">🗑️ Discards: <b>' + b.discardsLeft + (S.relics.includes('sock') && !b.freeDiscardUsed ? ' +1 free' : '') + '</b></div><br>' +
+          '<div class="pill" style="margin-top:6px">🎴 Draw pile: <b>' + b.drawPile.length + '</b></div>' +
+        '</div>' +
+      '</div>' +
+      '<div id="playedZone">' + played + '</div>' + lastLine +
+      '<div id="handTypeRead" class="center" style="margin-top:10px"></div>' +
+      '<div id="handFan">' + b.hand.map(c => cardHTML(c, { selected: selected.includes(c.uid) })).join('') + '</div>' +
+      '<div id="battleBtns">' +
+        '<button class="btn" id="playBtn">Play hand</button>' +
+        '<button class="btn secondary" id="discardBtn">Discard selected</button>' +
+        '<button class="btn secondary" id="sortBtn">Sort hand</button>' +
+      '</div>' +
+    '</div>';
+  updateHandRead();
+  $stage.querySelectorAll('#handFan .card').forEach(el => {
+    el.onclick = () => {
+      const uid = el.dataset.uid;
+      const i = selected.indexOf(uid);
+      if (i >= 0) selected.splice(i, 1);
+      else { if (selected.length >= PA_TUNE.maxSelect){ toast('Five cards max. This is not a buffet.'); return; } selected.push(uid); }
+      sfx('pick'); renderBattle();
+    };
+  });
+  document.getElementById('sortBtn').onclick = () => {
+    b.hand.sort((a, c) => (c.rank - a.rank) || a.suit.localeCompare(c.suit)); renderBattle();
+  };
+  document.getElementById('playBtn').onclick = doPlayHand;
+  document.getElementById('discardBtn').onclick = () => {
+    if (!selected.length){ toast('Pick cards to discard first.'); return; }
+    if (paDiscardCards(S, selected.slice())){ selected = []; sfx('pick'); render(); }
+    else toast('No discards left.');
+  };
+}
+function findAnyCard(uid){
+  if (!S) return null;
+  const pools = [S.deck];
+  if (S.battle) pools.push(S.battle.hand, S.battle.drawPile, S.battle.discardPile);
+  for (const p of pools){ const c = p.find(x => x.uid === uid); if (c) return c; }
+  return null;
+}
+function updateHandRead(){
+  const el = document.getElementById('handTypeRead');
+  if (!el) return;
+  const r = liveEval();
+  if (!r){ el.innerHTML = '<span class="muted">Select cards to preview the hand.</span>'; return; }
+  el.innerHTML = esc(r.handName) + ' <span class="calc">— ' + r.chips + ' chips × ' + r.mult + ' mult = </span> ' +
+    '<span class="gold">' + r.total.toLocaleString() + '</span>' +
+    (S.battle.foe.rule === 'overtime' && S.battle.handsPlayed === 0 ? ' <span class="calc">(halved: Overtime)</span>' : '');
+}
+function doPlayHand(){
+  const cards = selCards();
+  if (!cards.length){ toast('Select at least one card.'); return; }
+  const playedUids = selected.slice();
+  const res = paPlayHand(S, playedUids);
+  if (!res){ toast('That hand cannot be played.'); return; }
+  selected = [];
+  sfx('play');
+  showScorePop(res);
+  if (S.phase === 'reward'){ sfx('win'); setTimeout(() => render(), 900); return; }
+  if (S.phase === 'gameover'){ sfx('lose'); setTimeout(() => render(), 900); return; }
+  if (S.phase === 'map'){ sfx('hurt'); toast('The foe lands its hit as you climb on.'); setTimeout(() => render(), 900); return; }
+  render();
+}
+function showScorePop(res){
+  const pop = document.getElementById('scorePop');
+  pop.querySelector('.popMain').textContent = '+' + res.total.toLocaleString();
+  pop.querySelector('.popSub').textContent = res.handName + ' · ' + res.chips + ' × ' + res.mult;
+  pop.classList.remove('show'); void pop.offsetWidth; pop.classList.add('show');
+}
+function renderReward(){
+  const r = S.reward;
+  if (r.kind === 'relic'){
+    $stage.innerHTML =
+      '<div class="panel center">' +
+        '<h2>👑 Boss down! <span class="gold">+$' + r.gold + '</span></h2>' +
+        '<p class="muted">Choose a relic. Choose wisely — or at least enthusiastically.</p>' +
+        '<div class="offerGrid">' + r.relicChoices.map(id => {
+          const rel = paRelic(id);
+          return '<div class="relicOffer"><div class="rIco">' + rel.icon + '</div><div class="rName">' + esc(rel.name) + '</div>' +
+            '<div class="rDesc">' + esc(rel.text) + '</div>' +
+            '<button class="btn small" style="margin-top:12px" data-relic="' + id + '">Take it</button></div>';
+        }).join('') + '</div>' +
+      '</div>';
+    $stage.querySelectorAll('[data-relic]').forEach(el => { el.onclick = () => { paPickRelicReward(S, el.dataset.relic); sfx('coin'); render(); }; });
+    return;
+  }
+  $stage.innerHTML =
+    '<div class="panel center">' +
+      '<h2>⚔️ Victory! <span class="gold">+$' + r.gold + '</span></h2>' +
+      '<p class="muted">Add one card to your deck — or skip for $5.</p>' +
+      '<div class="offerGrid">' + r.cardChoices.map(c =>
+        '<div class="offerCol">' + cardHTML(c, { onclick:false }) +
+        '<button class="btn small" data-card="' + c.uid + '">Add to deck</button></div>').join('') +
+      '</div>' +
+      '<div style="margin-top:16px"><button class="btn secondary" id="skipReward">Skip (+$5)</button></div>' +
+    '</div>';
+  $stage.querySelectorAll('[data-card]').forEach(el => { el.onclick = () => { paPickCardReward(S, el.dataset.card); sfx('coin'); render(); }; });
+  document.getElementById('skipReward').onclick = () => { paPickCardReward(S, null); sfx('coin'); render(); };
+}
+</script>
+<script>
+/* ================= presentation, part 3: shop, rest, events, endings ================= */
+function renderShop(){
+  const s = S.shop;
+  const cards = s.cards.map((slot, i) =>
+    '<div class="offerCol">' + cardHTML(slot.card, { onclick:false }) +
+    (slot.sold ? '<span class="muted">Sold</span>' :
+      '<button class="btn small" data-buy-card="' + i + '"' + (S.gold < slot.price ? ' disabled' : '') + '>Buy · $' + slot.price + '</button>') +
+    '</div>').join('');
+  const relic = s.relic ? (() => { const r = paRelic(s.relic.id); return (
+    '<div class="relicOffer"><div class="rIco">' + r.icon + '</div><div class="rName">' + esc(r.name) + '</div>' +
+    '<div class="rDesc">' + esc(r.text) + '</div>' +
+    (s.relic.sold ? '<div class="muted" style="margin-top:10px">Sold</div>' :
+      '<button class="btn small" style="margin-top:12px" id="buyRelic"' + (S.gold < s.relic.price ? ' disabled' : '') + '>Buy · $' + s.relic.price + '</button>') + '</div>'); })()
+    : '<div class="relicOffer"><div class="rDesc">No relics left to sell you. Impressive.</div></div>';
+  $stage.innerHTML =
+    '<div class="panel">' +
+      '<h2 style="margin-top:0">🛒 Trailhead Shop <span class="muted" style="font-size:15px">· You hold $' + S.gold + '</span></h2>' +
+      (shopRemoving
+        ? '<p class="gold"><b>Choose a card to remove from your deck</b> ($' + s.removePrice + '). Click a card below, or cancel.</p>'
+        : '<div class="offerGrid">' + cards + '</div>' +
+          '<div class="offerGrid">' + relic +
+            '<div class="relicOffer"><div class="rIco">🍲</div><div class="rName">Trail Snack</div>' +
+            '<div class="rDesc">Heal ' + PA_TUNE.snackHeal + ' HP. Stock: ' + s.snacks + '</div>' +
+            '<button class="btn small" style="margin-top:12px" id="buySnack"' + (S.gold < paShopPrice(S, PA_TUNE.snackPrice) || s.snacks <= 0 || S.hp >= S.maxHp ? ' disabled' : '') + '>Buy · $' + paShopPrice(S, PA_TUNE.snackPrice) + '</button></div>' +
+            '<div class="relicOffer"><div class="rIco">✂️</div><div class="rName">Trim the Deck</div>' +
+            '<div class="rDesc">Remove one card from your deck, permanently. Thin decks draw their best cards more often.</div>' +
+            '<button class="btn small" style="margin-top:12px" id="startRemove"' + (S.gold < s.removePrice ? ' disabled' : '') + '>Remove · $' + s.removePrice + '</button></div>' +
+          '</div>') +
+      (shopRemoving ? '<div id="deckGrid">' + S.deck.map(c => cardHTML(c, { cls:'mini' })).join('') + '</div>' +
+          '<div style="margin-top:14px"><button class="btn secondary" id="cancelRemove">Cancel</button></div>' : '') +
+      '<div style="margin-top:18px" class="center"><button class="btn" id="leaveShop">Leave the shop →</button></div>' +
+    '</div>';
+  $stage.querySelectorAll('[data-buy-card]').forEach(el => { el.onclick = () => { if (paShopBuyCard(S, parseInt(el.dataset.buyCard, 10))){ sfx('coin'); render(); } }; });
+  const br = document.getElementById('buyRelic'); if (br) br.onclick = () => { if (paShopBuyRelic(S)){ sfx('coin'); render(); } };
+  const bs = document.getElementById('buySnack'); if (bs) bs.onclick = () => { if (paShopBuySnack(S)){ sfx('coin'); render(); } else toast('Cannot buy that right now.'); };
+  const sr = document.getElementById('startRemove'); if (sr) sr.onclick = () => { shopRemoving = true; render(); };
+  const cr = document.getElementById('cancelRemove'); if (cr) cr.onclick = () => { shopRemoving = false; render(); };
+  if (shopRemoving){
+    $stage.querySelectorAll('#deckGrid .card').forEach(el => { el.onclick = () => {
+      if (paShopRemoveCard(S, el.dataset.uid)){ shopRemoving = false; sfx('coin'); toast('Card removed. The deck feels lighter.'); render(); }
+      else toast('That removal did not go through.');
+    }; });
+  }
+  document.getElementById('leaveShop').onclick = () => { shopRemoving = false; paLeaveShop(S); render(); };
+}
+function renderRest(){
+  const healAmt = Math.round(S.maxHp * PA_TUNE.restHealPct) + (S.relics.includes('blanket') ? 15 : 0);
+  const upgradable = S.deck.filter(c => c.upg < 2);
+  $stage.innerHTML =
+    '<div class="panel">' +
+      '<h2 style="margin-top:0">🏕️ Rest Site</h2>' +
+      '<p class="muted">A flat rock, a small fire, and exactly one marshmallow. Choose one:</p>' +
+      '<div class="row">' +
+        '<button class="btn" id="restHeal">Rest — heal ' + healAmt + ' HP</button>' +
+        '<span class="muted">or upgrade a card below (⬆ = +4 chips, ⬆⬆ = +1 Mult too)</span>' +
+      '</div>' +
+      '<div id="deckGrid">' + upgradable.map(c => cardHTML(c, { cls:'mini' })).join('') + '</div>' +
+    '</div>';
+  document.getElementById('restHeal').onclick = () => { paRestHeal(S); sfx('win'); render(); };
+  $stage.querySelectorAll('#deckGrid .card').forEach(el => { el.onclick = () => { if (paRestUpgrade(S, el.dataset.uid)){ sfx('coin'); render(); } }; });
+}
+function renderEvent(){
+  const ev = paEventDef(S.event.id);
+  if (S.event.done){
+    $stage.innerHTML =
+      '<div class="panel center">' +
+        '<div style="font-size:44px">' + ev.icon + '</div>' +
+        '<h2>' + esc(ev.title) + '</h2>' +
+        '<p style="max-width:560px; margin:10px auto; line-height:1.6">' + esc(S.lastEventText) + '</p>' +
+        '<button class="btn" id="evContinue">Climb on →</button>' +
+      '</div>';
+    document.getElementById('evContinue').onclick = () => { paEventContinue(S); render(); };
+    return;
+  }
+  $stage.innerHTML =
+    '<div class="panel center">' +
+      '<div style="font-size:44px">' + ev.icon + '</div>' +
+      '<h2>' + esc(ev.title) + '</h2>' +
+      '<p style="max-width:560px; margin:10px auto; line-height:1.6">' + esc(ev.body) + '</p>' +
+      '<div class="row" style="justify-content:center">' + ev.choices.map((ch, i) =>
+        '<button class="btn secondary" data-ev="' + i + '">' + esc(ch.label) + '<br><span style="font-weight:500; font-size:12.5px; opacity:.8">' + esc(ch.hint) + '</span></button>').join('') +
+      '</div>' +
+    '</div>';
+  $stage.querySelectorAll('[data-ev]').forEach(el => { el.onclick = () => { paEventChoice(S, parseInt(el.dataset.ev, 10)); sfx('pick'); render(); }; });
+}
+function renderEnd(wonGame){
+  if (!S._recorded){ S._recorded = true; recordLifetime(wonGame); }
+  if (wonGame) clearSave();
+  const stats = S.stats;
+  const endlessBtn = wonGame ? '<button class="btn secondary" id="endlessBtn">Keep climbing (endless)</button>' : '';
+  $stage.innerHTML =
+    '<div class="panel center" style="margin-top:22px">' +
+      '<div style="font-size:52px">' + (wonGame ? '🔔🏆' : '🥀') + '</div>' +
+      '<h1 class="title" style="font-size:clamp(32px,6vw,54px)">' + (wonGame ? 'THE BELL RINGS FOR YOU' : 'THE TOWER KEEPS THE BELL') + '</h1>' +
+      '<p class="tagline">' + (wonGame
+        ? 'Floor 15 cleared. The Final Bell tolls, impressed, as you ring it back.'
+        : S.fellAtFinal
+          ? 'You reached the Final Bell and it out-rang you. One floor from glory — the tower will keep your seat warm.'
+          : 'You fell on floor ' + S.floor + '. The tower is patient. So is Theo.') + '</p>' +
+      '<p style="font-size:17px; line-height:1.9">' +
+        'Total score <b class="gold">' + S.totalScore.toLocaleString() + '</b> · Best hand <b class="gold">' + stats.bestHand.toLocaleString() + '</b><br>' +
+        'Battles won ' + stats.won + ' · lost ' + stats.lost + ' · Relics ' + S.relics.length + ' · Gold earned $' + stats.earned + '<br>' +
+        '<span class="muted">Seed: ' + esc(S.seedLabel) + ' — run it back and take a different path.</span></p>' +
+      '<div class="row" style="justify-content:center">' +
+        '<button class="btn" id="againBtn">New run</button>' + endlessBtn +
+      '</div>' +
+    '</div>';
+  document.getElementById('againBtn').onclick = () => { S = null; clearSave(); render(); };
+  const eb = document.getElementById('endlessBtn');
+  if (eb) eb.onclick = () => { S.endless = true; S.phase = 'map'; S.floor = 15; paAdvanceFloor(S); toast('Endless climb. The tower grows with you.'); render(); };
+}
+
+/* ---------- help + deck viewer ---------- */
+function showHelp(){
+  $modalBox.innerHTML =
+    '<h2 style="margin-top:0">How to play Pocket Ascent</h2>' +
+    '<div class="rulesText"><ul>' +
+    '<li><b>The climb.</b> Pick a path up 15 floors. Battles, shops, rest sites and odd encounters — with a boss on floors 5, 10 and 15.</li>' +
+    '<li><b>Battles are score duels.</b> Each turn you hold 8 cards. Select up to 5 and play them as a hand: score = (hand base + card chips) × Mult. Pairs, straights and flushes multiply. You get 4 hands to reach the target — fall short and the foe hits your HP.</li>' +
+    '<li><b>Discards.</b> Swap selected cards for fresh ones, 3 per battle. Spend them chasing straights and flushes.</li>' +
+    '<li><b>Build the deck.</b> Wins earn gold and a choice of new cards — higher ranks, and characters like Slowpoke (scores twice), Meowth (pays gold) and Theo (pure chaos, +Mult per Ember friend).</li>' +
+    '<li><b>Relics bend the rules.</b> Elites and bosses drop them; shops sell them. A Collatz Charm loves 3-card hands. A Domino Tile doubles the low card of a straight. Stack them.</li>' +
+    '<li><b>Rest sites</b> heal you — or upgrade a card (+4 chips, then +1 Mult).</li>' +
+    '<li><b>The tower presses.</b> Lose a battle and the next foes hit 25% harder per loss in a row, until you win again. Stumbling is survivable — spiraling is not.</li>' +
+    '<li><b>Death is a lesson.</b> Every run is seeded: replay the same seed to take the other path, or chase a better score.</li>' +
+    '</ul></div>' +
+    '<div class="center"><button class="btn" id="closeModal">Back to the tower</button></div>';
+  $modalWrap.classList.remove('hidden');
+  document.getElementById('closeModal').onclick = closeModal;
+}
+function showDeck(){
+  if (!S){ toast('No run in progress.'); return; }
+  const sorted = S.deck.slice().sort((a, b) => b.rank - a.rank);
+  $modalBox.innerHTML =
+    '<h2 style="margin-top:0">Your deck (' + S.deck.length + ' cards)</h2>' +
+    '<div id="deckGrid">' + sorted.map(c => cardHTML(c, { cls:'mini', onclick:false })).join('') + '</div>' +
+    '<div class="center" style="margin-top:16px"><button class="btn" id="closeModal">Close</button></div>';
+  $modalWrap.classList.remove('hidden');
+  document.getElementById('closeModal').onclick = closeModal;
+}
+function closeModal(){ $modalWrap.classList.add('hidden'); }
+$modalWrap.addEventListener('click', e => { if (e.target === $modalWrap) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ---------- wiring ---------- */
+document.getElementById('deckBtn').onclick = showDeck;
+document.getElementById('helpBtn').onclick = showHelp;
+document.getElementById('soundBtn').onclick = (e) => { soundOn = !soundOn; e.target.textContent = soundOn ? '🔊' : '🔇'; if (soundOn) sfx('pick'); };
+render();
+</script>
+</body>
+</html>
