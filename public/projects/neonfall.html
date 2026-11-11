@@ -475,6 +475,7 @@ function nfDropGem(S, x, y, val){
 }
 function nfKill(S, e){
   S.kills++;
+  if (e.boss) S.bossKilled = true; // the Herald Slayer achievement must mean an actual kill
   S.events.push({ k: 'kill', x: e.x, y: e.y, r: e.r, elite: e.elite, type: e.type });
   if (e.type === 'splitter'){
     for (let i = 0; i < 2; i++){
@@ -977,7 +978,7 @@ const STARTERS = [
   { id: 'chain', label: '⚡ Chain Lightning', unlock: () => life.wins >= 1, hint: ' — 🔒 win a run' },
 ];
 const ACHIEVES = [
-  { label: '☠ Herald Slayer', test: () => life.wins >= 1 },
+  { label: '☠ Herald Slayer', test: () => (life.bossKills || 0) >= 1 },
   { label: '⏱ 5:00 Survivor', test: () => life.bestTime >= 300 },
   { label: '∞ Endless 12:00', test: () => life.bestTime >= 720 },
   { label: '🌟 Level 20', test: () => (life.bestLevel || 0) >= 20 },
@@ -1484,6 +1485,7 @@ function showEnd(){
     S._counted = true;
     life.runs++; life.totalKills += S.kills;
     if (S.won) life.wins++;
+    if (S.bossKilled) life.bossKills = (life.bossKills || 0) + 1;
     life.bestTime = Math.max(life.bestTime, Math.min(S.t, 600));
     if (S.endless) life.bestTime = Math.max(life.bestTime, S.t);
     life.bestLevel = Math.max(life.bestLevel || 0, S.level);
