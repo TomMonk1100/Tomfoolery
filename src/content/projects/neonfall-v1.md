@@ -2,7 +2,7 @@
 title: Neonfall — V1 (Original)
 date: 2026-11-10
 kind: game
-summary: The original release, preserved exactly as it shipped on November 10, 2026 — kept alongside the loop build so the distance between them stays visible. A bullet-heaven arena in the neon void: you fly and dash, your weapons fire on their own, and passives stack into transformations on the way to the Void Herald.
+summary: The original release, preserved exactly as it shipped on November 10, 2026 — kept alongside the loop build so the distance between them stays visible. A bullet-heaven arena in the neon void. You fly and dash; your weapons fire on their own, and passives stack into transformations on the way to the Void Herald.
 file: /projects/neonfall-v1.html
 image: /images/projects/neonfall.png
 imageAlt: The word NEONFALL in glowing white-cyan over a dark void scattered with neon enemy shapes — pink drifters, amber darters, violet brutes, cyan shards — and one small white ship.
