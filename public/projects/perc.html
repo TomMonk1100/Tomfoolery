@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+<title>percolation — 2026-11-02</title>
+<style>
+body { font-family: Georgia, serif; max-width: 960px; margin: 2em auto; padding: 0 1em; color: #222; }
+canvas { background: #111; display: block; }
+table { border-collapse: collapse; margin: 1em 0; font-variant-numeric: tabular-nums; }
+td, th { border: 1px solid #ccc; padding: 4px 10px; font-size: 13px; }
+.controls { margin: 1em 0; }
+.controls button, .controls input { margin-right: 1em; }
+</style></head>
+<body>
+<h1>percolation — does a path cross the lattice?</h1>
+<p>Each cell is filled with probability <b>p</b>. Clusters are
+4-neighbor connected filled cells. The lattice <b>percolates</b> when
+one cluster touches both the top and bottom rows — drawn in gold
+below; other filled cells are blue-grey. Nothing is hand-placed;
+the spanning cluster either emerges or it doesn't.</p>
+<canvas id="cv" width="480" height="480"></canvas>
+<div class="controls">
+<label>p <input id="pSlider" type="range" min="0.30" max="0.85" step="0.01" value="0.59"> <span id="pVal">0.59</span></label>
+<button id="seedBtn">New lattice</button>
+<span id="spanVal">–</span> · largest cluster <span id="largeVal">–</span>
+</div>
+<h2>What the sweep found (measured, not tuned)</h2>
+<p>The transition <b>sharpens with size</b>: the p25–p75 width narrows
+0.0667 → 0.0451 → 0.0422 from N=20 to 80, so H0 (no sharpening) is
+rejected — with the caveat that the 40→80 step (0.0029) is inside
+the noise. The threshold location is already at the literature
+value within noise at every size: p50 = 0.590 / 0.582 / 0.590 against
+p<sub>c</sub> ≈ 0.593, each within ~0.011 (one binomial standard
+error in p, from sem 0.1118 at 20 seeds). So H0' (no convergence)
+holds as written — p50 at N=80 is no closer than at N=20 — but the
+honest reading is that the test cannot resolve movement smaller
+than the noise, not that convergence is absent. 30 rows, 20 seeds
+each, determinism rerun byte-identical.</p>
+<table><tr><th>N</th><th>p</th><th>spanning fraction</th><th>mean largest cluster</th></tr>
+<tr><td>20</td><td>0.40</td><td>0.00</td><td>22</td></tr>
+<tr><td>20</td><td>0.45</td><td>0.00</td><td>33</td></tr>
+<tr><td>20</td><td>0.50</td><td>0.00</td><td>50</td></tr>
+<tr><td>20</td><td>0.55</td><td>0.20</td><td>77</td></tr>
+<tr><td>20</td><td>0.59</td><td>0.50</td><td>125</td></tr>
+<tr><td>20</td><td>0.63</td><td>0.80</td><td>181</td></tr>
+<tr><td>20</td><td>0.67</td><td>0.95</td><td>229</td></tr>
+<tr><td>20</td><td>0.71</td><td>1.00</td><td>272</td></tr>
+<tr><td>20</td><td>0.75</td><td>1.00</td><td>297</td></tr>
+<tr><td>20</td><td>0.80</td><td>1.00</td><td>318</td></tr>
+<tr><td>40</td><td>0.40</td><td>0.00</td><td>39</td></tr>
+<tr><td>40</td><td>0.45</td><td>0.00</td><td>67</td></tr>
+<tr><td>40</td><td>0.50</td><td>0.00</td><td>121</td></tr>
+<tr><td>40</td><td>0.55</td><td>0.10</td><td>238</td></tr>
+<tr><td>40</td><td>0.59</td><td>0.60</td><td>436</td></tr>
+<tr><td>40</td><td>0.63</td><td>0.95</td><td>795</td></tr>
+<tr><td>40</td><td>0.67</td><td>0.95</td><td>973</td></tr>
+<tr><td>40</td><td>0.71</td><td>1.00</td><td>1095</td></tr>
+<tr><td>40</td><td>0.75</td><td>1.00</td><td>1189</td></tr>
+<tr><td>40</td><td>0.80</td><td>1.00</td><td>1279</td></tr>
+<tr><td>80</td><td>0.40</td><td>0.00</td><td>53</td></tr>
+<tr><td>80</td><td>0.45</td><td>0.00</td><td>89</td></tr>
+<tr><td>80</td><td>0.50</td><td>0.00</td><td>182</td></tr>
+<tr><td>80</td><td>0.55</td><td>0.05</td><td>626</td></tr>
+<tr><td>80</td><td>0.59</td><td>0.50</td><td>1650</td></tr>
+<tr><td>80</td><td>0.63</td><td>1.00</td><td>3350</td></tr>
+<tr><td>80</td><td>0.67</td><td>1.00</td><td>4063</td></tr>
+<tr><td>80</td><td>0.71</td><td>1.00</td><td>4441</td></tr>
+<tr><td>80</td><td>0.75</td><td>1.00</td><td>4748</td></tr>
+<tr><td>80</td><td>0.80</td><td>1.00</td><td>5099</td></tr>
+</table>
+<script>
+// perc-core.mjs — site percolation on a square lattice, pure logic, no DOM.
+// A site is occupied with probability p; clusters are 4-neighbor connected
+// occupied sites. A lattice percolates when one cluster touches both the
+// top and bottom rows. Rules stated once; the threshold emerges.
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Generate an N x N lattice: Uint8Array, 1 = occupied, row-major (y * N + x).
+function generate(N, p, rng) {
+  const grid = new Uint8Array(N * N);
+  for (let i = 0; i < N * N; i++) grid[i] = rng() < p ? 1 : 0;
+  return grid;
+}
+
+// Label clusters by BFS. Returns { spanning, largest, spanningCells }:
+// spanning is true when some cluster touches row 0 and row N-1;
+// largest is the largest cluster size; spanningCells is a Set of cell
+// indices of the largest spanning cluster (empty when not spanning).
+function analyze(grid, N) {
+  const seen = new Uint8Array(N * N);
+  let largest = 0;
+  let spanning = false;
+  let spanningCells = new Set();
+  const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  for (let start = 0; start < N * N; start++) {
+    if (!grid[start] || seen[start]) continue;
+    const cells = [start];
+    seen[start] = 1;
+    let top = false, bottom = false;
+    for (let q = 0; q < cells.length; q++) {
+      const c = cells[q];
+      const x = c % N, y = Math.floor(c / N);
+      if (y === 0) top = true;
+      if (y === N - 1) bottom = true;
+      for (const [dx, dy] of dirs) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || nx >= N || ny < 0 || ny >= N) continue;
+        const ni = ny * N + nx;
+        if (grid[ni] && !seen[ni]) { seen[ni] = 1; cells.push(ni); }
+      }
+    }
+    if (cells.length > largest) largest = cells.length;
+    if (top && bottom) {
+      spanning = true;
+      if (cells.length > spanningCells.size) spanningCells = new Set(cells);
+    }
+  }
+  return { spanning, largest, spanningCells };
+}
+
+// ASCII render of a lattice: '#' occupied, '.' empty, '@' spanning cluster.
+function renderASCII(grid, N, spanningCells) {
+  const lines = [];
+  for (let y = 0; y < N; y++) {
+    let row = "";
+    for (let x = 0; x < N; x++) {
+      const i = y * N + x;
+      row += spanningCells && spanningCells.has(i) ? "@" : (grid[i] ? "#" : ".");
+    }
+    lines.push(row);
+  }
+  return lines.join("\n");
+}
+
+// Linear-interpolate the p at which frac crosses level, given sorted
+// p values and their spanning fractions. Returns null if never crossed.
+function crossingP(ps, fracs, level) {
+  for (let i = 1; i < ps.length; i++) {
+    if (fracs[i - 1] < level && fracs[i] >= level) {
+      const f0 = fracs[i - 1], f1 = fracs[i];
+      if (f1 === f0) return ps[i];
+      return ps[i - 1] + (level - f0) / (f1 - f0) * (ps[i] - ps[i - 1]);
+    }
+  }
+  if (fracs[0] >= level) return ps[0];
+  return null;
+}
+
+
+var cv = document.getElementById('cv');
+var ctx = cv.getContext('2d');
+var N = 60, p = 0.59, seed = 4247;
+function draw() {
+  var g = generate(N, p, mulberry32(seed));
+  var a = analyze(g, N);
+  var cell = cv.width / N;
+  ctx.fillStyle = '#111'; ctx.fillRect(0, 0, cv.width, cv.height);
+  for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) {
+    var i = y * N + x;
+    if (!g[i]) continue;
+    ctx.fillStyle = a.spanningCells.has(i) ? '#ffd94a' : '#5a6b8a';
+    ctx.fillRect(x * cell + 0.5, y * cell + 0.5, cell - 1, cell - 1);
+  }
+  document.getElementById('spanVal').textContent = a.spanning ? 'SPANS top to bottom' : 'does not span';
+  document.getElementById('largeVal').textContent = a.largest + ' cells';
+}
+document.getElementById('pSlider').addEventListener('input', function (e) {
+  p = parseFloat(e.target.value);
+  document.getElementById('pVal').textContent = p.toFixed(2);
+  draw();
+});
+document.getElementById('seedBtn').addEventListener('click', function () {
+  seed = Math.floor(Math.random() * 1e9); draw();
+});
+draw();
+
+</script>
+</body>
+</html>

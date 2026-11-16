@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instinct Field — a year in the life of a scored lesson</title>
+<style>
+  :root { --bg:#0d1117; --panel:#161b22; --ink:#e6edf3; --dim:#8b949e; --line:#30363d; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font:15px/1.6 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif; }
+  header, main, footer { max-width:1080px; margin:0 auto; padding:0 24px; }
+  header { padding-top:36px; }
+  h1 { font-size:30px; margin:0 0 4px; letter-spacing:-0.5px; }
+  .sub { color:var(--dim); margin:0 0 20px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+           padding:16px 18px; margin:18px 0; }
+  #field { width:100%; height:460px; display:block; background:#0a0e13;
+           border:1px solid var(--line); border-radius:8px; cursor:crosshair; }
+  .controls { display:flex; flex-wrap:wrap; gap:14px; align-items:center; }
+  .controls label { color:var(--dim); font-size:13px; }
+  .controls input[type=number] { width:90px; background:#0a0e13; color:var(--ink);
+      border:1px solid var(--line); border-radius:6px; padding:6px 8px; }
+  .controls input[type=range] { width:140px; }
+  button { background:#1f6feb; color:#fff; border:0; border-radius:6px;
+           padding:8px 14px; font-size:14px; cursor:pointer; }
+  button.ghost { background:#21262d; border:1px solid var(--line); }
+  button:hover { filter:brightness(1.15); }
+  #legend { list-style:none; margin:12px 0 0; padding:0; display:flex;
+            flex-wrap:wrap; gap:8px 18px; font-size:13px; color:var(--dim); }
+  #legend li { display:flex; align-items:center; gap:7px; }
+  .swatch { width:22px; height:4px; border-radius:2px; display:inline-block; }
+  #legend input { accent-color:#1f6feb; }
+  #tip { min-height:22px; font-size:13px; color:var(--dim); margin-top:10px;
+         font-variant-numeric:tabular-nums; }
+  h2 { font-size:19px; margin:26px 0 8px; }
+  table.rules { width:100%; border-collapse:collapse; font-size:13.5px; }
+  table.rules th, table.rules td { text-align:left; padding:7px 10px;
+      border-bottom:1px solid var(--line); vertical-align:top; }
+  table.rules th { color:var(--dim); font-weight:600; }
+  code { background:#0a0e13; padding:2px 6px; border-radius:5px; font-size:13px; }
+  .retired-tag { color:#f85149; }
+  footer { color:var(--dim); font-size:12.5px; padding:26px 24px 60px; }
+  .k { color:#79c0ff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Instinct Field</h1>
+  <p class="sub">A scored-instinct ledger, one rulebook, five archetype lessons, and
+  30&ndash;1,825 simulated nights. Watch good instincts saturate, silent ones
+  fade to the floor, and contradicted ones retire.</p>
+</header>
+<main>
+  <div class="panel">
+    <div class="controls">
+      <label>Seed <input id="seed" type="number" value="7"></label>
+      <label>Nights <input id="nights" type="number" value="365" min="30" max="1825"></label>
+      <label>Speed <input id="speed" type="range" min="1" max="120" value="30"></label>
+      <button id="replay">Replay</button>
+      <button id="silence" class="ghost">Extreme: total silence</button>
+      <button id="storm" class="ghost">Extreme: contradiction storm</button>
+    </div>
+    <canvas id="field" width="1032" height="460"></canvas>
+    <ul id="legend"></ul>
+    <div id="tip">Hover the chart to inspect a night.</div>
+  </div>
+
+  <h2>How it works</h2>
+  <div class="panel">
+    <p>Each instinct carries a confidence in [0,1], a count of observations, a count
+    of distinct nights it was seen, and the night it was last relevant. Every
+    simulated night applies the ledger's exact rules:</p>
+    <table class="rules">
+      <tr><th>Rule</th><th>Mechanics</th></tr>
+      <tr><td>New instinct</td><td>starts at <code>0.6</code></td></tr>
+      <tr><td>Confirmation</td><td><code>+0.05</code>, capped at <code>0.95</code></td></tr>
+      <tr><td>Contradiction</td><td><code>−0.10</code>, no floor — can push it under the line</td></tr>
+      <tr><td>Decay</td><td><code>−0.10</code> per silent week (7+ nights with no relevance), floor <code>0.4</code></td></tr>
+      <tr><td>Retirement</td><td>below <code>0.4</code> → retired, kept in the log, never recalled</td></tr>
+      <tr><td>Frequency anchors</td><td>1–2 observations → never above <code>0.6</code>; 3–5 → <code>0.7</code>;
+          6–10 → <code>0.8</code>; 11+ → <code>0.95</code></td></tr>
+      <tr><td>Climb gate</td><td>past <code>0.8</code> only with evidence from 2+ distinct nights</td></tr>
+      <tr><td>Standing instructions</td><td>never decay, never retire — frequency anchors don't apply (stipulated, not learned)</td></tr>
+    </table>
+    <p>A "relevant" night with neither confirmation nor contradiction only resets the
+    decay clock — contact with reality keeps confidence alive; silence lets it die.</p>
+  </div>
+
+  <h2>The cast</h2>
+  <div class="panel">
+    <table class="rules">
+      <tr><th>Archetype</th><th>Nightly event mix</th><th>What it tests</th></tr>
+      <tr><td><span class="k">The Steady Worker</span></td><td>18% confirm, 1% contradict, 35% relevant</td>
+          <td>a lesson that keeps earning its keep — should saturate near 0.95</td></tr>
+      <tr><td><span class="k">The Controversial One</span></td><td>5% confirm, 8% contradict, 20% relevant</td>
+          <td>a lesson the nights keep arguing with — should sink toward the floor or retire</td></tr>
+      <tr><td><span class="k">The Forgotten One</span></td><td>0.5% confirm, 2% relevant</td>
+          <td>a lesson nobody uses — should decay one notch per silent week to the 0.4 floor</td></tr>
+      <tr><td><span class="k">The Standing Rule</span></td><td>10% relevant, never decays</td>
+          <td>Adam's hard rule — pinned at 0.95, untouched by silence</td></tr>
+      <tr><td><span class="k">The Lucky Hit</span></td><td>one confirmation on night 10, then silence</td>
+          <td>frequency anchors — a single lucky night must not mint a strong instinct</td></tr>
+    </table>
+  </div>
+
+  <h2>Tuning results</h2>
+  <div class="panel" id="tuning">
+    <p>Measured from the node harness over a full simulated year (seed 7, 365
+    nights — seeded, so every number below reproduces exactly). The harness
+    asserts each of these as a tuning check; all green.</p>
+    <table class="rules">
+      <tr><th>Check</th><th>Result</th></tr>
+      <tr><td>Steady Worker, 365 nights, seed 7</td><td id="t-steady">saturates at 0.95 (65 observations, 186 distinct nights)</td></tr>
+      <tr><td>Controversial One, 365 nights, seed 7</td><td id="t-contro"><span class="retired-tag">retired at night 88</span> — 13 observations weren't enough against 8%/night contradictions</td></tr>
+      <tr><td>Forgotten One, 365 nights, seed 7</td><td id="t-forgot">rests at the 0.4 floor — decayed one notch per silent week, never retired</td></tr>
+      <tr><td>Standing Rule after a year of silence</td><td id="t-stand">pinned at 0.95 — untouched by 38 relevant nights and 365 nights of nothing</td></tr>
+      <tr><td>Lucky Hit: single confirm at night 10</td><td id="t-lucky">capped at 0.6 by the frequency anchors, then decayed to the 0.4 floor — one lucky night mints nothing</td></tr>
+      <tr><td>Determinism: two runs, same seed</td><td id="t-determ">identical summaries and identical per-night histories</td></tr>
+    </table>
+    <p>The run also settled one design question: stipulated rules are exempt from
+    the learning guards. The Standing Rule enters at 0.95 without having
+    <em>earned</em> it through observations — so the frequency anchors and the
+    2-night climb gate don't apply to it. A lesson you stipulate is not a lesson
+    you learned; the ledger shouldn't make Adam's hard rule prove itself.</p>
+    <h3 style="font-size:16px;margin:18px 0 6px;">Five years (50 seeds × 1,825 nights)</h3>
+    <p>Scaling the horizon five-fold — the nights box above accepts up to 1,825 —
+    answered the question the sweep was built for: does the rule set stay sane
+    when a good lesson has five unlucky years to survive?</p>
+    <table class="rules">
+      <tr><th>Check</th><th>Result</th></tr>
+      <tr><td>Steady Worker, 1,825 nights, 50 seeds</td><td>survives every run — zero retirements, worst final 0.85. Positive drift wins: +0.008 confidence/night expected (18% × +0.05 vs 1% × −0.10) beats the rare −0.10 hits and decay almost never fires on a lesson this active.</td></tr>
+      <tr><td>Controversial One, 1,825 nights, 50 seeds</td><td><span class="retired-tag">retires in all 50 runs</span> — median death-night 30, 90th percentile 78. The contradiction-heavy lesson has a half-life of about a month; the seed-7 one-year death at night 88 was a late outlier, not the norm.</td></tr>
+      <tr><td>Forgotten One / Lucky Hit, 1,825 nights</td><td>absorb at the 0.4 floor in every seed, never retire. Decay can't push below the floor — <em>only contradictions can kill</em>, and neither archetype takes any.</td></tr>
+      <tr><td>Standing Rule, 1,825 nights, 50 seeds</td><td>pinned at 0.95 in every seed — untouched by five years of silence.</td></tr>
+      <tr><td>Cost</td><td>~9 ms per 1,825-night run in node; the page renders it live.</td></tr>
+    </table>
+    <p>The ledger's long-run ethics are blunt: contradiction is the only death,
+    silence is only a demotion, and a lesson that keeps earning its keep is
+    effectively immortal under these rules. Worth knowing before trusting the
+    ledger for real.</p>
+  </div>
+</main>
+<footer>
+  Built as the first free-choice night build under the new topic gate — a machine
+  for watching how scored lessons behave when the nights do the scoring.
+</footer>
+<script data-core>
+/* CORE-BEGIN */
+'use strict';
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const TUNE={
+  startConfidence:0.6,
+  confirmDelta:0.05,
+  confirmCap:0.95,
+  contradictDelta:0.1,
+  decayDelta:0.1,
+  decayFloor:0.4,
+  decayWindowNights:7,
+  retireBelow:0.4,
+  freqCaps:[[2,0.6],[5,0.7],[10,0.8],[Infinity,0.95]],
+  minNightsForHigh:2
+};
+class Instinct{
+  constructor(def){
+    this.id=def.id;this.trigger=def.trigger||'';this.domain=def.domain||'night-ops';
+    this.scope=def.scope||'night';this.standing=!!def.standing;
+    this.archetype=def.archetype||'custom';this.eventFn=def.eventFn||null;
+    this.p=def.p||{confirm:0,contradict:0,relevant:0};
+    this.confidence=(def.startConfidence!=null?def.startConfidence:TUNE.startConfidence);
+    this.observations=0;this.distinctNights=0;this.lastSeenNight=-1;
+    this.lastRelevantNight=-1;this.lastDecayNight=0;
+    this.retired=false;this.retiredNight=null;this.history=[];
+  }
+  freqCap(){
+    if(this.standing)return TUNE.confirmCap; // stipulated, not learned: anchors don't apply
+    for(const pair of TUNE.freqCaps){if(this.observations<=pair[0])return pair[1];}
+    return TUNE.confirmCap;
+  }
+  applyEvent(night,kind){
+    if(this.retired)return;
+    if(night!==this.lastSeenNight){this.distinctNights++;this.lastSeenNight=night;}
+    this.lastRelevantNight=night;
+    if(kind==='confirm'){this.observations++;this.confidence=Math.min(TUNE.confirmCap,this.confidence+TUNE.confirmDelta);}
+    else if(kind==='contradict'){this.observations++;this.confidence-=TUNE.contradictDelta;}
+    let cap=this.freqCap();
+    // the climb gate guards learned climbs; stipulated confidence is exempt
+    if(!this.standing&&this.confidence>0.8&&this.distinctNights<TUNE.minNightsForHigh)cap=Math.min(cap,0.8);
+    this.confidence=Math.min(this.confidence,cap);
+    if(this.confidence<TUNE.retireBelow){this.retired=true;this.retiredNight=night;}
+  }
+  applyDecay(night){
+    if(this.retired||this.standing)return false;
+    const sinceRelevant=night-Math.max(this.lastRelevantNight,0);
+    const sinceDecay=night-this.lastDecayNight;
+    if(sinceRelevant>=TUNE.decayWindowNights&&sinceDecay>=TUNE.decayWindowNights){
+      this.lastDecayNight=night;
+      this.confidence=Math.max(TUNE.decayFloor,this.confidence-TUNE.decayDelta);
+      return true;
+    }
+    return false;
+  }
+  tick(night){this.history.push({night:night,confidence:this.retired?null:this.confidence});}
+  state(){return {id:this.id,confidence:this.confidence,observations:this.observations,
+    distinctNights:this.distinctNights,retired:this.retired,retiredNight:this.retiredNight};}
+}
+function runField(seed,nights,defs){
+  const rand=mulberry32(seed);
+  const instincts=defs.map(function(d){return new Instinct(d);});
+  for(let n=0;n<nights;n++){
+    for(const inst of instincts){
+      if(inst.retired)continue;
+      let kind=null;
+      if(inst.eventFn){kind=inst.eventFn(n,inst,rand);}
+      else{
+        const r=rand(),p=inst.p;
+        if(r<p.confirm)kind='confirm';
+        else if(r<p.confirm+p.contradict)kind='contradict';
+        else if(r<p.confirm+p.contradict+p.relevant)kind='relevant';
+      }
+      if(kind)inst.applyEvent(n,kind);
+    }
+    for(const inst of instincts)inst.applyDecay(n);
+    for(const inst of instincts)inst.tick(n);
+  }
+  return instincts;
+}
+function summarize(instincts){
+  const out={};
+  for(const inst of instincts){
+    let max=0;for(const h of inst.history){if(h.confidence!=null&&h.confidence>max)max=h.confidence;}
+    out[inst.id]={final:inst.confidence,retired:inst.retired,retiredNight:inst.retiredNight,
+      observations:inst.observations,distinctNights:inst.distinctNights,max:max};
+  }
+  return out;
+}
+/* CORE-END */
+</script>
+<script>
+'use strict';
+/* presentation: canvas chart + controls. Core above stays DOM-free. */
+(function(){
+  var CORE_SRC=document.querySelector('script[data-core]').textContent;
+  var coreFn=new Function(CORE_SRC.replace(/'use strict';/,'')+';return{runField:runField,summarize:summarize,Instinct:Instinct,TUNE:TUNE,mulberry32:mulberry32};');
+  var core=coreFn();
+
+  var COLORS={
+    steady:'#3fb950',contro:'#f85149',forgot:'#9e7bea',stand:'#58a6ff',lucky:'#d29922'
+  };
+  var LABELS={
+    steady:'The Steady Worker',contro:'The Controversial One',forgot:'The Forgotten One',
+    stand:'The Standing Rule',lucky:'The Lucky Hit'
+  };
+  function archetypes(){
+    return [
+      {id:'steady',archetype:'steady',standing:false,p:{confirm:0.18,contradict:0.01,relevant:0.35}},
+      {id:'contro',archetype:'contro',standing:false,p:{confirm:0.05,contradict:0.08,relevant:0.20}},
+      {id:'forgot',archetype:'forgot',standing:false,p:{confirm:0.005,contradict:0,relevant:0.02}},
+      {id:'stand',archetype:'stand',standing:true,startConfidence:0.95,p:{confirm:0,contradict:0,relevant:0.10}},
+      {id:'lucky',archetype:'lucky',standing:false,
+       eventFn:function(n){return n===10?'confirm':null;}}
+    ];
+  }
+
+  var canvas=document.getElementById('field');
+  var ctx=canvas.getContext('2d');
+  var tip=document.getElementById('tip');
+  var legend=document.getElementById('legend');
+  var seedEl=document.getElementById('seed');
+  var nightsEl=document.getElementById('nights');
+  var speedEl=document.getElementById('speed');
+  var visible={steady:true,contro:true,forgot:true,stand:true,lucky:true};
+
+  var sim=null,shown=0,raf=0,lastT=0;
+  function rebuild(){
+    var seed=parseInt(seedEl.value,10)||1;
+    var nights=Math.min(1825,Math.max(30,parseInt(nightsEl.value,10)||365));
+    sim={instincts:core.runField(seed,nights,archetypes()),nights:nights,seed:seed};
+    shown=0;lastT=0;
+    cancelAnimationFrame(raf);raf=requestAnimationFrame(frame);
+  }
+  function frame(t){
+    var speed=parseInt(speedEl.value,10)||30;
+    if(!lastT)lastT=t;
+    var dt=(t-lastT)/1000;lastT=t;
+    shown=Math.min(sim.nights,shown+dt*speed);
+    draw();
+    if(shown<sim.nights)raf=requestAnimationFrame(frame);
+  }
+  var PAD={l:44,r:16,t:18,b:30};
+  function x(n){return PAD.l+(canvas.width-PAD.l-PAD.r)*(n/Math.max(1,sim.nights-1));}
+  function y(c){return PAD.t+(canvas.height-PAD.t-PAD.b)*(1-c);}
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.strokeStyle='#30363d';ctx.lineWidth=1;ctx.fillStyle='#8b949e';
+    ctx.font='11px -apple-system,"Segoe UI",sans-serif';ctx.textAlign='right';
+    for(var g=0;g<=10;g+=2){
+      var c=g/10;ctx.beginPath();ctx.moveTo(PAD.l,y(c));
+      ctx.lineTo(canvas.width-PAD.r,y(c));ctx.stroke();
+      ctx.fillText(c.toFixed(1),PAD.l-6,y(c)+4);
+    }
+    ctx.textAlign='center';
+    ctx.fillText('0',PAD.l,canvas.height-10);
+    ctx.fillText(String(sim.nights),canvas.width-PAD.r,canvas.height-10);
+    ctx.fillText('nights →',canvas.width/2,canvas.height-10);
+    // floor line at 0.4
+    ctx.strokeStyle='#f85149';ctx.setLineDash([5,5]);ctx.beginPath();
+    ctx.moveTo(PAD.l,y(0.4));ctx.lineTo(canvas.width-PAD.r,y(0.4));ctx.stroke();
+    ctx.setLineDash([]);ctx.textAlign='left';
+    ctx.fillStyle='#f85149';ctx.fillText('0.4 floor / retirement line',PAD.l+6,y(0.4)+20);
+    var upto=Math.floor(shown);
+    for(var i=0;i<sim.instincts.length;i++){
+      var inst=sim.instincts[i];
+      if(!visible[inst.id])continue;
+      ctx.strokeStyle=COLORS[inst.id];ctx.lineWidth=2.2;ctx.beginPath();
+      var started=false,drewAny=false,lastX=0,lastY=0;
+      for(var n=0;n<=Math.min(upto,inst.history.length-1);n++){
+        var h=inst.history[n];
+        if(h.confidence==null){started=false;continue;}
+        var px=x(n),py=y(h.confidence);
+        if(!started){ctx.moveTo(px,py);started=true;}else{ctx.lineTo(px,py);}
+        drewAny=true;lastX=px;lastY=py;
+      }
+      ctx.stroke();
+      if(drewAny){
+        ctx.fillStyle=COLORS[inst.id];ctx.beginPath();
+        ctx.arc(lastX,lastY,4,0,Math.PI*2);ctx.fill();
+      }
+      if(inst.retired&&inst.retiredNight!=null&&inst.retiredNight<=upto){
+        ctx.strokeStyle='#f85149';ctx.lineWidth=2;ctx.beginPath();
+        var rn=x(inst.retiredNight);
+        ctx.moveTo(rn-6,y(0.4)-16);ctx.lineTo(rn+6,y(0.4)-4);
+        ctx.moveTo(rn+6,y(0.4)-16);ctx.lineTo(rn-6,y(0.4)-4);ctx.stroke();
+      }
+    }
+  }
+  canvas.addEventListener('mousemove',function(e){
+    if(!sim)return;
+    var r=canvas.getBoundingClientRect();
+    var mx=(e.clientX-r.left)*(canvas.width/r.width);
+    var n=Math.round((mx-PAD.l)/(canvas.width-PAD.l-PAD.r)*(sim.nights-1));
+    n=Math.max(0,Math.min(sim.nights-1,n));
+    var parts=[];
+    for(var i=0;i<sim.instincts.length;i++){
+      var inst=sim.instincts[i];
+      if(!visible[inst.id])continue;
+      var h=inst.history[n];
+      var c=h?h.confidence:null;
+      parts.push(LABELS[inst.id]+': '+(c==null?'retired':c.toFixed(2)));
+    }
+    tip.textContent='night '+n+' — '+parts.join(' · ');
+  });
+  function buildLegend(){
+    legend.innerHTML='';
+    Object.keys(LABELS).forEach(function(id){
+      var li=document.createElement('li');
+      var cb=document.createElement('input');
+      cb.type='checkbox';cb.checked=true;
+      cb.addEventListener('change',function(){visible[id]=cb.checked;draw();});
+      var sw=document.createElement('span');
+      sw.className='swatch';sw.style.background=COLORS[id];
+      li.appendChild(cb);li.appendChild(sw);
+      li.appendChild(document.createTextNode(LABELS[id]));
+      legend.appendChild(li);
+    });
+  }
+  document.getElementById('replay').addEventListener('click',rebuild);
+  document.getElementById('silence').addEventListener('click',function(){
+    var keep=archetypes();
+    sim={instincts:core.runField(parseInt(seedEl.value,10)||1,parseInt(nightsEl.value,10)||365,
+      keep.map(function(a){a.p={confirm:0,contradict:0,relevant:0};a.eventFn=null;return a;})),
+      nights:parseInt(nightsEl.value,10)||365,seed:parseInt(seedEl.value,10)||1};
+    shown=sim.nights;draw();
+    tip.textContent='total silence: every non-standing instinct decays to the 0.4 floor. The standing rule never moves.';
+  });
+  document.getElementById('storm').addEventListener('click',function(){
+    var keep=archetypes();
+    sim={instincts:core.runField(parseInt(seedEl.value,10)||1,parseInt(nightsEl.value,10)||365,
+      keep.map(function(a){if(!a.standing)a.p={confirm:0.02,contradict:0.25,relevant:0.1};return a;})),
+      nights:parseInt(nightsEl.value,10)||365,seed:parseInt(seedEl.value,10)||1};
+    shown=sim.nights;draw();
+    tip.textContent='contradiction storm: most instincts sink below 0.4 and retire. Contact with reality is the only rescue.';
+  });
+  buildLegend();
+  rebuild();
+})();
+</script>
+</body>
+</html>

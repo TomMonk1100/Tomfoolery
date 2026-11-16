@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+<title>fireflies — 2026-10-25</title>
+<style>
+body { font-family: Georgia, serif; max-width: 960px; margin: 2em auto; padding: 0 1em; color: #222; }
+pre { background: #f6f6f6; padding: 1em; overflow-x: auto; line-height: 1.15; }
+canvas { background: #0b1020; display: block; }
+table { border-collapse: collapse; margin: 1em 0; font-variant-numeric: tabular-nums; }
+td, th { border: 1px solid #ccc; padding: 4px 10px; font-size: 13px; }
+.controls { margin: 1em 0; }
+.controls button, .controls input { margin-right: 1em; }
+</style></head>
+<body>
+<h1>fireflies — phase-coupled oscillators</h1>
+<p>Each firefly has a phase that advances at its own natural frequency
+(about one flash per second, with a 12% spread). In <b>global</b> mode
+every firefly feels the swarm's mean field: the pull is
+K &middot; r &middot; sin(&psi; &minus; &theta;), where r is the order
+parameter — 0 when phases are scattered, 1 when all flash together.
+In <b>local</b> mode each firefly feels only neighbors within a 0.25
+radius. Nothing is hand-synced; synchrony either emerges from the
+coupling or it doesn't.</p>
+<canvas id="cv" width="640" height="400"></canvas>
+<div class="controls">
+<label>K <input id="kSlider" type="range" min="0" max="2.5" step="0.1" value="1.9"> <span id="kVal">1.9</span></label>
+<button id="modeBtn">Switch mode</button> <span id="modeVal">global</span>
+<button id="pauseBtn">Pause</button>
+<button id="seedBtn">Reseed</button>
+<span>order r = <span id="r">–</span></span>
+<span>time <span id="t">–</span></span>
+</div>
+<h2>What the sweep found (measured, not tuned)</h2>
+<p>The transition is <b>continuous, not a sharp knee</b>: r sits near
+the noise floor (~0.07) up to K &asymp; 0.7, lifts gently from
+K &asymp; 1.0 (onset near the theoretical K<sub>c</sub> &asymp; 1.2
+for this frequency spread), and only crosses r = 0.8 at
+K = 1.9 — a threshold I imposed, not a feature the system has. At that
+same K, local coupling reaches only r = 0.424: radius neighbors
+form partial order, not global sync. N = 120, 120 s runs, steady r
+averaged over the final 20%.</p>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300" viewBox="0 0 600 300"><rect width="600" height="300" fill="#ffffff"/><line x1="45" y1="265" x2="585" y2="265" stroke="#999"/><line x1="45" y1="15" x2="45" y2="265" stroke="#999"/><polyline points="45.0,248.5 66.6,248.0 88.2,247.3 109.8,246.3 131.4,245.0 153.0,241.8 174.6,238.8 196.2,234.0 217.8,221.3 239.4,240.8 261.0,210.8 282.6,189.3 304.2,166.8 325.8,151.0 347.4,140.8 369.0,131.3 390.6,97.3 412.2,83.0 433.8,66.3 455.4,58.5 477.0,51.3 498.6,44.8 520.2,41.0 541.8,38.3 563.4,34.8 585.0,32.5" fill="none" stroke="#b8860b" stroke-width="2"/><line x1="45" y1="65.0" x2="585" y2="65.0" stroke="#c00" stroke-dasharray="4 3"/><text x="585" y="61.0" font-size="11" text-anchor="end" fill="#c00">r = 0.8</text><text x="315" y="292" font-size="12" text-anchor="middle">coupling K</text><text x="12" y="140" font-size="12" text-anchor="middle" transform="rotate(-90 12 140)">order r</text></svg>
+<table><tr><th>K</th><th>steady r</th></tr>
+<tr><td>0.0</td><td>0.066</td></tr>
+<tr><td>0.1</td><td>0.068</td></tr>
+<tr><td>0.2</td><td>0.071</td></tr>
+<tr><td>0.3</td><td>0.075</td></tr>
+<tr><td>0.4</td><td>0.080</td></tr>
+<tr><td>0.5</td><td>0.093</td></tr>
+<tr><td>0.6</td><td>0.105</td></tr>
+<tr><td>0.7</td><td>0.124</td></tr>
+<tr><td>0.8</td><td>0.175</td></tr>
+<tr><td>0.9</td><td>0.097</td></tr>
+<tr><td>1.0</td><td>0.217</td></tr>
+<tr><td>1.1</td><td>0.303</td></tr>
+<tr><td>1.2</td><td>0.393</td></tr>
+<tr><td>1.3</td><td>0.456</td></tr>
+<tr><td>1.4</td><td>0.497</td></tr>
+<tr><td>1.5</td><td>0.535</td></tr>
+<tr><td>1.6</td><td>0.671</td></tr>
+<tr><td>1.7</td><td>0.728</td></tr>
+<tr><td>1.8</td><td>0.795</td></tr>
+<tr style="background:#fff3cd"><td>1.9</td><td>0.826</td></tr>
+<tr><td>2.0</td><td>0.855</td></tr>
+<tr><td>2.1</td><td>0.881</td></tr>
+<tr><td>2.2</td><td>0.896</td></tr>
+<tr><td>2.3</td><td>0.907</td></tr>
+<tr><td>2.4</td><td>0.921</td></tr>
+<tr><td>2.5</td><td>0.930</td></tr>
+</table>
+<h2>Settled state at K = 1.9 (r = 0.86)</h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"><rect width="600" height="400" fill="#0b1020"/><circle cx="352.3" cy="333.3" r="5.4" fill="#ffd94a" opacity="0.51"/><circle cx="362.5" cy="181.1" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="398.7" cy="269.0" r="6.2" fill="#ffd94a" opacity="0.59"/><circle cx="239.6" cy="153.2" r="6.7" fill="#ffd94a" opacity="0.64"/><circle cx="344.4" cy="169.0" r="3.3" fill="#ffd94a" opacity="0.28"/><circle cx="194.2" cy="246.8" r="10.0" fill="#ffd94a" opacity="1.00"/><circle cx="577.0" cy="122.8" r="7.0" fill="#ffd94a" opacity="0.68"/><circle cx="331.0" cy="229.1" r="6.4" fill="#ffd94a" opacity="0.61"/><circle cx="485.8" cy="156.2" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="298.4" cy="209.9" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="61.6" cy="254.8" r="7.1" fill="#ffd94a" opacity="0.68"/><circle cx="580.9" cy="172.7" r="5.5" fill="#ffd94a" opacity="0.51"/><circle cx="435.4" cy="169.4" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="211.7" cy="330.1" r="3.9" fill="#ffd94a" opacity="0.35"/><circle cx="371.7" cy="57.7" r="4.0" fill="#ffd94a" opacity="0.36"/><circle cx="504.7" cy="249.4" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="262.2" cy="127.0" r="6.6" fill="#ffd94a" opacity="0.63"/><circle cx="184.9" cy="165.1" r="3.2" fill="#ffd94a" opacity="0.27"/><circle cx="325.8" cy="205.4" r="7.2" fill="#ffd94a" opacity="0.70"/><circle cx="523.0" cy="375.3" r="5.6" fill="#ffd94a" opacity="0.53"/><circle cx="292.5" cy="45.9" r="5.3" fill="#ffd94a" opacity="0.50"/><circle cx="422.1" cy="61.3" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="209.2" cy="361.7" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="51.4" cy="118.9" r="6.4" fill="#ffd94a" opacity="0.62"/><circle cx="140.6" cy="282.9" r="5.5" fill="#ffd94a" opacity="0.52"/><circle cx="230.9" cy="78.8" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="12.9" cy="174.5" r="10.0" fill="#ffd94a" opacity="1.00"/><circle cx="374.6" cy="10.3" r="6.6" fill="#ffd94a" opacity="0.64"/><circle cx="478.3" cy="34.2" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="418.3" cy="327.2" r="7.2" fill="#ffd94a" opacity="0.70"/><circle cx="107.7" cy="236.5" r="10.0" fill="#ffd94a" opacity="1.00"/><circle cx="39.3" cy="33.1" r="4.4" fill="#ffd94a" opacity="0.40"/><circle cx="431.1" cy="167.3" r="4.1" fill="#ffd94a" opacity="0.36"/><circle cx="575.7" cy="122.8" r="5.8" fill="#ffd94a" opacity="0.55"/><circle cx="194.0" cy="223.7" r="5.8" fill="#ffd94a" opacity="0.56"/><circle cx="105.6" cy="322.4" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="376.6" cy="323.7" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="61.4" cy="292.8" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="66.3" cy="345.7" r="4.7" fill="#ffd94a" opacity="0.44"/><circle cx="448.7" cy="278.5" r="5.8" fill="#ffd94a" opacity="0.55"/><circle cx="128.5" cy="62.7" r="10.0" fill="#ffd94a" opacity="1.00"/><circle cx="570.2" cy="339.0" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="316.2" cy="302.0" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="517.5" cy="189.5" r="10.0" fill="#ffd94a" opacity="1.00"/><circle cx="278.3" cy="175.6" r="7.1" fill="#ffd94a" opacity="0.69"/><circle cx="61.3" cy="366.1" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="551.9" cy="39.4" r="10.0" fill="#ffd94a" opacity="1.00"/><circle cx="266.2" cy="155.0" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="530.3" cy="230.0" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="340.1" cy="216.6" r="7.2" fill="#ffd94a" opacity="0.70"/><circle cx="185.0" cy="190.3" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="376.8" cy="17.9" r="10.0" fill="#ffd94a" opacity="1.00"/><circle cx="133.6" cy="174.1" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="401.8" cy="153.6" r="5.6" fill="#ffd94a" opacity="0.53"/><circle cx="422.1" cy="42.2" r="6.9" fill="#ffd94a" opacity="0.67"/><circle cx="67.9" cy="359.7" r="6.3" fill="#ffd94a" opacity="0.60"/><circle cx="232.3" cy="280.4" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="267.3" cy="95.4" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="38.6" cy="282.8" r="6.8" fill="#ffd94a" opacity="0.66"/><circle cx="259.3" cy="370.7" r="10.0" fill="#ffd94a" opacity="1.00"/><circle cx="107.8" cy="16.3" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="179.4" cy="132.8" r="5.2" fill="#ffd94a" opacity="0.48"/><circle cx="575.0" cy="219.9" r="6.1" fill="#ffd94a" opacity="0.58"/><circle cx="176.7" cy="352.0" r="5.4" fill="#ffd94a" opacity="0.51"/><circle cx="399.6" cy="210.9" r="5.0" fill="#ffd94a" opacity="0.47"/><circle cx="184.0" cy="47.3" r="7.0" fill="#ffd94a" opacity="0.67"/><circle cx="341.0" cy="180.4" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="236.9" cy="357.0" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="211.0" cy="241.4" r="6.8" fill="#ffd94a" opacity="0.65"/><circle cx="470.1" cy="279.1" r="4.2" fill="#ffd94a" opacity="0.38"/><circle cx="105.2" cy="43.9" r="6.9" fill="#ffd94a" opacity="0.66"/><circle cx="100.1" cy="59.7" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="22.4" cy="150.7" r="10.0" fill="#ffd94a" opacity="1.00"/><circle cx="283.8" cy="11.9" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="300.7" cy="16.2" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="212.4" cy="52.9" r="10.0" fill="#ffd94a" opacity="1.00"/><circle cx="449.6" cy="303.6" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="190.4" cy="245.7" r="6.1" fill="#ffd94a" opacity="0.59"/><circle cx="417.8" cy="186.2" r="5.8" fill="#ffd94a" opacity="0.55"/><circle cx="187.7" cy="251.3" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="375.5" cy="94.4" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="567.7" cy="166.9" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="521.7" cy="60.5" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="97.4" cy="354.3" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="213.0" cy="46.4" r="5.9" fill="#ffd94a" opacity="0.56"/><circle cx="182.5" cy="242.0" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="372.6" cy="298.5" r="3.3" fill="#ffd94a" opacity="0.28"/><circle cx="78.3" cy="276.0" r="3.2" fill="#ffd94a" opacity="0.27"/><circle cx="161.0" cy="71.5" r="4.6" fill="#ffd94a" opacity="0.42"/><circle cx="145.3" cy="14.6" r="10.0" fill="#ffd94a" opacity="1.00"/><circle cx="310.4" cy="133.8" r="5.0" fill="#ffd94a" opacity="0.46"/><circle cx="176.4" cy="264.3" r="6.9" fill="#ffd94a" opacity="0.67"/><circle cx="454.2" cy="76.0" r="6.5" fill="#ffd94a" opacity="0.63"/><circle cx="50.0" cy="338.4" r="7.1" fill="#ffd94a" opacity="0.69"/><circle cx="96.2" cy="195.8" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="399.9" cy="209.7" r="6.8" fill="#ffd94a" opacity="0.66"/><circle cx="387.5" cy="54.3" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="478.1" cy="371.0" r="3.7" fill="#ffd94a" opacity="0.32"/><circle cx="558.5" cy="237.0" r="4.5" fill="#ffd94a" opacity="0.41"/><circle cx="338.9" cy="164.6" r="4.5" fill="#ffd94a" opacity="0.41"/><circle cx="93.7" cy="100.9" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="169.2" cy="30.7" r="6.7" fill="#ffd94a" opacity="0.65"/><circle cx="177.1" cy="176.6" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="431.7" cy="50.8" r="4.8" fill="#ffd94a" opacity="0.44"/><circle cx="102.9" cy="14.0" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="488.9" cy="273.3" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="51.3" cy="78.8" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="512.1" cy="305.1" r="6.3" fill="#ffd94a" opacity="0.60"/><circle cx="161.3" cy="29.0" r="10.0" fill="#ffd94a" opacity="1.00"/><circle cx="246.7" cy="117.4" r="6.6" fill="#ffd94a" opacity="0.63"/><circle cx="519.2" cy="283.8" r="6.2" fill="#ffd94a" opacity="0.59"/><circle cx="20.1" cy="159.6" r="6.1" fill="#ffd94a" opacity="0.58"/><circle cx="377.5" cy="178.5" r="6.4" fill="#ffd94a" opacity="0.61"/><circle cx="128.2" cy="39.1" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="449.2" cy="379.3" r="6.4" fill="#ffd94a" opacity="0.62"/><circle cx="413.0" cy="175.8" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="337.1" cy="85.2" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="499.3" cy="51.5" r="3.0" fill="#ffd94a" opacity="0.25"/><circle cx="99.0" cy="319.6" r="6.8" fill="#ffd94a" opacity="0.66"/><circle cx="308.2" cy="240.1" r="3.0" fill="#ffd94a" opacity="0.25"/></svg>
+<pre>         ..   @@            . .      @                      
+   .     *  .   * *  *       :            *     .       @   
+         .  @       @                . .  .:      . .       
+    .          :      .          .           *              
+        .                 .          .                      
+    *                   *                                 : 
+                 :        *    :                            
+ @                     *  .             :        .          
+@           .    ..        *      :   *  . ..            . :
+        .         .                 .     :         @       
+                             .  * *     :                   
+          @        *             *                   .  : * 
+     *           ..@*         .                    .        
+       .         *                      *        .          
+  *  .       :        .                      : .    *       
+                               .     .       .     *        
+         .          .                .    *                 
+    *:           :                 :                     .  
+     .   .          .  . @                                  
+                                             *  .    :      </pre>
+<p>Positions are scattered; brightness varies because phases cluster
+but are not identical — synchrony here means shared rhythm, not a
+single simultaneous flash.</p>
+<script>
+// fireflies-core.mjs — pure simulation core, no DOM, no window.
+// Kuramoto-style phase-coupled oscillators ("fireflies").
+// One TUNE object; seeded RNG (mulberry32) so runs are reproducible.
+// Modes: "global" (mean-field coupling) and "local" (radius neighbors).
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function gaussian(rng) {
+  // Box-Muller, mean 0, sd 1.
+  let u = 0, v = 0;
+  while (u === 0) u = rng();
+  while (v === 0) v = rng();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+const TUNE = {
+  N: 120,            // firefly count
+  DT: 0.02,          // sim seconds per step
+  FREQ_MEAN: 2 * Math.PI, // mean natural frequency, rad/s (1 flash/s)
+  FREQ_SD: 0.12 * 2 * Math.PI, // spread of natural frequencies
+  RADIUS: 0.25,      // local-mode neighbor radius (unit square)
+  TWO_PI: 2 * Math.PI,
+};
+
+class Fireflies {
+  constructor(opts = {}) {
+    const t = TUNE;
+    this.n = opts.n ?? t.N;
+    this.dt = opts.dt ?? t.DT;
+    this.k = opts.k ?? 0.5;
+    this.mode = opts.mode ?? 'global';
+    this.radius = opts.radius ?? t.RADIUS;
+    const rng = mulberry32(opts.seed ?? 1234);
+    const sd = opts.freqSd ?? t.FREQ_SD;
+    this.phase = new Float64Array(this.n);
+    this.freq = new Float64Array(this.n);
+    this.x = new Float64Array(this.n);
+    this.y = new Float64Array(this.n);
+    this.flashed = new Array(this.n).fill(false);
+    this.flashCount = new Array(this.n).fill(0);
+    this.time = 0;
+    for (let i = 0; i < this.n; i++) {
+      this.phase[i] = rng() * t.TWO_PI;
+      this.freq[i] = t.FREQ_MEAN + gaussian(rng) * sd;
+      this.x[i] = rng();
+      this.y[i] = rng();
+    }
+  }
+
+  orderParameter() {
+    let re = 0, im = 0;
+    for (let i = 0; i < this.n; i++) {
+      re += Math.cos(this.phase[i]);
+      im += Math.sin(this.phase[i]);
+    }
+    re /= this.n; im /= this.n;
+    return Math.hypot(re, im);
+  }
+
+  meanPhase() {
+    let re = 0, im = 0;
+    for (let i = 0; i < this.n; i++) {
+      re += Math.cos(this.phase[i]);
+      im += Math.sin(this.phase[i]);
+    }
+    return Math.atan2(im, re);
+  }
+
+  step() {
+    const { TWO_PI } = TUNE;
+    const n = this.n;
+    this.flashed.fill(false);
+    if (this.mode === 'global') {
+      const r = this.orderParameter();
+      const psi = this.meanPhase();
+      for (let i = 0; i < n; i++) {
+        const d = (this.freq[i] + this.k * r * Math.sin(psi - this.phase[i])) * this.dt;
+        const next = this.phase[i] + d;
+        if (next >= TWO_PI) { this.flashed[i] = true; this.flashCount[i]++; }
+        this.phase[i] = next % TWO_PI;
+      }
+    } else {
+      // Local: each firefly couples to neighbors within radius.
+      const r2 = this.radius * this.radius;
+      for (let i = 0; i < n; i++) {
+        let re = 0, im = 0, cnt = 0;
+        for (let j = 0; j < n; j++) {
+          if (j === i) continue;
+          const dx = this.x[i] - this.x[j];
+          const dy = this.y[i] - this.y[j];
+          if (dx * dx + dy * dy <= r2) {
+            re += Math.cos(this.phase[j]);
+            im += Math.sin(this.phase[j]);
+            cnt++;
+          }
+        }
+        let pull = 0;
+        if (cnt > 0) {
+          const lr = Math.hypot(re, im) / cnt;
+          const lpsi = Math.atan2(im, re);
+          pull = this.k * lr * Math.sin(lpsi - this.phase[i]);
+        }
+        const next = this.phase[i] + (this.freq[i] + pull) * this.dt;
+        if (next >= TWO_PI) { this.flashed[i] = true; this.flashCount[i]++; }
+        this.phase[i] = next % TWO_PI;
+      }
+    }
+    this.time += this.dt;
+  }
+
+  // Brightness of firefly i: 1 at flash, decaying with phase since.
+  brightness(i) {
+    // Phase fraction since last wrap is not tracked; approximate from
+    // distance to the flash point: bright just before 2*PI.
+    const p = this.phase[i] / TUNE.TWO_PI;
+    return this.flashed[i] ? 1 : Math.max(0, (p - 0.85) / 0.15) * 0.6;
+  }
+}
+
+
+var canvas = document.getElementById('cv');
+var ctx = canvas.getContext('2d');
+var sim = new Fireflies({ seed: 20251025, k: 1.9, mode: 'global' });
+var running = true;
+var rEl = document.getElementById('r');
+var tEl = document.getElementById('t');
+function draw() {
+  ctx.fillStyle = '#0b1020';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  for (var i = 0; i < sim.n; i++) {
+    var b = sim.brightness(i);
+    ctx.beginPath();
+    ctx.arc(sim.x[i] * canvas.width, sim.y[i] * canvas.height, 3 + b * 7, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(255, 217, 74, ' + (0.25 + b * 0.75).toFixed(2) + ')';
+    ctx.fill();
+  }
+  rEl.textContent = sim.orderParameter().toFixed(3);
+  tEl.textContent = sim.time.toFixed(1) + 's';
+}
+function frame() {
+  if (running) { sim.step(); sim.step(); draw(); }
+  requestAnimationFrame(frame);
+}
+document.getElementById('kSlider').addEventListener('input', function (e) {
+  sim.k = parseFloat(e.target.value);
+  document.getElementById('kVal').textContent = sim.k.toFixed(1);
+});
+document.getElementById('modeBtn').addEventListener('click', function () {
+  sim.mode = sim.mode === 'global' ? 'local' : 'global';
+  document.getElementById('modeVal').textContent = sim.mode;
+});
+document.getElementById('pauseBtn').addEventListener('click', function () {
+  running = !running;
+  document.getElementById('pauseBtn').textContent = running ? 'Pause' : 'Resume';
+});
+document.getElementById('seedBtn').addEventListener('click', function () {
+  sim = new Fireflies({ seed: Math.floor(Math.random() * 1e9), k: sim.k, mode: sim.mode });
+});
+requestAnimationFrame(frame);
+
+</script>
+</body>
+</html>

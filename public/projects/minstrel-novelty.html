@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+<title>minstrel-novelty — 2026-10-24</title>
+<style>
+body { font-family: Georgia, serif; max-width: 960px; margin: 2em auto; padding: 0 1em; color: #222; }
+pre { background: #f6f6f6; padding: 1em; overflow-x: auto; line-height: 1.15; }
+svg { max-width: 100%; height: auto; }
+table { border-collapse: collapse; margin: 1em 0; font-variant-numeric: tabular-nums; }
+td, th { border: 1px solid #ccc; padding: 4px 10px; font-size: 13px; }
+.stat { font-variant-numeric: tabular-nums; }
+</style></head>
+<body>
+<h1>minstrel-novelty — variety pressure on the harmony composer</h1>
+<p>The composer gained a λ-weighted trigram-novelty objective (a trigram
+repeating within a 3-step window pays λ per occurrence). The sweep came
+back flat: coherence price 0 at every λ from 0 to 8. So the experiment
+pivoted to the honest question — the exact optimum-set analysis found
+<strong>66 distinct global optima at cost −18</strong>, of which 28 are
+cycle-free. Last night's "4-chord attractor" was one optimum among 66,
+picked by the pair-DP's tie-breaks — never forced by the grammar.</p>
+<h2>Optimum-set distribution</h2>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 260" width="560" height="260"><rect width="560" height="260" fill="#1a1b26"/><text x="44" y="28" font-size="15" fill="#c0caf5">66 global optima at cost −18 — how many carry a consecutive cycle</text><text x="44" y="48" font-size="12" fill="#787c99">λ sweep 0→8: coherence price 0 at every step — variety is free in this grammar</text><rect x="58" y="44" width="129" height="172" fill="#7aa2f7"/><text x="122.66666666666667" y="36" text-anchor="middle" font-size="15" fill="#c0caf5">28</text><text x="122.66666666666667" y="238" text-anchor="middle" font-size="13" fill="#787c99">maxCycle 1 — no cycle</text><rect x="215.33333333333334" y="112" width="129" height="104" fill="#7aa2f7"/><text x="280" y="104" text-anchor="middle" font-size="15" fill="#c0caf5">17</text><text x="280" y="238" text-anchor="middle" font-size="13" fill="#787c99">maxCycle 3</text><rect x="372.6666666666667" y="87" width="129" height="129" fill="#7aa2f7"/><text x="437.33333333333337" y="79" text-anchor="middle" font-size="15" fill="#c0caf5">21</text><text x="437.33333333333337" y="238" text-anchor="middle" font-size="13" fill="#787c99">maxCycle 4</text></svg>
+<h2>λ sweep (W=3, n=12)</h2>
+<table><tr><th>λ</th><th>coherence</th><th>price</th><th>distinct trigrams</th><th>maxCycle</th><th>window repeats</th></tr>
+<tr><td>0</td><td>-18</td><td>0</td><td>9</td><td>1</td><td>0</td></tr>
+<tr><td>0.25</td><td>-18</td><td>0</td><td>9</td><td>1</td><td>0</td></tr>
+<tr><td>0.5</td><td>-18</td><td>0</td><td>9</td><td>1</td><td>0</td></tr>
+<tr><td>0.75</td><td>-18</td><td>0</td><td>9</td><td>1</td><td>0</td></tr>
+<tr><td>1</td><td>-18</td><td>0</td><td>9</td><td>1</td><td>0</td></tr>
+<tr><td>1.5</td><td>-18</td><td>0</td><td>9</td><td>1</td><td>0</td></tr>
+<tr><td>2</td><td>-18</td><td>0</td><td>9</td><td>1</td><td>0</td></tr>
+<tr><td>3</td><td>-18</td><td>0</td><td>9</td><td>1</td><td>0</td></tr>
+<tr><td>4</td><td>-18</td><td>0</td><td>9</td><td>1</td><td>0</td></tr>
+<tr><td>6</td><td>-18</td><td>0</td><td>9</td><td>1</td><td>0</td></tr>
+<tr><td>8</td><td>-18</td><td>0</td><td>9</td><td>1</td><td>0</td></tr></table>
+<h2>Tonight's progression (cycle-free optimum)</h2>
+<p class="stat"><strong>I – IV – ii – V – I – ii – V – iii – vi – ii – V – I</strong></p>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1258 696" role="img" aria-label="Piano roll of the minstrel piece"><rect width="1258" height="696" fill="#1a1b26"/><line x1="76" y1="662" x2="1228" y2="662" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="666" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">D2</text><line x1="76" y1="648" x2="1228" y2="648" stroke="#22242f" stroke-width="1"/><line x1="76" y1="634" x2="1228" y2="634" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="638" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">E2</text><line x1="76" y1="620" x2="1228" y2="620" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="624" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">F2</text><line x1="76" y1="606" x2="1228" y2="606" stroke="#22242f" stroke-width="1"/><line x1="76" y1="592" x2="1228" y2="592" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="596" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">G2</text><line x1="76" y1="578" x2="1228" y2="578" stroke="#22242f" stroke-width="1"/><line x1="76" y1="564" x2="1228" y2="564" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="568" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">A2</text><line x1="76" y1="550" x2="1228" y2="550" stroke="#22242f" stroke-width="1"/><line x1="76" y1="536" x2="1228" y2="536" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="540" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">B2</text><line x1="76" y1="522" x2="1228" y2="522" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="526" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">C3</text><line x1="76" y1="508" x2="1228" y2="508" stroke="#22242f" stroke-width="1"/><line x1="76" y1="494" x2="1228" y2="494" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="498" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">D3</text><line x1="76" y1="480" x2="1228" y2="480" stroke="#22242f" stroke-width="1"/><line x1="76" y1="466" x2="1228" y2="466" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="470" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">E3</text><line x1="76" y1="452" x2="1228" y2="452" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="456" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">F3</text><line x1="76" y1="438" x2="1228" y2="438" stroke="#22242f" stroke-width="1"/><line x1="76" y1="424" x2="1228" y2="424" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="428" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">G3</text><line x1="76" y1="410" x2="1228" y2="410" stroke="#22242f" stroke-width="1"/><line x1="76" y1="396" x2="1228" y2="396" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="400" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">A3</text><line x1="76" y1="382" x2="1228" y2="382" stroke="#22242f" stroke-width="1"/><line x1="76" y1="368" x2="1228" y2="368" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="372" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">B3</text><line x1="76" y1="354" x2="1228" y2="354" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="358" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">C4</text><line x1="76" y1="340" x2="1228" y2="340" stroke="#22242f" stroke-width="1"/><line x1="76" y1="326" x2="1228" y2="326" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="330" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">D4</text><line x1="76" y1="312" x2="1228" y2="312" stroke="#22242f" stroke-width="1"/><line x1="76" y1="298" x2="1228" y2="298" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="302" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">E4</text><line x1="76" y1="284" x2="1228" y2="284" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="288" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">F4</text><line x1="76" y1="270" x2="1228" y2="270" stroke="#22242f" stroke-width="1"/><line x1="76" y1="256" x2="1228" y2="256" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="260" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">G4</text><line x1="76" y1="242" x2="1228" y2="242" stroke="#22242f" stroke-width="1"/><line x1="76" y1="228" x2="1228" y2="228" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="232" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">A4</text><line x1="76" y1="214" x2="1228" y2="214" stroke="#22242f" stroke-width="1"/><line x1="76" y1="200" x2="1228" y2="200" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="204" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">B4</text><line x1="76" y1="186" x2="1228" y2="186" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="190" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">C5</text><line x1="76" y1="172" x2="1228" y2="172" stroke="#22242f" stroke-width="1"/><line x1="76" y1="158" x2="1228" y2="158" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="162" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">D5</text><line x1="76" y1="144" x2="1228" y2="144" stroke="#22242f" stroke-width="1"/><line x1="76" y1="130" x2="1228" y2="130" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="134" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">E5</text><line x1="76" y1="116" x2="1228" y2="116" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="120" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">F5</text><line x1="76" y1="102" x2="1228" y2="102" stroke="#22242f" stroke-width="1"/><line x1="76" y1="88" x2="1228" y2="88" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="92" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">G5</text><line x1="76" y1="74" x2="1228" y2="74" stroke="#22242f" stroke-width="1"/><line x1="76" y1="60" x2="1228" y2="60" stroke="#2a2d3e" stroke-width="1"/><text x="68" y="64" text-anchor="end" font-size="11" fill="#787c99" font-family="monospace">A5</text><line x1="76" y1="46" x2="1228" y2="46" stroke="#22242f" stroke-width="1"/><line x1="76" y1="40" x2="76" y2="662" stroke="#2a2d3e" stroke-width="1"/><text x="124" y="28" text-anchor="middle" font-size="13" fill="#c0caf5" font-family="monospace">I</text><line x1="172" y1="40" x2="172" y2="662" stroke="#2a2d3e" stroke-width="1"/><text x="220" y="28" text-anchor="middle" font-size="13" fill="#c0caf5" font-family="monospace">IV</text><line x1="268" y1="40" x2="268" y2="662" stroke="#2a2d3e" stroke-width="1"/><text x="316" y="28" text-anchor="middle" font-size="13" fill="#c0caf5" font-family="monospace">ii</text><line x1="364" y1="40" x2="364" y2="662" stroke="#2a2d3e" stroke-width="1"/><text x="412" y="28" text-anchor="middle" font-size="13" fill="#c0caf5" font-family="monospace">V</text><line x1="460" y1="40" x2="460" y2="662" stroke="#2a2d3e" stroke-width="1"/><text x="508" y="28" text-anchor="middle" font-size="13" fill="#c0caf5" font-family="monospace">I</text><line x1="556" y1="40" x2="556" y2="662" stroke="#2a2d3e" stroke-width="1"/><text x="604" y="28" text-anchor="middle" font-size="13" fill="#c0caf5" font-family="monospace">ii</text><line x1="652" y1="40" x2="652" y2="662" stroke="#2a2d3e" stroke-width="1"/><text x="700" y="28" text-anchor="middle" font-size="13" fill="#c0caf5" font-family="monospace">V</text><line x1="748" y1="40" x2="748" y2="662" stroke="#2a2d3e" stroke-width="1"/><text x="796" y="28" text-anchor="middle" font-size="13" fill="#c0caf5" font-family="monospace">iii</text><line x1="844" y1="40" x2="844" y2="662" stroke="#2a2d3e" stroke-width="1"/><text x="892" y="28" text-anchor="middle" font-size="13" fill="#c0caf5" font-family="monospace">vi</text><line x1="940" y1="40" x2="940" y2="662" stroke="#2a2d3e" stroke-width="1"/><text x="988" y="28" text-anchor="middle" font-size="13" fill="#c0caf5" font-family="monospace">ii</text><line x1="1036" y1="40" x2="1036" y2="662" stroke="#2a2d3e" stroke-width="1"/><text x="1084" y="28" text-anchor="middle" font-size="13" fill="#c0caf5" font-family="monospace">V</text><line x1="1132" y1="40" x2="1132" y2="662" stroke="#2a2d3e" stroke-width="1"/><text x="1180" y="28" text-anchor="middle" font-size="13" fill="#c0caf5" font-family="monospace">I</text><rect x="81" y="516" width="86" height="12" rx="3" fill="#7aa2f7" stroke="#3b5b9e" stroke-width="1"><title>Bass: C3 (chord 1, I)</title></rect><rect x="81" y="348" width="86" height="12" rx="3" fill="#9ece6a" stroke="#5a7a35" stroke-width="1"><title>Tenor: C4 (chord 1, I)</title></rect><rect x="81" y="292" width="86" height="12" rx="3" fill="#e0af68" stroke="#9e6f35" stroke-width="1"><title>Alto: E4 (chord 1, I)</title></rect><rect x="81" y="250" width="86" height="12" rx="3" fill="#bb9af7" stroke="#7a5f9e" stroke-width="1"><title>Soprano: G4 (chord 1, I)</title></rect><rect x="177" y="446" width="86" height="12" rx="3" fill="#7aa2f7" stroke="#3b5b9e" stroke-width="1"><title>Bass: F3 (chord 2, IV)</title></rect><rect x="177" y="348" width="86" height="12" rx="3" fill="#9ece6a" stroke="#5a7a35" stroke-width="1"><title>Tenor: C4 (chord 2, IV)</title></rect><rect x="177" y="278" width="86" height="12" rx="3" fill="#e0af68" stroke="#9e6f35" stroke-width="1"><title>Alto: F4 (chord 2, IV)</title></rect><rect x="177" y="222" width="86" height="12" rx="3" fill="#bb9af7" stroke="#7a5f9e" stroke-width="1"><title>Soprano: A4 (chord 2, IV)</title></rect><rect x="273" y="488" width="86" height="12" rx="3" fill="#7aa2f7" stroke="#3b5b9e" stroke-width="1"><title>Bass: D3 (chord 3, ii)</title></rect><rect x="273" y="320" width="86" height="12" rx="3" fill="#9ece6a" stroke="#5a7a35" stroke-width="1"><title>Tenor: D4 (chord 3, ii)</title></rect><rect x="273" y="278" width="86" height="12" rx="3" fill="#e0af68" stroke="#9e6f35" stroke-width="1"><title>Alto: F4 (chord 3, ii)</title></rect><rect x="273" y="222" width="86" height="12" rx="3" fill="#bb9af7" stroke="#7a5f9e" stroke-width="1"><title>Soprano: A4 (chord 3, ii)</title></rect><rect x="369" y="418" width="86" height="12" rx="3" fill="#7aa2f7" stroke="#3b5b9e" stroke-width="1"><title>Bass: G3 (chord 4, V)</title></rect><rect x="369" y="320" width="86" height="12" rx="3" fill="#9ece6a" stroke="#5a7a35" stroke-width="1"><title>Tenor: D4 (chord 4, V)</title></rect><rect x="369" y="250" width="86" height="12" rx="3" fill="#e0af68" stroke="#9e6f35" stroke-width="1"><title>Alto: G4 (chord 4, V)</title></rect><rect x="369" y="194" width="86" height="12" rx="3" fill="#bb9af7" stroke="#7a5f9e" stroke-width="1"><title>Soprano: B4 (chord 4, V)</title></rect><rect x="465" y="516" width="86" height="12" rx="3" fill="#7aa2f7" stroke="#3b5b9e" stroke-width="1"><title>Bass: C3 (chord 5, I)</title></rect><rect x="465" y="292" width="86" height="12" rx="3" fill="#9ece6a" stroke="#5a7a35" stroke-width="1"><title>Tenor: E4 (chord 5, I)</title></rect><rect x="465" y="250" width="86" height="12" rx="3" fill="#e0af68" stroke="#9e6f35" stroke-width="1"><title>Alto: G4 (chord 5, I)</title></rect><rect x="465" y="180" width="86" height="12" rx="3" fill="#bb9af7" stroke="#7a5f9e" stroke-width="1"><title>Soprano: C5 (chord 5, I)</title></rect><rect x="561" y="488" width="86" height="12" rx="3" fill="#7aa2f7" stroke="#3b5b9e" stroke-width="1"><title>Bass: D3 (chord 6, ii)</title></rect><rect x="561" y="320" width="86" height="12" rx="3" fill="#9ece6a" stroke="#5a7a35" stroke-width="1"><title>Tenor: D4 (chord 6, ii)</title></rect><rect x="561" y="278" width="86" height="12" rx="3" fill="#e0af68" stroke="#9e6f35" stroke-width="1"><title>Alto: F4 (chord 6, ii)</title></rect><rect x="561" y="222" width="86" height="12" rx="3" fill="#bb9af7" stroke="#7a5f9e" stroke-width="1"><title>Soprano: A4 (chord 6, ii)</title></rect><rect x="657" y="418" width="86" height="12" rx="3" fill="#7aa2f7" stroke="#3b5b9e" stroke-width="1"><title>Bass: G3 (chord 7, V)</title></rect><rect x="657" y="320" width="86" height="12" rx="3" fill="#9ece6a" stroke="#5a7a35" stroke-width="1"><title>Tenor: D4 (chord 7, V)</title></rect><rect x="657" y="250" width="86" height="12" rx="3" fill="#e0af68" stroke="#9e6f35" stroke-width="1"><title>Alto: G4 (chord 7, V)</title></rect><rect x="657" y="194" width="86" height="12" rx="3" fill="#bb9af7" stroke="#7a5f9e" stroke-width="1"><title>Soprano: B4 (chord 7, V)</title></rect><rect x="753" y="460" width="86" height="12" rx="3" fill="#7aa2f7" stroke="#3b5b9e" stroke-width="1"><title>Bass: E3 (chord 8, iii)</title></rect><rect x="753" y="292" width="86" height="12" rx="3" fill="#9ece6a" stroke="#5a7a35" stroke-width="1"><title>Tenor: E4 (chord 8, iii)</title></rect><rect x="753" y="250" width="86" height="12" rx="3" fill="#e0af68" stroke="#9e6f35" stroke-width="1"><title>Alto: G4 (chord 8, iii)</title></rect><rect x="753" y="194" width="86" height="12" rx="3" fill="#bb9af7" stroke="#7a5f9e" stroke-width="1"><title>Soprano: B4 (chord 8, iii)</title></rect><rect x="849" y="390" width="86" height="12" rx="3" fill="#7aa2f7" stroke="#3b5b9e" stroke-width="1"><title>Bass: A3 (chord 9, vi)</title></rect><rect x="849" y="292" width="86" height="12" rx="3" fill="#9ece6a" stroke="#5a7a35" stroke-width="1"><title>Tenor: E4 (chord 9, vi)</title></rect><rect x="849" y="222" width="86" height="12" rx="3" fill="#e0af68" stroke="#9e6f35" stroke-width="1"><title>Alto: A4 (chord 9, vi)</title></rect><rect x="849" y="180" width="86" height="12" rx="3" fill="#bb9af7" stroke="#7a5f9e" stroke-width="1"><title>Soprano: C5 (chord 9, vi)</title></rect><rect x="945" y="488" width="86" height="12" rx="3" fill="#7aa2f7" stroke="#3b5b9e" stroke-width="1"><title>Bass: D3 (chord 10, ii)</title></rect><rect x="945" y="278" width="86" height="12" rx="3" fill="#9ece6a" stroke="#5a7a35" stroke-width="1"><title>Tenor: F4 (chord 10, ii)</title></rect><rect x="945" y="222" width="86" height="12" rx="3" fill="#e0af68" stroke="#9e6f35" stroke-width="1"><title>Alto: A4 (chord 10, ii)</title></rect><rect x="945" y="152" width="86" height="12" rx="3" fill="#bb9af7" stroke="#7a5f9e" stroke-width="1"><title>Soprano: D5 (chord 10, ii)</title></rect><rect x="1041" y="418" width="86" height="12" rx="3" fill="#7aa2f7" stroke="#3b5b9e" stroke-width="1"><title>Bass: G3 (chord 11, V)</title></rect><rect x="1041" y="250" width="86" height="12" rx="3" fill="#9ece6a" stroke="#5a7a35" stroke-width="1"><title>Tenor: G4 (chord 11, V)</title></rect><rect x="1041" y="194" width="86" height="12" rx="3" fill="#e0af68" stroke="#9e6f35" stroke-width="1"><title>Alto: B4 (chord 11, V)</title></rect><rect x="1041" y="152" width="86" height="12" rx="3" fill="#bb9af7" stroke="#7a5f9e" stroke-width="1"><title>Soprano: D5 (chord 11, V)</title></rect><rect x="1137" y="348" width="86" height="12" rx="3" fill="#7aa2f7" stroke="#3b5b9e" stroke-width="1"><title>Bass: C4 (chord 12, I)</title></rect><rect x="1137" y="250" width="86" height="12" rx="3" fill="#9ece6a" stroke="#5a7a35" stroke-width="1"><title>Tenor: G4 (chord 12, I)</title></rect><rect x="1137" y="180" width="86" height="12" rx="3" fill="#e0af68" stroke="#9e6f35" stroke-width="1"><title>Alto: C5 (chord 12, I)</title></rect><rect x="1137" y="124" width="86" height="12" rx="3" fill="#bb9af7" stroke="#7a5f9e" stroke-width="1"><title>Soprano: E5 (chord 12, I)</title></rect><rect x="76" y="672" width="12" height="12" rx="3" fill="#7aa2f7"/><text x="94" y="682" font-size="12" fill="#a9b1d6" font-family="monospace">Bass</text><rect x="186" y="672" width="12" height="12" rx="3" fill="#9ece6a"/><text x="204" y="682" font-size="12" fill="#a9b1d6" font-family="monospace">Tenor</text><rect x="296" y="672" width="12" height="12" rx="3" fill="#e0af68"/><text x="314" y="682" font-size="12" fill="#a9b1d6" font-family="monospace">Alto</text><rect x="406" y="672" width="12" height="12" rx="3" fill="#bb9af7"/><text x="424" y="682" font-size="12" fill="#a9b1d6" font-family="monospace">Soprano</text><text x="1228" y="682" text-anchor="end" font-size="12" fill="#565f89" font-family="monospace">minstrel · 2026-10-24 · root-position triads, C major</text></svg>
+<pre>     | I   IV  ii  V   I   ii  V   iii vi  ii  V   I  
+A#5  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+A5   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+G#5  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+G5   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+F#5  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+F5   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+E5   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   S 
+D#5  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+D5   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   S   S   · 
+C#5  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+C5   |  ·   ·   ·   ·   S   ·   ·   ·   S   ·   ·   A 
+B4   |  ·   ·   ·   S   ·   ·   S   S   ·   ·   A   · 
+A#4  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+A4   |  ·   S   S   ·   ·   S   ·   ·   A   A   ·   · 
+G#4  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+G4   |  S   ·   ·   A   A   ·   A   A   ·   ·   T   T 
+F#4  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+F4   |  ·   A   A   ·   ·   A   ·   ·   ·   T   ·   · 
+E4   |  A   ·   ·   ·   T   ·   ·   T   T   ·   ·   · 
+D#4  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+D4   |  ·   ·   T   T   ·   T   T   ·   ·   ·   ·   · 
+C#4  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+C4   |  T   T   ·   ·   ·   ·   ·   ·   ·   ·   ·   B 
+B3   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+A#3  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+A3   |  ·   ·   ·   ·   ·   ·   ·   ·   B   ·   ·   · 
+G#3  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+G3   |  ·   ·   ·   B   ·   ·   B   ·   ·   ·   B   · 
+F#3  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+F3   |  ·   B   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+E3   |  ·   ·   ·   ·   ·   ·   ·   B   ·   ·   ·   · 
+D#3  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+D3   |  ·   ·   B   ·   ·   B   ·   ·   ·   B   ·   · 
+C#3  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+C3   |  B   ·   ·   ·   B   ·   ·   ·   ·   ·   ·   · 
+B2   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+A#2  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+A2   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+G#2  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+G2   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+F#2  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+F2   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+E2   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+D#2  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+D2   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · </pre>
+<h2>Last night's progression (4-cycle optimum) — same cost, for comparison</h2>
+<p class="stat"><strong>I – IV – ii – V – I – IV – ii – V – I – ii – V – I</strong></p>
+<pre>     | I   IV  ii  V   I   IV  ii  V   I   ii  V   I  
+A#5  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+A5   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+G#5  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+G5   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+F#5  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+F5   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+E5   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+D#5  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+D5   |  ·   ·   ·   ·   ·   ·   S   ·   ·   ·   ·   · 
+C#5  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+C5   |  ·   ·   ·   ·   S   S   ·   ·   S   ·   ·   S 
+B4   |  ·   ·   ·   S   ·   ·   ·   S   ·   ·   S   · 
+A#4  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+A4   |  ·   S   S   ·   ·   A   A   ·   ·   S   ·   · 
+G#4  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+G4   |  S   ·   ·   A   A   ·   ·   A   A   ·   A   A 
+F#4  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+F4   |  ·   A   A   ·   ·   T   T   ·   ·   A   ·   · 
+E4   |  A   ·   ·   ·   T   ·   ·   ·   T   ·   ·   T 
+D#4  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+D4   |  ·   ·   T   T   ·   ·   ·   T   ·   T   T   · 
+C#4  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+C4   |  T   T   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+B3   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+A#3  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+A3   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+G#3  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+G3   |  ·   ·   ·   B   ·   ·   ·   B   ·   ·   B   · 
+F#3  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+F3   |  ·   B   ·   ·   ·   B   ·   ·   ·   ·   ·   · 
+E3   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+D#3  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+D3   |  ·   ·   B   ·   ·   ·   B   ·   ·   B   ·   · 
+C#3  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+C3   |  B   ·   ·   ·   B   ·   ·   ·   B   ·   ·   B 
+B2   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+A#2  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+A2   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+G#2  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+G2   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+F#2  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+F2   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+E2   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+D#2  |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · 
+D2   |  ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   ·   · </pre>
+<p>minstrel-novelty — night of 2026-10-24. Generated from the core's outputs;
+this page embeds no composition logic. MIDI: <code>minstrel-novelty-2026-10-24.mid</code>.</p>
+</body>
+</html>

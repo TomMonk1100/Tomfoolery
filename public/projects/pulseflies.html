@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+<title>pulseflies — 2026-10-25</title>
+<style>
+body { font-family: Georgia, serif; max-width: 960px; margin: 2em auto; padding: 0 1em; color: #222; }
+pre { background: #f6f6f6; padding: 1em; overflow-x: auto; line-height: 1.15; }
+canvas { background: #0b1020; display: block; }
+table { border-collapse: collapse; margin: 1em 0; font-variant-numeric: tabular-nums; }
+td, th { border: 1px solid #ccc; padding: 4px 10px; font-size: 13px; }
+.controls { margin: 1em 0; }
+.controls button, .controls input { margin-right: 1em; }
+</style></head>
+<body>
+<h1>pulseflies — pulse-coupled oscillators</h1>
+<p>Each firefly has a phase that advances at its own natural frequency
+(about one flash per second, with a 12% spread). When a firefly's phase
+reaches 1 it <b>flashes</b>, resets to 0, and kicks each neighbor within
+a 0.25 radius: the neighbor's phase grows by &epsilon; &middot; phase.
+The kick grows with phase, so an oscillator near threshold gets pushed
+over it (absorption — the flash drags its neighbors with it), while a
+just-fired oscillator at phase 0 is immune. This is the
+Mirollo–Strogatz mechanism: real fireflies pulse-couple, they don't
+phase-couple. Nothing is hand-synced; synchrony either emerges from
+the kicks or it doesn't.</p>
+<canvas id="cv" width="640" height="400"></canvas>
+<div class="controls">
+<label>&epsilon; <input id="epsSlider" type="range" min="0" max="0.5" step="0.01" value="0.08"> <span id="epsVal">0.08</span></label>
+<button id="pauseBtn">Pause</button>
+<button id="seedBtn">Reseed</button>
+<span>order r = <span id="r">–</span></span>
+<span>flash coincidence C = <span id="c">–</span></span>
+<span>time <span id="t">–</span></span>
+</div>
+<h2>What the sweep found (measured, not tuned)</h2>
+<p><b>Pulse coupling syncs a local lattice where phase coupling
+didn't.</b> Last night's Kuramoto local mode reached only r = 0.424
+at K = 1.9 (dashed line); pulse coupling reaches r = 0.947 at
+&epsilon; = 0.05, with flash coincidence C = 0.988. The transition is
+sharp: r jumps from 0.335 to 0.841 between &epsilon; = 0.025 and
+0.03. In the transition zone the two metrics disagree — r dips
+(0.402 &rarr; 0.335) while C climbs (0.142 &rarr; 0.284) from
+&epsilon; = 0.02 to 0.025: flash clusters form before phase alignment
+does. Above the transition, r saturates near 0.954 while C saturates
+at 1.000: flashes coincide exactly (absorption re-clusters the
+lattice every cycle), but phases spread between flashes because
+natural frequencies differ, so r caps below 1. <b>No traveling
+waves:</b> the mean neighbor phase difference is ~0 at every
+&epsilon; — the intermediate regime is partial clustering, not a
+wave. N = 120, 120 s runs, steady metrics averaged over the final
+20%; neighbor structure time-averaged over the same window (an
+end-of-run snapshot once faked a perfect lock at &epsilon; = 0.35
+by catching the lattice just after a collective flash — the
+time-averaged value replaced it).</p>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="300" viewBox="0 0 640 300"><rect width="640" height="300" fill="#ffffff" /><line x1="50" y1="158.2" x2="620" y2="158.2" stroke="#c00" stroke-dasharray="5,4" /><text x="620" y="153.2" font-size="11" fill="#c00" text-anchor="end">Kuramoto local baseline r = 0.424</text><path d="M50.0,238.3 L72.8,163.6 L78.5,179.5 L84.2,58.2 L89.9,43.8 L95.6,42.5 L101.3,33.9 L107.0,32.7 L141.2,32.9 L186.8,31.0 L232.4,31.1 L278.0,30.9 L335.0,31.0 L392.0,30.9 L449.0,31.1 L506.0,30.9 L563.0,31.0 L620.0,31.0" fill="none" stroke="#222" stroke-width="2" /><path d="M50.0,249.3 L72.8,225.9 L78.5,191.8 L84.2,126.7 L89.9,48.1 L95.6,44.7 L101.3,25.6 L107.0,22.8 L141.2,21.9 L186.8,20.0 L232.4,20.0 L278.0,20.0 L335.0,20.0 L392.0,20.0 L449.0,20.0 L506.0,20.0 L563.0,20.0 L620.0,20.0" fill="none" stroke="#e6a800" stroke-width="2" /><text x="50" y="290" font-size="11">eps 0</text><text x="620" y="290" font-size="11" text-anchor="end">eps 0.5</text><text x="10" y="25" font-size="11">1.0</text><text x="10" y="263" font-size="11">0</text><text x="50" y="14" font-size="12" fill="#222">— steady r</text><text x="140" y="14" font-size="12" fill="#e6a800">— flash coincidence C</text></svg>
+<table><tr><th>&epsilon;</th><th>steady r</th><th>C</th><th>neighbor mean &Delta;&phi;</th></tr>
+<tr><td>0.000</td><td>0.091</td><td>0.045</td><td>0.015</td></tr>
+<tr><td>0.020</td><td>0.402</td><td>0.142</td><td>-0.000</td></tr>
+<tr><td>0.025</td><td>0.335</td><td>0.284</td><td>-0.003</td></tr>
+<tr><td>0.030</td><td>0.841</td><td>0.555</td><td>-0.002</td></tr>
+<tr><td>0.035</td><td>0.901</td><td>0.883</td><td>-0.003</td></tr>
+<tr><td>0.040</td><td>0.906</td><td>0.897</td><td>-0.003</td></tr>
+<tr><td>0.045</td><td>0.942</td><td>0.977</td><td>-0.003</td></tr>
+<tr><td>0.050</td><td>0.947</td><td>0.988</td><td>-0.003</td></tr>
+<tr><td>0.080</td><td>0.946</td><td>0.992</td><td>-0.003</td></tr>
+<tr><td>0.120</td><td>0.954</td><td>1.000</td><td>-0.003</td></tr>
+<tr><td>0.160</td><td>0.954</td><td>1.000</td><td>-0.003</td></tr>
+<tr><td>0.200</td><td>0.954</td><td>1.000</td><td>-0.003</td></tr>
+<tr><td>0.250</td><td>0.954</td><td>1.000</td><td>-0.003</td></tr>
+<tr><td>0.300</td><td>0.955</td><td>1.000</td><td>-0.003</td></tr>
+<tr><td>0.350</td><td>0.954</td><td>1.000</td><td>-0.003</td></tr>
+<tr><td>0.400</td><td>0.955</td><td>1.000</td><td>-0.003</td></tr>
+<tr><td>0.450</td><td>0.954</td><td>1.000</td><td>-0.003</td></tr>
+<tr><td>0.500</td><td>0.954</td><td>1.000</td><td>-0.003</td></tr>
+</table>
+<h2>Multi-seed check: the transition is real, its address is not a point</h2>
+<p>The sweep above is one seed. Re-running the same grid on six
+seeds (6 &times; 13 runs, N = 120, 120 s each) shows the transition
+in every seed — all six reach r &ge; 0.8 by &epsilon; = 0.05 — but
+the crossing address moves: first &epsilon; with r &ge; 0.8 is
+0.0275, 0.03, 0.03, 0.03, 0.035, and 0.05 across the six seeds
+(median 0.03, span 0.0225). The single-seed claim "between 0.025
+and 0.03" is therefore corrected to a range: <b>the transition
+sits in 0.0275–0.05 depending on the draw, typically at 0.03</b>.
+Five seeds jump sharply; one (seed 20261026) climbs gradually
+(0.634 &rarr; 0.834 across 0.0225–0.05) with no sharp jump anywhere
+— gradual transitions exist in this system, they are just the
+minority. A bigger-lattice spot check (N = 240, same radius, seed
+20251025) syncs even earlier — r = 0.882 already at
+&epsilon; = 0.02, against 0.402 at N = 120 — but doubling N at fixed
+radius also doubles the mean neighbor count, so this spot check
+confounds size with density: the direction (denser syncs easier) is
+established, the attribution is not. Dots mark each seed's first
+r &ge; 0.8 crossing.</p>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="440" font-family="Georgia, serif" font-size="13"><rect width="720" height="440" fill="white"/><line x1="70" y1="380" x2="540" y2="380" stroke="#eee"/><text x="62" y="384" text-anchor="end">0.0</text><line x1="70" y1="345" x2="540" y2="345" stroke="#eee"/><text x="62" y="349" text-anchor="end">0.1</text><line x1="70" y1="310" x2="540" y2="310" stroke="#eee"/><text x="62" y="314" text-anchor="end">0.2</text><line x1="70" y1="275" x2="540" y2="275" stroke="#eee"/><text x="62" y="279" text-anchor="end">0.3</text><line x1="70" y1="240" x2="540" y2="240" stroke="#eee"/><text x="62" y="244" text-anchor="end">0.4</text><line x1="70" y1="205" x2="540" y2="205" stroke="#eee"/><text x="62" y="209" text-anchor="end">0.5</text><line x1="70" y1="170" x2="540" y2="170" stroke="#eee"/><text x="62" y="174" text-anchor="end">0.6</text><line x1="70" y1="135" x2="540" y2="135" stroke="#eee"/><text x="62" y="139" text-anchor="end">0.7</text><line x1="70" y1="99.99999999999999" x2="540" y2="99.99999999999999" stroke="#eee"/><text x="62" y="103.99999999999999" text-anchor="end">0.8</text><line x1="70" y1="65" x2="540" y2="65" stroke="#eee"/><text x="62" y="69" text-anchor="end">0.9</text><line x1="70" y1="30" x2="540" y2="30" stroke="#eee"/><text x="62" y="34" text-anchor="end">1.0</text><line x1="70" y1="380" x2="70" y2="385" stroke="#222"/><text x="70" y="402" text-anchor="middle">0.00</text><line x1="148.33333333333334" y1="380" x2="148.33333333333334" y2="385" stroke="#222"/><text x="148.33333333333334" y="402" text-anchor="middle">0.05</text><line x1="226.66666666666669" y1="380" x2="226.66666666666669" y2="385" stroke="#222"/><text x="226.66666666666669" y="402" text-anchor="middle">0.10</text><line x1="305" y1="380" x2="305" y2="385" stroke="#222"/><text x="305" y="402" text-anchor="middle">0.15</text><line x1="383.33333333333337" y1="380" x2="383.33333333333337" y2="385" stroke="#222"/><text x="383.33333333333337" y="402" text-anchor="middle">0.20</text><line x1="461.6666666666667" y1="380" x2="461.6666666666667" y2="385" stroke="#222"/><text x="461.6666666666667" y="402" text-anchor="middle">0.25</text><line x1="540" y1="380" x2="540" y2="385" stroke="#222"/><text x="540" y="402" text-anchor="middle">0.30</text><text x="305" y="432" text-anchor="middle">kick strength ε</text><text x="16" y="205" text-anchor="middle" transform="rotate(-90 16 205)">steady r</text><line x1="70" y1="99.99999999999999" x2="540" y2="99.99999999999999" stroke="#c0392b" stroke-dasharray="6 4"/><text x="74" y="93.99999999999999" fill="#c0392b">r = 0.8 crossing line</text><path d="M70.0,348.3 L93.5,291.0 L101.3,239.5 L105.3,222.0 L109.2,262.6 L113.1,194.5 L117.0,85.7 L124.8,64.7 L132.7,62.8 L148.3,48.5 L195.3,48.7 L305.0,46.1 L540.0,45.9" fill="none" stroke="#111111" stroke-width="2"/><circle cx="117.0" cy="85.7" r="4" fill="#111111"/><text x="552" y="50" fill="#111111">seed 20251025 → 0.03</text><path d="M70.0,338.0 L93.5,294.1 L101.3,266.5 L105.3,270.4 L109.2,102.0 L113.1,97.3 L117.0,94.3 L124.8,79.2 L132.7,69.6 L148.3,56.6 L195.3,49.3 L305.0,49.1 L540.0,49.4" fill="none" stroke="#c0392b" stroke-width="2"/><circle cx="113.1" cy="97.3" r="4" fill="#c0392b"/><text x="552" y="72" fill="#c0392b">seed 7 → 0.0275</text><path d="M70.0,350.0 L93.5,320.0 L101.3,261.2 L105.3,244.2 L109.2,189.7 L113.1,139.7 L117.0,117.7 L124.8,82.1 L132.7,72.4 L148.3,60.1 L195.3,50.8 L305.0,49.6 L540.0,44.7" fill="none" stroke="#2471a3" stroke-width="2"/><circle cx="124.8" cy="82.1" r="4" fill="#2471a3"/><text x="552" y="94" fill="#2471a3">seed 42 → 0.035</text><path d="M70.0,346.6 L93.5,315.3 L101.3,245.4 L105.3,261.5 L109.2,225.2 L113.1,199.9 L117.0,77.1 L124.8,78.0 L132.7,66.7 L148.3,64.0 L195.3,51.3 L305.0,51.2 L540.0,51.1" fill="none" stroke="#229954" stroke-width="2"/><circle cx="117.0" cy="77.1" r="4" fill="#229954"/><text x="552" y="116" fill="#229954">seed 1234 → 0.03</text><path d="M70.0,352.2 L93.5,278.6 L101.3,251.3 L105.3,254.5 L109.2,224.8 L113.1,222.4 L117.0,97.9 L124.8,94.8 L132.7,61.0 L148.3,53.6 L195.3,45.5 L305.0,45.5 L540.0,45.5" fill="none" stroke="#7d3c98" stroke-width="2"/><circle cx="117.0" cy="97.9" r="4" fill="#7d3c98"/><text x="552" y="138" fill="#7d3c98">seed 98765 → 0.03</text><path d="M70.0,354.1 L93.5,298.7 L101.3,257.6 L105.3,158.2 L109.2,125.7 L113.1,117.4 L117.0,112.7 L124.8,114.6 L132.7,107.0 L148.3,88.0 L195.3,72.6 L305.0,47.5 L540.0,47.5" fill="none" stroke="#b9770e" stroke-width="2"/><circle cx="148.3" cy="88.0" r="4" fill="#b9770e"/><text x="552" y="160" fill="#b9770e">seed 20261026 → 0.05</text></svg>
+<h2>Size vs density: the big-lattice boost is density, not size</h2>
+<p>The spot check above confounded two causes, so a six-arm
+experiment separated them (3 seeds each, N and radius and neighbor
+thinning varied independently; mean neighbor counts measured, not
+assumed). At &epsilon; = 0.02, mean steady r across seeds:
+baseline A (N = 120) 0.355; big lattice B (N = 240, same radius)
+0.903 — the gap is 0.548 and it reproduces in all three seeds.
+Doubling the size with the degree held fixed gives no boost:
+arm C2 (N = 240, neighbors thinned to the baseline degree)
+0.366, and arm C1 (N = 240, radius shrunk to hold the degree)
+0.274. Doubling the degree at fixed size reproduces the boost
+almost exactly: arm D (N = 120, radius grown) 0.878, which is
+0.95 of the gap. Extending the interaction range with the degree
+held fixed gives no boost either: arm D2 0.255. Measured mean
+degrees: A 18.4, B 36.9, C1 19.8, C2 18.5, D 32.9, D2 16.5 — the
+fixed-degree arms sit within 15% of baseline, so the comparison
+is fair. The attribution
+holds seed by seed, not just on average (density effect 0.50–
+0.55, size effect −0.05–0.10, range effect −0.13–−0.06 in every
+seed). <b>More neighbors per firefly sync the lattice earlier;
+more fireflies do not.</b> Above the transition the arms converge
+(all &ge; 0.90 at &epsilon; = 0.05): density moves the transition,
+it does not raise the ceiling. Thinning is symmetric — each kept
+pair is kept in both directions — and is a new opt-in core knob
+(<code>neighborKeep</code>), off by default, so the live toy above
+is unchanged.</p>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="500" font-family="Georgia, serif" font-size="12">
+<rect x="0" y="0" width="720" height="500" fill="white"/>
+<line x1="60" y1="20" x2="60" y2="390" stroke="#999"/>
+<line x1="60" y1="390" x2="700" y2="390" stroke="#999"/>
+<line x1="60" y1="390" x2="700" y2="390" stroke="#eee"/>
+<text x="52" y="394" text-anchor="end">0.0</text>
+<line x1="60" y1="316" x2="700" y2="316" stroke="#eee"/>
+<text x="52" y="320" text-anchor="end">0.2</text>
+<line x1="60" y1="242" x2="700" y2="242" stroke="#eee"/>
+<text x="52" y="246" text-anchor="end">0.4</text>
+<line x1="60" y1="168" x2="700" y2="168" stroke="#eee"/>
+<text x="52" y="172" text-anchor="end">0.6</text>
+<line x1="60" y1="93.99999999999999" x2="700" y2="93.99999999999999" stroke="#eee"/>
+<text x="52" y="97.99999999999999" text-anchor="end">0.8</text>
+<line x1="60" y1="20" x2="700" y2="20" stroke="#eee"/>
+<text x="52" y="24" text-anchor="end">1.0</text>
+<text x="131.11111111111111" y="408" text-anchor="middle">0.015</text>
+<text x="202.22222222222223" y="408" text-anchor="middle">0.02</text>
+<text x="273.33333333333337" y="408" text-anchor="middle">0.025</text>
+<text x="344.44444444444446" y="408" text-anchor="middle">0.03</text>
+<text x="628.8888888888889" y="408" text-anchor="middle">0.05</text>
+<text x="380" y="428" text-anchor="middle">kick strength ε</text>
+<text x="16" y="205" text-anchor="middle" transform="rotate(-90 16 205)">steady r (mean, 3 seeds)</text>
+<line x1="60" y1="93.99999999999999" x2="700" y2="93.99999999999999" stroke="#c0392b" stroke-dasharray="6 4"/>
+<text x="700" y="109.99999999999999" text-anchor="end" fill="#c0392b">r = 0.8</text>
+<polyline points="131.1,307.2 202.2,258.6 273.3,183.6 344.4,93.2 628.9,46.5" fill="none" stroke="#111111" stroke-width="2"/>
+<circle cx="131.1" cy="307.2" r="3" fill="#111111"/>
+<circle cx="202.2" cy="258.6" r="3" fill="#111111"/>
+<circle cx="273.3" cy="183.6" r="3" fill="#111111"/>
+<circle cx="344.4" cy="93.2" r="3" fill="#111111"/>
+<circle cx="628.9" cy="46.5" r="3" fill="#111111"/>
+<polyline points="131.1,80.3 202.2,55.9 273.3,48.1 344.4,46.2 628.9,41.1" fill="none" stroke="#c0392b" stroke-width="2"/>
+<circle cx="131.1" cy="80.3" r="3" fill="#c0392b"/>
+<circle cx="202.2" cy="55.9" r="3" fill="#c0392b"/>
+<circle cx="273.3" cy="48.1" r="3" fill="#c0392b"/>
+<circle cx="344.4" cy="46.2" r="3" fill="#c0392b"/>
+<circle cx="628.9" cy="41.1" r="3" fill="#c0392b"/>
+<polyline points="131.1,325.5 202.2,288.5 273.3,225.4 344.4,150.7 628.9,42.9" fill="none" stroke="#2471a3" stroke-width="2"/>
+<circle cx="131.1" cy="325.5" r="3" fill="#2471a3"/>
+<circle cx="202.2" cy="288.5" r="3" fill="#2471a3"/>
+<circle cx="273.3" cy="225.4" r="3" fill="#2471a3"/>
+<circle cx="344.4" cy="150.7" r="3" fill="#2471a3"/>
+<circle cx="628.9" cy="42.9" r="3" fill="#2471a3"/>
+<polyline points="131.1,333.9 202.2,254.6 273.3,187.8 344.4,108.5 628.9,54.4" fill="none" stroke="#17a2b8" stroke-width="2"/>
+<circle cx="131.1" cy="333.9" r="3" fill="#17a2b8"/>
+<circle cx="202.2" cy="254.6" r="3" fill="#17a2b8"/>
+<circle cx="273.3" cy="187.8" r="3" fill="#17a2b8"/>
+<circle cx="344.4" cy="108.5" r="3" fill="#17a2b8"/>
+<circle cx="628.9" cy="54.4" r="3" fill="#17a2b8"/>
+<polyline points="131.1,93.0 202.2,65.2 273.3,54.2 344.4,50.9 628.9,41.0" fill="none" stroke="#1e8449" stroke-width="2"/>
+<circle cx="131.1" cy="93.0" r="3" fill="#1e8449"/>
+<circle cx="202.2" cy="65.2" r="3" fill="#1e8449"/>
+<circle cx="273.3" cy="54.2" r="3" fill="#1e8449"/>
+<circle cx="344.4" cy="50.9" r="3" fill="#1e8449"/>
+<circle cx="628.9" cy="41.0" r="3" fill="#1e8449"/>
+<polyline points="131.1,328.1 202.2,295.7 273.3,232.8 344.4,112.6 628.9,57.0" fill="none" stroke="#ca6f1e" stroke-width="2"/>
+<circle cx="131.1" cy="328.1" r="3" fill="#ca6f1e"/>
+<circle cx="202.2" cy="295.7" r="3" fill="#ca6f1e"/>
+<circle cx="273.3" cy="232.8" r="3" fill="#ca6f1e"/>
+<circle cx="344.4" cy="112.6" r="3" fill="#ca6f1e"/>
+<circle cx="628.9" cy="57.0" r="3" fill="#ca6f1e"/>
+<line x1="60" y1="444" x2="84" y2="444" stroke="#111111" stroke-width="2"/>
+<circle cx="72" cy="444" r="3" fill="#111111"/>
+<text x="90" y="448">A baseline N=120</text>
+<line x1="380" y1="444" x2="404" y2="444" stroke="#c0392b" stroke-width="2"/>
+<circle cx="392" cy="444" r="3" fill="#c0392b"/>
+<text x="410" y="448">B big-N N=240</text>
+<line x1="60" y1="464" x2="84" y2="464" stroke="#2471a3" stroke-width="2"/>
+<circle cx="72" cy="464" r="3" fill="#2471a3"/>
+<text x="90" y="468">C1 N=240, small radius (size only)</text>
+<line x1="380" y1="464" x2="404" y2="464" stroke="#17a2b8" stroke-width="2"/>
+<circle cx="392" cy="464" r="3" fill="#17a2b8"/>
+<text x="410" y="468">C2 N=240, thinned (size only)</text>
+<line x1="60" y1="484" x2="84" y2="484" stroke="#1e8449" stroke-width="2"/>
+<circle cx="72" cy="484" r="3" fill="#1e8449"/>
+<text x="90" y="488">D N=120, big radius (degree up)</text>
+<line x1="380" y1="484" x2="404" y2="484" stroke="#ca6f1e" stroke-width="2"/>
+<circle cx="392" cy="484" r="3" fill="#ca6f1e"/>
+<text x="410" y="488">D2 N=120, big radius thinned (range only)</text>
+</svg>
+
+<h2>Steady state at &epsilon; = 0.08 (snapshot r = 0.986, steady mean 0.946)</h2>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400"><rect width="640" height="400" fill="#0b1020" />
+<circle cx="31.6" cy="331.2" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="82.1" cy="113.9" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="630.8" cy="231.7" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="177.6" cy="349.0" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="443.4" cy="154.3" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="197.3" cy="105.1" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="137.5" cy="272.5" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="2.8" cy="313.5" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="189.7" cy="338.3" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="55.1" cy="34.8" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="342.6" cy="370.7" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="348.5" cy="169.1" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="74.1" cy="37.9" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="70.6" cy="65.2" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="360.7" cy="39.1" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="492.0" cy="375.7" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="528.6" cy="100.4" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="114.3" cy="363.9" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="239.6" cy="321.7" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="17.7" cy="70.2" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="138.7" cy="145.0" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="2.3" cy="303.3" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="313.7" cy="165.9" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="389.3" cy="167.8" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="393.8" cy="35.4" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="475.8" cy="309.0" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="207.5" cy="134.9" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="624.2" cy="40.4" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="177.5" cy="44.9" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="583.3" cy="323.3" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="591.8" cy="345.4" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="431.7" cy="272.8" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="172.0" cy="387.9" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="479.2" cy="374.7" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="564.9" cy="205.4" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="154.0" cy="110.5" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="223.7" cy="326.1" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="176.4" cy="312.4" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="64.3" cy="166.4" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="58.8" cy="243.0" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="41.5" cy="99.1" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="170.6" cy="185.9" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="447.8" cy="46.7" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="258.8" cy="270.1" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="506.0" cy="102.4" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="260.7" cy="357.0" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="487.1" cy="55.2" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="627.5" cy="151.1" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="449.3" cy="210.7" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="396.3" cy="345.6" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="90.4" cy="344.2" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="117.7" cy="338.5" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="626.3" cy="49.2" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="623.7" cy="104.3" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="466.8" cy="375.6" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="197.9" cy="137.5" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="258.0" cy="92.5" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="124.7" cy="303.1" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="254.6" cy="100.2" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="596.6" cy="248.2" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="421.4" cy="2.7" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="94.3" cy="79.2" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="206.0" cy="371.9" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="524.3" cy="330.8" r="6.8" fill="rgba(255,217,74,0.66)" />
+<circle cx="342.1" cy="50.2" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="211.5" cy="75.8" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="609.7" cy="238.5" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="405.6" cy="330.0" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="406.0" cy="397.3" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="467.7" cy="166.3" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="571.0" cy="90.1" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="265.0" cy="290.7" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="372.1" cy="341.8" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="111.3" cy="373.7" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="545.3" cy="235.3" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="408.2" cy="219.5" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="489.1" cy="386.8" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="399.6" cy="354.5" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="608.6" cy="82.9" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="458.6" cy="54.6" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="19.3" cy="367.7" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="376.0" cy="280.3" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="339.2" cy="251.8" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="387.7" cy="55.3" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="167.4" cy="216.9" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="413.0" cy="29.4" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="493.9" cy="394.5" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="117.3" cy="148.8" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="84.7" cy="375.5" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="114.8" cy="49.8" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="202.4" cy="248.5" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="543.3" cy="258.5" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="622.1" cy="399.3" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="337.3" cy="319.4" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="159.6" cy="233.1" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="506.8" cy="97.6" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="343.7" cy="271.7" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="559.5" cy="3.3" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="339.5" cy="25.2" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="138.3" cy="332.0" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="206.8" cy="249.9" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="460.7" cy="176.5" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="571.8" cy="178.8" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="247.8" cy="60.0" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="498.0" cy="135.1" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="199.4" cy="44.4" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="241.4" cy="256.3" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="595.8" cy="256.7" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="297.0" cy="359.3" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="316.8" cy="363.7" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="454.3" cy="7.2" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="267.6" cy="378.9" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="392.8" cy="54.7" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="544.1" cy="31.0" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="91.5" cy="101.0" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="276.0" cy="325.6" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="367.3" cy="43.5" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="450.8" cy="219.5" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="211.7" cy="284.0" r="9.1" fill="rgba(255,217,74,0.90)" />
+<circle cx="36.7" cy="43.1" r="9.1" fill="rgba(255,217,74,0.90)" />
+</svg>
+<pre>                                          *  *         *        
+                                                                
+     *                           *     * *            *         
+   *   *   *     * *                *       *                 * 
+                        *         *   **     *  *               
+ *     *                                                        
+         *           *                                      *   
+    *                    *                        *      *      
+         *     *   *     *                        * *         * 
+        *                                                       
+                    *                            *              
+           * *     *                                            
+                                            *                 * 
+      *                        *  *   *       *                 
+                 *                            *          *      
+                                                                
+                                            *           *       
+                *                       *    *                  
+               *                                      *        *
+     *              *                                      **   
+                        *        *                    *    *    
+             *           *        *        *                    
+                     *               *                          
+                          *                                     
+*           *    *                             *                
+*                      *         *                        *     
+   *         *        *    *            *           .           
+         * *     **                  * *                   *    
+                          *  *         *                        
+ *         *        *          *  *            *                
+        *                 *                   * **              
+                 *                      *        *            * </pre>
+<p>The map is almost uniformly bright: the whole lattice glows
+together after a collective flash, with one dim straggler. Contrast
+last night's Kuramoto snapshot, where brightness varied because
+phases only clustered. The snapshot caught a high-r moment just
+after a flash; the steady mean over the cycle is lower (0.946)
+because phases drift apart between flashes.</p>
+<script>
+// pulseflies-core.mjs — pure simulation core, no DOM, no window.
+// Mirollo–Strogatz integrate-and-fire oscillators ("pulse-coupled
+// fireflies"): each oscillator's phase advances at its own natural
+// frequency; on reaching 1 it flashes, resets to 0, and kicks each
+// neighbor's phase up by eps * phase. The kick grows with phase, so
+// an oscillator near threshold gets pushed over it (absorption)
+// while a just-fired oscillator (phase 0) is immune to re-firing
+// in the same cascade. One TUNE object; seeded RNG (mulberry32).
+// Geometry matches last night's Kuramoto local mode: N oscillators
+// at random positions in the unit square, neighbors within radius.
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function gaussian(rng) {
+  let u = 0, v = 0;
+  while (u === 0) u = rng();
+  while (v === 0) v = rng();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+const TUNE = {
+  N: 120,            // firefly count
+  DT: 0.005,         // sim seconds per step (200 steps per ~1 s cycle)
+  FREQ_MEAN: 1.0,    // mean natural frequency, cycles/s (1 flash/s)
+  FREQ_SD: 0.12,     // spread of natural frequencies, cycles/s
+  RADIUS: 0.25,      // local neighbor radius (unit square)
+  MAX_CASCADE: 10000, // safety cap on cascade pops per step
+};
+
+class Pulseflies {
+  constructor(opts = {}) {
+    const t = TUNE;
+    this.n = opts.n ?? t.N;
+    this.dt = opts.dt ?? t.DT;
+    this.eps = opts.eps ?? 0.1;
+    this.radius = opts.radius ?? t.RADIUS;
+    const rng = mulberry32(opts.seed ?? 1234);
+    const sd = opts.freqSd ?? t.FREQ_SD;
+    this.phase = new Float64Array(this.n);
+    this.freq = new Float64Array(this.n);
+    this.x = new Float64Array(this.n);
+    this.y = new Float64Array(this.n);
+    this.flashed = new Array(this.n).fill(false);
+    this.flashCount = new Array(this.n).fill(0);
+    this.lastFlash = new Float64Array(this.n).fill(-1e9);
+    this.flashTimes = []; // every flash time, in order
+    this.time = 0;
+    for (let i = 0; i < this.n; i++) {
+      this.phase[i] = opts.phases ? opts.phases[i] : rng();
+      this.freq[i] = opts.freqs ? opts.freqs[i] : t.FREQ_MEAN + gaussian(rng) * sd;
+      this.x[i] = opts.positions ? opts.positions[i][0] : rng();
+      this.y[i] = opts.positions ? opts.positions[i][1] : rng();
+    }
+    // Neighbor lists (symmetric by construction: shared radius test).
+    const r2 = this.radius * this.radius;
+    this.neighbors = [];
+    for (let i = 0; i < this.n; i++) {
+      const list = [];
+      for (let j = 0; j < this.n; j++) {
+        if (j === i) continue;
+        const dx = this.x[i] - this.x[j];
+        const dy = this.y[i] - this.y[j];
+        if (dx * dx + dy * dy <= r2) list.push(j);
+      }
+      this.neighbors.push(list);
+    }
+    // Optional symmetric neighbor thinning: keep each unordered
+    // geometric pair with probability neighborKeep, decided by a
+    // separate RNG stream so positions and frequencies are
+    // untouched. Default 1.0 = no thinning; default behavior is
+    // unchanged. Thinning holds the mean degree fixed while the
+    // radius (interaction range) or N (system size) varies, so a
+    // sweep can separate density from range and from size.
+    const keep = opts.neighborKeep ?? 1;
+    if (keep < 1) {
+      const krng = mulberry32(opts.neighborKeepSeed ?? (opts.seed ?? 1234));
+      const kept = [];
+      for (let i = 0; i < this.n; i++) kept.push(new Set());
+      for (let i = 0; i < this.n; i++) {
+        for (const j of this.neighbors[i]) {
+          if (j <= i) continue;
+          if (krng() < keep) { kept[i].add(j); kept[j].add(i); }
+        }
+      }
+      this.neighbors = kept.map((s) => [...s].sort((a, b) => a - b));
+    }
+  }
+
+  orderParameter() {
+    let re = 0, im = 0;
+    for (let i = 0; i < this.n; i++) {
+      const a = 2 * Math.PI * this.phase[i];
+      re += Math.cos(a);
+      im += Math.sin(a);
+    }
+    return Math.hypot(re / this.n, im / this.n);
+  }
+
+  // Flash coincidence C: for each flash in the given time window,
+  // the fraction of the population flashing within +/-win seconds
+  // of it, averaged over flashes. Uniform expectation ~ 2*win
+  // flashes per oscillator per second (~0.04 for win = 0.02);
+  // full sync -> 1.
+  flashCoincidence(t0, t1, win = 0.02) {
+    const times = this.flashTimes.filter((t) => t >= t0 && t < t1);
+    if (times.length < 2) return 0;
+    let total = 0;
+    for (let a = 0; a < times.length; a++) {
+      let cnt = 0;
+      for (let b = 0; b < times.length; b++) {
+        if (a !== b && Math.abs(times[b] - times[a]) <= win) cnt++;
+      }
+      total += cnt / (this.n - 1);
+    }
+    return total / times.length;
+  }
+
+  // Neighbor phase-difference structure: for every neighbor pair,
+  // the signed wrapped difference d in [-0.5, 0.5]. Returns the
+  // mean |d|, the circular resultant of d (concentration), and
+  // the circular mean of d. Sync: mean|d| ~ 0, resultant ~ 1.
+  // Traveling wave: resultant high, mean d consistently nonzero.
+  // Disorder: resultant low, mean|d| ~ 0.25.
+  neighborDelta() {
+    let re = 0, im = 0, absSum = 0, pairs = 0;
+    for (let i = 0; i < this.n; i++) {
+      for (const j of this.neighbors[i]) {
+        if (j <= i) continue; // count each unordered pair once
+        let d = this.phase[j] - this.phase[i];
+        d = ((d + 0.5) % 1 + 1) % 1 - 0.5;
+        const a = 2 * Math.PI * d;
+        re += Math.cos(a);
+        im += Math.sin(a);
+        absSum += Math.abs(d);
+        pairs++;
+      }
+    }
+    if (pairs === 0) return { meanAbs: 0, resultant: 0, mean: 0, pairs: 0 };
+    return {
+      meanAbs: absSum / pairs,
+      resultant: Math.hypot(re, im) / pairs,
+      mean: Math.atan2(im, re) / (2 * Math.PI),
+      pairs,
+    };
+  }
+
+  step() {
+    const n = this.n;
+    this.flashed.fill(false);
+    const fired = new Array(n).fill(false);
+    const queue = [];
+    // Advance all phases; collect natural firers.
+    for (let i = 0; i < n; i++) {
+      this.phase[i] += this.freq[i] * this.dt;
+      if (this.phase[i] >= 1) {
+        this.phase[i] = 0;
+        fired[i] = true;
+        this.flashed[i] = true;
+        this.flashCount[i]++;
+        this.lastFlash[i] = this.time;
+        this.flashTimes.push(this.time);
+        queue.push(i);
+      }
+    }
+    // Cascade: each firer kicks its neighbors by eps * phase.
+    // Kick(0) = 0, so just-fired oscillators cannot re-fire.
+    let pops = 0;
+    while (queue.length > 0 && pops < TUNE.MAX_CASCADE) {
+      const j = queue.pop();
+      pops++;
+      for (const i of this.neighbors[j]) {
+        if (fired[i]) continue;
+        this.phase[i] += this.eps * this.phase[i];
+        if (this.phase[i] >= 1) {
+          this.phase[i] = 0;
+          fired[i] = true;
+          this.flashed[i] = true;
+          this.flashCount[i]++;
+          this.lastFlash[i] = this.time;
+          this.flashTimes.push(this.time);
+          queue.push(i);
+        }
+      }
+    }
+    this.time += this.dt;
+  }
+
+  // Brightness of firefly i: 1 at flash, decaying over ~0.3 s.
+  brightness(i) {
+    if (this.flashed[i]) return 1;
+    const since = this.time - this.lastFlash[i];
+    if (since > 0.3) return 0.15;
+    return 0.15 + 0.85 * (1 - since / 0.3);
+  }
+}
+
+
+var canvas = document.getElementById('cv');
+var ctx = canvas.getContext('2d');
+var sim = new Pulseflies({ seed: 20251025, eps: 0.08 });
+var running = true;
+var rEl = document.getElementById('r');
+var cEl = document.getElementById('c');
+var tEl = document.getElementById('t');
+var frames = 0;
+function draw() {
+  ctx.fillStyle = '#0b1020';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  for (var i = 0; i < sim.n; i++) {
+    var b = sim.brightness(i);
+    ctx.beginPath();
+    ctx.arc(sim.x[i] * canvas.width, sim.y[i] * canvas.height, 3 + b * 7, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(255, 217, 74, ' + (0.25 + b * 0.75).toFixed(2) + ')';
+    ctx.fill();
+  }
+  rEl.textContent = sim.orderParameter().toFixed(3);
+  tEl.textContent = sim.time.toFixed(1) + 's';
+  frames++;
+  if (frames % 60 === 0 && sim.time > 1) {
+    cEl.textContent = sim.flashCoincidence(Math.max(0, sim.time - 12), sim.time).toFixed(3);
+  }
+}
+function frame() {
+  if (running) { sim.step(); sim.step(); draw(); }
+  requestAnimationFrame(frame);
+}
+document.getElementById('epsSlider').addEventListener('input', function (e) {
+  sim.eps = parseFloat(e.target.value);
+  document.getElementById('epsVal').textContent = sim.eps.toFixed(2);
+});
+document.getElementById('pauseBtn').addEventListener('click', function () {
+  running = !running;
+  document.getElementById('pauseBtn').textContent = running ? 'Pause' : 'Resume';
+});
+document.getElementById('seedBtn').addEventListener('click', function () {
+  sim = new Pulseflies({ seed: Math.floor(Math.random() * 1e9), eps: sim.eps });
+});
+requestAnimationFrame(frame);
+
+</script>
+</body>
+</html>

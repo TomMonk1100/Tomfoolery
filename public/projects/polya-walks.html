@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+<title>pólya walks — 2026-11-16</title>
+<style>
+body { font-family: Georgia, serif; max-width: 960px; margin: 2em auto; padding: 0 1em; color: #222; }
+canvas { background: #11141c; display: block; }
+table { border-collapse: collapse; margin: 1em 0; font-variant-numeric: tabular-nums; }
+td, th { border: 1px solid #ccc; padding: 4px 10px; font-size: 13px; }
+.controls { margin: 1em 0; }
+.controls button, .controls input { margin-right: 1em; }
+</style></head>
+<body>
+<h1>pólya walks — does a random walk come home?</h1>
+<p>A walker starts at the origin and steps at random — one axis,
+one direction, each equally likely. In 1921 Pólya proved the split
+this page is about: in <b>one and two dimensions</b> the walk is
+<i>recurrent</i> — it returns to the origin with probability 1,
+given enough time. In <b>three dimensions</b> it is <i>transient</i>:
+the probability of ever returning is only about <b>0.3405</b>, and
+most walks wander off forever. Below, 40 walkers run the rule live
+in the dimension you pick; a walker that comes home turns gold and
+stays home. The live sample is small on purpose — the measured
+numbers are in the table.</p>
+<canvas id="cv" width="700" height="460"></canvas>
+<div class="controls">
+<button id="dim1">1D</button><button id="dim2">2D</button><button id="dim3">3D</button>
+<button id="playBtn">Pause</button>
+<button id="resetBtn">Reset</button>
+<label>speed <input id="speedSlider" type="range" min="1" max="64" step="1" value="8"> <span id="speedVal">8 steps/frame</span></label>
+</div>
+<p>step <span id="stepVal">0</span> of 4,096 · live sample: <span id="homeVal">–</span></p>
+<h2>What the sweep measured (simulation results, horizon stated)</h2>
+<p>20,000 seeded walks per dimension, each followed for up to
+4,096 steps; a walk counts as home only if it reaches the origin
+within the horizon. These are finite-horizon measurements, not the
+theorem: the 1D figure is still climbing toward 1, the 2D figure
+climbs only logarithmically (0.7135 at this horizon against a limit
+of 1), and the 3D figure stalls just below Pólya's constant
+0.340537 — the shortfall is the horizon's, since walks that would
+return after step 4,096 are counted as gone. The highlighted row
+tracks the live animation's step count. Exact check, computed by
+the core in this page: the probability of standing exactly on the
+origin after 20 steps is <span id="exactVal">–</span>.</p>
+<table id="sweepTable"><tr><th>horizon (steps)</th><th>1D ever-return</th><th>2D ever-return</th><th>3D ever-return</th></tr>
+<tr data-t="16"><td>16</td><td>0.8030</td><td>0.4556</td><td>0.2671</td></tr>
+<tr data-t="64"><td>64</td><td>0.9030</td><td>0.5515</td><td>0.3013</td></tr>
+<tr data-t="256"><td>256</td><td>0.9514</td><td>0.6211</td><td>0.3196</td></tr>
+<tr data-t="1024"><td>1,024</td><td>0.9759</td><td>0.6738</td><td>0.3284</td></tr>
+<tr data-t="4096"><td>4,096</td><td>0.9874</td><td>0.7135</td><td>0.3326</td></tr>
+</table>
+<p>Reading: recurrence fills the bar; transience leaves it
+permanently part-empty.</p>
+<script>
+// Simple symmetric random walks in d dimensions — one core for
+// harness, sweep, and render. No copied stepping logic anywhere.
+//
+// Exact at-origin probabilities (probability to be at the origin
+// after 2n steps):
+//   d=1: u1(n) = C(2n, n) / 4^n = prod_{i=1..n} (2i-1)/(2i)
+//   d=2: u2(n) = u1(n)^2   (the 2D walk decomposes into two
+//        independent diagonal 1D walks)
+//   d=3: u3(n) = 6^{-2n} * sum_{i+j+k=n} (2n)! / (i!^2 j!^2 k!^2)
+//        (i, j, k = step-pairs spent on each axis)
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function u1(n) {
+  let u = 1;
+  for (let i = 1; i <= n; i++) u *= (2 * i - 1) / (2 * i);
+  return u;
+}
+
+function uExact(dim, n) {
+  if (dim === 1) return u1(n);
+  if (dim === 2) { const u = u1(n); return u * u; }
+  if (dim === 3) {
+    // factorials as logs would lose exactness at these small n;
+    // n <= 25 in every caller, plain numbers are exact enough
+    // (checked against brute-force enumeration in the harness).
+    const fact = [1];
+    for (let i = 1; i <= 2 * n; i++) fact.push(fact[i - 1] * i);
+    let s = 0;
+    for (let i = 0; i <= n; i++)
+      for (let j = 0; j <= n - i; j++) {
+        const k = n - i - j;
+        s += fact[2 * n] / (fact[i] ** 2 * fact[j] ** 2 * fact[k] ** 2);
+      }
+    return s / 6 ** (2 * n);
+  }
+  throw new Error('dim must be 1, 2 or 3');
+}
+
+// One walk: step up to maxSteps, returning the first step at
+// which the walk is back at the origin, or null. Position after
+// exactly `steps` steps is available via walkTo (no early stop).
+function firstReturn(dim, maxSteps, rng) {
+  const pos = new Array(dim).fill(0);
+  for (let s = 1; s <= maxSteps; s++) {
+    const axis = (rng() * dim) | 0;
+    pos[axis] += rng() < 0.5 ? -1 : 1;
+    if (s % 2 === 0 && pos.every((c) => c === 0)) return s;
+  }
+  return null;
+}
+
+function walkTo(dim, steps, rng) {
+  const pos = new Array(dim).fill(0);
+  for (let s = 1; s <= steps; s++) {
+    const axis = (rng() * dim) | 0;
+    pos[axis] += rng() < 0.5 ? -1 : 1;
+  }
+  return pos;
+}
+
+const POLYA_3D = 0.34053732955099953; // known return probability, d=3
+
+
+var cv = document.getElementById('cv');
+var ctx = cv.getContext('2d');
+var DIM = 2;
+var NW = 40;              // live sample size — an illustration, not the measurement
+var HORIZON = 4096;       // same horizon as the measured sweep
+var walkers = [];
+var t = 0;
+var running = true;
+var stepsPerFrame = 8;
+var rng = mulberry32(20261116);
+var stepEl = document.getElementById('stepVal');
+var homeEl = document.getElementById('homeVal');
+var playBtn = document.getElementById('playBtn');
+
+function newWalker() {
+  return { pos: [0, 0, 0], trail: [[0, 0, 0]], home: 0 };
+}
+function reset() {
+  walkers = [];
+  for (var i = 0; i < NW; i++) walkers.push(newWalker());
+  t = 0;
+  draw();
+}
+function stepWalkers() {
+  if (t >= HORIZON) { running = false; playBtn.textContent = 'Play'; return; }
+  for (var s = 0; s < stepsPerFrame && t < HORIZON; s++) {
+    t++;
+    for (var i = 0; i < walkers.length; i++) {
+      var w = walkers[i];
+      if (w.home) continue;
+      var axis = (rng() * DIM) | 0;
+      w.pos[axis] += rng() < 0.5 ? -1 : 1;
+      w.trail.push([w.pos[0], w.pos[1], w.pos[2]]);
+      if (w.trail.length > 220) w.trail.shift();
+      if (t % 2 === 0 && w.pos[0] === 0 && w.pos[1] === 0 && w.pos[2] === 0) w.home = t;
+    }
+  }
+}
+function project(p) {
+  // 1D: x along the axis, walkers stacked in rows. 2D: the plane.
+  // 3D: oblique projection, z leaning up-right.
+  var cx = cv.width / 2, cy = cv.height / 2;
+  if (DIM === 1) return [cx + p[0] * scale, 40 + (p[3] || 0)];
+  if (DIM === 2) return [cx + p[0] * scale, cy - p[1] * scale];
+  return [cx + (p[0] + 0.5 * p[2]) * scale, cy - (p[1] + 0.35 * p[2]) * scale];
+}
+var scale = 6;
+function draw() {
+  ctx.fillStyle = '#11141c';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  // fit: grow the view to the farthest walker
+  var maxc = 8;
+  for (var i = 0; i < walkers.length; i++) {
+    var p = walkers[i].pos;
+    for (var a = 0; a < DIM; a++) maxc = Math.max(maxc, Math.abs(p[a]));
+  }
+  scale = Math.min(14, (cv.width / 2 - 16) / (maxc * (DIM === 3 ? 1.5 : 1)));
+  // origin marker: a line across the rows in 1D, a ring otherwise
+  ctx.strokeStyle = '#ffd94a';
+  ctx.beginPath();
+  if (DIM === 1) {
+    ctx.moveTo(cv.width / 2, 56); ctx.lineTo(cv.width / 2, cv.height - 16);
+  } else {
+    var o = project([0, 0, 0]);
+    ctx.arc(o[0], o[1], 6, 0, 2 * Math.PI);
+  }
+  ctx.stroke();
+  for (var i = 0; i < walkers.length; i++) {
+    var w = walkers[i];
+    ctx.beginPath();
+    for (var j = 0; j < w.trail.length; j++) {
+      var q = w.trail[j].slice();
+      if (DIM === 1) q[3] = 30 + i * 9;
+      var xy = project(q);
+      if (j === 0) ctx.moveTo(xy[0], xy[1]); else ctx.lineTo(xy[0], xy[1]);
+    }
+    ctx.strokeStyle = w.home ? 'rgba(255,217,74,0.9)' : 'rgba(120,180,255,0.45)';
+    ctx.stroke();
+    var head = w.pos.slice();
+    if (DIM === 1) head[3] = 30 + i * 9;
+    var hp = project(head);
+    ctx.fillStyle = w.home ? '#ffd94a' : '#cfe4ff';
+    ctx.fillRect(hp[0] - 2, hp[1] - 2, 4, 4);
+  }
+  var home = 0;
+  for (var i = 0; i < walkers.length; i++) if (walkers[i].home) home++;
+  stepEl.textContent = t.toLocaleString('en-US');
+  homeEl.textContent = home + ' / ' + NW + ' home (' + (home / NW).toFixed(3) + ')';
+  // highlight the measured-sweep row for the current horizon
+  var rows = document.querySelectorAll('#sweepTable tr[data-t]');
+  rows.forEach(function (r) {
+    var rt = Number(r.getAttribute('data-t'));
+    r.style.background = (rt <= t && (rt * 4 > t || rt === 4096)) ? '#fff3cd' : '';
+  });
+}
+function frame() {
+  if (running) { stepWalkers(); draw(); }
+  requestAnimationFrame(frame);
+}
+playBtn.addEventListener('click', function () {
+  if (t >= HORIZON) reset();
+  running = !running;
+  playBtn.textContent = running ? 'Pause' : 'Play';
+  if (!running) draw();
+});
+document.getElementById('resetBtn').addEventListener('click', function () { reset(); });
+document.getElementById('speedSlider').addEventListener('input', function (e) {
+  stepsPerFrame = Number(e.target.value);
+  document.getElementById('speedVal').textContent = stepsPerFrame + ' steps/frame';
+});
+[1, 2, 3].forEach(function (d) {
+  document.getElementById('dim' + d).addEventListener('click', function () {
+    DIM = d; reset();
+  });
+});
+// exact-value check from the inlined core: P(at origin after 20 steps)
+document.getElementById('exactVal').textContent =
+  '1D ' + uExact(1, 10).toFixed(4) + ' · 2D ' + uExact(2, 10).toFixed(4) + ' · 3D ' + uExact(3, 10).toFixed(4);
+reset();
+requestAnimationFrame(frame);
+
+</script>
+</body>
+</html>
