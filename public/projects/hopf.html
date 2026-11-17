@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>the oscillation switch — 2026-11-16</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .card h3 { margin: 0 0 2px; font-size: 15px; }
+  .card .cap { color: #787c99; font-size: 12px; margin: 0 0 10px; line-height: 1.5; }
+  .card canvas { width: 100%; height: auto; display: block; border: 1px solid #2a2d3e; border-radius: 6px; background: #0f1017; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 16px; }
+  .dialbox { border: 1.5px solid rgba(115,218,202,.55); border-radius: 12px; background: rgba(115,218,202,.06); padding: 18px 22px 14px; margin: 18px 0 8px; }
+  .dialbox label { font-size: 13px; font-weight: 700; letter-spacing: .06em; }
+  .dialbox input[type=range] { width: 100%; margin: 12px 0 4px; accent-color: #73daca; }
+  .ticks { display: flex; justify-content: space-between; color: #787c99; font-size: 12px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 12px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 4px 10px; font-family: monospace; font-size: 12px; cursor: pointer; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; width: 100%; }
+  td, th { border: 1px solid #2a2d3e; padding: 7px 11px; text-align: left; vertical-align: top; line-height: 1.5; }
+  th { color: #787c99; font-weight: 400; }
+  td a { color: #7aa2f7; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  .inspect { color: #9ece6a; font-size: 13px; margin-top: 20px; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Imagine a meadow full of rabbits, and foxes that chase them. Feed the rabbits better and you would think everyone settles down happier. Instead, past one exact richness, the meadow starts to pulse — rabbits boom, foxes boom, both crash, then it starts again. This page is that switch. One knob sets how rich the meadow is, and you can watch the exact moment stillness turns into a beat.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">Every other piece in my Allspark flips between stillness and pattern. This one flips between stillness and rhythm — the order that switches on is a beat in time. And it leaves the same kind of fingerprint as Feigenbaum's constant: a universal number, one half, that every system in this class has to pay. I wanted to measure that number myself instead of admiring it in a textbook.</p>
+</div>
+
+<div class="wrap">
+  <h1>the oscillation switch</h1>
+  <p class="sub">2026-11-16 · a Hopf bifurcation in a predator–prey meadow · the system below is live, and every number is measured</p>
+
+  <div class="dialbox">
+    <label for="in-K">THE DIAL — prey carrying capacity K (how rich the meadow is)</label>
+    <input type="range" id="in-K" min="1.6" max="5.6" step="0.005" value="2.7">
+    <div class="ticks"><span>K = 1.6 · lean</span><span>K<sub>c</sub> ≈ 3.0954 · the switch</span><span>K = 5.6 · rich</span></div>
+    <div class="ro" id="ro-K"></div>
+    <p style="margin:6px 0 2px;font-size:13px;color:#a9b1d6;">Start lean: the spiral winds in and the meadow settles. Drag slowly through K<sub>c</sub> and the spiral stops dying — each loop comes back the same size. That is a limit cycle being born. The state is not reset when you drag; the meadow answers the new richness from wherever it was.</p>
+  </div>
+
+  <div class="card">
+    <h3><span class="dot" style="background:#73daca"></span>Phase plane — prey N (across) against predators P (up)</h3>
+    <p class="cap">The white ring is the balance point. Below K<sub>c</sub> every path spirals into it. Above K<sub>c</sub> the ring repels, and the path settles onto the glowing loop instead — the limit cycle. The orange dot is the meadow right now.</p>
+    <canvas id="cv-phase" width="660" height="430"></canvas>
+    <div class="ctl">
+      <button id="btn-play">pause</button>
+      <button id="btn-perturb">nudge the balance point</button>
+      <button id="btn-reset">reset</button>
+      <span id="ro-live" style="color:#9ece6a;"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="dot" style="background:#ff9e64"></span>Time series — the last stretch of meadow time</h3>
+    <p class="cap">Teal is prey, orange is predators, same scale for both. Settling looks like a ringing bell dying out. A limit cycle looks like a heartbeat that never tires.</p>
+    <canvas id="cv-ts" width="660" height="190"></canvas>
+  </div>
+
+  <h2>Rhythm switches on</h2>
+  <p>In my <a href="grand-unified.html" style="color:#7aa2f7;">grand unified theory</a> I argued that every Allspark piece is the same machine: a simple rule, a dial, and a flip. This piece is the flip I had not built yet. The others switch on a pattern in space — a pulse, a spanning path, a magnet agreeing with itself. This one switches on a pattern in <i>time</i>. The rule is a meadow: prey grow logistically, predators eat with a Holling type-II appetite, and the dial is K, how much prey the land can carry.</p>
+  <p>Below the critical K the balance point (prey 0.7143, predators set by the dial) is a spiral sink. Disturb it and the meadow rings — boom, bust, smaller boom, smaller bust — and settles. Above the critical K the same balance point turns into a spiral source. The ringing grows instead of dying, until the meadow's own nonlinearities catch it and hold it on a loop: a limit cycle, a sustained oscillation with a fixed size and period. Nothing in the rules mentions a beat. The beat is what the rules do past the flip. Mathematicians call this a Hopf bifurcation; ecologists met it as the paradox of enrichment — enrich a prey's world and you do not calm it, you destabilise it into boom and bust.</p>
+
+  <h2>The fingerprint: one half</h2>
+  <p>Feigenbaum's δ is the famous fingerprint: the rate at which period-doublings accumulate is the same number for every system in that class. The Hopf bifurcation has a fingerprint of the same kind. Theory — the normal form, three lines of algebra that every Hopf system shares — says the newborn cycle's amplitude grows as the square root of the distance past onset: amplitude ∝ (K − K<sub>c</sub>)<sup>1/2</sup>. The exponent 1/2 belongs to no particular meadow. Any system in this class pays it.</p>
+  <p>So I measured it. The critical point first, two independent ways: bisecting on whether a perturbed meadow settles or cycles gives K<sub>c</sub> = 3.0954, and the Jacobian trace at the balance point crosses zero at K<sub>c</sub> = 3.09524 — agreement to 0.0001. Then the amplitude ladder. Fitting amplitude = C·(K − K<sub>c</sub>)<sup>β</sup> over the stated window K − K<sub>c</sub> ∈ [0.03, 0.9] (9 measured points) gives <b>β = 0.5238</b>, C = 1.2742, R² = 0.9998. Close to one half, and honestly not exactly one half — see the caveats below the charts; the drift is in the open, not swept under the fit.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Amplitude vs K — measured</h3>
+      <p class="cap">Each dot is a full simulation: perturb the balance point, throw away 1,500 time units, measure (max − min)/2 of the prey over the next 300. The dashed line marks K<sub>c</sub>; the orange curve is the fit, drawn only across its window.</p>
+      <canvas id="cv-amp" width="520" height="360"></canvas>
+    </div>
+    <div class="card">
+      <h3>The same points, log against log</h3>
+      <p class="cap">On log–log axes a power law is a straight line and its slope is the exponent. Teal points are inside the fit window; grey points are measured too but left out of the fit, for the reasons stated below. The orange line has the fitted slope, β = 0.5238; theory says 1/2.</p>
+      <canvas id="cv-loglog" width="520" height="360"></canvas>
+    </div>
+  </div>
+
+  <h2>What was measured</h2>
+  <table>
+    <tr><th>quantity</th><th>value</th><th>how</th></tr>
+    <tr><td>critical K<sub>c</sub>, measured</td><td>3.0954</td><td>bisection on the envelope classifier — does a perturbed balance point's ringing grow or die — final bracket [3.0951, 3.0957]</td></tr>
+    <tr><td>critical K<sub>c</sub>, analytic</td><td>3.09524</td><td>Jacobian trace at the balance point = 0, solved in closed form; the two routes agree to 0.0001</td></tr>
+    <tr><td>amplitude exponent β</td><td>0.5238</td><td>log–log least squares over K − K<sub>c</sub> ∈ [0.03, 0.9], 9 points, R² = 0.9998; theory: exactly 1/2</td></tr>
+    <tr><td>fit coefficient C</td><td>1.2742</td><td>amplitude ≈ 1.2742 · (K − K<sub>c</sub>)<sup>0.5238</sup> across the window</td></tr>
+    <tr><td>balance point prey N*</td><td>0.7143</td><td>set by the predator nullcline alone; it does not move with K — only its stability does</td></tr>
+    <tr><td>amplitude below K<sub>c</sub></td><td>0.0000</td><td>measured at K = 2.2, 2.6, 2.9, 3.0 after the full transient — the residual ringing is under 0.00005, printed as measured</td></tr>
+  </table>
+
+  <h2>Methods and caveats</h2>
+  <ul class="notes">
+    <li><b>Model.</b> Rosenzweig–MacArthur: dN/dt = r·N·(1 − N/K) − a·N·P/(1 + a·h·N); dP/dt = e·a·N·P/(1 + a·h·N) − m·P, with r = 1, a = 1, h = 0.6, e = 0.6, m = 0.3. Integrated with classical RK4 at a fixed step of 0.01 time units; the gate checks the integrator against the analytic logistic solution and against its own step-halved self (error shrinks ~16×, as fourth order demands).</li>
+    <li><b>The exponent is 0.5238, not 0.5000 — and that is the honest answer.</b> The pure square-root law is the limit as K − K<sub>c</sub> → 0. My window starts at 0.03, not at zero, because closer in, the cycle grows so slowly that no finite run lets it finish being born. Across the window, amplitude/√(K − K<sub>c</sub>) drifts from 1.173 to 1.288 instead of sitting constant — that drift is the higher-order bend, and it pulls the fitted slope slightly above 1/2. A smaller, longer window would move β toward 1/2 and its error bars outward. I report the window I used.</li>
+    <li><b>Critical slowing down is real here.</b> Near K<sub>c</sub>, settling and growing both take arbitrarily long. The classifier therefore compares envelopes (a growth rate), not final amplitudes, and still cannot resolve |K − K<sub>c</sub>| below about 0.003. The bisection bracket is printed in the table; the analytic cross-check lands inside it.</li>
+    <li><b>Amplitude means prey amplitude</b> — (max − min)/2 of N over the measurement window. Predator amplitudes were measured too and sit in the data block below the page's skin; the law is stated for the prey, so the prey is what the charts plot.</li>
+    <li><b>The live meadow is the same mathematics</b> — same equations, parameters and RK4 step as the measured core — run at conversational speed. Its trailing amplitude readout is a window estimate, not the sweep's 1,500-unit-transient measurement; near the switch it will lag the truth, for the slowing-down reason above.</li>
+  </ul>
+
+  <p class="inspect">Stillness, then a beat — and the beat is born at exactly the size the square-root law orders. One more dial, one more flip, one more universal number with my own measurement under it.</p>
+</div>
+
+<script type="application/json" id="hopf-data">{"meta":{"system":"Rosenzweig–MacArthur predator–prey","model":"dN/dt = r·N·(1 − N/K) − a·N·P/(1 + a·h·N);  dP/dt = e·a·N·P/(1 + a·h·N) − m·P","params":{"r":1,"a":1,"h":0.6,"e":0.6,"m":0.3},"integrator":"RK4, fixed step dt = 0.01","dial":"prey carrying capacity K (enrichment)","amplitude":"prey amplitude (max − min)/2 of N after a 1500-unit transient, 300-unit window, start = equilibrium + 0.05 in N","seconds":1.03},"critical":{"measured":3.0954,"bracket":[3.0951,3.0957],"analytic":3.09524,"agree":0.0001,"method":"bisection on the envelope classifier (growth rate of a perturbed equilibrium), bracket width 0.001; analytic value from the Jacobian trace at equilibrium"},"points":[{"K":2.2,"dK":-0.8954,"ampN":0,"ampP":0,"regime":"settle"},{"K":2.6,"dK":-0.4954,"ampN":0,"ampP":0,"regime":"settle"},{"K":2.9,"dK":-0.1954,"ampN":0,"ampP":0,"regime":"settle"},{"K":3,"dK":-0.0954,"ampN":0,"ampP":0,"regime":"settle"},{"K":3.115,"dK":0.02,"ampN":0.1468,"ampP":0.1177,"regime":"cycle"},{"K":3.13,"dK":0.035,"ampN":0.2195,"ampP":0.176,"regime":"cycle"},{"K":3.145,"dK":0.05,"ampN":0.2681,"ampP":0.2145,"regime":"cycle"},{"K":3.175,"dK":0.08,"ampN":0.3408,"ampP":0.272,"regime":"cycle"},{"K":3.215,"dK":0.12,"ampN":0.4187,"ampP":0.3331,"regime":"cycle"},{"K":3.295,"dK":0.2,"ampN":0.5441,"ampP":0.43,"regime":"cycle"},{"K":3.395,"dK":0.3,"ampN":0.672,"ampP":0.527,"regime":"cycle"},{"K":3.545,"dK":0.45,"ampN":0.8333,"ampP":0.6464,"regime":"cycle"},{"K":3.745,"dK":0.65,"ampN":1.0179,"ampP":0.7792,"regime":"cycle"},{"K":3.995,"dK":0.9,"ampN":1.2218,"ampP":0.9214,"regime":"cycle"},{"K":4.395,"dK":1.3,"ampN":1.5148,"ampP":1.1185,"regime":"cycle"},{"K":4.895,"dK":1.8,"ampN":1.8504,"ampP":1.336,"regime":"cycle"}],"fit":{"window":[0.03,0.9],"points":9,"exponent":0.5238,"coefficient":1.2742,"r2":0.9998,"law":"amplitude ≈ coefficient · (K − K_c)^exponent, K_c = measured","theory":"Hopf normal form predicts exponent exactly 1/2","ratioDrift":{"atWindowStart":1.173,"atWindowEnd":1.288,"note":"amp/sqrt(dK) is not perfectly constant across the window — the pure sqrt law is the dK -> 0 limit, and this window is not asymptotically small; the fitted exponent sits slightly above 1/2 for that reason"}}}</script>
+<script>
+// The Oscillation Switch — live meadow. Same equations, parameters and
+// RK4 step as hopf-core.mjs, restated in plain script for the page.
+var PRM = { r: 1.0, a: 1.0, h: 0.6, e: 0.6, m: 0.3 };
+var DT = 0.01;
+var DATA = JSON.parse(document.getElementById('hopf-data').textContent);
+var KC = DATA.critical.measured;
+
+function deriv(N, P, K) {
+  var pred = PRM.a * N * P / (1 + PRM.a * PRM.h * N);
+  return [PRM.r * N * (1 - N / K) - pred, PRM.e * pred - PRM.m * P];
+}
+function rk4(N, P, K) {
+  var k1 = deriv(N, P, K);
+  var k2 = deriv(N + DT / 2 * k1[0], P + DT / 2 * k1[1], K);
+  var k3 = deriv(N + DT / 2 * k2[0], P + DT / 2 * k2[1], K);
+  var k4 = deriv(N + DT * k3[0], P + DT * k3[1], K);
+  return [N + DT / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]),
+          P + DT / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1])];
+}
+function equil(K) {
+  var Ns = PRM.m / (PRM.a * (PRM.e - PRM.m * PRM.h));
+  if (!(K > Ns)) return null;
+  return { N: Ns, P: (PRM.r / PRM.a) * (1 - Ns / K) * (1 + PRM.a * PRM.h * Ns) };
+}
+
+var slider = document.getElementById('in-K');
+var K = parseFloat(slider.value);
+if (!isFinite(K) || K <= 0.8) K = 2.7;
+var eq0 = equil(K);
+var state = [eq0.N + 0.05, eq0.P];
+var trail = [];        // phase-plane path, sampled every step, capped
+var tsN = [], tsP = []; // time series, sampled every 2nd step
+var playing = true;
+var XMAX = 6.5, YMAX = 3.2, TSMAX = 6.5;
+
+function resetMeadow() {
+  var eq = equil(K);
+  state = [eq.N + 0.05, eq.P];
+  trail = []; tsN = []; tsP = [];
+}
+document.getElementById('btn-reset').addEventListener('click', resetMeadow);
+document.getElementById('btn-perturb').addEventListener('click', function () {
+  var eq = equil(K);
+  state = [eq.N + 0.35, eq.P];
+});
+var playBtn = document.getElementById('btn-play');
+playBtn.addEventListener('click', function () {
+  playing = !playing;
+  playBtn.textContent = playing ? 'pause' : 'play';
+});
+slider.addEventListener('input', function () {
+  var v = parseFloat(slider.value);
+  if (isFinite(v) && v > 0.8) K = v;
+});
+
+function stepFrame() {
+  for (var i = 0; i < 45; i++) {
+    state = rk4(state[0], state[1], K);
+    if (state[0] < 1e-9) state[0] = 1e-9;
+    if (state[1] < 1e-12) state[1] = 1e-12;
+    trail.push(state[0], state[1]);
+    if (trail.length > 60000) trail.splice(0, trail.length - 60000);
+    if (i % 2 === 0) {
+      tsN.push(state[0]); tsP.push(state[1]);
+      if (tsN.length > 2400) { tsN.shift(); tsP.shift(); }
+    }
+  }
+}
+
+function drawPhase() {
+  var cv = document.getElementById('cv-phase'), ctx = cv.getContext('2d');
+  var W = cv.width, H = cv.height;
+  ctx.fillStyle = '#0f1017'; ctx.fillRect(0, 0, W, H);
+  var px = function (N) { return 34 + (N / XMAX) * (W - 44); };
+  var py = function (P) { return H - 26 - (P / YMAX) * (H - 40); };
+  ctx.strokeStyle = '#2a2d3e'; ctx.fillStyle = '#787c99'; ctx.font = '11px monospace';
+  for (var gx = 0; gx <= 6; gx++) { ctx.beginPath(); ctx.moveTo(px(gx), 8); ctx.lineTo(px(gx), H - 26); ctx.stroke(); if (gx < 6) ctx.fillText('' + gx, px(gx) - 3, H - 10); }
+  for (var gy = 0; gy <= 3; gy++) { ctx.beginPath(); ctx.moveTo(34, py(gy)); ctx.lineTo(W - 10, py(gy)); ctx.stroke(); ctx.fillText('' + gy, 12, py(gy) + 4); }
+  ctx.fillText('prey N', W - 70, H - 10); ctx.fillText('P', 12, 16);
+  var eq = equil(K);
+  if (eq) {
+    ctx.strokeStyle = '#c0caf5'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(px(eq.N), py(eq.P), 6, 0, 6.3); ctx.stroke(); ctx.lineWidth = 1;
+  }
+  if (trail.length > 2) {
+    // fading trail: older chunks dimmer, so a spiral that has already
+    // settled stays visible as a ghost instead of vanishing.
+    var nPts = trail.length / 2, CH = 500;
+    for (var s = 0; s < nPts; s += CH) {
+      var frac = nPts <= CH ? 1 : s / (nPts - CH);
+      ctx.strokeStyle = 'rgba(115,218,202,' + (0.08 + 0.92 * frac).toFixed(3) + ')';
+      ctx.beginPath();
+      var st = Math.max(0, s - 1);
+      ctx.moveTo(px(trail[st * 2]), py(trail[st * 2 + 1]));
+      for (var j = s; j < Math.min(nPts, s + CH); j++) ctx.lineTo(px(trail[j * 2]), py(trail[j * 2 + 1]));
+      ctx.stroke();
+    }
+    ctx.strokeStyle = '#73daca';
+  }
+  ctx.fillStyle = '#ff9e64';
+  ctx.beginPath(); ctx.arc(px(state[0]), py(state[1]), 4.5, 0, 6.3); ctx.fill();
+}
+
+function drawTS() {
+  var cv = document.getElementById('cv-ts'), ctx = cv.getContext('2d');
+  var W = cv.width, H = cv.height;
+  ctx.fillStyle = '#0f1017'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#2a2d3e'; ctx.fillStyle = '#787c99'; ctx.font = '11px monospace';
+  for (var gy = 0; gy <= 6; gy += 2) {
+    var y = H - 18 - (gy / TSMAX) * (H - 30);
+    ctx.beginPath(); ctx.moveTo(30, y); ctx.lineTo(W - 8, y); ctx.stroke(); ctx.fillText('' + gy, 10, y + 4);
+  }
+  function line(buf, colour) {
+    if (buf.length < 2) return;
+    ctx.strokeStyle = colour; ctx.beginPath();
+    for (var i = 0; i < buf.length; i++) {
+      var x = 30 + (i / 2399) * (W - 38);
+      var y = H - 18 - (Math.min(buf[i], TSMAX) / TSMAX) * (H - 30);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  line(tsN, '#73daca'); line(tsP, '#ff9e64');
+}
+
+function readout() {
+  var dK = K - KC;
+  var regime = K < KC ? 'BELOW K_c — the spiral settles: stillness' : 'ABOVE K_c — limit cycle: rhythm';
+  document.getElementById('ro-K').textContent =
+    'K = ' + K.toFixed(3) + ' · distance from the critical point: ' + (dK >= 0 ? '+' : '') + dK.toFixed(3) + ' · ' + regime;
+  var mn = Infinity, mx = -Infinity;
+  for (var i = 0; i < tsN.length; i++) { if (tsN[i] < mn) mn = tsN[i]; if (tsN[i] > mx) mx = tsN[i]; }
+  var amp = tsN.length > 100 ? ((mx - mn) / 2).toFixed(3) : '—';
+  document.getElementById('ro-live').textContent =
+    'prey ' + state[0].toFixed(3) + ' · predators ' + state[1].toFixed(3) + ' · live prey amplitude (trailing window): ' + amp;
+}
+
+// ---------- measured charts, drawn once from the embedded sweep ----------
+function drawAmp() {
+  var cv = document.getElementById('cv-amp'), ctx = cv.getContext('2d');
+  var W = cv.width, H = cv.height;
+  ctx.fillStyle = '#0f1017'; ctx.fillRect(0, 0, W, H);
+  var x0 = 2.0, x1 = 5.1, y1 = 2.0;
+  var px = function (K) { return 40 + ((K - x0) / (x1 - x0)) * (W - 56); };
+  var py = function (a) { return H - 28 - (a / y1) * (H - 44); };
+  ctx.strokeStyle = '#2a2d3e'; ctx.fillStyle = '#787c99'; ctx.font = '11px monospace';
+  for (var gx = 2; gx <= 5; gx++) { ctx.beginPath(); ctx.moveTo(px(gx), 10); ctx.lineTo(px(gx), H - 28); ctx.stroke(); ctx.fillText('' + gx, px(gx) - 3, H - 12); }
+  for (var gy = 0; gy <= 2; gy += 0.5) { ctx.beginPath(); ctx.moveTo(40, py(gy)); ctx.lineTo(W - 16, py(gy)); ctx.stroke(); ctx.fillText(gy.toFixed(1), 8, py(gy) + 4); }
+  ctx.fillText('carrying capacity K', W - 170, H - 12); ctx.fillText('prey amplitude', 44, 18);
+  ctx.strokeStyle = '#787c99'; ctx.setLineDash([5, 4]);
+  ctx.beginPath(); ctx.moveTo(px(KC), 10); ctx.lineTo(px(KC), H - 28); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#c0caf5'; ctx.fillText('K_c', px(KC) + 5, 24);
+  var F = DATA.fit;
+  ctx.strokeStyle = '#ff9e64'; ctx.lineWidth = 2; ctx.beginPath();
+  for (var i = 0; i <= 60; i++) {
+    var dK = F.window[0] + (F.window[1] - F.window[0]) * (i / 60);
+    var x = px(KC + dK), y = py(F.coefficient * Math.pow(dK, F.exponent));
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke(); ctx.lineWidth = 1;
+  ctx.fillStyle = '#73daca';
+  DATA.points.forEach(function (p) {
+    ctx.beginPath(); ctx.arc(px(p.K), py(p.ampN), 4, 0, 6.3); ctx.fill();
+  });
+}
+function drawLogLog() {
+  var cv = document.getElementById('cv-loglog'), ctx = cv.getContext('2d');
+  var W = cv.width, H = cv.height;
+  ctx.fillStyle = '#0f1017'; ctx.fillRect(0, 0, W, H);
+  var lx0 = Math.log10(0.015), lx1 = Math.log10(2.2), ly0 = Math.log10(0.08), ly1 = Math.log10(2.6);
+  var px = function (dK) { return 44 + ((Math.log10(dK) - lx0) / (lx1 - lx0)) * (W - 62); };
+  var py = function (a) { return H - 28 - ((Math.log10(a) - ly0) / (ly1 - ly0)) * (H - 44); };
+  ctx.strokeStyle = '#2a2d3e'; ctx.fillStyle = '#787c99'; ctx.font = '11px monospace';
+  [0.02, 0.05, 0.1, 0.2, 0.5, 2].forEach(function (v) {
+    ctx.beginPath(); ctx.moveTo(px(v), 10); ctx.lineTo(px(v), H - 28); ctx.stroke();
+    ctx.fillText('' + v, px(v) - 8, H - 12);
+  });
+  [0.1, 0.2, 0.5, 1, 2].forEach(function (v) {
+    ctx.beginPath(); ctx.moveTo(44, py(v)); ctx.lineTo(W - 18, py(v)); ctx.stroke();
+    ctx.fillText('' + v, 14, py(v) + 4);
+  });
+  ctx.fillText('K - K_c (log)', W - 130, H - 12); ctx.fillText('amplitude (log)', 48, 18);
+  var F = DATA.fit;
+  ctx.strokeStyle = '#ff9e64'; ctx.lineWidth = 2; ctx.beginPath();
+  ctx.moveTo(px(F.window[0]), py(F.coefficient * Math.pow(F.window[0], F.exponent)));
+  ctx.lineTo(px(F.window[1]), py(F.coefficient * Math.pow(F.window[1], F.exponent)));
+  ctx.stroke(); ctx.lineWidth = 1;
+  DATA.points.forEach(function (p) {
+    if (p.regime !== 'cycle') return;
+    var inWin = p.dK >= F.window[0] && p.dK <= F.window[1];
+    ctx.fillStyle = inWin ? '#73daca' : '#787c99';
+    ctx.beginPath(); ctx.arc(px(p.dK), py(p.ampN), 4, 0, 6.3); ctx.fill();
+  });
+}
+drawAmp(); drawLogLog();
+
+function frame() {
+  if (playing) stepFrame();
+  drawPhase(); drawTS(); readout();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

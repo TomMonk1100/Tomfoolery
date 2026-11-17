@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>the flock flip — 2026-11-16</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .dial { border: 1.5px solid rgba(125,207,255,.55); border-radius: 12px; background: rgba(125,207,255,.06); padding: 18px 22px 14px; margin: 18px 0 8px; }
+  .dial label { font-size: 13px; font-weight: 700; letter-spacing: .06em; }
+  .dial input[type=range] { width: 100%; margin: 12px 0 4px; accent-color: #7dcfff; }
+  .ticks { display: flex; justify-content: space-between; color: #787c99; font-size: 12px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .card canvas { width: 100%; height: auto; display: block; border: 1px solid #2a2d3e; border-radius: 6px; background: #0f1017; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 12px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 4px 10px; font-family: monospace; font-size: 12px; cursor: pointer; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Imagine a crowd of birds where every bird does just one thing — it turns to fly the same way as the birds right next to it. But the world is noisy, and the noise keeps shoving their headings around. Quiet world: the whole crowd becomes one flock, flowing one way. Noisy world: everybody mills about. And there is an exact amount of noise where it flips from one to the other.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">The fireflies synchronised in time — scattered blinking becoming one pulse. I wanted to know whether the same trick works in direction: whether "everyone face the same way" is also an order that switches on at a sharp point. It is. This is the piece where the flock decides — and near the deciding point, you can watch it change its mind over and over.</p>
+</div>
+
+<div class="wrap">
+  <h1><span class="dot" style="background:#7dcfff"></span>the flock flip</h1>
+  <p class="sub">2026-11-16 · Vicsek-style flocking · the dial is noise · every number below is measured</p>
+
+  <p>Three hundred agents fly at constant speed in a periodic box. Each one
+  steers toward the average heading of its neighbours within radius 1 —
+  itself included — and then the world shoves its heading by a random amount
+  drawn from a window of width &eta;, the noise. That is the entire rule set.
+  The order parameter &phi; is the mean resultant length of the heading
+  vectors: 0 when headings cancel out, 1 when all 300 point the same way.
+  Colour on the canvas is heading, so order is something you can see — a
+  milling rainbow, or one colour flowing.</p>
+
+  <div class="dial">
+    <label for="eta">THE DIAL — noise &eta; (radians)</label>
+    <input type="range" id="eta" min="0" max="6.28" step="0.01" value="5.20">
+    <div class="ticks"><span>0 · no noise — one flock</span><span>&eta;<sub>c</sub> &asymp; 1.648 · the flip</span><span>2&pi; · full noise — milling</span></div>
+    <div class="ro" id="ro-dial">&eta; = 5.20</div>
+    <p style="margin:6px 0 2px;font-size:13px;color:#a9b1d6;">The swarm starts in disorder. Drag the noise down through &eta;<sub>c</sub> and a single flock assembles itself out of the milling — nobody leads it. Drag back up and it melts. Near the critical value, expect the flock to take its time deciding, and to change its mind: that indecision is measured, not staged.</p>
+  </div>
+
+  <div class="card">
+    <canvas id="cv" width="840" height="480"></canvas>
+    <div class="ctl">
+      <button id="pauseBtn">Pause</button>
+      <button id="seedBtn">Reseed</button>
+      <span class="ro" id="ro-live" style="margin-top:0;"></span>
+    </div>
+  </div>
+
+  <h2>What the sweep found (measured, not tuned)</h2>
+  <p>The sweep ran the same core that animates the canvas: N = 300 agents
+  in a 20 &times; 20 periodic box (density 0.75, radius 1, speed 0.1), three
+  seeds per point, 800 steps discarded as transient and &phi; averaged over
+  the next 800. The order falls from &phi; = 0.998 at &eta; = 0 to
+  &phi; = 0.052 at &eta; = 6.0, and crosses &phi; = 0.5 at
+  <b>&eta;<sub>c</sub> &asymp; 1.648</b> (interpolated between the measured
+  points at 1.60 and 1.65).</p>
+  <p>The honest shape: at this size the flip is <b>steep but smeared, not a
+  cliff</b>. The seed-mean curve descends over a broad shoulder, and between
+  &eta; &asymp; 1.65 and 2.15 it wiggles instead of marching — 0.497, 0.515,
+  0.516, 0.490, 0.443 — with the largest seed-to-seed spread of the whole
+  sweep (sd up to 0.074). A single long run parked at &eta; = 1.65 shows why:
+  &phi; itself wanders between 0.073 and 0.783 (mean 0.487, sd 0.142) over
+  2,000 steps. Near the flip, the flock cannot settle — the fluctuations
+  grow until they are nearly the size of the signal. A hysteresis probe
+  found the two starts agree at &eta; = 1.6 and 1.8, but at &eta; = 2.0 a
+  flock that starts aligned keeps &phi; = 0.383 while one that starts
+  scattered only reaches 0.285 in the same window — a formed flock is
+  slightly harder to melt than an unformed one is to assemble, at least on
+  this timescale. Whether the underlying transition is truly continuous or
+  weakly jumpy cannot be settled at N = 300; the literature's larger
+  systems form travelling bands and sharpen. What is measured here is a
+  finite flock, and it is reported as one.</p>
+
+  <svg viewBox="0 0 880 320" width="100%" role="img" aria-label="Measured order parameter versus noise">
+<rect width="880" height="320" fill="#0f1017"/>
+<line x1="60" y1="280" x2="850" y2="280" stroke="#2a2d3e" stroke-width="1"/>
+<text x="52" y="284" font-size="11" text-anchor="end" fill="#787c99">0.00</text>
+<line x1="60" y1="215" x2="850" y2="215" stroke="#2a2d3e" stroke-width="1"/>
+<text x="52" y="219" font-size="11" text-anchor="end" fill="#787c99">0.25</text>
+<line x1="60" y1="150" x2="850" y2="150" stroke="#2a2d3e" stroke-width="1"/>
+<text x="52" y="154" font-size="11" text-anchor="end" fill="#787c99">0.50</text>
+<line x1="60" y1="85" x2="850" y2="85" stroke="#2a2d3e" stroke-width="1"/>
+<text x="52" y="89" font-size="11" text-anchor="end" fill="#787c99">0.75</text>
+<line x1="60" y1="20" x2="850" y2="20" stroke="#2a2d3e" stroke-width="1"/>
+<text x="52" y="24" font-size="11" text-anchor="end" fill="#787c99">1.00</text>
+<text x="60" y="300" font-size="11" text-anchor="middle" fill="#787c99">0</text>
+<text x="185.3968253968254" y="300" font-size="11" text-anchor="middle" fill="#787c99">1</text>
+<text x="310.7936507936508" y="300" font-size="11" text-anchor="middle" fill="#787c99">2</text>
+<text x="436.1904761904762" y="300" font-size="11" text-anchor="middle" fill="#787c99">3</text>
+<text x="561.5873015873016" y="300" font-size="11" text-anchor="middle" fill="#787c99">4</text>
+<text x="686.984126984127" y="300" font-size="11" text-anchor="middle" fill="#787c99">5</text>
+<text x="812.3809523809524" y="300" font-size="11" text-anchor="middle" fill="#787c99">6</text>
+<line x1="60" y1="150" x2="850" y2="150" stroke="#f7768e" stroke-dasharray="5 4"/>
+<text x="846" y="144" font-size="11" text-anchor="end" fill="#f7768e">phi = 0.5</text>
+<line x1="266.6539682539683" y1="20" x2="266.6539682539683" y2="280" stroke="#e0af68" stroke-dasharray="5 4"/>
+<text x="272.6539682539683" y="32" font-size="11" fill="#e0af68">eta_c = 1.648</text>
+<line x1="97.61904761904762" y1="25.200000000000017" x2="97.61904761904762" y2="23.120000000000005" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="135.23809523809524" y1="35.08000000000001" x2="135.23809523809524" y2="31.439999999999998" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="172.8571428571429" y1="59.78" x2="172.8571428571429" y2="49.379999999999995" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="210.47619047619048" y1="86.30000000000001" x2="210.47619047619048" y2="76.94" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="241.8253968253968" y1="103.72000000000003" x2="241.8253968253968" y2="93.84" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="248.0952380952381" y1="129.72" x2="248.0952380952381" y2="106.84" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="254.36507936507937" y1="119.84" x2="254.36507936507937" y2="102.67999999999998" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="260.63492063492066" y1="138.04000000000002" x2="260.63492063492066" y2="117.24000000000001" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="266.9047619047619" y1="159.36" x2="266.9047619047619" y2="142.2" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="273.17460317460313" y1="153.38" x2="273.17460317460313" y2="138.82" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="279.44444444444446" y1="148.18" x2="279.44444444444446" y2="143.5" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="285.7142857142858" y1="164.04" x2="285.7142857142858" y2="141.16" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="291.984126984127" y1="179.12" x2="291.984126984127" y2="150.52" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="298.25396825396825" y1="187.7" x2="298.25396825396825" y2="149.22" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="304.5238095238095" y1="198.36" x2="304.5238095238095" y2="164.04" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="310.7936507936508" y1="217.34" x2="310.7936507936508" y2="194.46" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="317.06349206349205" y1="215.78" x2="317.06349206349205" y2="179.89999999999998" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="323.33333333333337" y1="206.42000000000002" x2="323.33333333333337" y2="192.38" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="329.60317460317464" y1="218.89999999999998" x2="329.60317460317464" y2="195.5" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="360.95238095238096" y1="222.8" x2="360.95238095238096" y2="207.2" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="398.5714285714286" y1="240.48000000000002" x2="398.5714285714286" y2="235.8" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="436.1904761904762" y1="249.57999999999998" x2="436.1904761904762" y2="243.34" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="473.80952380952385" y1="256.08" x2="473.80952380952385" y2="251.92" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="511.4285714285715" y1="259.46" x2="511.4285714285715" y2="256.34" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<line x1="549.047619047619" y1="262.84" x2="549.047619047619" y2="260.76" stroke="#7dcfff" stroke-width="1" opacity="0.45"/>
+<polyline points="60.0,20.5 97.6,24.2 135.2,33.3 172.9,54.6 210.5,81.6 241.8,98.8 248.1,118.3 254.4,111.3 260.6,127.6 266.9,150.8 273.2,146.1 279.4,145.8 285.7,152.6 292.0,164.8 298.3,168.5 304.5,181.2 310.8,205.9 317.1,197.8 323.3,199.4 329.6,207.2 361.0,215.0 398.6,238.1 436.2,246.5 473.8,254.0 511.4,257.9 549.0,261.8 586.7,263.1 624.3,264.9 661.9,265.4 699.5,266.0 737.1,266.2 774.8,266.5 812.4,266.5" fill="none" stroke="#7dcfff" stroke-width="2"/>
+<circle cx="60.0" cy="20.5" r="3" fill="#7dcfff"/>
+<circle cx="97.6" cy="24.2" r="3" fill="#7dcfff"/>
+<circle cx="135.2" cy="33.3" r="3" fill="#7dcfff"/>
+<circle cx="172.9" cy="54.6" r="3" fill="#7dcfff"/>
+<circle cx="210.5" cy="81.6" r="3" fill="#7dcfff"/>
+<circle cx="241.8" cy="98.8" r="3" fill="#7dcfff"/>
+<circle cx="248.1" cy="118.3" r="3" fill="#7dcfff"/>
+<circle cx="254.4" cy="111.3" r="3" fill="#7dcfff"/>
+<circle cx="260.6" cy="127.6" r="3" fill="#7dcfff"/>
+<circle cx="266.9" cy="150.8" r="3" fill="#7dcfff"/>
+<circle cx="273.2" cy="146.1" r="3" fill="#7dcfff"/>
+<circle cx="279.4" cy="145.8" r="3" fill="#7dcfff"/>
+<circle cx="285.7" cy="152.6" r="3" fill="#7dcfff"/>
+<circle cx="292.0" cy="164.8" r="3" fill="#7dcfff"/>
+<circle cx="298.3" cy="168.5" r="3" fill="#7dcfff"/>
+<circle cx="304.5" cy="181.2" r="3" fill="#7dcfff"/>
+<circle cx="310.8" cy="205.9" r="3" fill="#7dcfff"/>
+<circle cx="317.1" cy="197.8" r="3" fill="#7dcfff"/>
+<circle cx="323.3" cy="199.4" r="3" fill="#7dcfff"/>
+<circle cx="329.6" cy="207.2" r="3" fill="#7dcfff"/>
+<circle cx="361.0" cy="215.0" r="3" fill="#7dcfff"/>
+<circle cx="398.6" cy="238.1" r="3" fill="#7dcfff"/>
+<circle cx="436.2" cy="246.5" r="3" fill="#7dcfff"/>
+<circle cx="473.8" cy="254.0" r="3" fill="#7dcfff"/>
+<circle cx="511.4" cy="257.9" r="3" fill="#7dcfff"/>
+<circle cx="549.0" cy="261.8" r="3" fill="#7dcfff"/>
+<circle cx="586.7" cy="263.1" r="3" fill="#7dcfff"/>
+<circle cx="624.3" cy="264.9" r="3" fill="#7dcfff"/>
+<circle cx="661.9" cy="265.4" r="3" fill="#7dcfff"/>
+<circle cx="699.5" cy="266.0" r="3" fill="#7dcfff"/>
+<circle cx="737.1" cy="266.2" r="3" fill="#7dcfff"/>
+<circle cx="774.8" cy="266.5" r="3" fill="#7dcfff"/>
+<circle cx="812.4" cy="266.5" r="3" fill="#7dcfff"/>
+<text x="455" y="318" font-size="12" text-anchor="middle" fill="#787c99">noise eta (radians)</text>
+<text x="14" y="150" font-size="12" text-anchor="middle" fill="#787c99" transform="rotate(-90 14 150)">order phi</text>
+</svg>
+
+  <table>
+    <tr><th>&eta;</th><th>&phi; (seed mean)</th><th>sd across seeds</th></tr>
+    <tr><td>0.00</td><td>0.998</td><td>0.001</td></tr>
+<tr><td>0.30</td><td>0.984</td><td>0.004</td></tr>
+<tr><td>0.60</td><td>0.949</td><td>0.007</td></tr>
+<tr><td>0.90</td><td>0.867</td><td>0.020</td></tr>
+<tr><td>1.20</td><td>0.763</td><td>0.018</td></tr>
+<tr><td>1.45</td><td>0.697</td><td>0.019</td></tr>
+<tr><td>1.50</td><td>0.622</td><td>0.044</td></tr>
+<tr><td>1.55</td><td>0.649</td><td>0.033</td></tr>
+<tr><td>1.60</td><td>0.586</td><td>0.040</td></tr>
+<tr><td>1.65</td><td>0.497</td><td>0.033</td></tr>
+<tr><td>1.70</td><td>0.515</td><td>0.028</td></tr>
+<tr><td>1.75</td><td>0.516</td><td>0.009</td></tr>
+<tr><td>1.80</td><td>0.490</td><td>0.044</td></tr>
+<tr><td>1.85</td><td>0.443</td><td>0.055</td></tr>
+<tr><td>1.90</td><td>0.429</td><td>0.074</td></tr>
+<tr><td>1.95</td><td>0.380</td><td>0.066</td></tr>
+<tr><td>2.00</td><td>0.285</td><td>0.044</td></tr>
+<tr><td>2.05</td><td>0.316</td><td>0.069</td></tr>
+<tr><td>2.10</td><td>0.310</td><td>0.027</td></tr>
+<tr><td>2.15</td><td>0.280</td><td>0.045</td></tr>
+<tr><td>2.40</td><td>0.250</td><td>0.030</td></tr>
+<tr><td>2.70</td><td>0.161</td><td>0.009</td></tr>
+<tr><td>3.00</td><td>0.129</td><td>0.012</td></tr>
+<tr><td>3.30</td><td>0.100</td><td>0.008</td></tr>
+<tr><td>3.60</td><td>0.085</td><td>0.006</td></tr>
+<tr><td>3.90</td><td>0.070</td><td>0.004</td></tr>
+<tr><td>4.20</td><td>0.065</td><td>0.003</td></tr>
+<tr><td>4.50</td><td>0.058</td><td>0.001</td></tr>
+<tr><td>4.80</td><td>0.056</td><td>0.001</td></tr>
+<tr><td>5.10</td><td>0.054</td><td>0.001</td></tr>
+<tr><td>5.40</td><td>0.053</td><td>0.001</td></tr>
+<tr><td>5.70</td><td>0.052</td><td>0.002</td></tr>
+<tr><td>6.00</td><td>0.052</td><td>0.000</td></tr>
+  </table>
+
+  <h2>The same machine</h2>
+  <p>This is the grand unified theory with feathers. A simple rule — copy
+  your neighbours. A dial — the noise &eta;. A flip — at
+  &eta;<sub>c</sub> &asymp; 1.648, shared direction switches on. The
+  fireflies' order was a moment in time, everyone flashing together; the
+  magnet's was a direction in spin space; this one's is a direction in
+  plain space, the first order in the Allspark you could point at. The
+  dial here runs backwards compared to the fireflies — turn it
+  <i>down</i> and order appears — but a dial does not care which end is
+  which. What matters is that there is a value where the system's whole
+  character turns over, and this page measured it instead of assuming
+  it.</p>
+  <p>The theory on the <a href="grand-unified.html" style="color:#7aa2f7;">grand unified page</a>
+  names its own fingerprints: near a real critical point, fluctuations
+  should grow and the system should slow down. The flock shows both,
+  uninvited. Park the dial at &eta;<sub>c</sub> and &phi; wanders across
+  almost its whole range, and a melted flock takes visibly longer to
+  re-form there than it does deep in the quiet. A metaphor would not
+  bother misbehaving in exactly the predicted way.</p>
+
+  <h2>Methods and caveats</h2>
+  <ul class="notes">
+    <li>&eta;<sub>c</sub> is defined as the &phi; = 0.5 crossing of the seed-mean curve. It is a property of this flock — N = 300, density 0.75, radius 1, speed 0.1 — not a universal constant; change the density and it moves.</li>
+    <li>Finite size is the standing caveat: 300 agents round every sharp edge. The crossing window's wiggles (the seed-mean curve is not even monotone there) are printed in the table rather than smoothed away.</li>
+    <li>The sweep grid runs &eta; = 0 to 6.0; the dial runs to 2&pi; &asymp; 6.28, where the noise window covers the full circle and headings are effectively randomised each step — the curve is already flat at its floor well before that.</li>
+    <li>Noise is uniform on [&minus;&eta;/2, +&eta;/2], added after the neighbour average, and positions update with the new heading — the standard Vicsek step. The box is periodic; the flock that leaves one edge returns at the other.</li>
+    <li>Everything on this page comes from <i>flock-core.mjs</i> and <i>sweep-flock.mjs</i>; the gate is <i>test-flock.mjs</i>. The live demo runs the same core, inlined below.</li>
+  </ul>
+</div>
+
+<!-- ETA_C: 1.648 -->
+<script>
+// ==== flock-core.mjs (inlined verbatim, export keywords stripped) ====
+// flock-core.mjs — pure simulation core, no DOM, no window.
+// Vicsek-style flocking: N agents at constant speed on a periodic square,
+// each aligning its heading to the mean heading of neighbours within
+// radius R (itself included), plus uniform angular noise of width eta.
+// The dial is eta: low noise -> one flock, high noise -> milling disorder.
+// Order parameter phi = mean resultant length of the unit heading vectors
+// (0 = no shared direction, 1 = every agent heading the same way).
+// Seeded RNG (mulberry32) so runs are reproducible.
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const TUNE = {
+  N: 300,            // agent count
+  L: 20,             // box side (periodic); density = N / L^2 = 0.75
+  R: 1.0,            // neighbour radius
+  V0: 0.1,           // constant speed, box units per step
+  TWO_PI: 2 * Math.PI,
+};
+
+class Flock {
+  constructor(opts = {}) {
+    const t = TUNE;
+    this.n = opts.n ?? t.N;
+    this.L = opts.L ?? t.L;
+    this.radius = opts.radius ?? t.R;
+    this.v0 = opts.v0 ?? t.V0;
+    this.eta = opts.eta ?? 0;
+    this.rng = mulberry32(opts.seed ?? 1234);
+    this.x = new Float64Array(this.n);
+    this.y = new Float64Array(this.n);
+    this.theta = new Float64Array(this.n);
+    this.time = 0;
+    for (let i = 0; i < this.n; i++) {
+      this.x[i] = this.rng() * this.L;
+      this.y[i] = this.rng() * this.L;
+      // opts.aligned: start as one flock (all headings 0) instead of random.
+      this.theta[i] = opts.aligned ? 0 : this.rng() * t.TWO_PI;
+    }
+  }
+
+  // Mean resultant length of the heading vectors: the order parameter.
+  orderParameter() {
+    let re = 0, im = 0;
+    for (let i = 0; i < this.n; i++) {
+      re += Math.cos(this.theta[i]);
+      im += Math.sin(this.theta[i]);
+    }
+    re /= this.n; im /= this.n;
+    return Math.hypot(re, im);
+  }
+
+  meanHeading() {
+    let re = 0, im = 0;
+    for (let i = 0; i < this.n; i++) {
+      re += Math.cos(this.theta[i]);
+      im += Math.sin(this.theta[i]);
+    }
+    return Math.atan2(im, re);
+  }
+
+  step() {
+    const { TWO_PI } = TUNE;
+    const n = this.n, L = this.L, half = L / 2;
+    const r2 = this.radius * this.radius;
+    const next = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      let re = 0, im = 0;
+      const xi = this.x[i], yi = this.y[i];
+      for (let j = 0; j < n; j++) {
+        // Minimum-image distance on the periodic box.
+        let dx = xi - this.x[j];
+        let dy = yi - this.y[j];
+        if (dx > half) dx -= L; else if (dx < -half) dx += L;
+        if (dy > half) dy -= L; else if (dy < -half) dy += L;
+        if (dx * dx + dy * dy <= r2) {
+          re += Math.cos(this.theta[j]);
+          im += Math.sin(this.theta[j]);
+        }
+      }
+      // Neighbourhood always contains agent i itself, so re/im are never
+      // both exactly the empty sum; atan2 is safe.
+      const mean = Math.atan2(im, re);
+      next[i] = mean + (this.rng() - 0.5) * this.eta;
+    }
+    for (let i = 0; i < n; i++) {
+      this.theta[i] = next[i];
+      this.x[i] += this.v0 * Math.cos(next[i]);
+      this.y[i] += this.v0 * Math.sin(next[i]);
+      // Wrap into [0, L).
+      this.x[i] -= L * Math.floor(this.x[i] / L);
+      this.y[i] -= L * Math.floor(this.y[i] / L);
+    }
+    this.time += 1;
+  }
+}
+
+
+// ==== page wiring ====
+const ETA_C = 1.648;
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const etaSlider = document.getElementById('eta');
+const roDial = document.getElementById('ro-dial');
+const roLive = document.getElementById('ro-live');
+let seed = 2026;
+let flock = new Flock({ seed, eta: parseFloat(etaSlider.value) });
+let paused = false;
+
+// The box is square (L x L); letterbox it in the middle of the canvas.
+const BOX = 480, OX = (cv.width - BOX) / 2, OY = (cv.height - BOX) / 2;
+const SC = BOX / flock.L;
+
+function stateLabel(phi) {
+  if (phi >= 0.8) return 'ONE FLOCK';
+  if (phi >= 0.5) return 'gathering — partial order';
+  if (phi >= 0.25) return 'loose order, dissolving';
+  return 'milling disorder';
+}
+
+function draw() {
+  ctx.fillStyle = '#0f1017';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.strokeStyle = '#2a2d3e';
+  ctx.strokeRect(OX, OY, BOX, BOX);
+  const L = flock.L;
+  for (let i = 0; i < flock.n; i++) {
+    const x = OX + flock.x[i] * SC;
+    const y = OY + (L - flock.y[i]) * SC;
+    const th = -flock.theta[i]; // canvas y is flipped
+    // Hue from the DRAWN direction, so colour matches what the eye sees.
+    const hue = ((th * 180 / Math.PI) % 360 + 360) % 360;
+    ctx.fillStyle = 'hsl(' + hue + ', 75%, 65%)';
+    ctx.beginPath();
+    ctx.moveTo(x + 8 * Math.cos(th), y + 8 * Math.sin(th));
+    ctx.lineTo(x + 4 * Math.cos(th + 2.5), y + 4 * Math.sin(th + 2.5));
+    ctx.lineTo(x + 4 * Math.cos(th - 2.5), y + 4 * Math.sin(th - 2.5));
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function frame() {
+  if (!paused) {
+    flock.step();
+    flock.step();
+    draw();
+    const phi = flock.orderParameter();
+    roLive.textContent = 'phi = ' + phi.toFixed(3) + ' live · ' + stateLabel(phi) + ' · step ' + flock.time;
+  }
+  requestAnimationFrame(frame);
+}
+
+function syncDial() {
+  const eta = parseFloat(etaSlider.value);
+  flock.eta = eta;
+  roDial.textContent = 'eta = ' + eta.toFixed(2) +
+    (Math.abs(eta - ETA_C) < 0.05 ? ' · at the measured critical point — watch it hesitate' : '');
+}
+etaSlider.addEventListener('input', syncDial);
+document.getElementById('pauseBtn').addEventListener('click', (e) => {
+  paused = !paused;
+  e.target.textContent = paused ? 'Resume' : 'Pause';
+});
+document.getElementById('seedBtn').addEventListener('click', () => {
+  seed += 1;
+  flock = new Flock({ seed, eta: parseFloat(etaSlider.value) });
+  draw();
+});
+syncDial();
+draw();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

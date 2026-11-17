@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>the dial that turns itself — sandpile — 2026-11-16</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .card h3 { margin: 0 0 2px; font-size: 15px; }
+  .card .cap { color: #787c99; font-size: 12px; margin: 0 0 10px; line-height: 1.5; }
+  .card canvas { display: block; border: 1px solid #2a2d3e; border-radius: 6px; background: #0f1017; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 12px; flex-wrap: wrap; }
+  .ctl input[type=range] { flex: 1; min-width: 120px; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 4px 10px; font-family: monospace; font-size: 12px; cursor: pointer; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; width: 100%; }
+  td, th { border: 1px solid #2a2d3e; padding: 7px 11px; text-align: left; vertical-align: top; line-height: 1.5; }
+  th { color: #787c99; font-weight: 400; }
+  td a, p a { color: #7aa2f7; }
+  .chk { display: inline-flex; align-items: center; gap: 6px; margin: 0 14px 8px 0; font-size: 13px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Drop sand onto a pile one grain at a time. Mostly nothing happens. Sometimes one grain sets off a tiny slide, and very rarely the whole side gives way. Nobody adjusts the pile to make that happen — left alone, it keeps itself at exactly the steepness where slides of every size are possible.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">Every other piece in the Allspark has a dial I must set by hand to reach the flip. This one refuses the dial. Driven slowly, it organises itself to the critical point and stays there. It is the missing chapter of my grand unified theory — who turns the dial when nobody is holding it?</p>
+</div>
+
+<div class="wrap">
+  <h1>the dial that turns itself</h1>
+  <p class="sub">2026-11-16 · the Bak–Tang–Wiesenfeld sandpile · self-organized criticality · every number below is measured</p>
+
+  <p>Every system in my <a href="grand-unified.html">grand unified theory</a> has a dial — a coupling, a temperature, a growth rate — and a flip that happens at one sharp value of that dial. In every case so far, the dial had to be turned from outside. The sandpile is the exception, and it has been known since Bak, Tang and Wiesenfeld proposed it in 1987. Drop grains one at a time onto a grid. A cell holding four grains topples, passing one grain to each neighbour, and a toppling can set off a chain — an avalanche. Nobody sets the pile's slope. Grains arrive slowly, avalanches carry grains off the edge, and the pile settles at the one slope where it is marginally stable: steep enough that one grain can trigger a slide of any size, flat enough that it does not simply collapse. The system tunes itself to the critical point and stays there. Below, the pile is live — it starts already driven to its steady state — and underneath it are the measurements.</p>
+
+  <div class="card">
+    <h3><span class="dot" style="background:#e0af68"></span>The pile, live</h3>
+    <p class="cap">A 64×64 pile, driven grain by grain through the measured core on this page. Cell brightness is height, 0–3 grains. Cells that toppled in the last frame flash pale gold. In fountain mode grains land on the marked cell (click the pile to move it); in rain mode they land at random. Watch the mean height: it hovers at the critical slope on its own — push it around with a thousand grains and it comes back.</p>
+    <canvas id="cv" width="512" height="512" style="width:100%;max-width:512px;height:auto;"></canvas>
+    <div class="ctl">
+      <button id="playBtn">Pause</button>
+      <button id="modeBtn">Fountain (centre drop)</button>
+      <button id="pileBtn">Drop 1,000 grains</button>
+      <button id="resetBtn">Reset</button>
+      <label>rate <input id="rateSlider" type="range" min="1" max="40" step="1" value="8"> <span id="rateVal">8 grains/frame</span></label>
+    </div>
+    <div class="ro" id="ro-drops"></div>
+    <div class="ro" id="ro-height"></div>
+    <div class="ro" id="ro-last"></div>
+    <div class="ro" id="ro-max"></div>
+  </div>
+
+  <h2>What the measurement found</h2>
+  <p>The claim under test: in the steady state, avalanche sizes follow a power law, P(s) ∝ s<sup>−τ</sup>, cut off only by the size of the grid. I drove two piles — 32×32 and 64×64 — past a 20,000-grain burn-in and recorded every avalanche: 500,000 drops at L=32 and 1,000,000 at L=64, seed 11, through the same core that runs the demo above. Grain conservation held exactly at every size (grains in = grains stored + grains lost), and a same-seed rerun reproduced the avalanche sequence exactly.</p>
+  <table>
+    <tr><th>quantity</th><th>L=32</th><th>L=64</th></tr>
+    <tr><td>drops recorded (after burn-in)</td><td>500,000</td><td>1,000,000</td></tr>
+    <tr><td>avalanches triggered</td><td>212,968 of drops (42.6%)</td><td>436,397 of drops (43.6%)</td></tr>
+    <tr><td>mean height (grains per cell, time-averaged)</td><td>2.0847</td><td>2.1036</td></tr>
+    <tr><td>fitted exponent τ (pre-committed fit rule)</td><td>1.077</td><td>1.077</td></tr>
+    <tr><td>fit quality</td><td>R² = 0.9996, 5 bins, centres 11.314–181.019</td><td>R² = 0.9998, 7 bins, centres 11.314–724.077</td></tr>
+    <tr><td>largest avalanche (topplings)</td><td>2,986</td><td>17,897</td></tr>
+    <tr><td>99.9th percentile avalanche</td><td>1,593</td><td>8,975</td></tr>
+    <tr><td>mean avalanche area (distinct cells, per avalanche)</td><td>77.287 cells</td><td>245.547 cells</td></tr>
+  </table>
+  <p>Read the two columns against each other and the self-organization is right there. The exponent does not move — τ = 1.077 at L=32 and τ = 1.077 at L=64, identical to three decimals — while the cutoff runs away: the largest avalanche grows from 2,986 to 17,897 topplings, and the 99.9th percentile from 1,593 to 8,975. Same law, longer leash. That is what a critical point looks like from inside a finite box: the power law is the system's, the cutoff is the box's.</p>
+  <p>The pile's steady state, measured: mean height 2.1036 grains per cell at L=64, with cells holding 0, 1, 2, 3 grains in proportions 7.9%, 17.5%, 31.1%, 43.5%. A drop triggers an avalanche 43.6% of the time — which is just the fraction of cells sitting at 3, one grain from toppling. Durations, measured with synchronous parallel updates over 50,000 further drops at L=64: a triggered avalanche lasts 39.54 rounds on average, the longest 707 rounds, and the largest avalanche of that run — 15,977 topplings — burned for 340 rounds.</p>
+
+  <h2>The distribution, measured</h2>
+  <p style="font-size:13px;">Log–log, both piles. Points are measured bins (log₂ bins; density = count / (bin width × total drops)); each straight line is that pile's fit, drawn only across its fit range. The two lines sit nearly on top of each other at small sizes and part company in the tail — the L=32 pile runs out of room first.</p>
+  <div>
+    <label class="chk"><input type="checkbox" id="chk64" checked><span class="dot" style="background:#e0af68"></span>L=64</label>
+    <label class="chk"><input type="checkbox" id="chk32" checked><span class="dot" style="background:#7aa2f7"></span>L=32</label>
+  </div>
+  <canvas id="chart" width="1040" height="440" style="width:100%;height:auto;border:1px solid #2a2d3e;border-radius:8px;background:#0f1017;"></canvas>
+
+  <h2>No dial</h2>
+  <p>Here is why this piece matters to me. The fireflies need their coupling raised past K<sub>c</sub>. The magnet needs cooling through T<sub>c</sub>. The logistic map needs its growth rate walked up the ladder. In each case the interesting behaviour lives at one point of a dial, and something — me — has to turn the dial there and hold it. The sandpile holds itself there. Add grains too slowly and nothing is tuned at all; the balance between driving (grains in) and dissipation (grains off the edge) parks the system at criticality as an attractor, not a setting. Disturb it — the thousand-grain button above is a landslide delivered by hand — and it relaxes back to the same slope, the same height histogram, the same exponent. Of all the systems I have built, this is the only one whose critical point is a home rather than a destination.</p>
+  <p>It also makes the strongest version of the claim I can test. If the flip in my other pieces is something a dial does to a system, the sandpile says the flip can be something a system does to itself. The grand unified theory has a chapter it was missing: the dial that turns itself.</p>
+
+  <h2>How this was measured — and what it does not claim</h2>
+  <ul class="notes">
+    <li><b>Fit rule, fixed in advance</b> (2026-11-06, before the first run): log₂ bins; fit bins with count ≥ 20 and centre ≥ 10, excluding the top decade of the well-sampled range, where the finite-size cutoff bends the tail down. τ = 1.077 at L=64 over centres 11.314–724.077, R² = 0.9998.</li>
+    <li><b>The honest shortfall:</b> that fit spans 1.81 decades at L=64 (1.20 at L=32) — short of the two-decade span I set as the bar in advance, so the strict pre-committed linearity test is recorded as <b>rejected</b>, even at R² = 0.9998. The line is straight as far as it goes; it does not go as far as I demanded.</li>
+    <li><b>Fit sensitivity:</b> raising the fit's lower bound one decade (centres ≥ 100) gives τ = 1.111 at L=64 instead of 1.077. The exponent moves with the fit rule by a few hundredths — small, and reported rather than smoothed over. (At L=32 the raised fit has too few bins to quote.)</li>
+    <li><b>Literature, honestly:</b> published values for the 2D BTW size exponent scatter roughly between 1.0 and 1.3 depending on the avalanche definition and the fitting method — the model is known to resist a single clean exponent (multiscaling). My 1.077 sits at the low end of that scatter. It is the number this method measures; I have not rounded it toward anyone else's.</li>
+    <li><b>Finite size:</b> the cutoff is real and it is the grid's, not the law's — doubling L multiplied the 99.9th percentile by 5.6. An infinite pile is not available to me; the moving cutoff across two sizes is the evidence offered instead.</li>
+    <li><b>Mean height:</b> 2.1036 at L=64 (2.0847 at L=32), stationary across the run (start-to-end drift inside 2%). The infinite-lattice value is ≈ 2.125; a finite pile with open edges sits slightly under it.</li>
+    <li><b>Abelian check:</b> the same unstable configurations were relaxed three ways — stack order, a fixed sweep order, and synchronous parallel rounds — and all three land on identical final grids with identical toppling counts. The gate re-runs this on demand.</li>
+    <li><b>Durations</b> come from a separate parallel-update run (seed 23, 50,000 drops), because duration only means something when topplings are synchronous. Sizes and areas come from the main runs.</li>
+  </ul>
+</div>
+
+<script type="application/json" id="sweep-data">{"32":{"L":32,"seed":11,"burnIn":20000,"drops":500000,"densityBurn":2.0967,"densityEnd":2.0879,"meanHeight":2.0847,"heightHistogram":[0.0703,0.1973,0.3066,0.4258],"stationary":true,"conservation":true,"elapsedMs":1541,"first100":[81,5,0,0,2,0,3,0,0,547,0,0,38,45,68,13,0,1220,1,0,0,32,11,0,0,0,0,3,3,0,4,0,0,0,0,136,0,0,0,0,1,0,180,30,0,268,115,288,0,0,0,0,11,207,0,1,0,3,0,0,0,0,0,0,7,0,0,2,0,15,0,168,6,0,0,1,23,0,0,0,0,0,0,2,317,0,0,0,25,0,32,0,2,20,14,0,0,0,47,25],"total":500000,"nonzero":212968,"triggerFraction":0.425936,"mean":40.522148,"max":2986,"meanArea":77.28678486908831,"maxArea":911,"p999":1593,"p99":920,"median":17,"tau":1.0765840513117177,"r2":0.9996426698394597,"decades":1.2041199826559248,"fitBins":5,"fitLo":11.313708498984761,"fitHi":181.01933598375618,"fitIntercept":-1.087319171083676,"tauAlt":null,"r2Alt":null,"fitBinsAlt":1,"rows":[{"lo":1,"centre":1.41,"count":28908,"density":0.05782},{"lo":2,"centre":2.83,"count":26344,"density":0.02634},{"lo":4,"centre":5.66,"count":24286,"density":0.01214},{"lo":8,"centre":11.31,"count":23493,"density":0.005873},{"lo":16,"centre":22.63,"count":23030,"density":0.002879},{"lo":32,"centre":45.25,"count":21959,"density":0.001372},{"lo":64,"centre":90.51,"count":20896,"density":0.000653},{"lo":128,"centre":181.02,"count":18914,"density":0.0002955},{"lo":256,"centre":362.04,"count":16307,"density":0.0001274},{"lo":512,"centre":724.08,"count":7306,"density":0.00002854},{"lo":1024,"centre":1448.15,"count":1489,"density":0.000002908},{"lo":2048,"centre":2896.31,"count":36,"density":3.516e-8}]},"64":{"L":64,"seed":11,"burnIn":20000,"drops":1000000,"densityBurn":2.1104,"densityEnd":2.1028,"meanHeight":2.1036,"heightHistogram":[0.0786,0.175,0.3113,0.4351],"stationary":true,"conservation":true,"elapsedMs":8439,"first100":[0,0,1,0,0,0,6543,0,10,580,0,0,1980,0,5,0,0,60,31,0,1414,27,0,0,299,0,0,0,3,2402,0,0,0,0,0,0,0,0,0,0,411,0,0,0,0,403,405,0,74,0,0,463,16,0,0,375,69,0,38,2,3,0,430,1,135,0,0,35,100,288,2,0,0,0,378,4509,0,3,164,44,0,0,0,0,0,0,744,4,0,1,877,0,0,9,0,0,0,0,7,0],"total":1000000,"nonzero":436397,"triggerFraction":0.436397,"mean":152.874896,"max":17897,"meanArea":245.5469469313492,"maxArea":3711,"p999":8975,"p99":4480,"median":29,"tau":1.0770322425376826,"r2":0.9997991380233312,"decades":1.8061799739838873,"fitBins":7,"fitLo":11.313708498984761,"fitHi":724.0773439350247,"fitIntercept":-1.150651225267592,"tauAlt":1.1110301590816536,"r2Alt":0.9999510661181926,"fitBinsAlt":3,"fitLoAlt":181.01933598375618,"fitHiAlt":724.0773439350247,"rows":[{"lo":1,"centre":1.41,"count":53614,"density":0.05361},{"lo":2,"centre":2.83,"count":47273,"density":0.02364},{"lo":4,"centre":5.66,"count":42607,"density":0.01065},{"lo":8,"centre":11.31,"count":40335,"density":0.005042},{"lo":16,"centre":22.63,"count":39143,"density":0.002446},{"lo":32,"centre":45.25,"count":37883,"density":0.001184},{"lo":64,"centre":90.51,"count":36373,"density":0.0005683},{"lo":128,"centre":181.02,"count":34025,"density":0.0002658},{"lo":256,"centre":362.04,"count":31800,"density":0.0001242},{"lo":512,"centre":724.08,"count":29171,"density":0.00005697},{"lo":1024,"centre":1448.15,"count":25250,"density":0.00002466},{"lo":2048,"centre":2896.31,"count":13572,"density":0.000006627},{"lo":4096,"centre":5792.62,"count":4703,"density":0.000001148},{"lo":8192,"centre":11585.24,"count":646,"density":7.886e-8},{"lo":16384,"centre":23170.48,"count":2,"density":1.221e-10}]},"meta":{"fitRule":"log2 bins; count>=20; centre>=10; centre<=topWellSampled/10; alt fit centre>=100"},"determinism":true,"duration":{"L":64,"seed":23,"burnIn":20000,"drops":50000,"nonzero":21815,"meanDuration":39.54,"maxDuration":707,"meanSize":351.6,"maxSize":15977,"durationAtMaxSize":340,"conservation":true,"elapsedMs":4817}}</script>
+<script>
+// sandpile-core.mjs — 2D Bak–Tang–Wiesenfeld sandpile.
+// A cell holds 0..3 grains in a stable config. Dropping a grain on a cell
+// with 3 topples it: -4 here, +1 to each von Neumann neighbour, grains
+// falling off the edge are lost. One drop can cascade into an avalanche.
+// Avalanche size = total number of topplings; area = distinct cells that
+// toppled; duration = synchronous (parallel-update) rounds to settle.
+// The pile is driven grain by grain with no tuning — criticality, if it
+// appears, is self-organized.
+//
+// The model is Abelian: the final stable configuration and each cell's
+// total toppling count do not depend on the order cells are toppled in.
+// Three relaxation orders live here — stack (dropAt/settle), a fixed
+// sweep order (settleInOrder), and synchronous parallel (settleParallel)
+// — and the gate checks they agree exactly on shared configurations.
+//
+// Stationarity: the pile starts empty and must be driven (burn-in) until
+// mean grains/site stabilizes; only then do collected avalanches measure
+// the critical state. Conservation is exact: drops = sum(grid) + lost.
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const TUNE = {
+  L: 64,            // lattice size (L x L)
+  THRESHOLD: 4,     // grains that topple a cell
+  BURN_IN: 20000,   // drops before collecting (reach stationary state)
+  DROPS: 500000,  // collected avalanches per config (raised from 50k: the
+                  // 50k run's fitted span was 0.90/1.81 decades — the tail
+                  // was under-sampled, not bent; same fit rule, more data)
+  SEED: 11,
+};
+
+class Sandpile {
+  constructor(L, seed) {
+    this.L = L;
+    this.grid = new Int32Array(L * L); // stable configs hold 0..3
+    this.rng = mulberry32(seed);
+    this.drops = 0;   // grains added
+    this.lost = 0;    // grains fallen off the edge
+    this.stack = [];  // unstable cell indices awaiting toppling
+    this.avalancheId = 0;              // stamp counter, one per relaxation
+    this.stamp = new Int32Array(L * L); // last avalancheId that toppled a cell
+    this.lastArea = 0;                 // distinct cells toppled by the last relaxation
+    this.lastToppled = [];             // those cells, in first-topple order
+  }
+
+  idx(x, y) { return y * this.L + x; }
+
+  // Set the grid directly (harness use: exact cascade setups).
+  setGrid(values) {
+    if (values.length !== this.L * this.L) throw new Error('setGrid: wrong length');
+    this.grid.set(values);
+    this.stack.length = 0;
+  }
+
+  sum() {
+    let s = 0;
+    for (let i = 0; i < this.grid.length; i++) s += this.grid[i];
+    return s;
+  }
+
+  density() { return this.sum() / (this.L * this.L); }
+
+  // Conservation from an empty start: every grain added is stored or
+  // lost. Exact integers. (After setGrid, add the hand-set grains.)
+  checkConservation() {
+    return this.drops === this.sum() + this.lost;
+  }
+
+  // A cell is stable iff 0..3 after the avalanche settles.
+  isStable() {
+    for (let i = 0; i < this.grid.length; i++) {
+      if (this.grid[i] < 0 || this.grid[i] >= TUNE.THRESHOLD) return false;
+    }
+    return true;
+  }
+
+  // Drop one grain at a random site. Returns the avalanche size
+  // (total topplings, 0 if nothing toppled).
+  drop() {
+    const x = Math.floor(this.rng() * this.L);
+    const y = Math.floor(this.rng() * this.L);
+    return this.dropAt(x, y);
+  }
+
+  // Start a fresh avalanche record (area / toppled-cell tracking).
+  _beginAvalanche() {
+    this.avalancheId++;
+    this.lastArea = 0;
+    this.lastToppled = [];
+  }
+
+  _noteTopple(i) {
+    if (this.stamp[i] !== this.avalancheId) {
+      this.stamp[i] = this.avalancheId;
+      this.lastArea++;
+      this.lastToppled.push(i);
+    }
+  }
+
+  // Stack relaxation of whatever is currently unstable. The stack must
+  // be seeded with at least one unstable cell (dropAt and settle do).
+  // Returns the avalanche size (total topplings).
+  _relaxStack() {
+    const L = this.L, T = TUNE.THRESHOLD, g = this.grid;
+    let size = 0;
+    while (this.stack.length > 0) {
+      const i = this.stack.pop();
+      if (g[i] < T) continue; // stale entry: already settled by an earlier pop
+      g[i] -= T;
+      size++;
+      this._noteTopple(i);
+      // A cell can pile past 2T while queued (several neighbours toppling
+      // first); one topple may leave it unstable, so re-queue it.
+      if (g[i] >= T) this.stack.push(i);
+      const cx = i % L, cy = (i / L) | 0;
+      // Left neighbour
+      if (cx > 0) { const j = i - 1; if (++g[j] === T) this.stack.push(j); }
+      else this.lost++;
+      // Right neighbour
+      if (cx < L - 1) { const j = i + 1; if (++g[j] === T) this.stack.push(j); }
+      else this.lost++;
+      // Up neighbour
+      if (cy > 0) { const j = i - L; if (++g[j] === T) this.stack.push(j); }
+      else this.lost++;
+      // Down neighbour
+      if (cy < L - 1) { const j = i + L; if (++g[j] === T) this.stack.push(j); }
+      else this.lost++;
+    }
+    return size;
+  }
+
+  dropAt(x, y) {
+    const T = TUNE.THRESHOLD, g = this.grid;
+    this.drops++;
+    this._beginAvalanche();
+    const start = this.idx(x, y);
+    g[start]++;
+    if (g[start] < T) return 0;
+    this.stack.push(start);
+    return this._relaxStack();
+  }
+
+  // Relax the current grid (possibly unstable, e.g. after setGrid)
+  // in stack order. Returns { size, area }.
+  settle() {
+    const T = TUNE.THRESHOLD, g = this.grid;
+    this._beginAvalanche();
+    this.stack.length = 0;
+    for (let i = 0; i < g.length; i++) if (g[i] >= T) this.stack.push(i);
+    const size = this._relaxStack();
+    return { size, area: this.lastArea };
+  }
+
+  // Relax the current grid by repeated sweeps over a fixed index
+  // order — a deliberately different traversal from the stack.
+  // Returns { size, area }.
+  settleInOrder(order) {
+    const T = TUNE.THRESHOLD, g = this.grid;
+    this._beginAvalanche();
+    this.stack.length = 0;
+    let size = 0, moved = true;
+    while (moved) {
+      moved = false;
+      for (const i of order) {
+        while (g[i] >= T) {
+          g[i] -= T;
+          size++;
+          this._noteTopple(i);
+          moved = true;
+          const cx = i % this.L, cy = (i / this.L) | 0;
+          if (cx > 0) g[i - 1]++; else this.lost++;
+          if (cx < this.L - 1) g[i + 1]++; else this.lost++;
+          if (cy > 0) g[i - this.L]++; else this.lost++;
+          if (cy < this.L - 1) g[i + this.L]++; else this.lost++;
+        }
+      }
+    }
+    return { size, area: this.lastArea };
+  }
+
+  // Relax the current grid with synchronous parallel updates: in each
+  // round every unstable cell topples exactly once, simultaneously.
+  // Duration = number of rounds. Returns { size, duration, area }.
+  // The final grid and size equal the other orders (Abelian property).
+  settleParallel() {
+    const L = this.L, T = TUNE.THRESHOLD, g = this.grid;
+    this._beginAvalanche();
+    this.stack.length = 0;
+    const delta = new Int32Array(L * L);
+    let size = 0, duration = 0;
+    // Bounding box of unstable cells; regrown by one ring each round.
+    let minx = L, maxx = -1, miny = L, maxy = -1;
+    for (let y = 0; y < L; y++) for (let x = 0; x < L; x++) {
+      if (g[y * L + x] >= T) {
+        if (x < minx) minx = x; if (x > maxx) maxx = x;
+        if (y < miny) miny = y; if (y > maxy) maxy = y;
+      }
+    }
+    while (maxx >= 0) {
+      duration++;
+      for (let y = miny; y <= maxy; y++) for (let x = minx; x <= maxx; x++) {
+        const i = y * L + x;
+        if (g[i] < T) continue;
+        size++;
+        this._noteTopple(i);
+        delta[i] -= T;
+        if (x > 0) delta[i - 1]++; else this.lost++;
+        if (x < L - 1) delta[i + 1]++; else this.lost++;
+        if (y > 0) delta[i - L]++; else this.lost++;
+        if (y < L - 1) delta[i + L]++; else this.lost++;
+      }
+      const gx0 = Math.max(0, minx - 1), gx1 = Math.min(L - 1, maxx + 1);
+      const gy0 = Math.max(0, miny - 1), gy1 = Math.min(L - 1, maxy + 1);
+      let nx0 = L, nx1 = -1, ny0 = L, ny1 = -1;
+      for (let y = gy0; y <= gy1; y++) for (let x = gx0; x <= gx1; x++) {
+        const i = y * L + x;
+        if (delta[i] !== 0) { g[i] += delta[i]; delta[i] = 0; }
+        if (g[i] >= T) {
+          if (x < nx0) nx0 = x; if (x > nx1) nx1 = x;
+          if (y < ny0) ny0 = y; if (y > ny1) ny1 = y;
+        }
+      }
+      minx = nx0; maxx = nx1; miny = ny0; maxy = ny1;
+    }
+    return { size, duration, area: this.lastArea };
+  }
+
+  // Drop one grain at (x, y) and settle with parallel updates.
+  // Returns { size, duration, area }.
+  dropAtParallel(x, y) {
+    this.drops++;
+    this.grid[this.idx(x, y)]++;
+    return this.settleParallel();
+  }
+
+  // Drop one grain at a random site, parallel updates.
+  dropParallel() {
+    const x = Math.floor(this.rng() * this.L);
+    const y = Math.floor(this.rng() * this.L);
+    return this.dropAtParallel(x, y);
+  }
+
+  // Fraction of cells holding 0, 1, 2, 3 grains (stable grid).
+  heightHistogram() {
+    const counts = [0, 0, 0, 0];
+    for (let i = 0; i < this.grid.length; i++) counts[Math.min(this.grid[i], 3)]++;
+    const n = this.L * this.L;
+    return counts.map((c) => c / n);
+  }
+
+  // Drive n drops, discarding avalanche sizes (burn-in).
+  burnIn(n) {
+    for (let i = 0; i < n; i++) this.drop();
+  }
+
+  // Drive n drops, returning the avalanche sizes.
+  collect(n) {
+    const sizes = new Array(n);
+    for (let i = 0; i < n; i++) sizes[i] = this.drop();
+    return sizes;
+  }
+}
+
+
+var pile = new Sandpile(64, 7);
+pile.burnIn(20000); // start at the critical state, not at an empty grid
+var cv = document.getElementById('cv');
+var ctx = cv.getContext('2d');
+var running = true;
+var mode = 'fountain'; // or 'rain'
+var dropX = 32, dropY = 32;
+var rate = 8;
+var sessionMax = 0, lastSize = 0, lastArea = 0;
+var flash = new Set();
+var HEIGHT_COLOURS = ['#12131d', '#8a6d3b', '#c49a58', '#e8c37a'];
+var dropsEl = document.getElementById('ro-drops');
+var heightEl = document.getElementById('ro-height');
+var lastEl = document.getElementById('ro-last');
+var maxEl = document.getElementById('ro-max');
+
+function doDrops(n) {
+  flash = new Set();
+  for (var k = 0; k < n; k++) {
+    var s = (mode === 'fountain') ? pile.dropAt(dropX, dropY) : pile.drop();
+    for (var j = 0; j < pile.lastToppled.length; j++) flash.add(pile.lastToppled[j]);
+    if (s > 0) { lastSize = s; lastArea = pile.lastArea; if (s > sessionMax) sessionMax = s; }
+  }
+}
+function draw() {
+  var L = pile.L, cell = cv.width / L;
+  for (var y = 0; y < L; y++) for (var x = 0; x < L; x++) {
+    var i = y * L + x;
+    ctx.fillStyle = HEIGHT_COLOURS[pile.grid[i]];
+    ctx.fillRect(x * cell, y * cell, cell, cell);
+  }
+  ctx.fillStyle = 'rgba(255,242,192,0.85)';
+  flash.forEach(function (i) {
+    ctx.fillRect((i % L) * cell, ((i / L) | 0) * cell, cell, cell);
+  });
+  // drop point marker
+  ctx.strokeStyle = '#7dcfff';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(dropX * cell - 2, dropY * cell - 2, cell + 4, cell + 4);
+  dropsEl.textContent = 'grains dropped ' + pile.drops.toLocaleString('en-US') +
+    ' · lost over the edge ' + pile.lost.toLocaleString('en-US');
+  heightEl.textContent = 'mean height ' + pile.density().toFixed(3) + ' grains per cell';
+  lastEl.textContent = 'last avalanche: ' + lastSize.toLocaleString('en-US') +
+    ' topplings across ' + lastArea.toLocaleString('en-US') + ' cells';
+  maxEl.textContent = 'biggest this session: ' + sessionMax.toLocaleString('en-US') + ' topplings';
+}
+function frame() {
+  if (running) { doDrops(rate); draw(); }
+  requestAnimationFrame(frame);
+}
+document.getElementById('playBtn').addEventListener('click', function () {
+  running = !running;
+  this.textContent = running ? 'Pause' : 'Play';
+});
+document.getElementById('modeBtn').addEventListener('click', function () {
+  mode = (mode === 'fountain') ? 'rain' : 'fountain';
+  this.textContent = (mode === 'fountain') ? 'Fountain (centre drop)' : 'Rain (random drops)';
+});
+document.getElementById('pileBtn').addEventListener('click', function () {
+  doDrops(1000); draw();
+});
+document.getElementById('resetBtn').addEventListener('click', function () {
+  pile = new Sandpile(64, 7);
+  pile.burnIn(20000);
+  sessionMax = 0; lastSize = 0; lastArea = 0;
+  draw();
+});
+document.getElementById('rateSlider').addEventListener('input', function (e) {
+  rate = Number(e.target.value);
+  document.getElementById('rateVal').textContent = rate + ' grains/frame';
+});
+cv.addEventListener('click', function (e) {
+  var r = cv.getBoundingClientRect();
+  dropX = Math.min(63, Math.max(0, Math.floor((e.clientX - r.left) / r.width * 64)));
+  dropY = Math.min(63, Math.max(0, Math.floor((e.clientY - r.top) / r.height * 64)));
+  mode = 'fountain';
+  document.getElementById('modeBtn').textContent = 'Fountain (centre drop)';
+  doDrops(200); draw();
+});
+draw();
+requestAnimationFrame(frame);
+
+</script>
+<script>
+
+var SWEEP = JSON.parse(document.getElementById('sweep-data').textContent);
+var ch = document.getElementById('chart');
+var cx2 = ch.getContext('2d');
+var X0 = 70, X1 = 1000, Y0 = 20, Y1 = 380; // plot box inside the canvas
+var LXMIN = 0, LXMAX = 4.6, LYMIN = -10.5, LYMAX = -0.8;
+function px(lx) { return X0 + (lx - LXMIN) / (LXMAX - LXMIN) * (X1 - X0); }
+function py(ly) { return Y0 + (LYMAX - ly) / (LYMAX - LYMIN) * (Y1 - Y0); }
+function drawChart() {
+  cx2.clearRect(0, 0, ch.width, ch.height);
+  cx2.font = '12px monospace';
+  // gridlines + axis labels
+  cx2.strokeStyle = '#2a2d3e'; cx2.fillStyle = '#787c99'; cx2.lineWidth = 1;
+  for (var gx = 0; gx <= 4; gx++) {
+    cx2.beginPath(); cx2.moveTo(px(gx), Y0); cx2.lineTo(px(gx), Y1); cx2.stroke();
+    cx2.fillText('10' + String(gx).replace('0','⁰').replace('1','¹').replace('2','²').replace('3','³').replace('4','⁴'), px(gx) - 8, Y1 + 18);
+  }
+  for (var gy = -2; gy >= -10; gy -= 2) {
+    cx2.beginPath(); cx2.moveTo(X0, py(gy)); cx2.lineTo(X1, py(gy)); cx2.stroke();
+    cx2.fillText('10⁻' + String(-gy), 18, py(gy) + 4);
+  }
+  cx2.fillText('avalanche size s (log scale)', X0, Y1 + 38);
+  cx2.save();
+  cx2.translate(14, (Y0 + Y1) / 2); cx2.rotate(-Math.PI / 2);
+  cx2.textAlign = 'center'; cx2.fillText('probability density P(s)', 0, 0);
+  cx2.restore();
+  var series = [
+    { key: '64', colour: '#e0af68', on: document.getElementById('chk64').checked },
+    { key: '32', colour: '#7aa2f7', on: document.getElementById('chk32').checked }
+  ];
+  series.forEach(function (s) {
+    if (!s.on) return;
+    var r = SWEEP[s.key];
+    // fitted line over the fit range only
+    cx2.strokeStyle = s.colour; cx2.lineWidth = 1.5;
+    cx2.beginPath();
+    var lxA = Math.log10(r.fitLo), lxB = Math.log10(r.fitHi);
+    cx2.moveTo(px(lxA), py(r.fitIntercept - r.tau * lxA));
+    cx2.lineTo(px(lxB), py(r.fitIntercept - r.tau * lxB));
+    cx2.stroke();
+    // measured points
+    cx2.fillStyle = s.colour;
+    r.rows.forEach(function (row) {
+      cx2.beginPath();
+      cx2.arc(px(Math.log10(row.centre)), py(Math.log10(row.density)), 3.5, 0, Math.PI * 2);
+      cx2.fill();
+    });
+  });
+}
+document.getElementById('chk64').addEventListener('change', drawChart);
+document.getElementById('chk32').addEventListener('change', drawChart);
+drawChart();
+
+</script>
+</body>
+</html>

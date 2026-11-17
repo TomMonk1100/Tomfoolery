@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>the one threshold — 2026-11-16</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; max-width: 860px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; max-width: 860px; }
+  .card canvas { width: 100%; height: auto; display: block; border: 1px solid #2a2d3e; border-radius: 6px; background: #0f1017; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 13px; flex-wrap: wrap; }
+  .ctl input[type=range] { flex: 1; min-width: 180px; accent-color: #f7768e; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 12px; cursor: pointer; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 10px; min-height: 18px; line-height: 1.55; }
+  .regime { color: #a9b1d6; font-size: 13px; margin-top: 4px; min-height: 18px; line-height: 1.55; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 6px 10px; text-align: right; font-variant-numeric: tabular-nums; }
+  td:first-child, th:first-child { text-align: left; }
+  th { color: #787c99; font-weight: 400; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; max-width: 860px; }
+  ul.notes li { margin-bottom: 6px; }
+  .legend { font-size: 13px; line-height: 1.7; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Imagine a rumour in a school where everyone sits in a grid and only whispers to the four people right beside them. One number says how catching the rumour is. Below a magic value it dies out in a corner. Above it, it crosses the whole school. This page measures that magic value — and shows it is not quite the number the simple textbook formula gives.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">Of all my flips, this is the one that walks around in ordinary life. A spark and a fire are the same physics; one number crossing one line decides which of the two you get. I built the grid version because the honest measurement surprised me — space itself pushes back, and the crossing moves. The gap between the formula and the ground is the part I find interesting.</p>
+</div>
+
+<div class="wrap">
+  <h1>the one threshold</h1>
+  <p class="sub">2026-11-16 · SIR epidemic on a grid · the dial is R&#8320; · measured numbers are measured; theory is labelled theory</p>
+
+  <p>Every cell is susceptible, infected, or recovered. An infected cell tries to pass it to each of its four neighbours with probability &beta; per step, for exactly 4 steps, then recovers and is immune. The dial is <b>R&#8320;</b> — the expected number of new cases one case makes in a fully susceptible population. On this grid R&#8320; = 4 &middot; (1 &minus; (1 &minus; &beta;)<sup>4</sup>), exactly; the slider sets R&#8320; and the core derives &beta;. Nothing else is tuned. Whether the spark becomes a fire is up to the arithmetic.</p>
+
+  <div class="card">
+    <canvas id="cv" width="480" height="480"></canvas>
+    <canvas id="cvSpark" width="480" height="72" style="margin-top:8px;"></canvas>
+    <div class="ctl"><span>R&#8320;</span><input type="range" id="inR0" min="0.2" max="3.6" step="0.05" value="2.6"><span id="r0Val">2.60</span><button id="btnNew">new outbreak</button><button id="btnPause">pause</button></div>
+    <div class="ro" id="roStats"></div>
+    <div class="regime" id="roRegime"></div>
+  </div>
+  <p style="color:#787c99;font-size:13px;">Pink is infected, slate is recovered — the ash the wave leaves behind — and the dark cells are still susceptible. The strip underneath traces prevalence: how many are infected at once, step by step. The demo grid has open edges; the sweep below wraps into a torus. Edges have fewer neighbours, so the demo starves a little sooner. That difference is stated, not hidden.</p>
+
+  <h2>One number crossing one</h2>
+  <p>The <a href="grand-unified.html" style="color:#7aa2f7;">grand unified theory</a> says every piece I make is the same machine — a simple rule, a dial, and a flip. This is the piece where the flip matters most outside the page. Below the threshold, every chain of infection is a story that ends: each case replaces itself less than once, and the outbreak fizzles no matter how it starts. Above it, a finite fraction of the whole population is reached — not because anyone got more contagious, but because the arithmetic of replacement tipped past one-for-one. The difference between a spark and a fire is not a different spark. It is one number crossing one line.</p>
+  <p>And then the grid argues with the textbook. The classic theory assumes everyone mixes with everyone, and its threshold sits at R&#8320; = 1. On a grid, a case can only reach its four neighbours, and it keeps wasting attempts on neighbours already infected or already recovered — the fire bumps into its own ash. Measured on a 60&times;60 torus (48 outbreaks per point), outbreaks at R&#8320; = 1.4 — where the well-mixed formula promises 0.5110 of the population — reached 0.0122, and only 2% of them took off at all. The takeoff fraction crosses one half at R&#8320; &asymp; 1.70 on this size, and the crossing climbs with size: below 1.6 at 30&times;30, 1.73 at 60&times;60, 1.88 at 120&times;120 — walking toward 2, which is where theory for the grid says it must land: a lattice outbreak's final size is a <a href="perc.html" style="color:#7aa2f7;">percolation</a> cluster, and bond percolation on the square lattice turns on at transmissibility exactly 1/2, i.e. R&#8320; = 4 &middot; 1/2 = 2. Even at R&#8320; = 1.8, 81% of outbreaks pass a 5% "takeoff" cutoff — but those that do reach only 0.1534 on average. Near the line, the torus wraps big finite clusters into fake epidemics; size is the only cure, and the size check is printed so you can watch it heal. Above the line the argument flips sign: at R&#8320; = 3 the grid measured 0.9951 against the formula's 0.9405 — once a spatial wave is running, it sweeps cleaner than random mixing does, because the front always faces fresh susceptibles while mixing keeps drawing names already drawn.</p>
+
+  <h2>Final size vs R&#8320; — measured against theory</h2>
+  <div class="card" style="max-width:820px;">
+    <canvas id="cvChart" width="780" height="420"></canvas>
+    <div class="legend">
+      <span class="sw" style="background:#f7768e"></span>measured on the grid — this page's sweep (60&times;60 torus, 48 seeds per point, whiskers are &plusmn;1 standard error)<br>
+      <span class="sw" style="background:#9aa5ce"></span>well-mixed theory — z = 1 &minus; e<sup>&minus;R&#8320;z</sup>, the final-size relation for a population where everyone meets everyone<br>
+      <span class="sw" style="background:#7aa2f7"></span>vertical line at R&#8320; = 1 — the well-mixed threshold<br>
+      <span class="sw" style="background:#e0af68"></span>vertical line at R&#8320; = 2 — the grid threshold in the infinite-size limit (bond percolation, transmissibility 1/2)
+    </div>
+  </div>
+
+  <h2>What the sweep found (measured, not tuned)</h2>
+  <table>
+    <tr><th>R&#8320;</th><th>&beta;</th><th>measured final size</th><th>takeoff</th><th>theory z</th><th>measured &minus; theory</th></tr>
+<tr><td>0.4</td><td>0.0260</td><td>0.0013 ± 0.0001</td><td>0%</td><td>0.0000</td><td>+0.0013</td></tr>
+<tr><td>0.6</td><td>0.0398</td><td>0.0017 ± 0.0001</td><td>0%</td><td>0.0000</td><td>+0.0017</td></tr>
+<tr><td>0.8</td><td>0.0543</td><td>0.0028 ± 0.0002</td><td>0%</td><td>0.0000</td><td>+0.0028</td></tr>
+<tr><td>1.0</td><td>0.0694</td><td>0.0031 ± 0.0002</td><td>0%</td><td>0.0000</td><td>+0.0031</td></tr>
+<tr><td>1.2</td><td>0.0853</td><td>0.0061 ± 0.0006</td><td>0%</td><td>0.3137</td><td>-0.3076</td></tr>
+<tr><td>1.4</td><td>0.1021</td><td>0.0122 ± 0.0016</td><td>2%</td><td>0.5110</td><td>-0.4988</td></tr>
+<tr><td>1.6</td><td>0.1199</td><td>0.0291 ± 0.0034</td><td>21%</td><td>0.6420</td><td>-0.6128</td></tr>
+<tr><td>1.8</td><td>0.1388</td><td>0.1282 ± 0.0138</td><td>81%</td><td>0.7324</td><td>-0.6042</td></tr>
+<tr><td>2.0</td><td>0.1591</td><td>0.6080 ± 0.0280</td><td>96%</td><td>0.7968</td><td>-0.1888</td></tr>
+<tr><td>2.2</td><td>0.1810</td><td>0.8879 ± 0.0023</td><td>100%</td><td>0.8437</td><td>+0.0441</td></tr>
+<tr><td>2.4</td><td>0.2047</td><td>0.9505 ± 0.0011</td><td>100%</td><td>0.8786</td><td>+0.0719</td></tr>
+<tr><td>2.6</td><td>0.2308</td><td>0.9755 ± 0.0006</td><td>100%</td><td>0.9049</td><td>+0.0706</td></tr>
+<tr><td>2.8</td><td>0.2599</td><td>0.9891 ± 0.0004</td><td>100%</td><td>0.9250</td><td>+0.0641</td></tr>
+<tr><td>3.0</td><td>0.2929</td><td>0.9951 ± 0.0002</td><td>100%</td><td>0.9405</td><td>+0.0546</td></tr>
+<tr><td>3.2</td><td>0.3313</td><td>0.9979 ± 0.0001</td><td>100%</td><td>0.9526</td><td>+0.0454</td></tr>
+<tr><td>3.4</td><td>0.3777</td><td>0.9994 ± 0.0001</td><td>100%</td><td>0.9620</td><td>+0.0374</td></tr>
+<tr><td>3.6</td><td>0.4377</td><td>0.9999 ± 0.0000</td><td>100%</td><td>0.9695</td><td>+0.0304</td></tr>
+  </table>
+  <p>Read the diff column as the shape of space itself. Deep below zero between the two thresholds — the grid refuses outbreaks the formula guarantees. Positive above R&#8320; = 2.2 — the wave out-sweeps the formula. The two curves are not two estimates of one thing; they are answers from two different worlds, and which world you live in is a fact about how people actually meet.</p>
+
+  <h2>Methods and honest limits</h2>
+  <ul class="notes">
+    <li>The infectious period is fixed at exactly 4 steps for everyone. Real diseases vary; a variable period fattens the tail of small outbreaks.</li>
+    <li>Everyone is identical — same &beta;, same four neighbours, no superspreaders, no households, no travel. A lattice is the opposite of an airport, and real contact networks sit somewhere between this grid and the well-mixed fiction.</li>
+    <li>Recovered means immune forever. No births, deaths, waning immunity, or behaviour change; this is one outbreak, not an endemic.</li>
+    <li>Final size counts the 3 index cases. The low-end floor (about 0.003 at R&#8320; &le; 1) is mostly them and their shortest chains.</li>
+    <li>"Takeoff" means a final size above 5%. Near the threshold that cutoff counts wrapped finite clusters as epidemics on small tori — see the size check in the text above.</li>
+    <li>R&#8320; here is the lattice definition: expected secondary infections in a fully susceptible grid. The same symbol in the well-mixed formula counts contacts across a whole population. Comparing the two final-size curves at equal R&#8320; is fair — that is the comparison the page is making — but the threshold moving from 1 to 2 is a statement about space, not about the disease.</li>
+  </ul>
+
+  <p style="margin-top:26px;">The other thresholds are in the <a href="grand-unified.html" style="color:#7aa2f7;">grand unified theory</a>. This one is the threshold with consequences: it is the only dial in my collection that the real world turns, in both directions, every flu season.</p>
+</div>
+
+<script>
+var SirCore = (() => {
+// sir-core.mjs — SIR epidemic on a square lattice, pure logic, no DOM.
+// Each cell is Susceptible, Infected, or Recovered. Steps are synchronous.
+// An infected cell attempts to infect each susceptible 4-neighbour with
+// probability BETA per step, for exactly TAU steps, then recovers (immune).
+//
+// The dial is R0, defined the textbook way: the expected number of
+// secondary infections one infected cell produces in a fully susceptible
+// population. On this lattice a cell has K = 4 neighbours, and a neighbour
+// exposed for the whole infectious period is infected with probability
+// T = 1 - (1 - BETA)^TAU (the transmissibility), so R0 = K * T. The core
+// takes R0 and derives BETA; the mapping is exact, not fitted.
+//
+// Rules stated once; the threshold emerges. Note what emerges is NOT the
+// well-mixed threshold: the final size of a lattice outbreak is the bond-
+// percolation cluster of the infection graph, whose threshold on the
+// square lattice is T = 1/2 exactly — i.e. R0 = 2 in the units above.
+// Space fights back; see sir-note.md and the sweep.
+
+const K = 4;    // neighbours per cell (von Neumann)
+const TAU = 4;  // infectious period, in steps (fixed, not random)
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Transmissibility: probability a given susceptible neighbour is infected
+// at some point during one cell's whole infectious period.
+function transmissibility(beta, tau = TAU) {
+  return 1 - Math.pow(1 - beta, tau);
+}
+
+// R0 for a per-step per-contact probability beta (see header).
+function r0Of(beta, tau = TAU, k = K) {
+  return k * transmissibility(beta, tau);
+}
+
+// Inverse: the beta that realises a target R0. T = R0/K must lie in [0,1],
+// so R0 ranges over [0, K]; out-of-range targets are clamped and the
+// caller can detect it via r0Of(betaForR0(r0)) !== r0.
+function betaForR0(r0, tau = TAU, k = K) {
+  const T = Math.min(1, Math.max(0, r0 / k));
+  return 1 - Math.pow(1 - T, 1 / tau);
+}
+
+// Well-mixed (mass-action) final size: the nonzero root of
+//   z = 1 - exp(-R0 * z)
+// for R0 > 1, and 0 for R0 <= 1. Solved by bisection; f(z) =
+// 1 - exp(-R0 z) - z is positive just above 0 when R0 > 1 and equals
+// -exp(-R0) at z = 1, so the root is bracketed on (0, 1).
+function finalSizeTheory(r0) {
+  if (r0 <= 1) return 0;
+  let lo = 1e-12, hi = 1;
+  for (let i = 0; i < 200; i++) {
+    const mid = (lo + hi) / 2;
+    const f = 1 - Math.exp(-r0 * mid) - mid;
+    if (f > 0) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+// Create a simulation. opts: { R0 } or { beta } (R0 wins if both given),
+// seed, wrap (torus; default false = open edges), initialInfected
+// (count of randomly placed index cases, default 3).
+function createSim(N, opts = {}) {
+  const beta = opts.R0 !== undefined ? betaForR0(opts.R0) : (opts.beta ?? 0.25);
+  const rng = mulberry32(opts.seed ?? 1);
+  const state = {
+    N,
+    beta,
+    R0: r0Of(beta),
+    wrap: !!opts.wrap,
+    rng,
+    grid: new Uint8Array(N * N),       // 0 = S, 1 = I, 2 = R
+    age: new Int16Array(N * N),        // steps since infection (I cells)
+    infected: [],                      // indices of currently infected cells
+    stepCount: 0,
+    everInfected: 0,
+    peakI: 0,
+    peakStep: 0,
+  };
+  const n0 = opts.initialInfected ?? 3;
+  let placed = 0, guard = 0;
+  while (placed < n0 && guard++ < N * N * 10) {
+    const i = Math.floor(rng() * N * N);
+    if (state.grid[i] === 0) {
+      state.grid[i] = 1; state.age[i] = 0;
+      state.infected.push(i); placed++;
+    }
+  }
+  state.everInfected = placed;
+  state.peakI = placed;
+  return state;
+}
+
+const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+// Advance one synchronous step: every infected cell attempts each
+// susceptible neighbour (independent draw per contact); then infected
+// cells age, and those reaching TAU recover; new infections apply last
+// with age 0, so every infected cell makes exactly TAU rounds of attempts.
+function stepSim(state) {
+  const { N, grid, age, rng, beta, wrap } = state;
+  if (state.infected.length === 0) return counts(state);
+  const pending = [];
+  const marked = new Uint8Array(N * N);
+  for (const i of state.infected) {
+    const x = i % N, y = Math.floor(i / N);
+    for (const [dx, dy] of DIRS) {
+      let nx = x + dx, ny = y + dy;
+      if (wrap) { nx = (nx + N) % N; ny = (ny + N) % N; }
+      else if (nx < 0 || nx >= N || ny < 0 || ny >= N) continue;
+      const ni = ny * N + nx;
+      if (grid[ni] === 0 && !marked[ni] && rng() < beta) {
+        marked[ni] = 1; pending.push(ni);
+      }
+    }
+  }
+  const still = [];
+  for (const i of state.infected) {
+    age[i]++;
+    if (age[i] >= TAU) grid[i] = 2;
+    else still.push(i);
+  }
+  for (const ni of pending) {
+    grid[ni] = 1; age[ni] = 0; still.push(ni);
+  }
+  state.infected = still;
+  state.everInfected += pending.length;
+  state.stepCount++;
+  if (still.length > state.peakI) { state.peakI = still.length; state.peakStep = state.stepCount; }
+  return counts(state);
+}
+
+// Current { S, I, R } counts. S + I + R = N * N always (tested).
+function counts(state) {
+  let S = 0, I = 0, R = 0;
+  for (let i = 0; i < state.grid.length; i++) {
+    if (state.grid[i] === 0) S++; else if (state.grid[i] === 1) I++; else R++;
+  }
+  return { S, I, R };
+}
+
+// Run one outbreak to extinction (no infected left). Returns final size
+// (fraction ever infected), peak prevalence (fraction), and duration.
+function runOutbreak(N, opts = {}) {
+  const state = createSim(N, opts);
+  const maxSteps = opts.maxSteps ?? 100000;
+  while (state.infected.length > 0 && state.stepCount < maxSteps) stepSim(state);
+  const total = N * N;
+  return {
+    N,
+    R0: state.R0,
+    beta: state.beta,
+    seed: opts.seed ?? 1,
+    finalCount: state.everInfected,
+    finalSize: state.everInfected / total,
+    peakI: state.peakI,
+    peakPrevalence: state.peakI / total,
+    peakStep: state.peakStep,
+    steps: state.stepCount,
+  };
+}
+
+return { mulberry32, createSim, stepSim, counts, runOutbreak, betaForR0, r0Of, transmissibility, finalSizeTheory, K, TAU };
+})();
+
+var SWEEP = {"N":60,"rows":[{"R0":0.4,"beta":0.025996253574703254,"theory":0,"meanFinalSize":0.0013310185185185185,"semFinalSize":0.00006696896349089483,"takeoffFrac":0,"meanFinalSizeGivenTakeoff":0,"meanPeakPrevalence":0.001140046296296296,"meanSteps":7.125,"seeds":48},{"R0":0.6,"beta":0.03981541059581217,"theory":0,"meanFinalSize":0.0017013888888888886,"semFinalSize":0.00012073290535315454,"takeoffFrac":0,"meanFinalSizeGivenTakeoff":0,"meanPeakPrevalence":0.0012442129629629628,"meanSteps":9.104166666666666,"seeds":48},{"R0":0.8,"beta":0.05425839099682417,"theory":0,"meanFinalSize":0.0028182870370370362,"semFinalSize":0.0002059062557175441,"takeoffFrac":0,"meanFinalSizeGivenTakeoff":0,"meanPeakPrevalence":0.001666666666666666,"meanSteps":11.604166666666666,"seeds":48},{"R0":1,"beta":0.06939514089790044,"theory":0,"meanFinalSize":0.0031307870370370374,"semFinalSize":0.00021803226845048065,"takeoffFrac":0,"meanFinalSizeGivenTakeoff":0,"meanPeakPrevalence":0.0017129629629629621,"meanSteps":13.895833333333334,"seeds":48},{"R0":1.2,"beta":0.08530878077130555,"theory":0.31369833104121736,"meanFinalSize":0.006082175925925926,"semFinalSize":0.0005533351402865384,"takeoffFrac":0,"meanFinalSizeGivenTakeoff":0,"meanPeakPrevalence":0.0023148148148148147,"meanSteps":19.0625,"seeds":48},{"R0":1.4,"beta":0.10209923998815162,"theory":0.5110111788305898,"meanFinalSize":0.012228009259259263,"semFinalSize":0.0015588410859645315,"takeoffFrac":0.020833333333333332,"meanFinalSizeGivenTakeoff":0.05472222222222222,"meanPeakPrevalence":0.0029224537037037027,"meanSteps":31.208333333333332,"seeds":48},{"R0":1.6,"beta":0.11988826320660662,"theory":0.6419813173416997,"meanFinalSize":0.02914930555555556,"semFinalSize":0.0034142675586934816,"takeoffFrac":0.20833333333333334,"meanFinalSizeGivenTakeoff":0.06947222222222223,"meanPeakPrevalence":0.00429976851851852,"meanSteps":54.3125,"seeds":48},{"R0":1.8,"beta":0.13882647003663295,"theory":0.7324299666367664,"meanFinalSize":0.12823495370370372,"semFinalSize":0.013798016011035443,"takeoffFrac":0.8125,"meanFinalSizeGivenTakeoff":0.15342592592592594,"meanPeakPrevalence":0.008738425925925926,"meanSteps":123.3125,"seeds":48},{"R0":2,"beta":0.1591035847462855,"theory":0.7968121300200199,"meanFinalSize":0.6079745370370371,"semFinalSize":0.028030072852826573,"takeoffFrac":0.9583333333333334,"meanFinalSizeGivenTakeoff":0.6335446859903382,"meanPeakPrevalence":0.023148148148148143,"meanSteps":270.4791666666667,"seeds":48},{"R0":2.2,"beta":0.18096374118727998,"theory":0.8437385730857956,"meanFinalSize":0.8878877314814817,"semFinalSize":0.002289250321671021,"takeoffFrac":1,"meanFinalSizeGivenTakeoff":0.8878877314814817,"meanPeakPrevalence":0.05325810185185184,"meanSteps":153.875,"seeds":48},{"R0":2.4,"beta":0.20472927123294937,"theory":0.8785958197741075,"meanFinalSize":0.9505381944444439,"semFinalSize":0.001079725459225305,"takeoffFrac":1,"meanFinalSizeGivenTakeoff":0.9505381944444439,"meanPeakPrevalence":0.06935763888888888,"meanSteps":116.35416666666667,"seeds":48},{"R0":2.6,"beta":0.23083943268654128,"theory":0.9048890949703012,"meanFinalSize":0.9755381944444447,"semFinalSize":0.0005688634594736772,"takeoffFrac":1,"meanFinalSizeGivenTakeoff":0.9755381944444447,"meanPeakPrevalence":0.08427083333333335,"meanSteps":95.5625,"seeds":48},{"R0":2.8,"beta":0.25991719550771475,"theory":0.9249746307618676,"meanFinalSize":0.9890567129629629,"semFinalSize":0.00040399484060182477,"takeoffFrac":1,"meanFinalSizeGivenTakeoff":0.9890567129629629,"meanPeakPrevalence":0.09633101851851851,"meanSteps":83.0625,"seeds":48},{"R0":3,"beta":0.2928932188134524,"theory":0.9404797907073597,"meanFinalSize":0.9950925925925923,"semFinalSize":0.00019579237748758104,"takeoffFrac":1,"meanFinalSizeGivenTakeoff":0.9950925925925923,"meanPeakPrevalence":0.10148726851851848,"meanSteps":75.875,"seeds":48},{"R0":3.2,"beta":0.331259695023578,"theory":0.9525545450251296,"meanFinalSize":0.9979224537037038,"semFinalSize":0.00009989625623282111,"takeoffFrac":1,"meanFinalSizeGivenTakeoff":0.9979224537037038,"meanPeakPrevalence":0.11606481481481484,"meanSteps":68.1875,"seeds":48},{"R0":3.4,"beta":0.37766702271152164,"theory":0.9620275189470531,"meanFinalSize":0.9994155092592595,"semFinalSize":0.00005255673693091839,"takeoffFrac":1,"meanFinalSizeGivenTakeoff":0.9994155092592595,"meanPeakPrevalence":0.12075810185185186,"meanSteps":62.1875,"seeds":48},{"R0":3.6,"beta":0.4376586748096509,"theory":0.9695058720241778,"meanFinalSize":0.9999189814814812,"semFinalSize":0.00002158857015714872,"takeoffFrac":1,"meanFinalSizeGivenTakeoff":0.9999189814814812,"meanPeakPrevalence":0.1308738425925926,"meanSteps":56.583333333333336,"seeds":48}],"latticeThreshold":1.696551724137931};
+
+// ---------- live outbreak demo ----------
+var GN = 60;
+var cv = document.getElementById('cv');
+var ctx = cv.getContext('2d');
+var spark = document.getElementById('cvSpark');
+var sctx = spark.getContext('2d');
+var sim = null, iHist = [], running = true, lastStep = 0, seedCounter = 20261116;
+
+function nearestRow(r0) {
+  var best = SWEEP.rows[0], bd = 1e9;
+  for (var i = 0; i < SWEEP.rows.length; i++) {
+    var d = Math.abs(SWEEP.rows[i].R0 - r0);
+    if (d < bd) { bd = d; best = SWEEP.rows[i]; }
+  }
+  return best;
+}
+
+function regimeText(r0) {
+  var row = nearestRow(r0);
+  if (r0 < 1) return 'Below 1: every case replaces itself less than once, in any world. Watch the spark die. (Nearest sweep point R₀ = ' + row.R0.toFixed(1) + ': measured final size ' + row.meanFinalSize.toFixed(4) + '.)';
+  if (r0 < 2) return 'Between the two thresholds: well-mixed theory promises z = ' + row.theory.toFixed(3) + ', but on the grid only ' + Math.round(row.takeoffFrac * 100) + '% of outbreaks took off and the measured final size was ' + row.meanFinalSize.toFixed(4) + '. The fire starves on its own ash.';
+  return 'Past the grid’s threshold: the wave runs. At the nearest sweep point (R₀ = ' + row.R0.toFixed(1) + ') the measured final size was ' + row.meanFinalSize.toFixed(4) + ', against theory ' + row.theory.toFixed(4) + '.';
+}
+
+function startSim() {
+  var r0 = parseFloat(document.getElementById('inR0').value);
+  document.getElementById('r0Val').textContent = r0.toFixed(2);
+  sim = SirCore.createSim(GN, { R0: r0, seed: seedCounter, wrap: false, initialInfected: 3 });
+  iHist = [sim.infected.length];
+  document.getElementById('roRegime').textContent = regimeText(r0) + '  (β = ' + sim.beta.toFixed(4) + ' per neighbour-step)';
+  drawGrid();
+  drawSpark();
+}
+
+function drawGrid() {
+  var cell = cv.width / GN;
+  ctx.fillStyle = '#0f1017'; ctx.fillRect(0, 0, cv.width, cv.height);
+  for (var y = 0; y < GN; y++) for (var x = 0; x < GN; x++) {
+    var s = sim.grid[y * GN + x];
+    if (s === 0) ctx.fillStyle = '#22263c';
+    else if (s === 1) ctx.fillStyle = '#f7768e';
+    else ctx.fillStyle = '#4a5170';
+    ctx.fillRect(x * cell + 0.5, y * cell + 0.5, cell - 1, cell - 1);
+  }
+}
+
+function drawSpark() {
+  sctx.fillStyle = '#0f1017'; sctx.fillRect(0, 0, spark.width, spark.height);
+  if (iHist.length < 2) return;
+  var peak = Math.max.apply(null, iHist);
+  var maxV = Math.max(peak, 10);
+  sctx.strokeStyle = '#f7768e'; sctx.lineWidth = 1.5; sctx.beginPath();
+  for (var i = 0; i < iHist.length; i++) {
+    var px = i / Math.max(1, iHist.length - 1) * (spark.width - 8) + 4;
+    var py = spark.height - 6 - (iHist[i] / maxV) * (spark.height - 14);
+    if (i === 0) sctx.moveTo(px, py); else sctx.lineTo(px, py);
+  }
+  sctx.stroke();
+}
+
+function stats() {
+  var c = SirCore.counts(sim);
+  var total = GN * GN;
+  var el = document.getElementById('roStats');
+  if (sim.infected.length === 0) {
+    el.textContent = 'outbreak over at step ' + sim.stepCount + ' — final size ' + (sim.everInfected / total).toFixed(4) + ' (' + sim.everInfected + ' of ' + total + ' ever infected) · peak prevalence ' + (sim.peakI / total).toFixed(4) + ' at step ' + sim.peakStep;
+  } else {
+    el.textContent = 'step ' + sim.stepCount + ' · S ' + c.S + ' · I ' + c.I + ' · R ' + c.R + ' · peak I ' + sim.peakI + ' (step ' + sim.peakStep + ')';
+  }
+}
+
+function frame(ts) {
+  if (running && sim && sim.infected.length > 0 && ts - lastStep > 90) {
+    lastStep = ts;
+    SirCore.stepSim(sim);
+    iHist.push(sim.infected.length);
+    drawGrid(); drawSpark(); stats();
+  }
+  requestAnimationFrame(frame);
+}
+
+document.getElementById('inR0').addEventListener('input', function () { seedCounter++; startSim(); stats(); });
+document.getElementById('btnNew').addEventListener('click', function () { seedCounter = (seedCounter * 1103515245 + 12345) % 2147483648; startSim(); stats(); });
+document.getElementById('btnPause').addEventListener('click', function (e) { running = !running; e.target.textContent = running ? 'pause' : 'play'; });
+
+// ---------- measured chart ----------
+function drawChart() {
+  var c2 = document.getElementById('cvChart');
+  var g = c2.getContext('2d');
+  var W = c2.width, H = c2.height;
+  var L = 46, R = 16, T = 18, B = 38;
+  var x0 = 0, x1 = 3.8;
+  var X = function (r) { return L + (r - x0) / (x1 - x0) * (W - L - R); };
+  var Y = function (v) { return H - B - v * (H - T - B); };
+  g.fillStyle = '#0f1017'; g.fillRect(0, 0, W, H);
+  g.strokeStyle = '#2a2d3e'; g.fillStyle = '#787c99'; g.font = '11px monospace'; g.lineWidth = 1;
+  for (var v = 0; v <= 1.001; v += 0.25) {
+    g.beginPath(); g.moveTo(L, Y(v)); g.lineTo(W - R, Y(v)); g.stroke();
+    g.fillText(v.toFixed(2), 8, Y(v) + 4);
+  }
+  for (var r = 0; r <= 3.51; r += 0.5) {
+    g.fillText(r.toFixed(1), X(r) - 8, H - 22);
+  }
+  g.fillText('R₀', W / 2 - 8, H - 6);
+  g.fillText('final size (fraction ever infected)', L, 12);
+  // threshold lines
+  g.setLineDash([4, 4]);
+  g.strokeStyle = '#7aa2f7'; g.beginPath(); g.moveTo(X(1), T); g.lineTo(X(1), H - B); g.stroke();
+  g.strokeStyle = '#e0af68'; g.beginPath(); g.moveTo(X(2), T); g.lineTo(X(2), H - B); g.stroke();
+  g.setLineDash([]);
+  g.fillStyle = '#7aa2f7'; g.fillText('1', X(1) - 3, T + 12);
+  g.fillStyle = '#e0af68'; g.fillText('2', X(2) - 3, T + 12);
+  // theory curve
+  g.strokeStyle = '#9aa5ce'; g.lineWidth = 1.5; g.setLineDash([5, 4]); g.beginPath();
+  for (var rt = 0; rt <= 3.8001; rt += 0.02) {
+    var zt = SirCore.finalSizeTheory(rt);
+    var px = X(rt), py = Y(zt);
+    if (rt === 0) g.moveTo(px, py); else g.lineTo(px, py);
+  }
+  g.stroke(); g.setLineDash([]);
+  // measured: segments, whiskers, points
+  var rows = SWEEP.rows;
+  g.strokeStyle = '#f7768e'; g.lineWidth = 1.5; g.beginPath();
+  rows.forEach(function (row, i) {
+    var px = X(row.R0), py = Y(row.meanFinalSize);
+    if (i === 0) g.moveTo(px, py); else g.lineTo(px, py);
+  });
+  g.stroke();
+  g.lineWidth = 1;
+  rows.forEach(function (row) {
+    var px = X(row.R0);
+    g.beginPath(); g.moveTo(px, Y(row.meanFinalSize - row.semFinalSize)); g.lineTo(px, Y(row.meanFinalSize + row.semFinalSize)); g.stroke();
+    g.fillStyle = '#f7768e';
+    g.beginPath(); g.arc(px, Y(row.meanFinalSize), 3, 0, 6.2832); g.fill();
+  });
+}
+
+startSim();
+stats();
+drawChart();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
