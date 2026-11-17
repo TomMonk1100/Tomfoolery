@@ -1,0 +1,1049 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>grand unified theory — 2026-11-16</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .master { border: 1.5px solid rgba(224,175,104,.65); border-radius: 12px; background: rgba(224,175,104,.07); padding: 18px 22px 14px; margin: 18px 0 8px; }
+  .master label { font-size: 13px; font-weight: 700; letter-spacing: .06em; }
+  .master input[type=range] { width: 100%; margin: 12px 0 4px; accent-color: #e0af68; }
+  .ticks { display: flex; justify-content: space-between; color: #787c99; font-size: 12px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 16px; margin-top: 16px; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; }
+  .card h3 { margin: 0 0 2px; font-size: 15px; }
+  .card h3 a { color: inherit; }
+  .card .cap { color: #787c99; font-size: 12px; margin: 0 0 10px; line-height: 1.5; }
+  .card canvas { width: 100%; height: auto; display: block; border: 1px solid #2a2d3e; border-radius: 6px; background: #0f1017; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 12px; }
+  .ctl input[type=range] { flex: 1; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 4px 10px; font-family: monospace; font-size: 12px; cursor: pointer; }
+  .ctl button.on { border-color: #e0af68; color: #e0af68; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; width: 100%; }
+  td, th { border: 1px solid #2a2d3e; padding: 7px 11px; text-align: left; vertical-align: top; line-height: 1.5; }
+  th { color: #787c99; font-weight: 400; }
+  td a { color: #7aa2f7; }
+  .chk { display: inline-flex; align-items: center; gap: 6px; margin: 0 14px 8px 0; font-size: 13px; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  .inspect { color: #9ece6a; font-size: 13px; margin-top: 20px; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Everything I make has a magic knob. Turn it a little and nothing happens. Turn it to one special spot and — click — the whole thing changes. Lights blink as one, water finds a way through, the walker stops coming home. This page says all my projects are really that one idea.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">Piece by piece I kept building systems that sit quiet, then suddenly change character at one sharp value. This page is me stepping back to ask whether those were ever separate interests — and finding they were one interest wearing many costumes. The moment order switches on.</p>
+</div>
+
+<div class="wrap">
+  <h1>grand unified theory</h1>
+  <p class="sub">2026-11-16 · the Allspark on one axis · every system below is live, and every number is measured</p>
+
+  <div class="master">
+    <label for="master">THE ONE DIAL — distance from the critical point</label>
+    <input type="range" id="master" min="-100" max="100" step="1" value="-50">
+    <div class="ticks"><span>−1 · before the flip</span><span>0 · the critical point</span><span>+1 · after the flip</span></div>
+    <div class="ro" id="ro-master">distance from the critical point: −0.50</div>
+    <p style="margin:6px 0 2px;font-size:13px;color:#a9b1d6;">Drag it through 0 and every linked panel flips together — that simultaneity is the theory. Each panel also has its own dial; touching one unlinks it, and its “linked” box can re-link it.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3><span class="dot" style="background:#9ece6a"></span><a href="fireflies.html">Fireflies</a></h3>
+      <p class="cap">Dial: coupling K. Ninety oscillators, each pulling on every other. Below K<sub>c</sub> ≈ 1.42 they blink alone; above it, one pulse. r is the live order parameter.</p>
+      <canvas id="cv-fireflies" width="520" height="300"></canvas>
+      <div class="ctl"><span>K</span><input type="range" id="in-fireflies" min="0" max="3" step="0.01"><label><input type="checkbox" id="link-fireflies" checked> linked</label></div>
+      <div class="ro" id="ro-fireflies"></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:#7aa2f7"></span><a href="perc.html">Percolation</a></h3>
+      <p class="cap">Dial: plugged fraction p. Sites fill a 48×48 lattice; the bright cluster is the largest one. It spans top to bottom only past the flip.</p>
+      <canvas id="cv-perc" width="288" height="288"></canvas>
+      <div class="ctl"><span>p</span><input type="range" id="in-perc" min="0.4" max="0.75" step="0.001"><label><input type="checkbox" id="link-perc" checked> linked</label><button id="btn-perc">new lattice</button></div>
+      <div class="ro" id="ro-perc"></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:#f7768e"></span>Ising model</h3>
+      <p class="cap">Dial: temperature T. A 36×36 magnet of tiny spins, cooling through T<sub>c</sub> ≈ 2.269. Hot: noise. Cold: the spins agree — magnetisation appears.</p>
+      <canvas id="cv-ising" width="288" height="288"></canvas>
+      <div class="ctl"><span>T</span><input type="range" id="in-ising" min="1" max="3.6" step="0.01"><label><input type="checkbox" id="link-ising" checked> linked</label></div>
+      <div class="ro" id="ro-ising"></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:#bb9af7"></span>Logistic map</h3>
+      <p class="cap">Dial: growth rate r. The strip is the bifurcation diagram; the white line is your r. Past r<sub>∞</sub> ≈ 3.5699 the doublings run out and chaos begins.</p>
+      <canvas id="cv-logistic" width="520" height="200"></canvas>
+      <div class="ctl"><span>r</span><input type="range" id="in-logistic" min="3.14" max="4" step="0.001"><label><input type="checkbox" id="link-logistic" checked> linked</label></div>
+      <div class="ro" id="ro-logistic"></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:#7dcfff"></span><a href="polya-walks.html">Pólya walks</a></h3>
+      <p class="cap">Dial: dimension — a discrete dial, so the master moves it in thirds. All three worlds run at once; the outlined one is where the dial points. Gold means a walker made it home.</p>
+      <canvas id="cv-polya" width="520" height="300"></canvas>
+      <div class="ctl"><span>dimension</span><button id="btn-dim-1">1D</button><button id="btn-dim-2">2D</button><button id="btn-dim-3">3D</button><label><input type="checkbox" id="link-polya" checked> linked</label></div>
+      <div class="ro" id="ro-polya"></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:#e0af68"></span><a href="langtons-ant.html">Langton's ant</a></h3>
+      <p class="cap">Dial: time. The master scrubs the run from step 0 to 12,000; the measured flip — the colour sequence locking into the period-104 highway — sits at step 9,977. Press play and it runs there on its own.</p>
+      <canvas id="cv-ant" width="520" height="340"></canvas>
+      <div class="ctl"><span>step</span><input type="range" id="in-ant" min="0" max="12000" step="10"><label><input type="checkbox" id="link-ant" checked> linked</label><button id="btn-ant">play</button></div>
+      <div class="ro" id="ro-ant"></div>
+    </div>
+  </div>
+
+  <h2>One dial, one flip</h2>
+  <p>Every piece in the Allspark is the same machine wearing different clothes — a simple rule, a dial, and a flip. Turn the dial slowly and for a long while nothing much changes. Then, at one sharp value, the system’s whole character turns over. Scattered fireflies lock into one pulse. Plugged holes suddenly let the water through. A wandering walker stops being guaranteed to come home. An ant’s mess becomes a road. Physicists call the flip a phase transition, and the dial’s special value a critical point. My grand unified theory is not a new equation. It is the observation, measured piece by piece across my own work, that I have been building the same object all along — the moment order switches on. The deepest hint that this unity is real, and not a metaphor, comes from the logistic map. The rate at which its period-doublings accumulate, Feigenbaum’s constant, is the same number for every system in its class. Different rules, same constant. Nature reuses its thresholds.</p>
+
+  <h2>The table of flips</h2>
+  <table>
+    <tr><th>System</th><th>Dial</th><th>The flip, measured</th></tr>
+    <tr><td><span class="dot" style="background:#e0af68"></span><a href="langtons-ant.html">Langton's ant</a></td><td>time</td><td>Chaos becomes the period-104 highway at step <b>9,977</b> — the colour sequence locks there (measured, sweep-ant.json; no divisor of 104 holds, so the period is minimal). The translated pattern repeats geometrically from step 10,525, shifting (−2,−2) per period.</td></tr>
+    <tr><td><span class="dot" style="background:#7aa2f7"></span><a href="perc.html">Percolation</a></td><td>plugged fraction p</td><td>A spanning path appears at <b>p ≈ 0.5927</b> — p<sub>c∞</sub> = 0.592761 by finite-size scaling over 43,500 lattices (literature 0.592746). On a 48×48 lattice the crossing sits at p = 0.60; finite size moves it, honestly.</td></tr>
+    <tr><td><span class="dot" style="background:#9ece6a"></span><a href="fireflies.html">Fireflies</a></td><td>coupling K</td><td>Scattered blinking locks into one pulse — the order parameter r crosses 0.5 at <b>K ≈ 1.42</b> (measured for this page: N = 120, global coupling, two seeds, tail-averaged).</td></tr>
+    <tr><td><span class="dot" style="background:#7dcfff"></span><a href="polya-walks.html">Pólya walks</a></td><td>dimension</td><td>Return is certain in 1D and 2D; in 3D the limit is <b>0.340537</b>. Measured ever-return over 20,000 walks at horizon 4096: 0.9874 (1D), 0.7135 (2D — still climbing toward 1), 0.3326 (3D).</td></tr>
+    <tr><td><span class="dot" style="background:#f7768e"></span>Ising model</td><td>temperature T</td><td>Magnetisation appears below <b>T<sub>c</sub> ≈ 2.269</b> — Onsager's exact value for the square lattice. The measured 20×20 curve rounds the drop around it: |m| = 0.70 at T<sub>c</sub> itself, 0.99 at T = 1, 0.09 at T = 4.</td></tr>
+    <tr><td><span class="dot" style="background:#bb9af7"></span>Logistic map</td><td>growth rate r</td><td>Period-doublings accumulate at <b>r ≈ 3.5699</b> and chaos begins. Measured bifurcations: 3.4495, 3.5441, 3.5644, 3.5688, with interval ratios 4.657 and 4.663 closing on Feigenbaum's δ ≈ 4.669; extrapolating the ladder gives r<sub>∞</sub> ≈ 3.56995.</td></tr>
+  </table>
+
+  <h2>One axis, four measured curves</h2>
+  <p style="font-size:13px;">The evidence under the demos. Each curve was measured fresh for this page through the system's own core — the points are the measurements, joined by straight segments, never smoothed. The horizontal axis is distance from that system's critical point, in the per-system scale stated below; the critical point itself is 0 for all of them, which is the whole claim in one picture.</p>
+  <div>
+    <label class="chk"><input type="checkbox" id="chart-percolation" checked><span class="dot" style="background:#7aa2f7"></span>Percolation</label>
+    <label class="chk"><input type="checkbox" id="chart-fireflies" checked><span class="dot" style="background:#9ece6a"></span>Fireflies</label>
+    <label class="chk"><input type="checkbox" id="chart-ising" checked><span class="dot" style="background:#f7768e"></span>Ising</label>
+    <label class="chk"><input type="checkbox" id="chart-logistic" checked><span class="dot" style="background:#bb9af7"></span>Logistic</label>
+  </div>
+  <canvas id="cv-chart" width="1040" height="440" style="width:100%;height:auto;border:1px solid #2a2d3e;border-radius:8px;background:#0f1017;"></canvas>
+  <ul class="notes">
+<li><span class="dot" style="background:#7aa2f7"></span><b>Percolation</b> — dial: plugged fraction p; p_c ≈ 0.5927 (measured p_c∞ = 0.592761, findings-perc-nu.md); L=48 lattice, 200 lattices per point.</li>
+<li><span class="dot" style="background:#9ece6a"></span><b>Fireflies (Kuramoto)</b> — dial: coupling K; K_c ≈ 1.419 (measured here: r crosses 0.5; N=120, global coupling, 2 seeds); N=120 oscillators, global coupling, seeds 11 & 23, 60 s runs, tail-averaged.</li>
+<li><span class="dot" style="background:#f7768e"></span><b>Ising model</b> — dial: temperature T; T_c ≈ 2.269 (Onsager; the 20×20 curve rounds the drop around it); 20×20 lattice, seeds 11 & 23, 2000 equilibration + 2000 sample sweeps.</li>
+<li><span class="dot" style="background:#bb9af7"></span><b>Logistic map</b> — dial: growth rate r; r∞ ≈ 3.5699 (accumulation of period-doublings; ladder extrapolation below); x0 = 0.37, transient 10000, 1024 kept iterates, cluster tolerance 1e-6; periodic windows inside the chaotic region are real and show as dips.</li>
+  </ul>
+
+  <h2>How this page works — and what it does not claim</h2>
+  <ul class="notes">
+    <li>The master dial is a <b>normalised distance</b>: each system's critical value sits at 0, and ±1 is one system-specific scale away (percolation ±0.09 in p; fireflies ±K<sub>c</sub> in K; Ising ∓1.0 in T, since its ordered side is cold; logistic ±0.43 in r; the ant 0 to 12,000 steps; Pólya dimension in thirds). Dragging it sets every linked dial to the same relative position — before, at, or after its own flip.</li>
+    <li>The six panels are <b>live illustrations</b> at small sizes — 90 fireflies, a 48×48 percolation lattice, a 36×36 Ising lattice, walkers on a 600-step demo horizon, the ant run for real. They show the mechanism. The <b>measurements</b> are the table above and the chart: fresh sweeps through the same cores, with sizes and repetitions stated per curve, plus the earlier dedicated measurements they cite.</li>
+    <li>Finite size rounds every flip. The 48×48 percolation crossing (p = 0.60) sits above the infinite-lattice 0.5927; the 20×20 Ising drop is rounded around 2.269 rather than sharp; Pólya's 2D fraction is still climbing at horizon 4096 — its limit is 1, reached slowly; the logistic curve's dips inside the chaotic region are real periodic windows, not errors; the ant's colour sequence locks at step 9,977 while its translated pattern repeats from step 10,525.</li>
+    <li>The normalisation is a display convention, not a claim that the dials are secretly one physical quantity. The claim is narrower, and it is the thesis above: each of these systems has a dial, a critical value, and a flip — and near the flip, they rhyme.</li>
+  </ul>
+
+  <h2>What would prove me wrong</h2>
+  <p>A unification earns its keep by risking something. If these flips are truly one phenomenon, they should share fingerprints near the critical point — fluctuations that grow, recovery that slows, structure at every scale. Some of that is already proven for whole families of systems; whether it holds across my menagerie is measurable, and measuring it is the next work. If the fingerprints differ, the theory shrinks to a metaphor, and I will say so on this page.</p>
+
+  <p class="inspect">Inspect: drag the master dial slowly from −1 to +1 and watch the readouts cross together — then uncheck a panel's “linked” box and break the synchrony yourself.</p>
+</div>
+
+<script type="application/json" id="gu-data">{"meta":{"percolation":{"L":48,"reps":200,"pcRef":0.5927},"fireflies":{"Kc":1.419},"ising":{"Tc":2.269,"N":20},"logistic":{"rInf":3.5699,"rInfEst":3.56995},"elapsedSec":7},"curves":{"percolation":{"system":"Percolation","dialName":"plugged fraction p","orderName":"spanning fraction","critical":0.5927,"criticalLabel":"p_c ≈ 0.5927 (measured p_c∞ = 0.592761, findings-perc-nu.md)","sizeNote":"L=48 lattice, 200 lattices per point","crossingMeasured":0.6,"points":[{"dial":0.5,"order":0,"x":-1.03},{"dial":0.51,"order":0,"x":-0.9189},{"dial":0.52,"order":0.02,"x":-0.8078},{"dial":0.53,"order":0.005,"x":-0.6967},{"dial":0.54,"order":0.045,"x":-0.5856},{"dial":0.55,"order":0.055,"x":-0.4744},{"dial":0.56,"order":0.11,"x":-0.3633},{"dial":0.57,"order":0.21,"x":-0.2522},{"dial":0.58,"order":0.335,"x":-0.1411},{"dial":0.59,"order":0.42,"x":-0.03},{"dial":0.6,"order":0.615,"x":0.0811},{"dial":0.61,"order":0.705,"x":0.1922},{"dial":0.62,"order":0.815,"x":0.3033},{"dial":0.63,"order":0.905,"x":0.4144},{"dial":0.64,"order":0.975,"x":0.5256},{"dial":0.65,"order":0.98,"x":0.6367},{"dial":0.66,"order":0.99,"x":0.7478},{"dial":0.67,"order":0.995,"x":0.8589},{"dial":0.68,"order":1,"x":0.97}]},"fireflies":{"system":"Fireflies (Kuramoto)","dialName":"coupling K","orderName":"order parameter r","critical":1.419,"criticalLabel":"K_c ≈ 1.419 (measured here: r crosses 0.5; N=120, global coupling, 2 seeds)","sizeNote":"N=120 oscillators, global coupling, seeds 11 & 23, 60 s runs, tail-averaged","points":[{"dial":0,"order":0.0781,"x":-1},{"dial":0.1,"order":0.0823,"x":-0.9295},{"dial":0.2,"order":0.0874,"x":-0.8591},{"dial":0.3,"order":0.0937,"x":-0.7886},{"dial":0.4,"order":0.1002,"x":-0.7181},{"dial":0.5,"order":0.1067,"x":-0.6476},{"dial":0.6,"order":0.1182,"x":-0.5772},{"dial":0.7,"order":0.1294,"x":-0.5067},{"dial":0.8,"order":0.0968,"x":-0.4362},{"dial":0.9,"order":0.127,"x":-0.3658},{"dial":1,"order":0.168,"x":-0.2953},{"dial":1.1,"order":0.2736,"x":-0.2248},{"dial":1.2,"order":0.3085,"x":-0.1543},{"dial":1.3,"order":0.3776,"x":-0.0839},{"dial":1.4,"order":0.4857,"x":-0.0134},{"dial":1.5,"order":0.5614,"x":0.0571},{"dial":1.6,"order":0.715,"x":0.1276},{"dial":1.7,"order":0.7745,"x":0.198},{"dial":1.8,"order":0.8258,"x":0.2685},{"dial":1.9,"order":0.851,"x":0.339},{"dial":2,"order":0.8783,"x":0.4094},{"dial":2.1,"order":0.8971,"x":0.4799},{"dial":2.2,"order":0.9096,"x":0.5504},{"dial":2.3,"order":0.9202,"x":0.6209},{"dial":2.4,"order":0.9306,"x":0.6913},{"dial":2.5,"order":0.9382,"x":0.7618},{"dial":2.6,"order":0.9443,"x":0.8323}]},"ising":{"system":"Ising model","dialName":"temperature T","orderName":"magnetisation |m|","critical":2.269,"criticalLabel":"T_c ≈ 2.269 (Onsager; the 20×20 curve rounds the drop around it)","sizeNote":"20×20 lattice, seeds 11 & 23, 2000 equilibration + 2000 sample sweeps","points":[{"dial":1,"order":0.9993,"x":1.269},{"dial":1.5,"order":0.9864,"x":0.769},{"dial":1.8,"order":0.9587,"x":0.469},{"dial":2,"order":0.9107,"x":0.269},{"dial":2.1,"order":0.8667,"x":0.169},{"dial":2.2,"order":0.766,"x":0.069},{"dial":2.269,"order":0.7016,"x":0},{"dial":2.35,"order":0.5072,"x":-0.081},{"dial":2.5,"order":0.3356,"x":-0.231},{"dial":2.7,"order":0.1995,"x":-0.431},{"dial":3,"order":0.1454,"x":-0.731},{"dial":3.5,"order":0.1012,"x":-1.231},{"dial":4,"order":0.0857,"x":-1.731}]},"logistic":{"system":"Logistic map","dialName":"growth rate r","orderName":"normalised period, log₂(period)/6 (1 = chaos)","critical":3.5699,"criticalLabel":"r∞ ≈ 3.5699 (accumulation of period-doublings; ladder extrapolation below)","sizeNote":"x0 = 0.37, transient 10000, 1024 kept iterates, cluster tolerance 1e-6; periodic windows inside the chaotic region are real and show as dips","ladder":{"b4":3.4494775390625003,"b8":3.5440869140624995,"b16":3.5644023437500003,"b32":3.5687587890625,"ratio1":4.657,"ratio2":4.6633,"delta":4.669,"rInfEst":3.56995},"points":[{"dial":3.3,"order":0.1667,"period":2,"x":-0.6277},{"dial":3.31,"order":0.1667,"period":2,"x":-0.6044},{"dial":3.32,"order":0.1667,"period":2,"x":-0.5812},{"dial":3.33,"order":0.1667,"period":2,"x":-0.5579},{"dial":3.34,"order":0.1667,"period":2,"x":-0.5347},{"dial":3.35,"order":0.1667,"period":2,"x":-0.5114},{"dial":3.36,"order":0.1667,"period":2,"x":-0.4881},{"dial":3.37,"order":0.1667,"period":2,"x":-0.4649},{"dial":3.38,"order":0.1667,"period":2,"x":-0.4416},{"dial":3.39,"order":0.1667,"period":2,"x":-0.4184},{"dial":3.4,"order":0.1667,"period":2,"x":-0.3951},{"dial":3.41,"order":0.1667,"period":2,"x":-0.3719},{"dial":3.42,"order":0.1667,"period":2,"x":-0.3486},{"dial":3.43,"order":0.1667,"period":2,"x":-0.3253},{"dial":3.44,"order":0.1667,"period":2,"x":-0.3021},{"dial":3.45,"order":0.3333,"period":4,"x":-0.2788},{"dial":3.46,"order":0.3333,"period":4,"x":-0.2556},{"dial":3.47,"order":0.3333,"period":4,"x":-0.2323},{"dial":3.48,"order":0.3333,"period":4,"x":-0.2091},{"dial":3.49,"order":0.3333,"period":4,"x":-0.1858},{"dial":3.5,"order":0.3333,"period":4,"x":-0.1626},{"dial":3.51,"order":0.3333,"period":4,"x":-0.1393},{"dial":3.52,"order":0.3333,"period":4,"x":-0.116},{"dial":3.53,"order":0.3333,"period":4,"x":-0.0928},{"dial":3.54,"order":0.3333,"period":4,"x":-0.0695},{"dial":3.55,"order":0.5,"period":8,"x":-0.0463},{"dial":3.56,"order":0.5,"period":8,"x":-0.023},{"dial":3.57,"order":1,"period":1012,"x":0.0002},{"dial":3.6,"order":1,"period":998,"x":0.07},{"dial":3.65,"order":1,"period":1013,"x":0.1863},{"dial":3.7,"order":1,"period":1024,"x":0.3026},{"dial":3.8,"order":1,"period":1024,"x":0.5351},{"dial":3.9,"order":1,"period":1022,"x":0.7677},{"dial":3.99,"order":1,"period":1018,"x":0.977}]}}}</script>
+<script>
+var AntCore = (() => {
+// Langton's ant — a two-state turmite on a square grid.
+// Rules (stated once, behaviour emerges):
+//   on a white cell: turn right, flip cell to black, move forward one cell
+//   on a black cell: turn left,  flip cell to white, move forward one cell
+// Directions: 0=N (0,1), 1=E (1,0), 2=S (0,-1), 3=W (-1,0).
+// Black cells are stored as a Set of "x,y" keys; absence means white.
+
+const DIRS = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+const DIR_NAMES = ['N', 'E', 'S', 'W'];
+
+function createAnt() {
+  return { x: 0, y: 0, dir: 0, black: new Set(), steps: 0 };
+}
+
+function key(x, y) { return x + ',' + y; }
+
+// One step. Returns the colour encountered before the flip (0 white, 1 black).
+function step(ant) {
+  const k = key(ant.x, ant.y);
+  const colour = ant.black.has(k) ? 1 : 0;
+  if (colour === 0) {
+    ant.dir = (ant.dir + 1) % 4; // right
+    ant.black.add(k);
+  } else {
+    ant.dir = (ant.dir + 3) % 4; // left
+    ant.black.delete(k);
+  }
+  const [dx, dy] = DIRS[ant.dir];
+  ant.x += dx; ant.y += dy; ant.steps++;
+  return colour;
+}
+
+// Run n steps, returning the encountered-colour array.
+function run(ant, n) {
+  const colours = new Array(n);
+  for (let i = 0; i < n; i++) colours[i] = step(ant);
+  return colours;
+}
+
+// Black-cell set relative to the ant, plus direction — the translated
+// configuration. Two configurations equal under this view differ only
+// by a translation of the whole picture.
+function relativeConfig(ant) {
+  const rel = [];
+  for (const k of ant.black) {
+    const [bx, by] = k.split(',').map(Number);
+    rel.push((bx - ant.x) + ',' + (by - ant.y));
+  }
+  rel.sort();
+  return { dir: ant.dir, cells: rel };
+}
+
+function configsEqual(a, b) {
+  if (a.dir !== b.dir || a.cells.length !== b.cells.length) return false;
+  for (let i = 0; i < a.cells.length; i++) if (a.cells[i] !== b.cells[i]) return false;
+  return true;
+}
+
+return { createAnt, step, run };
+})();
+var PercCore = (() => {
+// perc-core.mjs — site percolation on a square lattice, pure logic, no DOM.
+// A site is occupied with probability p; clusters are 4-neighbor connected
+// occupied sites. A lattice percolates when one cluster touches both the
+// top and bottom rows. Rules stated once; the threshold emerges.
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Generate an N x N lattice: Uint8Array, 1 = occupied, row-major (y * N + x).
+function generate(N, p, rng) {
+  const grid = new Uint8Array(N * N);
+  for (let i = 0; i < N * N; i++) grid[i] = rng() < p ? 1 : 0;
+  return grid;
+}
+
+// Label clusters by BFS. Returns { spanning, largest, spanningCells }:
+// spanning is true when some cluster touches row 0 and row N-1;
+// largest is the largest cluster size; spanningCells is a Set of cell
+// indices of the largest spanning cluster (empty when not spanning).
+function analyze(grid, N) {
+  const seen = new Uint8Array(N * N);
+  let largest = 0;
+  let spanning = false;
+  let spanningCells = new Set();
+  const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  for (let start = 0; start < N * N; start++) {
+    if (!grid[start] || seen[start]) continue;
+    const cells = [start];
+    seen[start] = 1;
+    let top = false, bottom = false;
+    for (let q = 0; q < cells.length; q++) {
+      const c = cells[q];
+      const x = c % N, y = Math.floor(c / N);
+      if (y === 0) top = true;
+      if (y === N - 1) bottom = true;
+      for (const [dx, dy] of dirs) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || nx >= N || ny < 0 || ny >= N) continue;
+        const ni = ny * N + nx;
+        if (grid[ni] && !seen[ni]) { seen[ni] = 1; cells.push(ni); }
+      }
+    }
+    if (cells.length > largest) largest = cells.length;
+    if (top && bottom) {
+      spanning = true;
+      if (cells.length > spanningCells.size) spanningCells = new Set(cells);
+    }
+  }
+  return { spanning, largest, spanningCells };
+}
+
+// ASCII render of a lattice: '#' occupied, '.' empty, '@' spanning cluster.
+function renderASCII(grid, N, spanningCells) {
+  const lines = [];
+  for (let y = 0; y < N; y++) {
+    let row = "";
+    for (let x = 0; x < N; x++) {
+      const i = y * N + x;
+      row += spanningCells && spanningCells.has(i) ? "@" : (grid[i] ? "#" : ".");
+    }
+    lines.push(row);
+  }
+  return lines.join("\n");
+}
+
+// Linear-interpolate the p at which frac crosses level, given sorted
+// p values and their spanning fractions. Returns null if never crossed.
+function crossingP(ps, fracs, level) {
+  for (let i = 1; i < ps.length; i++) {
+    if (fracs[i - 1] < level && fracs[i] >= level) {
+      const f0 = fracs[i - 1], f1 = fracs[i];
+      if (f1 === f0) return ps[i];
+      return ps[i - 1] + (level - f0) / (f1 - f0) * (ps[i] - ps[i - 1]);
+    }
+  }
+  if (fracs[0] >= level) return ps[0];
+  return null;
+}
+
+return { generate, analyze, mulberry32 };
+})();
+var FirefliesCore = (() => {
+// fireflies-core.mjs — pure simulation core, no DOM, no window.
+// Kuramoto-style phase-coupled oscillators ("fireflies").
+// One TUNE object; seeded RNG (mulberry32) so runs are reproducible.
+// Modes: "global" (mean-field coupling) and "local" (radius neighbors).
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function gaussian(rng) {
+  // Box-Muller, mean 0, sd 1.
+  let u = 0, v = 0;
+  while (u === 0) u = rng();
+  while (v === 0) v = rng();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+const TUNE = {
+  N: 120,            // firefly count
+  DT: 0.02,          // sim seconds per step
+  FREQ_MEAN: 2 * Math.PI, // mean natural frequency, rad/s (1 flash/s)
+  FREQ_SD: 0.12 * 2 * Math.PI, // spread of natural frequencies
+  RADIUS: 0.25,      // local-mode neighbor radius (unit square)
+  TWO_PI: 2 * Math.PI,
+};
+
+class Fireflies {
+  constructor(opts = {}) {
+    const t = TUNE;
+    this.n = opts.n ?? t.N;
+    this.dt = opts.dt ?? t.DT;
+    this.k = opts.k ?? 0.5;
+    this.mode = opts.mode ?? 'global';
+    this.radius = opts.radius ?? t.RADIUS;
+    const rng = mulberry32(opts.seed ?? 1234);
+    const sd = opts.freqSd ?? t.FREQ_SD;
+    this.phase = new Float64Array(this.n);
+    this.freq = new Float64Array(this.n);
+    this.x = new Float64Array(this.n);
+    this.y = new Float64Array(this.n);
+    this.flashed = new Array(this.n).fill(false);
+    this.flashCount = new Array(this.n).fill(0);
+    this.time = 0;
+    for (let i = 0; i < this.n; i++) {
+      this.phase[i] = rng() * t.TWO_PI;
+      this.freq[i] = t.FREQ_MEAN + gaussian(rng) * sd;
+      this.x[i] = rng();
+      this.y[i] = rng();
+    }
+  }
+
+  orderParameter() {
+    let re = 0, im = 0;
+    for (let i = 0; i < this.n; i++) {
+      re += Math.cos(this.phase[i]);
+      im += Math.sin(this.phase[i]);
+    }
+    re /= this.n; im /= this.n;
+    return Math.hypot(re, im);
+  }
+
+  meanPhase() {
+    let re = 0, im = 0;
+    for (let i = 0; i < this.n; i++) {
+      re += Math.cos(this.phase[i]);
+      im += Math.sin(this.phase[i]);
+    }
+    return Math.atan2(im, re);
+  }
+
+  step() {
+    const { TWO_PI } = TUNE;
+    const n = this.n;
+    this.flashed.fill(false);
+    if (this.mode === 'global') {
+      const r = this.orderParameter();
+      const psi = this.meanPhase();
+      for (let i = 0; i < n; i++) {
+        const d = (this.freq[i] + this.k * r * Math.sin(psi - this.phase[i])) * this.dt;
+        const next = this.phase[i] + d;
+        if (next >= TWO_PI) { this.flashed[i] = true; this.flashCount[i]++; }
+        this.phase[i] = next % TWO_PI;
+      }
+    } else {
+      // Local: each firefly couples to neighbors within radius.
+      const r2 = this.radius * this.radius;
+      for (let i = 0; i < n; i++) {
+        let re = 0, im = 0, cnt = 0;
+        for (let j = 0; j < n; j++) {
+          if (j === i) continue;
+          const dx = this.x[i] - this.x[j];
+          const dy = this.y[i] - this.y[j];
+          if (dx * dx + dy * dy <= r2) {
+            re += Math.cos(this.phase[j]);
+            im += Math.sin(this.phase[j]);
+            cnt++;
+          }
+        }
+        let pull = 0;
+        if (cnt > 0) {
+          const lr = Math.hypot(re, im) / cnt;
+          const lpsi = Math.atan2(im, re);
+          pull = this.k * lr * Math.sin(lpsi - this.phase[i]);
+        }
+        const next = this.phase[i] + (this.freq[i] + pull) * this.dt;
+        if (next >= TWO_PI) { this.flashed[i] = true; this.flashCount[i]++; }
+        this.phase[i] = next % TWO_PI;
+      }
+    }
+    this.time += this.dt;
+  }
+
+  // Brightness of firefly i: 1 at flash, decaying with phase since.
+  brightness(i) {
+    // Phase fraction since last wrap is not tracked; approximate from
+    // distance to the flash point: bright just before 2*PI.
+    const p = this.phase[i] / TUNE.TWO_PI;
+    return this.flashed[i] ? 1 : Math.max(0, (p - 0.85) / 0.15) * 0.6;
+  }
+}
+
+return { Fireflies };
+})();
+var IsingCore = (() => {
+// ising-core.mjs — 2D Ising model, Metropolis Monte Carlo.
+//
+// The model: spins s = ±1 on an N×N square lattice with periodic
+// boundaries, coupling J = 1, no external field. Energy counts each
+// nearest-neighbour bond once (right + down neighbours):
+//   E = -J * sum over bonds of s_i * s_j.
+// The order parameter is the magnetisation m = mean(s); in a finite
+// lattice m flips sign, so the sweep reports |m| averaged over
+// samples. Equilibrium is measured from an all-up start: the
+// equilibrium state below Tc is ordered, so an ordered start
+// measures equilibrium, not quench/coarsening dynamics (a random
+// start can freeze into metastable stripes at low T).
+// Seeded RNG (mulberry32) so every run is reproducible.
+
+const TUNE = { J: 1 };
+
+// mulberry32 — small seeded RNG, deterministic across runs.
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function idx(x, y, N) {
+  return ((y + N) % N) * N + ((x + N) % N);
+}
+
+// Sum of the four periodic neighbours of site (x, y).
+function neighborSum(spins, x, y, N) {
+  return (
+    spins[idx(x + 1, y, N)] +
+    spins[idx(x - 1, y, N)] +
+    spins[idx(x, y + 1, N)] +
+    spins[idx(x, y - 1, N)]
+  );
+}
+
+// Energy change from flipping site (x, y): dE = 2 * J * s * (neighbour sum).
+function deltaE(spins, x, y, N) {
+  return 2 * TUNE.J * spins[idx(x, y, N)] * neighborSum(spins, x, y, N);
+}
+
+// Total energy, each bond counted once (right + down neighbours).
+function energy(spins, N) {
+  let e = 0;
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      const s = spins[idx(x, y, N)];
+      e -= TUNE.J * s * (spins[idx(x + 1, y, N)] + spins[idx(x, y + 1, N)]);
+    }
+  }
+  return e;
+}
+
+function magnetization(spins, N) {
+  let m = 0;
+  for (let i = 0; i < N * N; i++) m += spins[i];
+  return m / (N * N);
+}
+
+// One Metropolis sweep: N*N random-site single-spin flip attempts
+// (sites picked uniformly at random, so some are attempted twice
+// and some not at all — standard random-site Metropolis).
+function metropolisSweep(spins, N, rng, T) {
+  for (let n = 0; n < N * N; n++) {
+    const x = Math.floor(rng() * N);
+    const y = Math.floor(rng() * N);
+    const dE = deltaE(spins, x, y, N);
+    if (dE <= 0 || rng() < Math.exp(-dE / T)) {
+      spins[idx(x, y, N)] *= -1;
+    }
+  }
+}
+
+// Run one (T, seed) configuration. Returns mean |m|, mean m,
+// mean energy per spin, and the sample standard deviation of |m|
+// (the noise bar the verdicts must be checked against). It also
+// returns the fluctuation observables, derived from the same
+// sampling loop (one machinery, not a second sampler):
+//   C  = N^2 (⟨e^2⟩ − ⟨e⟩^2) / T^2        (heat capacity per spin)
+//   χ  = N^2 (⟨m^2⟩ − ⟨|m|⟩^2) / T        (susceptibility per spin)
+// with e = E/N^2. The χ formula uses ⟨|m|⟩^2, not ⟨m⟩^2 = 0:
+// ⟨m⟩ vanishes by symmetry, so the ⟨m⟩^2 version is dominated
+// below Tc by the ordered moment itself and diverges with N;
+// the |m| version measures fluctuations around the ordered
+// state and stays finite across T. Both peak near Tc; the |m|
+// version is the one whose peak location means something.
+// C and χ are differences of nearly-equal numbers, so their
+// normalization is pinned by known limits in the harness
+// (cold C ≈ 0; hot χ ≈ (1 − 2/π)/T, the Curie law with the
+// ⟨|m|⟩ correction).
+function runIsing(T, seed, N = 20, eqSweeps = 5000, sampleSweeps = 5000, every = 10) {
+  const rng = mulberry32(seed);
+  const spins = new Int8Array(N * N).fill(1);
+  for (let i = 0; i < eqSweeps; i++) metropolisSweep(spins, N, rng, T);
+  let sumAbs = 0;
+  let sumM = 0;
+  let sumE = 0;
+  let sumAbs2 = 0;
+  let sumE2 = 0;
+  let sumM2 = 0;
+  let count = 0;
+  for (let i = 0; i < sampleSweeps; i++) {
+    metropolisSweep(spins, N, rng, T);
+    if ((i + 1) % every === 0) {
+      const m = magnetization(spins, N);
+      const a = Math.abs(m);
+      const e = energy(spins, N) / (N * N);
+      sumAbs += a;
+      sumAbs2 += a * a;
+      sumM += m;
+      sumE += e;
+      sumE2 += e * e;
+      sumM2 += m * m;
+      count++;
+    }
+  }
+  const meanAbs = sumAbs / count;
+  const meanE = sumE / count;
+  const meanM2 = sumM2 / count;
+  const meanE2 = sumE2 / count;
+  return {
+    T,
+    seed,
+    N,
+    meanAbsM: meanAbs,
+    meanM: sumM / count,
+    meanEPerSpin: meanE,
+    meanE2PerSpin: meanE2,
+    meanM2,
+    stdAbsM: Math.sqrt(Math.max(0, sumAbs2 / count - meanAbs * meanAbs)),
+    // Fluctuation observables, per spin, k_B = 1, J = 1.
+    heatCapacity: (N * N * Math.max(0, meanE2 - meanE * meanE)) / (T * T),
+    susceptibility: (N * N * Math.max(0, meanM2 - meanAbs * meanAbs)) / T,
+    samples: count,
+  };
+}
+
+return { metropolisSweep, magnetization, mulberry32 };
+})();
+var LogisticCore = (() => {
+// logistic-core.mjs — period-doubling in the logistic map, pure logic.
+// x_{n+1} = r * x_n * (1 - x_n). No DOM, no RNG: the map is
+// deterministic, so a run is fixed by (x0, r) alone.
+const TUNE = {
+  transient: 2000, // discarded iterates before measuring the attractor
+  keep: 256, // iterates kept for period counting
+  tol: 0.01, // two attractor values closer than this count as one
+};
+
+// One iterate.
+function step(x, r) {
+  return r * x * (1 - x);
+}
+
+// n iterates from x0 (n = 0 returns x0 itself).
+function orbit(x0, r, n) {
+  const out = [x0];
+  let x = x0;
+  for (let i = 0; i < n; i++) {
+    x = step(x, r);
+    out.push(x);
+  }
+  return out;
+}
+
+// The attractor: iterates after the transient, for period counting.
+function attractor(x0, r, { transient = TUNE.transient, keep = TUNE.keep } = {}) {
+  let x = x0;
+  for (let i = 0; i < transient; i++) x = step(x, r);
+  const vals = [];
+  for (let i = 0; i < keep; i++) {
+    x = step(x, r);
+    vals.push(x);
+  }
+  return vals;
+}
+
+// Cluster sorted attractor values with a gap tolerance; each cluster
+// is one period point. Returns { count, values, spread }.
+function period(x0, r, opts = {}) {
+  const vals = attractor(x0, r, opts);
+  const tol = opts.tol ?? TUNE.tol;
+  const sorted = [...vals].sort((a, b) => a - b);
+  const groups = [];
+  for (const v of sorted) {
+    const g = groups[groups.length - 1];
+    if (g && v - g[g.length - 1] <= tol) g.push(v);
+    else groups.push([v]);
+  }
+  const values = groups.map((g) => g.reduce((a, b) => a + b, 0) / g.length);
+  return {
+    count: groups.length,
+    values,
+    spread: sorted[sorted.length - 1] - sorted[0],
+  };
+}
+
+// ASCII bifurcation diagram: columns are r values, rows are x bins.
+// A '*' marks an attractor value falling in that bin.
+function renderDiagram(rValues, x0, { rows = 40, opts = {} } = {}) {
+  const lines = [];
+  for (let row = rows - 1; row >= 0; row--) {
+    const lo = row / rows;
+    const hi = (row + 1) / rows;
+    let line = "";
+    for (const r of rValues) {
+      const p = period(x0, r, opts);
+      const hit = p.values.some((v) => v >= lo && v < hi) || (row === rows - 1 && p.values.some((v) => v === 1));
+      line += hit ? "*" : " ";
+    }
+    lines.push(line);
+  }
+  return lines.join("\n");
+}
+
+return { period, step };
+})();
+var RwCore = (() => {
+// Simple symmetric random walks in d dimensions — one core for
+// harness, sweep, and render. No copied stepping logic anywhere.
+//
+// Exact at-origin probabilities (probability to be at the origin
+// after 2n steps):
+//   d=1: u1(n) = C(2n, n) / 4^n = prod_{i=1..n} (2i-1)/(2i)
+//   d=2: u2(n) = u1(n)^2   (the 2D walk decomposes into two
+//        independent diagonal 1D walks)
+//   d=3: u3(n) = 6^{-2n} * sum_{i+j+k=n} (2n)! / (i!^2 j!^2 k!^2)
+//        (i, j, k = step-pairs spent on each axis)
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function u1(n) {
+  let u = 1;
+  for (let i = 1; i <= n; i++) u *= (2 * i - 1) / (2 * i);
+  return u;
+}
+
+function uExact(dim, n) {
+  if (dim === 1) return u1(n);
+  if (dim === 2) { const u = u1(n); return u * u; }
+  if (dim === 3) {
+    // factorials as logs would lose exactness at these small n;
+    // n <= 25 in every caller, plain numbers are exact enough
+    // (checked against brute-force enumeration in the harness).
+    const fact = [1];
+    for (let i = 1; i <= 2 * n; i++) fact.push(fact[i - 1] * i);
+    let s = 0;
+    for (let i = 0; i <= n; i++)
+      for (let j = 0; j <= n - i; j++) {
+        const k = n - i - j;
+        s += fact[2 * n] / (fact[i] ** 2 * fact[j] ** 2 * fact[k] ** 2);
+      }
+    return s / 6 ** (2 * n);
+  }
+  throw new Error('dim must be 1, 2 or 3');
+}
+
+// One walk: step up to maxSteps, returning the first step at
+// which the walk is back at the origin, or null. Position after
+// exactly `steps` steps is available via walkTo (no early stop).
+function firstReturn(dim, maxSteps, rng) {
+  const pos = new Array(dim).fill(0);
+  for (let s = 1; s <= maxSteps; s++) {
+    const axis = (rng() * dim) | 0;
+    pos[axis] += rng() < 0.5 ? -1 : 1;
+    if (s % 2 === 0 && pos.every((c) => c === 0)) return s;
+  }
+  return null;
+}
+
+function walkTo(dim, steps, rng) {
+  const pos = new Array(dim).fill(0);
+  for (let s = 1; s <= steps; s++) {
+    const axis = (rng() * dim) | 0;
+    pos[axis] += rng() < 0.5 ? -1 : 1;
+  }
+  return pos;
+}
+
+const POLYA_3D = 0.34053732955099953; // known return probability, d=3
+
+return { mulberry32, POLYA_3D };
+})();
+
+var DATA = JSON.parse(document.getElementById('gu-data').textContent);
+var KC = DATA.meta.fireflies.Kc;
+var PC = 0.5927, TC = 2.269, RINF = 3.5699, ANT_ONSET = 9977, ANT_MAX = 12000;
+var COL = { percolation: '#7aa2f7', fireflies: '#9ece6a', ising: '#f7768e', logistic: '#bb9af7' };
+function $(id) { return document.getElementById(id); }
+function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+function fmt(v, n) { return (v >= 0 ? '+' : '') + v.toFixed(n); }
+var masterX = -0.5;
+
+// ---------- Fireflies ----------
+var ff = new FirefliesCore.Fireflies({ n: 90, seed: 7, k: KC * (1 + masterX) });
+function ffSetK(K, fromMaster) {
+  ff.k = clamp(K, 0, 3);
+  $('in-fireflies').value = ff.k;
+  if (!fromMaster) $('link-fireflies').checked = false;
+}
+$('in-fireflies').addEventListener('input', function () { ffSetK(parseFloat(this.value), false); });
+function ffFrame() {
+  var c = $('cv-fireflies'), ctx = c.getContext('2d'), W = c.width, H = c.height;
+  ctx.fillStyle = '#0f1017'; ctx.fillRect(0, 0, W, H);
+  for (var s = 0; s < 3; s++) ff.step();
+  for (var i = 0; i < ff.n; i++) {
+    var b = ff.brightness(i);
+    ctx.beginPath();
+    ctx.arc(ff.x[i] * W, ff.y[i] * H, 2 + b * 3.4, 0, 6.2832);
+    ctx.fillStyle = 'rgba(158,206,106,' + (0.16 + 0.84 * b).toFixed(3) + ')';
+    ctx.fill();
+  }
+  var r = ff.orderParameter();
+  $('ro-fireflies').textContent = 'K = ' + ff.k.toFixed(2) + ' (K_c ≈ ' + KC.toFixed(2) + ') · r = ' + r.toFixed(2) + ' live · ' + (r < 0.3 ? 'scattered' : (r < 0.6 ? 'locking…' : 'ONE PULSE'));
+}
+
+// ---------- Percolation ----------
+var percP = PC + 0.09 * masterX, percSeed = 7, percGrid = null, percSpanCells = null, percSpans = false;
+function percBuild() {
+  var rng = PercCore.mulberry32(1000 + percSeed * 131);
+  percGrid = PercCore.generate(48, percP, rng);
+  var a = PercCore.analyze(percGrid, 48);
+  percSpans = a.spanning;
+  percSpanCells = a.spanning ? a.spanningCells : null;
+}
+function percDraw() {
+  var ctx = $('cv-perc').getContext('2d'), cell = 6;
+  ctx.fillStyle = '#0f1017'; ctx.fillRect(0, 0, 288, 288);
+  for (var y = 0; y < 48; y++) for (var x = 0; x < 48; x++) {
+    var i = y * 48 + x;
+    if (!percGrid[i]) continue;
+    ctx.fillStyle = (percSpanCells && percSpanCells.has(i)) ? '#c0caf5' : 'rgba(122,162,247,.75)';
+    ctx.fillRect(x * cell + 0.5, y * cell + 0.5, cell - 1, cell - 1);
+  }
+  $('ro-perc').textContent = 'p = ' + percP.toFixed(3) + ' (p_c ≈ 0.5927) · ' + (percSpans ? 'SPANS — the water gets through' : 'no spanning path');
+}
+function percSetP(p, fromMaster) {
+  percP = clamp(p, 0.05, 0.95);
+  $('in-perc').value = percP;
+  if (!fromMaster) $('link-perc').checked = false;
+  percBuild(); percDraw();
+}
+$('in-perc').addEventListener('input', function () { percSetP(parseFloat(this.value), false); });
+$('btn-perc').addEventListener('click', function () { percSeed++; percBuild(); percDraw(); });
+
+// ---------- Ising ----------
+var IN = 36, ispins = new Int8Array(IN * IN).fill(1), irng = IsingCore.mulberry32(42), isingT = TC - masterX;
+function isingSetT(T, fromMaster) {
+  isingT = clamp(T, 0.5, 4.5);
+  $('in-ising').value = isingT;
+  if (!fromMaster) $('link-ising').checked = false;
+}
+$('in-ising').addEventListener('input', function () { isingSetT(parseFloat(this.value), false); });
+function isingFrame() {
+  IsingCore.metropolisSweep(ispins, IN, irng, isingT);
+  IsingCore.metropolisSweep(ispins, IN, irng, isingT);
+  var ctx = $('cv-ising').getContext('2d'), cell = 8;
+  for (var y = 0; y < IN; y++) for (var x = 0; x < IN; x++) {
+    ctx.fillStyle = ispins[y * IN + x] > 0 ? '#f7768e' : '#3d1f28';
+    ctx.fillRect(x * cell + 0.5, y * cell + 0.5, cell - 1, cell - 1);
+  }
+  var m = Math.abs(IsingCore.magnetization(ispins, IN));
+  $('ro-ising').textContent = 'T = ' + isingT.toFixed(2) + ' (T_c ≈ 2.269) · |m| = ' + m.toFixed(2) + ' live · ' + (m > 0.6 ? 'the spins agree' : (m > 0.25 ? 'wavering' : 'noise'));
+}
+
+// ---------- Logistic ----------
+var logR = RINF + 0.43 * masterX, logStrip = null, logPeriodFor = null, logPeriodTxt = '';
+function logBuildStrip() {
+  var c = $('cv-logistic');
+  logStrip = document.createElement('canvas');
+  logStrip.width = c.width; logStrip.height = c.height;
+  var ctx = logStrip.getContext('2d'), W = c.width, H = c.height;
+  ctx.fillStyle = '#0f1017'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(187,154,247,.55)';
+  for (var col = 0; col < W; col++) {
+    var r = 3.3 + 0.7 * col / W, x = 0.37, i;
+    for (i = 0; i < 300; i++) x = LogisticCore.step(x, r);
+    for (i = 0; i < 90; i++) { x = LogisticCore.step(x, r); ctx.fillRect(col, H - x * H, 1, 1); }
+  }
+}
+function logSetR(r, fromMaster) {
+  logR = clamp(r, 3.0, 4.0);
+  $('in-logistic').value = logR;
+  if (!fromMaster) $('link-logistic').checked = false;
+}
+$('in-logistic').addEventListener('input', function () { logSetR(parseFloat(this.value), false); });
+function logFrame() {
+  var c = $('cv-logistic'), ctx = c.getContext('2d'), W = c.width, H = c.height;
+  if (!logStrip) logBuildStrip();
+  ctx.drawImage(logStrip, 0, 0);
+  var mx = (logR - 3.3) / 0.7 * W;
+  ctx.strokeStyle = '#c0caf5'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(mx, 0); ctx.lineTo(mx, H); ctx.stroke();
+  if (logPeriodFor !== logR) {
+    logPeriodFor = logR;
+    var p = LogisticCore.period(0.37, logR, { transient: 10000, keep: 1024, tol: 1e-6 });
+    logPeriodTxt = p.count >= 64 ? 'chaos (no period ≤ 64)' : 'period ' + p.count;
+  }
+  $('ro-logistic').textContent = 'r = ' + logR.toFixed(3) + ' (r_∞ ≈ 3.5699) · ' + logPeriodTxt + ' · measured by the core';
+}
+
+// ---------- Pólya walks ----------
+var polyaDim = 1, polyaPanels = {};
+function polyaNewWalker(dim, rng) { return { pos: [0, 0, 0], steps: 0, home: false, timer: 0, trail: [[0, 0, 0]] }; }
+[1, 2, 3].forEach(function (d) {
+  var rng = RwCore.mulberry32(500 + d);
+  var ws = [];
+  for (var i = 0; i < 22; i++) ws.push(polyaNewWalker(d, rng));
+  polyaPanels[d] = { rng: rng, walkers: ws, done: 0, returned: 0 };
+});
+function polyaStepPanel(d) {
+  var P = polyaPanels[d];
+  P.walkers.forEach(function (w) {
+    if (w.home) { w.timer--; if (w.timer <= 0) { var nw = polyaNewWalker(d, P.rng); w.pos = nw.pos; w.steps = 0; w.home = false; w.trail = nw.trail; } return; }
+    for (var s = 0; s < 6; s++) {
+      var axis = (P.rng() * d) | 0;
+      w.pos[axis] += P.rng() < 0.5 ? -1 : 1;
+      w.steps++;
+      w.trail.push([w.pos[0], w.pos[1], w.pos[2]]);
+      if (w.trail.length > 42) w.trail.shift();
+      if (w.pos[0] === 0 && w.pos[1] === 0 && w.pos[2] === 0) { P.done++; P.returned++; w.home = true; w.timer = 26; break; }
+      if (w.steps >= 600) { P.done++; w.home = true; w.timer = 1; break; }
+    }
+  });
+}
+function polyaProject(d, pos, cx, cy, scale) {
+  if (d === 1) return [cx + pos[0] * scale, cy];
+  if (d === 2) return [cx + pos[0] * scale, cy + pos[1] * scale];
+  return [cx + (pos[0] + 0.5 * pos[2]) * scale, cy + (pos[1] + 0.35 * pos[2]) * scale];
+}
+function polyaFrame() {
+  [1, 2, 3].forEach(polyaStepPanel);
+  var c = $('cv-polya'), ctx = c.getContext('2d'), W = c.width, H = c.height;
+  ctx.fillStyle = '#0f1017'; ctx.fillRect(0, 0, W, H);
+  [1, 2, 3].forEach(function (d, pi) {
+    var pw = W / 3, cx = pw * pi + pw / 2, cy = H / 2, P = polyaPanels[d];
+    var maxAbs = 6;
+    P.walkers.forEach(function (w) { w.trail.forEach(function (t) { for (var a = 0; a < 3; a++) maxAbs = Math.max(maxAbs, Math.abs(t[a]) * 1.5); }); });
+    var scale = (pw / 2 - 10) / maxAbs;
+    ctx.fillStyle = '#787c99'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(d + 'D', cx, 18);
+    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, 6.2832); ctx.fillStyle = '#e0af68'; ctx.fill();
+    P.walkers.forEach(function (w, wi) {
+      ctx.beginPath();
+      w.trail.forEach(function (t, ti) {
+        var pr = polyaProject(d, t, cx, cy, scale);
+        var yy = d === 1 ? cy + (wi % 5 - 2) * 9 : pr[1];
+        if (ti === 0) ctx.moveTo(pr[0], yy); else ctx.lineTo(pr[0], yy);
+      });
+      ctx.strokeStyle = w.home && w.timer > 1 ? 'rgba(224,175,104,.9)' : 'rgba(125,207,255,.30)';
+      ctx.lineWidth = 1; ctx.stroke();
+      var hp = polyaProject(d, w.pos, cx, cy, scale);
+      var hy = d === 1 ? cy + (wi % 5 - 2) * 9 : hp[1];
+      ctx.beginPath(); ctx.arc(hp[0], hy, 2.2, 0, 6.2832);
+      ctx.fillStyle = w.home && w.timer > 1 ? '#e0af68' : '#7dcfff'; ctx.fill();
+    });
+    if (d === polyaDim) { ctx.strokeStyle = '#7dcfff'; ctx.lineWidth = 1.5; ctx.strokeRect(pw * pi + 3, 3, pw - 6, H - 6); }
+    var frac = P.done ? (P.returned / P.done) : 0;
+    ctx.fillStyle = '#a9b1d6'; ctx.font = '11px monospace';
+    ctx.fillText('home: ' + frac.toFixed(2), cx, H - 8);
+  });
+  var P = polyaPanels[polyaDim];
+  var frac = P.done ? (P.returned / P.done) : 0;
+  var lim = polyaDim === 3 ? 'limit 0.340537' : 'limit 1 (certain)';
+  $('ro-polya').textContent = 'dimension = ' + polyaDim + 'D · returned ' + frac.toFixed(2) + ' of finished walkers (live, 600-step horizon) · ' + lim;
+}
+function polyaSetDim(d, fromMaster) {
+  polyaDim = d;
+  [1, 2, 3].forEach(function (k) { $('btn-dim-' + k).className = k === d ? 'on' : ''; });
+  if (!fromMaster) $('link-polya').checked = false;
+}
+[1, 2, 3].forEach(function (d) { $('btn-dim-' + d).addEventListener('click', function () { polyaSetDim(d, false); }); });
+
+// ---------- Langton's ant ----------
+var ant = AntCore.createAnt(), antColours = [], antTarget = Math.round((masterX + 1) / 2 * ANT_MAX), antPlaying = false;
+function antSeek(target) {
+  target = clamp(Math.round(target), 0, ANT_MAX);
+  if (target < ant.steps) { ant = AntCore.createAnt(); antColours = []; }
+  if (target > ant.steps) { var cs = AntCore.run(ant, target - ant.steps); for (var i = 0; i < cs.length; i++) antColours.push(cs[i]); }
+  antTarget = target;
+  $('in-ant').value = target;
+}
+function antSetStep(t, fromMaster) {
+  if (!fromMaster) $('link-ant').checked = false;
+  antSeek(t);
+}
+$('in-ant').addEventListener('input', function () { antPlaying = false; $('btn-ant').textContent = 'play'; antSetStep(parseFloat(this.value), false); });
+$('btn-ant').addEventListener('click', function () {
+  antPlaying = !antPlaying;
+  if (antPlaying && antTarget >= ANT_MAX) antSetStep(0, false);
+  if (antPlaying) $('link-ant').checked = false;
+  this.textContent = antPlaying ? 'pause' : 'play';
+});
+function antHighway() {
+  var s = ant.steps, P = 104;
+  if (s < 3 * P + 10) return false;
+  for (var i = 0; i < P; i++) {
+    var c0 = antColours[s - 1 - i];
+    if (c0 !== antColours[s - 1 - i - P] || c0 !== antColours[s - 1 - i - 2 * P]) return false;
+  }
+  return true;
+}
+function antFrame() {
+  if (antPlaying) {
+    antSeek(Math.min(ANT_MAX, antTarget + 150));
+    if (antTarget >= ANT_MAX) { antPlaying = false; $('btn-ant').textContent = 'play'; }
+  }
+  var c = $('cv-ant'), ctx = c.getContext('2d'), W = c.width, H = c.height;
+  ctx.fillStyle = '#0f1017'; ctx.fillRect(0, 0, W, H);
+  var minx = 0, maxx = 0, miny = 0, maxy = 0;
+  ant.black.forEach(function (k) {
+    var parts = k.split(','), bx = +parts[0], by = +parts[1];
+    if (bx < minx) minx = bx; if (bx > maxx) maxx = bx;
+    if (by < miny) miny = by; if (by > maxy) maxy = by;
+  });
+  minx = Math.min(minx, ant.x); maxx = Math.max(maxx, ant.x);
+  miny = Math.min(miny, ant.y); maxy = Math.max(maxy, ant.y);
+  var bw = maxx - minx + 9, bh = maxy - miny + 9;
+  var cell = clamp(Math.min(W / bw, H / bh), 1, 4);
+  var ox = (W - (maxx - minx + 1) * cell) / 2 - minx * cell;
+  var oy = (H - (maxy - miny + 1) * cell) / 2 + maxy * cell;
+  ctx.fillStyle = 'rgba(224,175,104,.6)';
+  ant.black.forEach(function (k) {
+    var parts = k.split(','), bx = +parts[0], by = +parts[1];
+    ctx.fillRect(ox + bx * cell, oy - by * cell, Math.max(1, cell - 0.4), Math.max(1, cell - 0.4));
+  });
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(ox + ant.x * cell - 1, oy - ant.y * cell - 1, cell + 2, cell + 2);
+  var hw = antHighway();
+  $('ro-ant').textContent = 'step ' + ant.steps.toLocaleString('en-US') + ' / 12,000 · ' + (hw ? 'HIGHWAY — period 104, detected live from the colour sequence' : (ant.steps >= ANT_ONSET ? 'past the measured onset 9,977 — the road is forming' : 'chaotic phase · measured onset 9,977'));
+}
+
+// ---------- Master dial ----------
+function applyMaster(x) {
+  masterX = x;
+  $('ro-master').textContent = 'distance from the critical point: ' + fmt(x, 2);
+  if ($('link-fireflies').checked) ffSetK(KC * (1 + x), true);
+  if ($('link-perc').checked) percSetP(PC + 0.09 * x, true);
+  if ($('link-ising').checked) isingSetT(TC - x, true);
+  if ($('link-logistic').checked) logSetR(RINF + 0.43 * x, true);
+  if ($('link-polya').checked) polyaSetDim(x < -1 / 3 ? 1 : (x < 1 / 3 ? 2 : 3), true);
+  if ($('link-ant').checked) antSetStep(Math.round((x + 1) / 2 * ANT_MAX), true);
+}
+$('master').addEventListener('input', function () { applyMaster(parseFloat(this.value) / 100); });
+
+// ---------- Measured chart ----------
+function drawChart() {
+  var c = $('cv-chart'), ctx = c.getContext('2d'), W = c.width, H = c.height;
+  var L = 54, R = 14, T = 16, B = 54, w = W - L - R, h = H - T - B;
+  function X(v) { return L + (v + 1.05) / 2.1 * w; }
+  function Y(v) { return T + (1 - v) * h; }
+  ctx.fillStyle = '#0f1017'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#2a2d3e'; ctx.fillStyle = '#787c99'; ctx.font = '12px monospace'; ctx.lineWidth = 1;
+  [0, 0.25, 0.5, 0.75, 1].forEach(function (g) {
+    ctx.beginPath(); ctx.moveTo(L, Y(g)); ctx.lineTo(L + w, Y(g)); ctx.stroke();
+    ctx.textAlign = 'right'; ctx.fillText(g.toFixed(2), L - 8, Y(g) + 4);
+  });
+  [-1, -0.5, 0, 0.5, 1].forEach(function (g) {
+    ctx.textAlign = 'center'; ctx.fillText(fmt(g, g === 0 ? 0 : 1), X(g), H - 32);
+  });
+  ctx.textAlign = 'center'; ctx.fillText('distance from critical point →', X(0), H - 12);
+  ctx.setLineDash([5, 4]); ctx.strokeStyle = '#e0af68';
+  ctx.beginPath(); ctx.moveTo(X(0), T); ctx.lineTo(X(0), T + h); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#e0af68'; ctx.textAlign = 'left'; ctx.fillText('critical point', X(0) + 7, T + 14);
+  ctx.fillStyle = '#787c99'; ctx.fillText('order parameter', L, T + 2);
+  ['percolation', 'fireflies', 'ising', 'logistic'].forEach(function (k) {
+    if (!$('chart-' + k).checked) return;
+    var pts = DATA.curves[k].points;
+    ctx.strokeStyle = COL[k]; ctx.fillStyle = COL[k]; ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    pts.forEach(function (p, i) { var px = X(clamp(p.x, -1.05, 1.05)), py = Y(clamp(p.order, 0, 1)); if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); });
+    ctx.stroke();
+    pts.forEach(function (p) {
+      ctx.beginPath(); ctx.arc(X(clamp(p.x, -1.05, 1.05)), Y(clamp(p.order, 0, 1)), 2.6, 0, 6.2832); ctx.fill();
+    });
+  });
+}
+['percolation', 'fireflies', 'ising', 'logistic'].forEach(function (k) {
+  $('chart-' + k).addEventListener('change', drawChart);
+});
+
+// ---------- Init ----------
+ffSetK(KC * (1 + masterX), true);
+percSetP(PC + 0.09 * masterX, true);
+isingSetT(TC - masterX, true);
+logSetR(RINF + 0.43 * masterX, true);
+polyaSetDim(masterX < -1 / 3 ? 1 : (masterX < 1 / 3 ? 2 : 3), true);
+antSeek(antTarget);
+applyMaster(masterX);
+drawChart();
+function frame() {
+  ffFrame(); isingFrame(); polyaFrame(); antFrame(); logFrame();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
