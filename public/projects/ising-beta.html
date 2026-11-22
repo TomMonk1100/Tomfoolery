@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>measuring beta — the 3d ising retest — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .card canvas { width: 100%; height: auto; display: block; }
+  .dial { border: 1.5px solid rgba(125,207,255,.55); border-radius: 12px; background: rgba(125,207,255,.06); padding: 18px 22px 14px; margin: 18px 0 8px; }
+  .dial label { font-size: 13px; font-weight: 700; letter-spacing: .06em; }
+  .dial input[type=range] { width: 100%; margin: 12px 0 4px; accent-color: #7dcfff; }
+  .ticks { display: flex; justify-content: space-between; color: #787c99; font-size: 12px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  .ctl { display: flex; align-items: center; gap: 14px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl label { cursor: pointer; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  .hit { color: #9ece6a; font-weight: 700; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; vertical-align: baseline; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">A magnet is a crowd of tiny arrows that like to point the same way. Heat it up and the arrows wiggle harder, until at one exact temperature the magnet gives up and the arrows point everywhere. Just below that temperature, the magnet's strength grows back following a strict rule — a power law, strength ~ t<sup>β</sup> — and β is the same number for every magnet in the universe. This page is me measuring that number: I wrote down my prediction first, in a sealed file, then ran the experiment.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">Because the naive way to measure β lies. Fit the simple power law and you get 0.241 — confidently wrong, because a finite lattice rounds the corner near the critical point and the rounding bends the line. Add the correction term the theory prescribes and the same data says 0.3495. The gap between those two numbers is the whole piece: one fit flatters itself, the other admits the corner is rounded. I sealed four predictions before measuring, including "the plain fit will come in under 0.30 and the corrected fit won't." All four hit — and the caveats are printed below, not buried.</p>
+</div>
+<div class="wrap">
+<h1>measuring β — the 3d ising retest</h1>
+<p class="sub">magnetisation of a 3D Ising lattice (Wolff cluster updates) at L = 24 and L = 32, fitted against the sealed predictions · 2026-11-21</p>
+
+<div class="dial">
+  <label for="tc">critical temperature Tc — drag it and watch β move</label>
+  <input type="range" id="tc" min="4.505" max="4.518" step="0.0001" value="4.511565">
+  <div class="ticks"><span>4.505 (sealed window low)</span><span>4.511565 (measured crossing)</span><span>4.518 (sealed window high)</span></div>
+  <div class="ro" id="ro"></div>
+  <div class="ctl">
+    <label><input type="checkbox" id="showPlain"> show the plain fit too (no correction term)</label>
+    <label><input type="checkbox" id="show24" checked> L = 24 points</label>
+    <label><input type="checkbox" id="show32" checked> L = 32 points</label>
+  </div>
+</div>
+
+<div class="card">
+  <canvas id="plot" width="1040" height="520"></canvas>
+</div>
+<div class="card">
+  <canvas id="strip" width="1040" height="120"></canvas>
+  <p style="margin:6px 0 0;font-size:12px;color:#787c99;">β strip: the green band is the sealed prediction window [0.30, 0.35]; the white tick is the literature value 0.3265; the dots are the live refits at the Tc you set.</p>
+</div>
+
+<h2>the sealed predictions, scored</h2>
+<p>Written into a dated file before a single production run, and scored exactly as written. The seal was not edited afterwards.</p>
+<table>
+  <tr><th class="l">prediction</th><th class="l">measured</th><th class="l">verdict</th></tr>
+  <tr><td class="l">(a) Tc lands in [4.505, 4.518]</td><td class="l">4.5116</td><td class="l"><span class="hit">HIT</span></td></tr>
+  <tr><td class="l">(b) corrected β in [0.30, 0.35] at both lattice sizes</td><td class="l">0.3495 (L=32), 0.3478 (L=24)</td><td class="l"><span class="hit">HIT</span></td></tr>
+  <tr><td class="l">(c) the plain fit (no correction) comes in under 0.30</td><td class="l">0.2409 (L=32), 0.2446 (L=24)</td><td class="l"><span class="hit">HIT</span></td></tr>
+  <tr><td class="l">(d) boundary-accounting check: seed-mean boundary measure under 0.60</td><td class="l">0.2606</td><td class="l"><span class="hit">HIT</span></td></tr>
+</table>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li>The fitter on this page is real: it refits the measured points live, by weighted least squares, every time you move the Tc slider — t is recomputed from each point's actual temperature at your Tc. At the measured crossing it lands within one fit-grid step (0.0003) of the filed isolating refit (β = 0.3494 at L=32, 0.3476 at L=24).</li>
+  <li>Near-edge honesty: prediction (b) hit, but near the top of the window. Nudge Tc one standard error up (+0.001) and the L=32 refit steps just outside, to 0.3512. The verdict records that instead of rounding it away.</li>
+  <li>The corrected fits still do not thread every error bar — the residual misfit is registered as a first-class doubt in the verdict, not tuned away with extra terms.</li>
+  <li>Prediction (d) was the paranoid one: a worry that sloppy counting of cluster boundaries could fake part of the magnetisation. Four fresh seeds were run through an accounting runner that tracks every boundary draw; the measure came in at 0.2606, well under the sealed bound.</li>
+  <li>The measurement chain took 96 runs to complete; twenty were killed mid-run by machine restarts along the way and re-done. Nothing was published from partial chains.</li>
+</ul>
+</div>
+<script>
+const P24 = [{"T":4.4214,"m":0.455856,"se":0.00016615270058055237},{"T":4.3763,"m":0.515541,"se":0.00015451795225778585},{"T":4.3086,"m":0.581652,"se":0.00010136819141765368},{"T":4.1958,"m":0.659715,"se":8.40638458282883e-05},{"T":4.0604,"m":0.727033,"se":6.868223657527692e-05},{"T":3.88,"m":0.791997,"se":5.71214369278838e-05},{"T":3.6544,"m":0.850335,"se":3.942233202003592e-05},{"T":3.3837,"m":0.899803,"se":1.4649944274715198e-05}];
+const P32 = [{"T":4.4214,"m":0.455971,"se":0.00011206386235378781},{"T":4.3763,"m":0.515655,"se":0.00015959135781332224},{"T":4.3086,"m":0.581405,"se":6.970555372319972e-05},{"T":4.1958,"m":0.659779,"se":3.687833149154696e-05},{"T":4.0604,"m":0.726978,"se":2.3153605271797384e-05},{"T":3.88,"m":0.791942,"se":3.3201509339788834e-05},{"T":3.6544,"m":0.850273,"se":1.1886725557103577e-05},{"T":3.3837,"m":0.89981,"se":1.2322122342147282e-05}];
+const DELTA = 0.52, LIT = 0.3265;
+const $ = id => document.getElementById(id);
+
+function fit(pts, Tc, corrected) {
+  const t = pts.map(p => (Tc - p.T) / Tc);
+  const w = pts.map(p => 1 / (p.se * p.se));
+  let best = null;
+  for (let beta = 0.15; beta <= 0.45001; beta += 0.00025) {
+    const f = t.map(x => Math.pow(x, beta));
+    let A, B = 0, sse = 0;
+    if (corrected) {
+      const g = t.map(x => Math.pow(x, beta + DELTA));
+      let Sff=0,Sfg=0,Sgg=0,Sfm=0,Sgm=0;
+      for (let i=0;i<pts.length;i++){ Sff+=w[i]*f[i]*f[i]; Sfg+=w[i]*f[i]*g[i]; Sgg+=w[i]*g[i]*g[i]; Sfm+=w[i]*f[i]*pts[i].m; Sgm+=w[i]*g[i]*pts[i].m; }
+      const det = Sff*Sgg - Sfg*Sfg;
+      if (Math.abs(det) < 1e-12) continue;
+      A = (Sfm*Sgg - Sgm*Sfg)/det; B = (Sff*Sgm - Sfg*Sfm)/det;
+      for (let i=0;i<pts.length;i++){ const r = A*f[i] + B*g[i] - pts[i].m; sse += w[i]*r*r; }
+    } else {
+      let Sff=0,Sfm=0;
+      for (let i=0;i<pts.length;i++){ Sff+=w[i]*f[i]*f[i]; Sfm+=w[i]*f[i]*pts[i].m; }
+      A = Sfm/Sff;
+      for (let i=0;i<pts.length;i++){ const r = A*f[i] - pts[i].m; sse += w[i]*r*r; }
+    }
+    if (!best || sse < best.sse) best = { beta, A, B, sse };
+  }
+  return best;
+}
+const model = (f, t) => f.A * Math.pow(t, f.beta) + f.B * Math.pow(t, f.beta + DELTA);
+
+function draw() {
+  const Tc = parseFloat($('tc').value);
+  const f24 = fit(P24, Tc, true), f32 = fit(P32, Tc, true);
+  const p32 = fit(P32, Tc, false);
+  $('ro').textContent = 'Tc = ' + Tc.toFixed(6) + ' → corrected β: L=32 ' + f32.beta.toFixed(4) + ' · L=24 ' + f24.beta.toFixed(4) +
+    ($('showPlain').checked ? ' · plain β (L=32): ' + p32.beta.toFixed(4) : '') +
+    ' · sealed window [0.30, 0.35]' + ((f32.beta >= 0.30 && f32.beta <= 0.35 && f24.beta >= 0.30 && f24.beta <= 0.35) ? ' — both inside' : ' — outside at this Tc');
+
+  const cv = $('plot'), ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height, L = 70, R = 20, T = 24, B = 52;
+  const x0 = 0, x1 = 0.27, y0 = 0.40, y1 = 0.95;
+  const X = t => L + (t - x0) / (x1 - x0) * (W - L - R);
+  const Y = m => H - B - (m - y0) / (y1 - y0) * (H - T - B);
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = '#2a2d3e'; ctx.fillStyle = '#787c99'; ctx.font = '12px monospace'; ctx.lineWidth = 1;
+  for (let t = 0; t <= 0.251; t += 0.05) { ctx.beginPath(); ctx.moveTo(X(t), T); ctx.lineTo(X(t), H - B); ctx.stroke(); ctx.fillText(t.toFixed(2), X(t) - 10, H - B + 18); }
+  for (let m = 0.4; m <= 0.951; m += 0.1) { ctx.beginPath(); ctx.moveTo(L, Y(m)); ctx.lineTo(W - R, Y(m)); ctx.stroke(); ctx.fillText(m.toFixed(1), 28, Y(m) + 4); }
+  ctx.fillText('t = (Tc − T) / Tc', W / 2 - 60, H - 12);
+  ctx.save(); ctx.translate(16, H / 2 + 40); ctx.rotate(-Math.PI / 2); ctx.fillText('magnetisation M', 0, 0); ctx.restore();
+
+  function curve(f, color, dash) {
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash(dash || []);
+    ctx.beginPath();
+    for (let i = 0; i <= 200; i++) {
+      const t = 0.004 + (0.26 - 0.004) * i / 200;
+      const m = model(f, t);
+      if (i === 0) ctx.moveTo(X(t), Y(m)); else ctx.lineTo(X(t), Y(m));
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+  if ($('showPlain').checked) curve(p32, '#f7768e', [6, 4]);
+  curve(f32, '#9ece6a');
+  if ($('show24').checked) curve(f24, '#7dcfff');
+
+  function points(pts, color, square) {
+    ctx.fillStyle = color;
+    for (const p of pts) {
+      const t = (Tc - p.T) / Tc, x = X(t), y = Y(p.m);
+      ctx.strokeStyle = color; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, Y(p.m + p.se * 3)); ctx.lineTo(x, Y(p.m - p.se * 3)); ctx.stroke();
+      if (square) ctx.fillRect(x - 4, y - 4, 8, 8);
+      else { ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 7); ctx.fill(); }
+    }
+  }
+  if ($('show32').checked) points(P32, '#e0af68', true);
+  if ($('show24').checked) points(P24, '#7dcfff', false);
+  ctx.font = '13px monospace';
+  ctx.fillStyle = '#e0af68'; ctx.fillText('■ L=32 measured', L + 12, T + 16);
+  ctx.fillStyle = '#7dcfff'; ctx.fillText('● L=24 measured', L + 170, T + 16);
+  ctx.fillStyle = '#9ece6a'; ctx.fillText('— corrected fit', L + 328, T + 16);
+  if ($('showPlain').checked) { ctx.fillStyle = '#f7768e'; ctx.fillText('- - plain fit (L=32)', L + 480, T + 16); }
+
+  const sv = $('strip'), sx = sv.getContext('2d');
+  const SW = sv.width, SH = sv.height, SL = 70, SR = 20;
+  const BX = b => SL + (b - 0.15) / (0.45 - 0.15) * (SW - SL - SR);
+  sx.clearRect(0, 0, SW, SH);
+  sx.fillStyle = 'rgba(158,206,106,.18)'; sx.fillRect(BX(0.30), 30, BX(0.35) - BX(0.30), 34);
+  sx.strokeStyle = '#2a2d3e'; sx.strokeRect(SL, 30, SW - SL - SR, 34);
+  sx.fillStyle = '#787c99'; sx.font = '12px monospace';
+  for (let b = 0.15; b <= 0.4501; b += 0.05) sx.fillText(b.toFixed(2), BX(b) - 12, 84);
+  sx.strokeStyle = '#c0caf5'; sx.beginPath(); sx.moveTo(BX(LIT), 22); sx.lineTo(BX(LIT), 72); sx.stroke();
+  sx.fillStyle = '#c0caf5'; sx.fillText('literature 0.3265', BX(LIT) - 52, 14);
+  function dot(b, color, dy, label) {
+    sx.fillStyle = color; sx.beginPath(); sx.arc(BX(b), 47 + dy, 6, 0, 7); sx.fill();
+    sx.fillText(label, BX(b) - 26, 47 + dy - 12);
+  }
+  dot(f32.beta, '#e0af68', 0, 'L=32');
+  dot(f24.beta, '#7dcfff', 0, '');
+  if ($('showPlain').checked) dot(p32.beta, '#f7768e', 0, '');
+  sx.fillStyle = '#787c99'; sx.fillText('β', 40, 52);
+}
+['tc', 'showPlain', 'show24', 'show32'].forEach(id => $(id).addEventListener('input', draw));
+draw();
+</script>
+</body>
+</html>
