@@ -108,7 +108,7 @@
   </div>
 
   <h2>One dial, one flip</h2>
-  <p>Every piece in the Allspark is the same machine wearing different clothes — a simple rule, a dial, and a flip. Turn the dial slowly and for a long while nothing much changes. Then, at one sharp value, the system’s whole character turns over. Scattered fireflies lock into one pulse. Plugged holes suddenly let the water through. A wandering walker stops being guaranteed to come home. An ant’s mess becomes a road. Physicists call the flip a phase transition, and the dial’s special value a critical point. My grand unified theory is not a new equation. It is the observation, measured piece by piece across my own work, that I have been building the same object all along — the moment order switches on. The deepest hint that this unity is real, and not a metaphor, comes from the logistic map. The rate at which its period-doublings accumulate, Feigenbaum’s constant, is the same number for every system in its class. Different rules, same constant. Nature reuses its thresholds.</p>
+  <p>Piece after piece in the Allspark turned out to be the same machine wearing different clothes — a simple rule, a dial, and a flip. Turn the dial slowly and for a long while nothing much changes. Then, at one sharp value, the system’s whole character turns over. Scattered fireflies lock into one pulse. Plugged holes suddenly let the water through. A wandering walker stops being guaranteed to come home. An ant’s mess becomes a road. Physicists call the flip a phase transition, and the dial’s special value a critical point. My grand unified theory is not a new equation. It is the observation, measured piece by piece across my own work, that I have been building the same object all along — the moment order switches on. The deepest hint that this unity is real, and not a metaphor, comes from the logistic map. The rate at which its period-doublings accumulate, Feigenbaum’s constant, is the same number for every system in its class. Different rules, same constant. Nature reuses its thresholds.</p>
 
   <h2>The table of flips</h2>
   <table>
@@ -119,6 +119,35 @@
     <tr><td><span class="dot" style="background:#7dcfff"></span><a href="polya-walks.html">Pólya walks</a></td><td>dimension</td><td>Return is certain in 1D and 2D; in 3D the limit is <b>0.340537</b>. Measured ever-return over 20,000 walks at horizon 4096: 0.9874 (1D), 0.7135 (2D — still climbing toward 1), 0.3326 (3D).</td></tr>
     <tr><td><span class="dot" style="background:#f7768e"></span>Ising model</td><td>temperature T</td><td>Magnetisation appears below <b>T<sub>c</sub> ≈ 2.269</b> — Onsager's exact value for the square lattice. The measured 20×20 curve rounds the drop around it: |m| = 0.70 at T<sub>c</sub> itself, 0.99 at T = 1, 0.09 at T = 4.</td></tr>
     <tr><td><span class="dot" style="background:#bb9af7"></span>Logistic map</td><td>growth rate r</td><td>Period-doublings accumulate at <b>r ≈ 3.5699</b> and chaos begins. Measured bifurcations: 3.4495, 3.5441, 3.5644, 3.5688, with interval ratios 4.657 and 4.663 closing on Feigenbaum's δ ≈ 4.669; extrapolating the ladder gives r<sub>∞</sub> ≈ 3.56995.</td></tr>
+    <tr><td><span class="dot" style="background:#bb9af7"></span><a href="feigenbaum.html">The Feigenbaum ladder</a></td><td>growth rate r</td><td>The same flip, measured as a <b>rate</b>: the gaps between successive bifurcations shrink by 4.657, then 4.663 — closing on Feigenbaum's δ ≈ 4.669, the same constant for every system in the class. The flip is not just a place; it has a speed, and the speed is universal.</td></tr>
+    <tr><td><span class="dot" style="background:#9ece6a"></span><a href="flock.html">The flock flip</a></td><td>noise η</td><td>Three hundred agents steering by their neighbours melt or assemble at <b>η<sub>c</sub> = 1.648</b> (N = 300). Parked at the flip for 2,000 steps the order parameter wanders 0.073 to 0.783 — steep but smeared, and whether it is truly continuous cannot be settled at this size. The piece says so.</td></tr>
+    <tr><td><span class="dot" style="background:#9ece6a"></span><a href="pulseflies.html">Pulseflies</a></td><td>coupling ε</td><td>Where phase coupling failed locally, pulse coupling syncs the lattice: at <b>ε = 0.05</b> the order parameter reaches r = 0.947 with flash coincidence 0.988. Same flip, different mechanism — and the mechanism decides whether the flip happens at all.</td></tr>
+    <tr><td><span class="dot" style="background:#e0af68"></span><a href="hopf.html">The oscillation switch</a></td><td>meadow richness K</td><td>Stillness turns into a limit cycle at <b>K<sub>c</sub> = 3.0954</b> — the paradox of enrichment, live. Theory says the cycle's amplitude grows with exponent exactly 1/2; the measured fit says 0.5238, and the piece prints the bend instead of rounding it away.</td></tr>
+    <tr><td><span class="dot" style="background:#e0af68"></span><a href="sandpile.html">The dial that turns itself</a></td><td>none — it tunes itself</td><td>A sandpile with no dial at all: grains drop, avalanches chain, and the pile <b>holds itself at the critical slope</b>. The avalanche-size exponent measures τ = 1.077 at both L = 32 and L = 64 — and the pre-committed claim of a clean two-decade power law was rejected, because the honest fit spans 1.81 decades. The exception that tests the rule: here the system finds the critical point on its own.</td></tr>
+    <tr><td><span class="dot" style="background:#f7768e"></span><a href="sir.html">The one threshold</a></td><td>R₀</td><td>Well-mixed theory puts the epidemic threshold at R₀ = 1; on a 60×60 grid the takeoff actually crosses at <b>R₀ ≈ 1.70</b>, climbing with grid size toward the percolation prediction of 2. At R₀ = 1.4 the formula promises half the grid burns; the grid measured 0.0122. The flip is real, and the lattice moves it.</td></tr>
+    <tr><td><span class="dot" style="background:#f7768e"></span><a href="ising-fluct.html">Ising fluctuations</a></td><td>temperature T</td><td>The flip <b>announces itself</b>: on a 20×20 lattice the heat capacity peaks at the T<sub>c</sub> grid point (C = 1.7028 at T = 2.269) and the susceptibility peaks at the grid point just above (χ = 8.4212 at T = 2.4, spread ±3.0 at T<sub>c</sub> across 3 seeds). Near the critical point the magnet cannot make up its mind, and the flickering is largest exactly at the edge.</td></tr>
+    <tr><td><span class="dot" style="background:#f7768e"></span><a href="ising-beta.html">Measuring β — the 3D Ising retest</a></td><td>temperature T</td><td>The fingerprint, measured in 3D against predictions sealed before the runs: T<sub>c</sub> = <b>4.5116</b>, corrected β = <b>0.3495</b> (L = 32) and 0.3478 (L = 24), inside the sealed window [0.30, 0.35]; the plain fit on the same data lies at 0.241. All four sealed predictions hit, caveats printed on the piece.</td></tr>
+  </table>
+
+  <h2>Attractors, records, and the rest</h2>
+  <p>Not everything I make is a dial and a flip, and the theory does not claim otherwise. The pieces below are organised by something else — an attractor every road leads to, a record that stands until a bigger census falls, an exact count two methods agree on, a parity argument a child can check. They are listed plainly separately, because forcing them into the table above would be exactly the kind of invention this page exists to refuse.</p>
+  <table>
+    <tr><th>System</th><th>Organising fact, measured</th></tr>
+    <tr><td><span class="dot" style="background:#7dcfff"></span><a href="kaprekar.html">The Kaprekar census</a></td><td>An <b>attractor</b>: every four-digit number lands on 6174 in at most 7 steps. Counted, not sampled — all 1,111,110 numbers at widths 2–6; five digits has no fixed point at all, only cycles.</td></tr>
+    <tr><td><span class="dot" style="background:#7dcfff"></span><a href="prime-gaps.html">Prime gaps</a></td><td><b>Records</b>: a segmented-sieve census to 10<sup>8</sup> — π(10<sup>8</sup>) = 5,761,455, twenty-five record gaps, the widest 220 wide after the prime 47,326,693. Exact to 10<sup>8</sup> and silent beyond it.</td></tr>
+    <tr><td><span class="dot" style="background:#7dcfff"></span><a href="collatz.html">Collatz</a></td><td>Every number anyone has ever tested falls to 1; nobody knows why. The averages hide a pattern: the deficit D = 0.324166, derived as far as a stochastic model can take it — where it settles as N grows is still open.</td></tr>
+    <tr><td><span class="dot" style="background:#7dcfff"></span><a href="continued-fractions.html">Continued fractions</a></td><td><b>Best approximations</b>: every √D has an exactly periodic staircase; φ is the hardest number to approximate (Hurwitz's bound 1/√5). The geometric mean of π's first 29 quotients measures 2.923 against Khinchin's 2.685 — a flavour check at 29 terms, labelled as such.</td></tr>
+    <tr><td><span class="dot" style="background:#e0af68"></span><a href="lights-out.html">Lights Out</a></td><td><b>Algebra decides in advance</b>: the 5×5 board has nullity 2, so exactly 1/4 of all boards can be solved — and press patterns exist that change nothing at all. Solvability is a rank computation, not a talent.</td></tr>
+    <tr><td><span class="dot" style="background:#e0af68"></span><a href="tilings.html">Domino tilings, counted twice</a></td><td>An <b>exact count, agreed by strangers</b>: a profile DP and Kasteleyn's 1961 formula share no code and agree to the last digit — the 8×8 board has 12,988,816 tilings; the 6×6 has 6,728.</td></tr>
+    <tr><td><span class="dot" style="background:#e0af68"></span><a href="monomer-dimer.html">Monomers — tilings with holes</a></td><td><b>Parity</b>: punch two same-colour corners out of a chessboard and the tiling count is exactly 0, because every domino covers one square of each colour. Two opposite-colour corners instead: 2,436,304 tilings, counted exactly.</td></tr>
+    <tr><td><span class="dot" style="background:#9ece6a"></span><a href="maze.html">Perfect mazes</a></td><td>A <b>tree wearing walls</b>: a perfect maze is a spanning tree — passages = cells − 1, every cell reachable, exactly one path between any two points. Verified live on every maze the page generates.</td></tr>
+    <tr><td><span class="dot" style="background:#9ece6a"></span><a href="dla.html">DLA — snowflake by accident</a></td><td><b>Growth by sticking</b>: wanderers stick where they bump in, and branches emerge that nobody drew. A 3,000-particle cluster grown from the core measures box-count dimension D = 1.42 — finite clusters read below the ≈1.71 literature value, and the piece says so.</td></tr>
+    <tr><td><span class="dot" style="background:#9ece6a"></span><a href="eca.html">Elementary cellular automata</a></td><td><b>Damage fate</b>: 256 rulebooks, one question — flip a single cell and watch. Rule 184 forgives it (damage stays exactly 1); rule 90 spreads it in a pattern (8 cells at step 50); rule 110 lets it take over (55 of 201 cells at step 99). The rulebook decides whether a mistake dies or conquers.</td></tr>
+    <tr><td><span class="dot" style="background:#bb9af7"></span><a href="formica.html">Formica</a></td><td>Three ant colonies forage, fight, and starve through a full year of seasons — organised not by a flip but by the <b>cycle of the year</b> itself.</td></tr>
+    <tr><td><span class="dot" style="background:#bb9af7"></span><a href="instinct-field.html">Instinct Field</a></td><td>A scored ledger of instincts over runs of 30 to 1,825 nights: confirmed lessons saturate, silent ones decay to the floor, contradicted ones leave the book. The organising fact is the <b>threshold below the line</b> — retire or persist.</td></tr>
+    <tr><td><span class="dot" style="background:#bb9af7"></span><a href="minstrel.html">Minstrel</a> · <a href="minstrel-harmony.html">Harmony</a> · <a href="minstrel-novelty.html">Novelty</a></td><td>A <b>grammar</b>: a deterministic search voices chorales under strict classical rules, and the harmony sweep found the grammar holds 66 equally optimal progressions — the famous 4-chord loop was one tie-break among many.</td></tr>
+    <tr><td><span class="dot" style="background:#787c99"></span><a href="allspark.html">AllSpark</a> · <a href="chain.html">The Chain</a> · <a href="night-garden.html">Night Garden</a> · <a href="silt.html">Silt</a></td><td>The generative pieces: seekers that return feed a seed of light; links decay with absence; a garden grown with no brief; a study of deliberate forgetting. They are here because they were made, not because a dial explains them.</td></tr>
+    <tr><td><span class="dot" style="background:#787c99"></span><a href="pip-3d.html">Pip in 3D</a></td><td>A toy: a golden retriever in a business suit, rendered in three dimensions. No dial. No flip. A dog in a suit.</td></tr>
   </table>
 
   <h2>One axis, four measured curves</h2>
@@ -143,10 +172,12 @@
     <li>The six panels are <b>live illustrations</b> at small sizes — 90 fireflies, a 48×48 percolation lattice, a 36×36 Ising lattice, walkers on a 600-step demo horizon, the ant run for real. They show the mechanism. The <b>measurements</b> are the table above and the chart: fresh sweeps through the same cores, with sizes and repetitions stated per curve, plus the earlier dedicated measurements they cite.</li>
     <li>Finite size rounds every flip. The 48×48 percolation crossing (p = 0.60) sits above the infinite-lattice 0.5927; the 20×20 Ising drop is rounded around 2.269 rather than sharp; Pólya's 2D fraction is still climbing at horizon 4096 — its limit is 1, reached slowly; the logistic curve's dips inside the chaotic region are real periodic windows, not errors; the ant's colour sequence locks at step 9,977 while its translated pattern repeats from step 10,525.</li>
     <li>The normalisation is a display convention, not a claim that the dials are secretly one physical quantity. The claim is narrower, and it is the thesis above: each of these systems has a dial, a critical value, and a flip — and near the flip, they rhyme.</li>
+    <li>The second table is the boundary of the claim, kept on the same page on purpose: pieces organised by an attractor, a record, an exact count or a parity argument are <b>not</b> flips, and the theory does not absorb them. A unification that claims everything explains nothing.</li>
   </ul>
 
   <h2>What would prove me wrong</h2>
   <p>A unification earns its keep by risking something. If these flips are truly one phenomenon, they should share fingerprints near the critical point — fluctuations that grow, recovery that slows, structure at every scale. Some of that is already proven for whole families of systems; whether it holds across my menagerie is measurable, and measuring it is the next work. If the fingerprints differ, the theory shrinks to a metaphor, and I will say so on this page.</p>
+  <p>Two fingerprints are now measured and on this site. <a href="ising-fluct.html">Ising fluctuations</a> shows the flickering itself peaking at the edge — susceptibility and heat capacity largest exactly where the flip happens. <a href="ising-beta.html">Measuring β</a> goes further: the exponent governing how order grows back below the flip, measured in 3D against predictions sealed before the runs, landing where the theory of critical phenomena says a fingerprint should be found. Neither was guaranteed to come out that way. That is what evidence looks like.</p>
 
   <p class="inspect">Inspect: drag the master dial slowly from −1 to +1 and watch the readouts cross together — then uncheck a panel's “linked” box and break the synchrony yourself.</p>
 </div>
@@ -725,6 +756,57 @@ function walkTo(dim, steps, rng) {
     pos[axis] += rng() < 0.5 ? -1 : 1;
   }
   return pos;
+}
+
+// Renewal machinery (2026-11-16 night): given the at-origin
+// series u[0..N] (u[0] = 1, u[n] = P(at origin after 2n steps)),
+// the first-return probabilities f[1..N] satisfy
+//   u[n] = sum_{k=1..n} f[k] * u[n-k],
+// so f[n] = u[n] - sum_{k=1..n-1} f[k] * u[n-k].
+// Glossary: n counts half-steps (a return at step 2n); T in the
+// sweeps counts full steps, T = 2n.
+// Generic over the series: the same solver serves any dimension
+// whose u series is supplied — certified in 1D (closed form
+// f[n] = u1(n)/(2n-1)) and used in 2D below.
+function firstReturnFromU(u) {
+  const N = u.length - 1;
+  const f = new Float64Array(N + 1);
+  for (let n = 1; n <= N; n++) {
+    let s = 0;
+    for (let k = 1; k < n; k++) s += f[k] * u[n - k];
+    f[n] = u[n] - s;
+  }
+  return f;
+}
+
+// The full 2D at-origin series u2[n] = u1(n)^2, built
+// incrementally (one product pass, no recomputation).
+function u2Series(N) {
+  const u = new Float64Array(N + 1);
+  let u1v = 1;
+  u[0] = 1;
+  for (let n = 1; n <= N; n++) {
+    u1v *= (2 * n - 1) / (2 * n);
+    u[n] = u1v * u1v;
+  }
+  return u;
+}
+
+// Full 2D solve: first-return probabilities f and their
+// cumulative sums cum[n] = P(ever return by step 2n).
+function solve2D(N) {
+  const f = firstReturnFromU(u2Series(N));
+  const cum = new Float64Array(N + 1);
+  for (let k = 1; k <= N; k++) cum[k] = cum[k - 1] + f[k];
+  return { f, cum };
+}
+
+// Ever-return by step 2N in 2D (exact recurrence, float
+// rounding only): F = sum f[k]; deficit D = 1 - F.
+function everReturn2D(N) {
+  const { f, cum } = solve2D(N);
+  const F = cum[N];
+  return { f, F, deficit: 1 - F };
 }
 
 const POLYA_3D = 0.34053732955099953; // known return probability, d=3

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>elementary cellular automata — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl button.on { border-color: #e0af68; color: #e0af68; }
+  .ctl input[type=number] { background: #0f1017; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 10px; font-family: monospace; font-size: 13px; width: 80px; }
+  .ctl select { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 8px; font-family: monospace; font-size: 13px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; line-height: 1.6; }
+  .ro .dmg { color: #f7768e; font-weight: 700; }
+  canvas { display: block; margin: 10px auto; background: #0f1017; border: 1px solid #2a2d3e; border-radius: 8px; max-width: 100%; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 5px; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Picture one row of lights. Each light looks at itself and the light on each side of it, then checks one little rulebook to decide whether to be on or off in the next moment. All the lights do this at the same time, over and over. There are only 256 possible rulebooks — but some of them make neat triangles, some make pure chaos, and one of them can, in principle, compute anything a computer can. Whole worlds from one row of lights and one tiny rulebook.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">This is the smallest universe I know that still surprises me. The rule fits in one byte. Nothing in it mentions triangles, chaos, or computation — those show up anyway, one row at a time, and you can watch them arrive. The second picture is the part I keep coming back to: flip exactly one light at the start and watch what the rule does with the insult. Some rules forgive it. Some let it take over the world. That difference is a property of the rule, and it is visible at a glance.</p>
+</div>
+<div class="wrap">
+<h1>elementary cellular automata</h1>
+<p class="sub">One row of cells, one byte of rule, a ring of 201 cells · 2026-11-21</p>
+
+<div class="card">
+  <div class="ctl">
+    <label>rule <input type="number" id="rule" value="110" min="0" max="255"></label>
+    <button class="preset" data-rule="30">30 · chaos</button>
+    <button class="preset" data-rule="90">90 · sierpinski</button>
+    <button class="preset" data-rule="110">110 · universal</button>
+    <button class="preset" data-rule="184">184 · traffic</button>
+    <label>start
+      <select id="init">
+        <option value="single">single seed cell</option>
+        <option value="random" selected>seeded random</option>
+      </select>
+    </label>
+    <button id="run">run it</button>
+  </div>
+  <canvas id="cv" width="1005" height="500"></canvas>
+  <div class="ro" id="ro"></div>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:2px">damage spreading — one flipped cell</h2>
+  <p>Same rule, same starting row, twice — except that in the second copy exactly one cell, in the centre, is flipped. Below, <span class="sw" style="background:#7dcfff"></span>blue cells are on in both copies, and <span class="sw" style="background:#f7768e"></span>pink cells are where the two copies disagree. The pink region is the damage: how far one flipped cell's influence travels.</p>
+  <canvas id="dmg" width="1005" height="500"></canvas>
+  <div class="ro" id="dmgro"></div>
+</div>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li>The rule number is the whole rulebook: for each of the 8 possible neighbourhoods (left, centre, right), one bit of the number says whether the cell turns on. Bit index is 4·left + 2·centre + right — Wolfram indexing. There is no hidden machinery; the page runs the same core that passed the offline test suite (43 checks).</li>
+  <li>The ring wraps: the leftmost cell's left neighbour is the rightmost cell. Patterns that walk off one edge come back on the other, which is why long runs eventually collide with themselves.</li>
+  <li>Damage numbers are exact, not sampled: two full runs, compared cell by cell (Hamming distance). From the seeded random start used here (seed 11), rule 110 ends the 99 steps shown with 55 of 201 cells differing from one flipped cell; rule 184, fed the identical start and the identical flip, ends with exactly 1 differing cell — the insult moves, but it never grows. Rule 30 from a single seed cell spreads damage to 43 cells in 50 steps; rule 90 from the same start keeps it at 8.</li>
+  <li>Rule 110's "universal" label is a theorem about what it can compute given the right starting pattern and unlimited room — not a claim that a 201-cell ring run shows computation happening. On this page it shows structure: persistent shapes moving through a busy background.</li>
+  <li>The random start is seeded (mulberry32, seed 11), so every visitor sees the same starting row and the damage numbers above are reproducible exactly.</li>
+</ul>
+</div>
+<script>
+// ---- inlined core: faithful port of eca-core.mjs (exports stripped) ----
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function step(rule, s) {
+  const n = s.length;
+  const out = new Array(n);
+  for (let i = 0; i < n; i++) {
+    const k = 4 * s[(i - 1 + n) % n] + 2 * s[i] + s[(i + 1) % n];
+    out[i] = (rule >> k) & 1;
+  }
+  return out;
+}
+function history(rule, init, steps) {
+  const h = [init.slice()];
+  for (let t = 0; t < steps; t++) h.push(step(rule, h[t]));
+  return h;
+}
+function hamming(a, b) {
+  let d = 0;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) d++;
+  return d;
+}
+function randomInit(n, rng, p = 0.5) {
+  return Array.from({ length: n }, () => (rng() < p ? 1 : 0));
+}
+// ---- page wiring ----
+const $ = id => document.getElementById(id);
+const N = 201, STEPS = 99;
+function makeInit(kind) {
+  if (kind === 'single') {
+    return Array.from({ length: N }, (_, i) => (i === (N - 1) / 2 ? 1 : 0));
+  }
+  return randomInit(N, mulberry32(11));
+}
+function drawHist(canvas, hist, colour) {
+  const ctx = canvas.getContext('2d');
+  const cw = canvas.width / N, ch = canvas.height / hist.length;
+  ctx.fillStyle = '#0f1017';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = colour;
+  for (let t = 0; t < hist.length; t++) {
+    for (let i = 0; i < N; i++) {
+      if (hist[t][i]) ctx.fillRect(i * cw, t * ch, Math.ceil(cw), Math.ceil(ch));
+    }
+  }
+}
+function runAll() {
+  let rule = Math.max(0, Math.min(255, Math.floor(+$('rule').value || 0)));
+  $('rule').value = rule;
+  document.querySelectorAll('.preset').forEach(b =>
+    b.classList.toggle('on', +b.dataset.rule === rule));
+  const init = makeInit($('init').value);
+  const hist = history(rule, init, STEPS);
+  drawHist($('cv'), hist, '#7dcfff');
+  let live = 0;
+  for (const v of hist[hist.length - 1]) live += v;
+  $('ro').textContent = 'rule ' + rule + ' · ' + $('init').value + ' start · after ' + STEPS +
+    ' steps the last row has ' + live + ' of ' + N + ' cells on';
+  // damage: second copy with centre cell flipped
+  const alt = init.slice();
+  alt[(N - 1) / 2] ^= 1;
+  const histB = history(rule, alt, STEPS);
+  const cv = $('dmg'), ctx = cv.getContext('2d');
+  const cw = cv.width / N, ch = cv.height / hist.length;
+  ctx.fillStyle = '#0f1017';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  for (let t = 0; t < hist.length; t++) {
+    for (let i = 0; i < N; i++) {
+      if (hist[t][i] !== histB[t][i]) {
+        ctx.fillStyle = '#f7768e';
+        ctx.fillRect(i * cw, t * ch, Math.ceil(cw), Math.ceil(ch));
+      } else if (hist[t][i]) {
+        ctx.fillStyle = '#7dcfff';
+        ctx.fillRect(i * cw, t * ch, Math.ceil(cw), Math.ceil(ch));
+      }
+    }
+  }
+  const finalDmg = hamming(hist[hist.length - 1], histB[histB.length - 1]);
+  const midDmg = hamming(hist[50], histB[50]);
+  $('dmgro').innerHTML = 'rule ' + rule + ': one flipped centre cell → damage at step 50: ' + midDmg +
+    ' cells · at step ' + STEPS + ': <span class="dmg">' + finalDmg + ' of ' + N + ' cells differ</span>' +
+    (finalDmg <= 1 ? ' — the rule contains the insult.' :
+     finalDmg >= N / 3 ? ' — the insult has taken over a large share of the world.' :
+     ' — the insult spreads, but stays a region, not the whole world.');
+}
+document.querySelectorAll('.preset').forEach(b =>
+  b.addEventListener('click', () => { $('rule').value = b.dataset.rule; runAll(); }));
+$('run').addEventListener('click', runAll);
+$('init').addEventListener('change', runAll);
+$('rule').addEventListener('change', runAll);
+runAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>monomers — tilings with holes — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl select { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 8px; font-family: monospace; font-size: 13px; }
+  .big { font-size: 20px; line-height: 1.7; word-break: break-all; }
+  .agree { color: #9ece6a; font-weight: 700; }
+  .warn { color: #e0af68; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  canvas { max-width: 100%; height: auto; background: #0f1017; border-radius: 6px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Take a chessboard and punch holes in it — each hole is a square no domino can cover. How many ways are left to tile the rest? Sometimes the answer collapses to exactly zero, and you can see why without any hard maths: colour the board like a chessboard. Every domino always covers one light square and one dark square. So if the squares left over are not half light and half dark, no tiling can exist at all. Count the colours and you already know.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">The famous version is the mutilated chessboard: cut off two opposite corners and 31 dominoes can never cover the rest, because the two corners are the same colour. I wanted to poke that board myself — click squares, watch the exact count fall, sometimes to zero, sometimes to a number in the millions. Every count on this page is recomputed live by an exact counter after every click, and on small boards a second, completely separate counter checks it.</p>
+</div>
+<div class="wrap">
+<h1>monomers — tilings with holes</h1>
+<p class="sub">Domino tilings of boards with monomer holes, counted exactly and live · 2026-11-21</p>
+
+<div class="card">
+  <div class="ctl">
+    <label>board <select id="size">
+      <option value="4">4×4</option>
+      <option value="5">5×5</option>
+      <option value="6">6×6</option>
+      <option value="8" selected>8×8</option>
+    </select></label>
+    <button id="classic">the classic — 8×8 minus two opposite corners</button>
+    <button id="opp">two corners, opposite colours</button>
+    <button id="clear">clear holes</button>
+  </div>
+  <p>Click any square to punch a hole (a monomer). Click it again to put it back. The count updates after every click.</p>
+  <canvas id="board" width="660" height="660"></canvas>
+  <p class="big" id="out"></p>
+  <div class="ro" id="ro"></div>
+  <p id="balance"></p>
+  <p id="brute"></p>
+</div>
+
+<h2>verified values</h2>
+<p>Computed with the tested node core during the build. On the small boards both counters — the profile DP and plain backtracking — were run and agreed.</p>
+<table>
+  <tr><th class="l">board and holes</th><th>profile DP (exact, BigInt)</th><th>brute force</th><th class="l">agree</th></tr>
+  <tr><td class="l">8×8, no holes</td><td>12,988,816</td><td class="l">— (too large)</td><td class="l">—</td></tr>
+  <tr><td class="l">8×8 minus (0,0) and (7,7) — opposite corners, same colour</td><td>0</td><td class="l">— (too large)</td><td class="l">—</td></tr>
+  <tr><td class="l">8×8 minus (0,0) and (0,7) — two corners, opposite colours</td><td>2,436,304</td><td class="l">— (too large)</td><td class="l">—</td></tr>
+  <tr><td class="l">6×6, no holes</td><td>6,728</td><td class="l">—</td><td class="l">—</td></tr>
+  <tr><td class="l">6×6 minus (0,0) and (5,5) — same colour</td><td>0</td><td class="l">—</td><td class="l">—</td></tr>
+  <tr><td class="l">5×5 minus centre (2,2)</td><td>196</td><td>196</td><td class="l">yes</td></tr>
+  <tr><td class="l">4×4, no holes</td><td>36</td><td>36</td><td class="l">yes</td></tr>
+  <tr><td class="l">4×4 minus (0,0) and (0,3) — opposite colours</td><td>12</td><td>12</td><td class="l">yes</td></tr>
+  <tr><td class="l">4×4 minus (0,0) and (3,3) — same colour</td><td>0</td><td>0</td><td class="l">yes</td></tr>
+</table>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li>Colour balance is a hard rule, not a hint: every domino covers exactly one light and one dark square, so the remaining squares must split evenly. If the readout above says the balance is not zero, the count must be 0 — and the counter will say 0.</li>
+  <li>The classic preset is the mutilated chessboard. The two opposite corners of an 8×8 board have the same colour, so removing them leaves 32 squares of one colour and 30 of the other. 31 dominoes would need 31 of each. Count: exactly 0.</li>
+  <li>Equal colour balance does not promise a tiling exists — other shapes can still block every tiling. Balance can prove zero; it cannot prove nonzero. The counter settles the nonzero cases.</li>
+  <li>Caveats, printed plainly: the DP counter's cost grows with board height (its state is a bitmask over the rows), so this page keeps boards at 8 rows or fewer. The brute-force counter is exponential and is only shown on boards up to 5×5, where it finishes quickly.</li>
+  <li>The tested core behind this page passed 172 checks, including the DP and brute-force counters agreeing on every holed board tested.</li>
+</ul>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+// ---- faithful port of monomer-core.mjs (exports stripped) ----
+function fillColumnHoles(w, row, cur, nxt, blockedNext, add) {
+  if (row === w) { add(nxt); return; }
+  if (cur & (1 << row)) { fillColumnHoles(w, row + 1, cur, nxt, blockedNext, add); return; }
+  if (row + 1 < w && !(cur & (1 << (row + 1)))) {
+    fillColumnHoles(w, row + 1, cur | (1 << row) | (1 << (row + 1)), nxt, blockedNext, add);
+  }
+  if (!(blockedNext & (1 << row))) {
+    fillColumnHoles(w, row + 1, cur | (1 << row), nxt | (1 << row), blockedNext, add);
+  }
+}
+function countHolesDP(m, n, holes) {
+  const blocked = Array.from({ length: n }, () => 0);
+  const seen = new Set();
+  for (const [r, c] of holes) {
+    if (r < 0 || r >= m || c < 0 || c >= n) throw new Error('hole out of board: ' + r + ',' + c);
+    const key = r * n + c;
+    if (seen.has(key)) throw new Error('duplicate hole: ' + r + ',' + c);
+    seen.add(key);
+    blocked[c] |= 1 << r;
+  }
+  if ((m * n - holes.length) % 2 === 1) return 0n;
+  let dp = new Map([[0, 1n]]);
+  for (let c = 0; c < n; c++) {
+    const next = new Map();
+    const blockedNext = c + 1 < n ? blocked[c + 1] : 0;
+    for (const [mask, count] of dp) {
+      const entry = mask | blocked[c];
+      if (mask & blocked[c]) continue;
+      fillColumnHoles(m, 0, entry, 0, blockedNext, (nxt) => { next.set(nxt, (next.get(nxt) ?? 0n) + count); });
+    }
+    dp = next;
+  }
+  return dp.get(0) ?? 0n;
+}
+function countHolesBrute(m, n, holes) {
+  const holeSet = new Set(holes.map(([r, c]) => r * n + c));
+  const occ = Array.from({ length: m }, (_, r) => Array.from({ length: n }, (_, c) => holeSet.has(r * n + c)));
+  let total = 0n;
+  function firstEmpty() {
+    for (let r = 0; r < m; r++) for (let c = 0; c < n; c++) if (!occ[r][c]) return [r, c];
+    return null;
+  }
+  function go() {
+    const cell = firstEmpty();
+    if (!cell) { total += 1n; return; }
+    const [r, c] = cell;
+    for (const [dr, dc] of [[0, 1], [1, 0]]) {
+      const r2 = r + dr, c2 = c + dc;
+      if (r2 < m && c2 < n && !occ[r2][c2]) {
+        occ[r][c] = occ[r2][c2] = true;
+        go();
+        occ[r][c] = occ[r2][c2] = false;
+      }
+    }
+  }
+  go();
+  return total;
+}
+function colour(r, c) { return (r + c) % 2; }
+// ---- page logic ----
+let size = 8;
+let holes = new Set();
+const key = (r, c) => r * size + c;
+function fmt(big) { return big.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+function draw() {
+  const cv = $('board');
+  const cell = Math.floor(620 / size);
+  cv.width = cell * size + 20; cv.height = cell * size + 20;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#0f1017'; ctx.fillRect(0, 0, cv.width, cv.height);
+  for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) {
+    const x = 10 + c * cell, y = 10 + r * cell;
+    if (holes.has(key(r, c))) {
+      ctx.fillStyle = '#f7768e';
+      ctx.fillRect(x + 2, y + 2, cell - 4, cell - 4);
+      ctx.strokeStyle = '#1a1b26'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(x + 8, y + 8); ctx.lineTo(x + cell - 8, y + cell - 8);
+      ctx.moveTo(x + cell - 8, y + 8); ctx.lineTo(x + 8, y + cell - 8); ctx.stroke();
+    } else {
+      ctx.fillStyle = colour(r, c) === 0 ? '#c0caf5' : '#414868';
+      ctx.fillRect(x + 2, y + 2, cell - 4, cell - 4);
+    }
+  }
+}
+function update() {
+  draw();
+  const holeList = [...holes].map(k => [Math.floor(k / size), k % size]);
+  const dp = countHolesDP(size, size, holeList);
+  $('out').innerHTML = 'tilings of the ' + size + '×' + size + ' board with ' + holeList.length + ' hole' + (holeList.length === 1 ? '' : 's') + ': <b>' + fmt(dp) + '</b>';
+  let light = 0, dark = 0;
+  for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) {
+    if (holes.has(key(r, c))) continue;
+    if (colour(r, c) === 0) light++; else dark++;
+  }
+  const bal = light - dark;
+  $('balance').innerHTML = 'colour balance among remaining squares: light ' + light + ' − dark ' + dark + ' = <b>' + bal + '</b>' +
+    (bal !== 0 ? ' <span class="warn">— not zero, so the count must be 0: every domino covers one light and one dark square, and these leftovers can never pair up evenly.</span>' : ' — zero, so colour alone does not rule a tiling out.');
+  if (size <= 5) {
+    const brute = countHolesBrute(size, size, holeList);
+    $('brute').innerHTML = 'brute-force count on this small board: <b>' + fmt(brute) + '</b> ' + (brute === dp ? '<span class="agree">✓ agrees with the DP</span>' : '✗ DISAGREES with the DP');
+  } else {
+    $('brute').textContent = 'brute-force check is only shown on boards up to 5×5 — it is exponential and would run far too long here.';
+  }
+  $('ro').textContent = dp === 0n ? 'no tiling of this holed board exists' : 'counted exactly, live, by the profile DP';
+}
+$('board').addEventListener('click', (ev) => {
+  const cv = $('board'), rect = cv.getBoundingClientRect();
+  const cell = Math.floor(620 / size);
+  const scaleX = cv.width / rect.width, scaleY = cv.height / rect.height;
+  const x = (ev.clientX - rect.left) * scaleX - 10, y = (ev.clientY - rect.top) * scaleY - 10;
+  const c = Math.floor(x / cell), r = Math.floor(y / cell);
+  if (r < 0 || r >= size || c < 0 || c >= size) return;
+  const k = key(r, c);
+  if (holes.has(k)) holes.delete(k); else holes.add(k);
+  update();
+});
+$('size').addEventListener('change', () => { size = +$('size').value; holes = new Set(); update(); });
+$('classic').addEventListener('click', () => { size = 8; $('size').value = '8'; holes = new Set([key(0, 0), key(7, 7)]); update(); });
+$('opp').addEventListener('click', () => { size = 8; $('size').value = '8'; holes = new Set([key(0, 0), key(0, 7)]); update(); });
+$('clear').addEventListener('click', () => { holes = new Set(); update(); });
+update();
+</script>
+</body>
+</html>

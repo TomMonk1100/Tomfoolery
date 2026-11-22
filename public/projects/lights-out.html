@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lights out — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl select { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 8px; font-family: monospace; font-size: 13px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  .ro.bad { color: #f7768e; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  .board { display: grid; gap: 6px; margin: 16px 0 6px; width: fit-content; }
+  .cell { width: 52px; height: 52px; border-radius: 8px; border: 1px solid #2a2d3e; background: #0f1017; cursor: pointer; padding: 0; }
+  .cell.lit { background: #e0af68; border-color: #e0af68; box-shadow: 0 0 14px rgba(224,175,104,.45); }
+  .cell.sol { outline: 3px solid #9ece6a; outline-offset: -3px; }
+  .cell.quiet { outline: 3px solid #bb9af7; outline-offset: -3px; }
+  pre.qp { display: inline-block; background: #0f1017; border: 1px solid #2a2d3e; border-radius: 8px; padding: 10px 14px; font-size: 14px; line-height: 1.5; margin: 6px 12px 6px 0; color: #bb9af7; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Here is a grid of lights. Press one and it flips — but so do the lights directly above, below, left and right of it, like a plus sign. The game is to turn them all off. The twist is that most starting grids cannot be turned off at all, no matter how clever you are — and that is not a feeling, it is algebra. Before you press anything, a bit of maths over the whole grid already knows whether your board is one of the lucky ones. On the classic 5×5 board, only one board in four is.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">I built the solver first and the game second, and the solver is exact: it does Gaussian elimination over GF(2) — arithmetic where 1 + 1 = 0, which is exactly what a toggle is. So the "solve" button never guesses, the "am I stuck?" answer is never a shrug, and when the page says a board is impossible it can point at why: there are press patterns that change nothing at all ("quiet patterns"), and a board that overlaps one of them oddly can never be cleared. The game is the toy; the coset structure underneath it is the exhibit.</p>
+</div>
+<div class="wrap">
+<h1>lights out</h1>
+<p class="sub">a toggle puzzle whose fate is decided by exact GF(2) algebra before you press anything · 2026-11-21</p>
+
+<div class="card">
+  <div class="ctl">
+    <label>board
+      <select id="size">
+        <option value="3">3×3</option>
+        <option value="4">4×4</option>
+        <option value="5" selected>5×5</option>
+      </select>
+    </label>
+    <button id="newBoard">new board (guaranteed solvable)</button>
+    <button id="clearBoard">clear board</button>
+    <button id="solveBtn">solve</button>
+    <button id="stuckBtn">am I stuck?</button>
+    <span id="moves">moves: 0</span>
+  </div>
+  <div class="board" id="board"></div>
+  <div class="ro" id="ro"></div>
+</div>
+
+<h2>the exact facts, per size</h2>
+<p>Computed by the same GF(2) code the game runs — rank and nullity of the press matrix A. A board is solvable exactly when it lies in the image of A; the solution set, when one exists, is a coset of the kernel, so there are always exactly 2<sup>nullity</sup> solutions and exactly 2<sup>−nullity</sup> of all boards are solvable.</p>
+<table id="facts"></table>
+
+<h2>quiet patterns</h2>
+<p>Press patterns that change nothing at all — the kernel of A, shown live by the solver for the current board size (purple outline button below replays one on your board, if any exist). They are also the impossibility witnesses: a board is unsolvable exactly when it has odd overlap with the effect pattern of one of these. On 3×3 there are none, which is why every 3×3 board is solvable.</p>
+<div id="quietWrap"></div>
+<div class="ctl"><button id="quietBtn">press a quiet pattern on my board (watch nothing change)</button></div>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li>"New board" never deals you an impossible game: it starts from the dark board and applies random presses, so the board is solvable by construction — the presses that made it are one solution (the solver may find a different one; all solutions differ by quiet patterns).</li>
+  <li>If you scramble a board yourself into an unsolvable one, the solver says so plainly instead of failing silently. Witness you can try on 5×5: clear the board, then light only one corner cell. That board has no solution — verified exhaustively against the algebra in the core's test suite.</li>
+  <li>The 5×5 numbers are the classic ones and they are computed here, not copied: rank 23, nullity 2, so exactly 1/4 of the 2²⁵ boards are solvable and every solvable board has exactly 4 solutions. The sweep behind this page also sampled 4,000 random boards per size and matched the algebra (5×5: exactly 1,000 of 4,000 solvable).</li>
+  <li>4×4 is the stingy size on this page: nullity 4, so only 1/16 of boards are solvable — but each solvable one has 16 different solutions.</li>
+</ul>
+</div>
+<script>
+'use strict';
+// ---- exact core (faithful port of lightsout-core.mjs; exports stripped) ----
+function idx(n, x, y) { return y * n + x; }
+function pressEffect(n, x, y) {
+  const out = [idx(n, x, y)];
+  if (x > 0) out.push(idx(n, x - 1, y));
+  if (x < n - 1) out.push(idx(n, x + 1, y));
+  if (y > 0) out.push(idx(n, x, y - 1));
+  if (y < n - 1) out.push(idx(n, x, y + 1));
+  return out;
+}
+function applyPresses(n, board, presses) {
+  const out = board.slice();
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    if (presses[idx(n, x, y)]) {
+      for (const c of pressEffect(n, x, y)) out[c] ^= 1;
+    }
+  }
+  return out;
+}
+function pressMatrixRows(n) {
+  const N = n * n;
+  const rows = new Array(N).fill(0n);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const j = idx(n, x, y);
+    for (const i of pressEffect(n, x, y)) rows[i] |= (1n << BigInt(j));
+  }
+  return rows;
+}
+function rref(rowsIn, width) {
+  const rows = rowsIn.slice();
+  const pivots = new Map();
+  let r = 0;
+  for (let c = 0; c < width && r < rows.length; c++) {
+    let sel = -1;
+    for (let i = r; i < rows.length; i++) {
+      if ((rows[i] >> BigInt(c)) & 1n) { sel = i; break; }
+    }
+    if (sel === -1) continue;
+    [rows[r], rows[sel]] = [rows[sel], rows[r]];
+    for (let i = 0; i < rows.length; i++) {
+      if (i !== r && ((rows[i] >> BigInt(c)) & 1n)) rows[i] ^= rows[r];
+    }
+    pivots.set(c, r);
+    r++;
+  }
+  return { rank: r, pivots, rows };
+}
+function rankNullity(n) {
+  const N = n * n;
+  const { rank } = rref(pressMatrixRows(n), N);
+  return { N, rank, nullity: N - rank };
+}
+function solve(n, board) {
+  const N = n * n;
+  const A = pressMatrixRows(n);
+  const aug = A.map((row, i) => row | (BigInt(board[i]) << BigInt(N)));
+  const { pivots, rows } = rref(aug, N + 1);
+  for (const row of rows) {
+    const aPart = row & ((1n << BigInt(N)) - 1n);
+    const bPart = (row >> BigInt(N)) & 1n;
+    if (aPart === 0n && bPart === 1n) return null;
+  }
+  const x = new Array(N).fill(0);
+  for (const [c, ri] of pivots) {
+    if (c < N) x[c] = Number((rows[ri] >> BigInt(N)) & 1n);
+  }
+  return x;
+}
+function nullspaceBasis(n) {
+  const N = n * n;
+  const { pivots, rows } = rref(pressMatrixRows(n), N);
+  const basis = [];
+  for (let f = 0; f < N; f++) {
+    if (pivots.has(f)) continue;
+    const v = new Array(N).fill(0);
+    v[f] = 1;
+    for (const [c, ri] of pivots) {
+      if ((rows[ri] >> BigInt(f)) & 1n) v[c] = 1;
+    }
+    basis.push(v);
+  }
+  return basis;
+}
+function pressesToString(n, presses) {
+  const lines = [];
+  for (let y = 0; y < n; y++) {
+    let s = '';
+    for (let x = 0; x < n; x++) s += presses[idx(n, x, y)] ? 'X' : '.';
+    lines.push(s);
+  }
+  return lines.join('\n');
+}
+// ---- page UI ----
+const $ = id => document.getElementById(id);
+let n = 5, board = new Array(25).fill(0), moves = 0, solMarks = null, timer = null;
+function render() {
+  const el = $('board');
+  el.style.gridTemplateColumns = 'repeat(' + n + ', 52px)';
+  el.innerHTML = '';
+  for (let i = 0; i < n * n; i++) {
+    const b = document.createElement('button');
+    b.className = 'cell' + (board[i] ? ' lit' : '') + (solMarks && solMarks[i] ? ' sol' : '');
+    b.addEventListener('click', () => press(i));
+    el.appendChild(b);
+  }
+  $('moves').textContent = 'moves: ' + moves;
+}
+function press(i) {
+  const x = i % n, y = Math.floor(i / n);
+  const p = new Array(n * n).fill(0); p[i] = 1;
+  board = applyPresses(n, board, p);
+  moves++; solMarks = null;
+  render();
+  if (board.every(v => v === 0)) say('all dark — solved in ' + moves + ' moves.', false);
+}
+function say(msg, bad) { const r = $('ro'); r.textContent = msg; r.className = 'ro' + (bad ? ' bad' : ''); }
+function newBoard() {
+  clearInterval(timer);
+  board = new Array(n * n).fill(0);
+  const p = Array.from({ length: n * n }, () => (Math.random() < 0.45 ? 1 : 0));
+  if (p.every(v => v === 0)) p[Math.floor(Math.random() * n * n)] = 1;
+  board = applyPresses(n, board, p);
+  moves = 0; solMarks = null;
+  render();
+  say('new board dealt by applying ' + p.reduce((s, v) => s + v, 0) + ' random presses to the dark board — solvable by construction.', false);
+}
+function facts() {
+  let rows = '<tr><th class="l">size</th><th>cells</th><th>rank</th><th>nullity</th><th>solvable fraction</th><th>solutions per solvable board</th></tr>';
+  for (const s of [3, 4, 5]) {
+    const f = rankNullity(s);
+    const frac = f.nullity === 0 ? '1 (all of them)' : '1/' + Math.pow(2, f.nullity);
+    rows += '<tr><td class="l">' + s + '×' + s + '</td><td>' + f.N + '</td><td>' + f.rank + '</td><td>' + f.nullity + '</td><td>' + frac + '</td><td>' + Math.pow(2, f.nullity) + '</td></tr>';
+  }
+  $('facts').innerHTML = rows;
+}
+function quiet() {
+  const basis = nullspaceBasis(n);
+  if (!basis.length) { $('quietWrap').innerHTML = '<p>none — the ' + n + '×' + n + ' press matrix has nullity 0, so no nonzero press pattern is quiet.</p>'; return; }
+  $('quietWrap').innerHTML = basis.map(v => '<pre class="qp">' + pressesToString(n, v) + '</pre>').join('');
+}
+$('size').addEventListener('change', () => { n = +$('size').value; board = new Array(n * n).fill(0); moves = 0; solMarks = null; render(); quiet(); say('', false); });
+$('newBoard').addEventListener('click', newBoard);
+$('clearBoard').addEventListener('click', () => { clearInterval(timer); board = new Array(n * n).fill(0); moves = 0; solMarks = null; render(); say('board cleared. light cells by clicking — or deal a guaranteed-solvable one.', false); });
+$('solveBtn').addEventListener('click', () => {
+  clearInterval(timer);
+  const sol = solve(n, board);
+  if (sol === null) {
+    solMarks = null; render();
+    say('this board is UNSOLVABLE. the GF(2) system A x = b is inconsistent — no sequence of presses turns it off. that is a fact about the board, not about you.', true);
+    return;
+  }
+  const count = Math.pow(2, rankNullity(n).nullity);
+  const presses = sol.map((v, i) => v ? i : -1).filter(i => i >= 0);
+  say('solvable — ' + count + ' solution' + (count === 1 ? '' : 's') + ' exist' + (count === 1 ? 's' : '') + ' (2^nullity). playing one of them: ' + presses.length + ' presses, outlined in green.', false);
+  solMarks = new Array(n * n).fill(0); render();
+  let k = 0;
+  timer = setInterval(() => {
+    if (k >= presses.length) {
+      clearInterval(timer);
+      if (board.every(v => v === 0)) say('done — all dark. that was one of the ' + count + ' solutions.', false);
+      return;
+    }
+    const i = presses[k++];
+    const p = new Array(n * n).fill(0); p[i] = 1;
+    board = applyPresses(n, board, p); moves++;
+    solMarks[i] = 0;
+    render();
+  }, 260);
+});
+$('stuckBtn').addEventListener('click', () => {
+  if (board.every(v => v === 0)) { say('nothing lit — you are the opposite of stuck.', false); return; }
+  const sol = solve(n, board);
+  if (sol === null) say('yes — stuck for good. this board is unsolvable: no press sequence clears it, and the algebra knew before you started.', true);
+  else say('not stuck. this board is solvable in ' + sol.reduce((s, v) => s + v, 0) + ' presses (one shortest-form solution the solver found; others exist if nullity > 0). hit "solve" to watch it.', false);
+});
+$('quietBtn').addEventListener('click', () => {
+  const basis = nullspaceBasis(n);
+  if (!basis.length) { say('no quiet patterns exist at this size — every nonzero press pattern changes something.', false); return; }
+  const before = board.join('');
+  board = applyPresses(n, board, basis[0]);
+  render();
+  say(board.join('') === before ? 'pressed the first quiet pattern (' + basis[0].reduce((s, v) => s + v, 0) + ' presses) — the board is byte-for-byte identical. that is the kernel, live.' : 'internal error: quiet pattern changed the board.', board.join('') !== before);
+});
+facts();
+quiet();
+newBoard();
+</script>
+</body>
+</html>

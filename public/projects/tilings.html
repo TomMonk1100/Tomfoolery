@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>domino tilings, counted twice — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl select { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 8px; font-family: monospace; font-size: 13px; }
+  .big { font-size: 20px; line-height: 1.7; word-break: break-all; }
+  .agree { color: #9ece6a; font-weight: 700; }
+  .disagree { color: #f7768e; font-weight: 700; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  canvas { max-width: 100%; height: auto; background: #0f1017; border-radius: 6px; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">A domino covers two squares side by side. How many different ways can you cover a whole chessboard with dominoes, with no gaps and no overlaps? I counted them two completely different ways — one way builds the board column by column, the other uses a big multiplication formula from 1961 — and the two ways share nothing. They agree to the last digit. That agreement is the point: if two strangers counting in different ways get the same huge number, the number is almost certainly right.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">I like a count I can check without trusting myself. This page runs both counters live, in your browser, on whatever board you pick, and prints both numbers side by side. It also draws one real tiling, found by search, so you can see the thing being counted. The honest surprise in the table: a 6×6 board has 6,728 tilings — I checked that twice, because it looks small next to the 8×8 board's 12,988,816. Both methods say 6,728.</p>
+</div>
+<div class="wrap">
+<h1>domino tilings, counted twice</h1>
+<p class="sub">Exact domino-tiling counts by profile DP and by Kasteleyn's product formula, computed live · 2026-11-21</p>
+
+<div class="card">
+  <div class="ctl">
+    <label>rows <select id="m"></select></label>
+    <label>columns <select id="n"></select></label>
+    <button data-preset="2,10">2×10 strip</button>
+    <button data-preset="2,12">2×12 strip</button>
+    <button data-preset="4,10">4×10 strip</button>
+    <button data-preset="6,6">6×6</button>
+    <button data-preset="8,8">8×8</button>
+    <button id="newtiling">another tiling</button>
+  </div>
+  <p class="big" id="out"></p>
+  <div class="ro" id="ro"></div>
+  <canvas id="board" width="640" height="640"></canvas>
+</div>
+
+<h2>verified values</h2>
+<p>Every row below was computed with the tested node core during the build. Both methods were run; both printed the same number. These are full exact counts, not samples.</p>
+<table>
+  <tr><th class="l">board</th><th>profile DP (exact, BigInt)</th><th>Kasteleyn (rounded)</th><th class="l">agree</th></tr>
+  <tr><td class="l">2×2</td><td>2</td><td>2</td><td class="l">yes</td></tr>
+  <tr><td class="l">2×4</td><td>5</td><td>5</td><td class="l">yes</td></tr>
+  <tr><td class="l">2×6</td><td>13</td><td>13</td><td class="l">yes</td></tr>
+  <tr><td class="l">2×8</td><td>34</td><td>34</td><td class="l">yes</td></tr>
+  <tr><td class="l">2×10</td><td>89</td><td>89</td><td class="l">yes</td></tr>
+  <tr><td class="l">2×12</td><td>233</td><td>233</td><td class="l">yes</td></tr>
+  <tr><td class="l">3×4</td><td>11</td><td>11</td><td class="l">yes</td></tr>
+  <tr><td class="l">3×6</td><td>41</td><td>41</td><td class="l">yes</td></tr>
+  <tr><td class="l">4×4</td><td>36</td><td>36</td><td class="l">yes</td></tr>
+  <tr><td class="l">4×6</td><td>281</td><td>281</td><td class="l">yes</td></tr>
+  <tr><td class="l">4×8</td><td>2,245</td><td>2,245</td><td class="l">yes</td></tr>
+  <tr><td class="l">4×10</td><td>18,061</td><td>18,061</td><td class="l">yes</td></tr>
+  <tr><td class="l">6×6</td><td>6,728</td><td>6,728</td><td class="l">yes</td></tr>
+  <tr><td class="l">6×8</td><td>167,089</td><td>167,089</td><td class="l">yes</td></tr>
+  <tr><td class="l">8×8</td><td>12,988,816</td><td>12,988,816</td><td class="l">yes</td></tr>
+</table>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li>The two counters share no code. The DP fills the board column by column and counts with BigInt integers, so it is exact at every size. Kasteleyn's formula multiplies many cosine terms in ordinary double-precision numbers.</li>
+  <li>Caveat, printed plainly: Kasteleyn in double precision only rounds to the exact integer at these sizes. On much larger boards its rounding would drift. The DP number is the one to trust at any size; the formula is the independent witness at the sizes shown here.</li>
+  <li>A board with an odd number of squares has exactly 0 tilings — a domino always covers 2 squares. Both counters return 0 there.</li>
+  <li>The drawing is one explicit tiling found by backtracking search, with the search order shuffled by a seeded random generator. It is a picture of one tiling, not a count.</li>
+  <li>The tested core behind this page passed 32 checks, including both methods agreeing on every board tested and the finder producing valid tilings.</li>
+</ul>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+// ---- faithful port of tilings-core.mjs (exports stripped) ----
+function fillColumn(w, row, cur, nxt, add) {
+  if (row === w) { add(nxt); return; }
+  if (cur & (1 << row)) { fillColumn(w, row + 1, cur, nxt, add); return; }
+  if (row + 1 < w && !(cur & (1 << (row + 1)))) {
+    fillColumn(w, row + 1, cur | (1 << row) | (1 << (row + 1)), nxt, add);
+  }
+  fillColumn(w, row + 1, cur | (1 << row), nxt | (1 << row), add);
+}
+function countDP(m, n) {
+  if ((m * n) % 2 === 1) return 0n;
+  const w = Math.min(m, n);
+  const cols = Math.max(m, n);
+  let dp = new Map([[0, 1n]]);
+  for (let c = 0; c < cols; c++) {
+    const next = new Map();
+    for (const [mask, count] of dp) {
+      fillColumn(w, 0, mask, 0, (nxt) => { next.set(nxt, (next.get(nxt) ?? 0n) + count); });
+    }
+    dp = next;
+  }
+  return dp.get(0) ?? 0n;
+}
+function kasteleynLog(m, n) {
+  if ((m * n) % 2 === 1) return -Infinity;
+  let s = 0;
+  for (let j = 1; j <= m; j++) {
+    const a = 4 * Math.cos((j * Math.PI) / (m + 1)) ** 2;
+    for (let k = 1; k <= n; k++) {
+      const b = 4 * Math.cos((k * Math.PI) / (n + 1)) ** 2;
+      s += Math.log(a + b);
+    }
+  }
+  return s / 4;
+}
+function countKasteleyn(m, n) { return Math.exp(kasteleynLog(m, n)); }
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function findOne(m, n, rng = null) {
+  if ((m * n) % 2 === 1) return null;
+  const occ = Array.from({ length: m }, () => new Array(n).fill(false));
+  const out = [];
+  function firstEmpty() {
+    for (let r = 0; r < m; r++) for (let c = 0; c < n; c++) if (!occ[r][c]) return [r, c];
+    return null;
+  }
+  function go() {
+    const cell = firstEmpty();
+    if (!cell) return true;
+    const [r, c] = cell;
+    const dirs = [[0, 1], [1, 0]];
+    if (rng && rng() < 0.5) dirs.reverse();
+    for (const [dr, dc] of dirs) {
+      const r2 = r + dr, c2 = c + dc;
+      if (r2 < m && c2 < n && !occ[r2][c2]) {
+        occ[r][c] = occ[r2][c2] = true;
+        out.push([r, c, r2, c2]);
+        if (go()) return true;
+        out.pop();
+        occ[r][c] = occ[r2][c2] = false;
+      }
+    }
+    return false;
+  }
+  return go() ? out : null;
+}
+// ---- page logic ----
+const palette = ['#7dcfff', '#9ece6a', '#e0af68', '#f7768e', '#bb9af7', '#7aa2f7', '#ff9e64', '#2ac3de'];
+let seed = 42;
+for (let v = 2; v <= 8; v++) { const o = document.createElement('option'); o.value = v; o.textContent = v; $('m').appendChild(o); }
+for (let v = 2; v <= 12; v++) { const o = document.createElement('option'); o.value = v; o.textContent = v; $('n').appendChild(o); }
+$('m').value = '6'; $('n').value = '6';
+function fmt(big) { return big.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+function draw(m, n) {
+  const cv = $('board');
+  const cell = Math.floor(620 / Math.max(m, n));
+  cv.width = cell * n + 20; cv.height = cell * m + 20;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#0f1017'; ctx.fillRect(0, 0, cv.width, cv.height);
+  const tiling = findOne(m, n, mulberry32(seed));
+  if (!tiling) { $('ro').textContent = 'no tiling exists for this board (odd number of squares)'; return; }
+  tiling.forEach((d, i) => {
+    const r = Math.min(d[0], d[2]), c = Math.min(d[1], d[3]);
+    const horiz = d[0] === d[2];
+    const x = 10 + c * cell, y = 10 + r * cell;
+    const w = horiz ? cell * 2 : cell, h = horiz ? cell : cell * 2;
+    ctx.fillStyle = palette[i % palette.length];
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x + 3, y + 3, w - 6, h - 6, 8); else ctx.rect(x + 3, y + 3, w - 6, h - 6);
+    ctx.fill();
+  });
+  $('ro').textContent = 'one explicit tiling of the ' + m + '×' + n + ' board, found by backtracking search (' + tiling.length + ' dominoes)';
+}
+function update() {
+  const m = +$('m').value, n = +$('n').value;
+  const dp = countDP(m, n);
+  const k = Math.round(countKasteleyn(m, n));
+  const agree = dp.toString() === String(k);
+  $('out').innerHTML = m + '×' + n + ' board<br>profile DP: <b>' + fmt(dp) + '</b><br>Kasteleyn: <b>' + fmt(BigInt(k)) + '</b><br>' +
+    (agree ? '<span class="agree">✓ agree</span>' : '<span class="disagree">✗ disagree</span>');
+  draw(m, n);
+}
+$('m').addEventListener('change', update);
+$('n').addEventListener('change', update);
+document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
+  const [m, n] = b.dataset.preset.split(','); $('m').value = m; $('n').value = n; update();
+}));
+$('newtiling').addEventListener('click', () => { seed = (seed * 1664525 + 1013904223) >>> 0; draw(+$('m').value, +$('n').value); });
+update();
+</script>
+</body>
+</html>

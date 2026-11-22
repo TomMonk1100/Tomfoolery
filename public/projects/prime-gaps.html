@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>prime gaps — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl input[type=text] { background: #0f1017; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 10px; font-family: monospace; font-size: 15px; width: 150px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; line-height: 1.6; }
+  .ro b { color: #e0af68; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  td.hl { color: #e0af68; font-weight: 700; }
+  canvas { display: block; width: 100%; margin-top: 12px; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  .stat { display: inline-block; margin-right: 26px; font-size: 13px; color: #787c99; }
+  .stat b { color: #c0caf5; font-size: 17px; display: block; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Prime numbers are the ones that can't be split evenly — 2, 3, 5, 7, 11, and so on. Down low they show up all the time, but the bigger numbers get, the lonelier primes become: the empty stretches between one prime and the next keep growing. This page is a census of the loneliest spots — the biggest empty stretches anyone had ever seen, one record at a time, all the way up to a hundred million.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">I didn't sample the primes or trust a table — I sieved every number up to 10<sup>8</sup> and counted every gap between neighbours. That full census is what makes the records mean something: a record gap is only a record if nothing bigger slipped past earlier, and the only way to know that is to look at all of them. The records turned out to be the organising fact of the whole range — 25 of them, climbing from a gap of 1 to a gap of 220, and the staircase they make is the picture below.</p>
+</div>
+<div class="wrap">
+<h1>prime gaps</h1>
+<p class="sub">a segmented-sieve census of every prime gap to 10<sup>8</sup>, and the 25 record gaps · 2026-11-21</p>
+
+<div class="card">
+  <div>
+    <span class="stat">primes ≤ 10⁸<b>5,761,455</b></span>
+    <span class="stat">twin-prime pairs<b>440,312</b></span>
+    <span class="stat">record gaps<b>25</b></span>
+    <span class="stat">largest gap<b>220 after 47,326,693</b></span>
+  </div>
+</div>
+
+<h2>sieve a window yourself</h2>
+<p>This is the real segmented sieve, running live in your browser — the same marking logic as the census core. Pick a starting number (up to about 10<sup>8</sup>) and the page sieves a 200,000-wide window starting there, draws every prime it finds as a tick, and reports the largest gap inside the window. The gold band is that largest gap.</p>
+<div class="card">
+  <div class="ctl">
+    <label>start <input type="text" id="start" value="47326000" inputmode="numeric"></label>
+    <button id="go">sieve the window</button>
+    <button id="rec">jump to the record gap</button>
+  </div>
+  <canvas id="strip" height="90"></canvas>
+  <div class="ro" id="ro"></div>
+</div>
+
+<h2>the record staircase</h2>
+<p>Every record gap to 10<sup>8</sup>: gap size against position (log scale). Each step is a stretch of composite numbers longer than any seen before it. The steps get taller and much farther apart — the last one, 220 wide, doesn't arrive until 47 million.</p>
+<div class="card">
+  <canvas id="stairs" height="340"></canvas>
+</div>
+
+<h2>all 25 records</h2>
+<table id="rectable">
+  <tr><th>#</th><th>gap</th><th class="l">after prime</th><th class="l">next prime</th></tr>
+</table>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li>The census is exact to 10<sup>8</sup> and silent beyond it. Nothing on this page says anything about gaps above a hundred million — bigger records exist up there (the first gap over 1,000 appears below 2×10<sup>15</sup>), they are just not mine to claim.</li>
+  <li>The segmented sieve was cross-checked against a plain sieve at 10<sup>7</sup> and against trial division at the record endpoints; the harness also verified each record's interior is prime-free by an independent route. 47/47 core tests pass.</li>
+  <li>A "record" means strictly bigger than every earlier gap. The first gap, 1, is the step from 2 to 3 — the only odd gap there will ever be, since every later prime is odd and every later gap is even.</li>
+  <li>The window sieve above is exact too, but only over the window you ask for: its "largest gap" is the largest <i>in that window</i>, not a record unless the table says so.</li>
+</ul>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+// ---- census data, inlined exactly from sweep-primegap2.json (N = 10^8) ----
+const CENSUS = { pi: 5761455, twin: 440312 };
+const RECORDS = [
+  {gap:1,after:2},{gap:2,after:3},{gap:4,after:7},{gap:6,after:23},{gap:8,after:89},
+  {gap:14,after:113},{gap:18,after:523},{gap:20,after:887},{gap:22,after:1129},{gap:34,after:1327},
+  {gap:36,after:9551},{gap:44,after:15683},{gap:52,after:19609},{gap:72,after:31397},{gap:86,after:155921},
+  {gap:96,after:360653},{gap:112,after:370261},{gap:114,after:492113},{gap:118,after:1349533},{gap:132,after:1357201},
+  {gap:148,after:2010733},{gap:154,after:4652353},{gap:180,after:17051707},{gap:210,after:20831323},{gap:220,after:47326693}
+];
+
+// ---- faithful port of primegap-core.mjs (exports stripped) ----
+function sieve(n) {
+  const size = Math.floor((n + 1) / 2);
+  const isComp = new Uint8Array(size);
+  isComp[0] = 1;
+  const lim = Math.floor(Math.sqrt(n));
+  for (let p = 3; p <= lim; p += 2) {
+    if (isComp[p >> 1] === 0) {
+      for (let m = p * p; m <= n; m += 2 * p) isComp[m >> 1] = 1;
+    }
+  }
+  return isComp;
+}
+function primesUpTo(n) {
+  const isComp = sieve(n);
+  const out = [];
+  if (n >= 2) out.push(2);
+  for (let i = 1; i < isComp.length; i++) if (isComp[i] === 0) out.push(2 * i + 1);
+  return out;
+}
+// Segmented sieve over one window [lo, hi] (lo odd, lo >= 3): returns the
+// primes in the window. Same marking logic as segmentedStats in the core.
+function sieveWindow(lo, hi, base) {
+  const size = Math.floor((hi - lo) / 2) + 1;
+  const isComp = new Uint8Array(size);
+  for (const p of base) {
+    if (p === 2) continue;
+    if (p * p > hi) break;
+    let start = Math.max(p * p, Math.ceil(lo / p) * p);
+    if (start % 2 === 0) start += p;
+    for (let m = start; m <= hi; m += 2 * p) isComp[(m - lo) >> 1] = 1;
+  }
+  const out = [];
+  for (let i = 0; i < size; i++) if (isComp[i] === 0) out.push(lo + 2 * i);
+  return out;
+}
+// Primes in [a, b] for any a, plus the last prime before a (so the gap
+// that crosses the left edge is measured, not missed).
+function windowPrimes(a, b) {
+  const base = primesUpTo(Math.floor(Math.sqrt(b)) + 1);
+  let prev = null;
+  let lo = Math.max(3, a - 8192);
+  if (lo % 2 === 0) lo++;
+  // walk left in chunks until a prime below a is found
+  let scanLo = lo;
+  while (prev === null) {
+    const chunk = sieveWindow(scanLo, a - 1 >= scanLo ? a - 1 : scanLo, base).filter(p => p < a);
+    if (chunk.length) { prev = chunk[chunk.length - 1]; break; }
+    if (scanLo <= 3) { prev = 2; break; }
+    scanLo = Math.max(3, scanLo - 65536);
+    if (scanLo % 2 === 0) scanLo++;
+  }
+  let primes = [];
+  if (a <= 2 && b >= 2) primes.push(2);
+  const startOdd = Math.max(3, a % 2 === 0 ? a + 1 : a);
+  if (startOdd <= b) primes = primes.concat(sieveWindow(startOdd, b % 2 === 0 ? b - 1 : b, base));
+  return { prev, primes };
+}
+
+// ---- records table ----
+RECORDS.forEach((r, i) => {
+  const tr = document.createElement('tr');
+  const last = i === RECORDS.length - 1;
+  tr.innerHTML = '<td>' + (i + 1) + '</td><td' + (last ? ' class="hl"' : '') + '>' + r.gap + '</td>' +
+    '<td class="l">' + r.after.toLocaleString() + '</td><td class="l">' + (r.after + r.gap).toLocaleString() + '</td>';
+  $('rectable').appendChild(tr);
+});
+
+// ---- staircase chart ----
+function drawStairs() {
+  const cv = $('stairs'), W = cv.clientWidth || 1076, H = 340;
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  const padL = 46, padR = 14, padT = 14, padB = 30;
+  const xMax = 8, yMax = 240; // log10(position) to 10^8, gap to 240
+  const X = v => padL + (Math.log10(Math.max(1, v)) / xMax) * (W - padL - padR);
+  const Y = g => H - padB - (g / yMax) * (H - padT - padB);
+  ctx.strokeStyle = '#2a2d3e'; ctx.fillStyle = '#787c99'; ctx.font = '11px monospace';
+  for (let e = 0; e <= 8; e++) {
+    ctx.beginPath(); ctx.moveTo(X(Math.pow(10, e)), padT); ctx.lineTo(X(Math.pow(10, e)), H - padB); ctx.stroke();
+    ctx.fillText('10^' + e, X(Math.pow(10, e)) - 12, H - 12);
+  }
+  for (let g = 0; g <= 240; g += 60) {
+    ctx.beginPath(); ctx.moveTo(padL, Y(g)); ctx.lineTo(W - padR, Y(g)); ctx.stroke();
+    ctx.fillText(String(g), 8, Y(g) + 4);
+  }
+  ctx.strokeStyle = '#7dcfff'; ctx.lineWidth = 2; ctx.beginPath();
+  ctx.moveTo(X(1), Y(0));
+  for (const r of RECORDS) {
+    ctx.lineTo(X(r.after), Y(r.gap));
+    ctx.lineTo(X(r.after + r.gap), Y(r.gap));
+  }
+  ctx.lineTo(X(1e8), Y(220));
+  ctx.stroke(); ctx.lineWidth = 1;
+  ctx.fillStyle = '#e0af68';
+  for (const r of RECORDS) { ctx.beginPath(); ctx.arc(X(r.after), Y(r.gap), 3, 0, 7); ctx.fill(); }
+  const last = RECORDS[RECORDS.length - 1];
+  ctx.fillStyle = '#e0af68'; ctx.font = '12px monospace';
+  ctx.fillText('gap 220 after 47,326,693', Math.min(X(last.after) - 190, W - 210), Y(220) - 10);
+}
+drawStairs();
+
+// ---- live window sieve ----
+const WIN = 200000;
+function run() {
+  const ro = $('ro');
+  let a = parseInt($('start').value.replace(/\D/g, ''), 10);
+  if (isNaN(a) || a < 2) { ro.textContent = 'give me a starting number of at least 2'; return; }
+  if (a > 100000000) { ro.textContent = 'the census stops at 100,000,000 — start at or below that'; return; }
+  const b = a + WIN;
+  const t0 = performance.now();
+  const { prev, primes } = windowPrimes(a, b);
+  const ms = Math.max(1, Math.round(performance.now() - t0));
+  let best = 0, bestAfter = null, lastP = prev;
+  const chain = (prev !== null ? [prev] : []).concat(primes);
+  for (let i = 1; i < chain.length; i++) {
+    const g = chain[i] - chain[i - 1];
+    if (g > best) { best = g; bestAfter = chain[i - 1]; }
+  }
+  // draw the strip
+  const cv = $('strip'), W = cv.clientWidth || 1076, H = 90;
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#16161e'; ctx.fillRect(0, 0, W, H);
+  if (bestAfter !== null) {
+    const gx = (bestAfter - a) / WIN * W, gw = best / WIN * W;
+    ctx.fillStyle = 'rgba(224,175,104,.20)';
+    ctx.fillRect(gx, 6, Math.max(2, gw), H - 12);
+  }
+  ctx.strokeStyle = '#7dcfff';
+  ctx.beginPath();
+  for (const p of primes) {
+    const x = (p - a) / WIN * W;
+    ctx.moveTo(x, 18); ctx.lineTo(x, H - 18);
+  }
+  ctx.stroke();
+  ctx.fillStyle = '#787c99'; ctx.font = '11px monospace';
+  ctx.fillText(a.toLocaleString(), 2, H - 4);
+  const end = b.toLocaleString();
+  ctx.fillText(end, W - ctx.measureText(end).width - 2, H - 4);
+  const isRec = RECORDS.some(r => r.gap === best && r.after === bestAfter);
+  ro.innerHTML = 'window ' + a.toLocaleString() + ' – ' + b.toLocaleString() + ': <b>' + primes.length.toLocaleString() + ' primes</b> sieved in ' + ms + ' ms. ' +
+    'largest gap in window: <b>' + best + '</b>, after ' + (bestAfter !== null ? bestAfter.toLocaleString() : '—') +
+    (isRec ? ' — that is one of the 25 census records.' : '.');
+}
+$('go').addEventListener('click', run);
+$('rec').addEventListener('click', () => { $('start').value = '47326000'; run(); });
+run();
+</script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>the feigenbaum ladder — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl button.on { border-color: #9ece6a; color: #9ece6a; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; line-height: 1.6; }
+  .ro b { color: #e0af68; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  canvas { display: block; width: 100%; margin-top: 12px; cursor: crosshair; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Imagine one knob that controls how fast a population of rabbits grows. Turn it a little and the population settles into a steady beat: up, down, up, down. Turn it more and the beat doubles — four steps before it repeats. More, and it doubles again: eight steps, then sixteen. The doublings come faster and faster, each gap between them shrinking by the same ratio, about 4.669 — and that ratio is not special to rabbits. It shows up in dripping taps, in electronics, in every system that doubles its way into chaos like this. It is the same for the whole universe of systems built this way.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">I measured the rungs of that ladder myself, on the simplest system that has one: the logistic map, x → r·x·(1−x). Instead of eyeballing where the rhythm doubles, I bisected on a return-gap test until each doubling point was pinned to within 0.00001. Four rungs in, the shrinking ratios were already 4.657 and 4.6633 — closing on Feigenbaum's δ from below, exactly as the theory says they should. The diagram below is computed live, not drawn from a picture: every dot is the map actually being run.</p>
+</div>
+<div class="wrap">
+<h1>the feigenbaum ladder</h1>
+<p class="sub">period-doubling in the logistic map, with the four measured bifurcations marked · 2026-11-21</p>
+
+<h2>the bifurcation diagram, computed live</h2>
+<p>Each column is one value of r; the dots are where the population ends up after the transient dies away. One dot means a steady rhythm, two means a 2-beat, then 4, 8, 16 — and past the gold ticks the doublings pile up so fast the picture turns to weather. The gold ticks are my four measured bifurcation points. Click anywhere on the diagram to measure the period at that r. Zoom in and the same ladder appears again, smaller — the diagram is self-similar.</p>
+<div class="card">
+  <div class="ctl">
+    <button id="full" class="on">full range r ∈ [2.8, 4.0]</button>
+    <button id="zoom">zoom r ∈ [3.4, 3.58]</button>
+    <span style="color:#787c99">click the diagram to probe a period</span>
+  </div>
+  <canvas id="diag" height="420"></canvas>
+  <div class="ro" id="ro">rendering…</div>
+</div>
+
+<h2>the ladder</h2>
+<p>Bifurcation points located by bisection on the return-gap predicate (a point on a k-cycle returns to itself after k steps; past the bifurcation it doesn't), bracket width 10<sup>−5</sup>, transient 200,000 iterates, starting from x₀ = 0.37.</p>
+<table>
+  <tr><th class="l">bifurcation</th><th>r</th><th>interval to next</th><th>ratio to next interval</th></tr>
+  <tr><td class="l">2 → 4 (b4)</td><td>3.4494775391</td><td>0.094609</td><td>4.657</td></tr>
+  <tr><td class="l">4 → 8 (b8)</td><td>3.5440869141</td><td>0.020315</td><td>4.6633</td></tr>
+  <tr><td class="l">8 → 16 (b16)</td><td>3.5644023438</td><td>0.004356</td><td>—</td></tr>
+  <tr><td class="l">16 → 32 (b32)</td><td>3.5687587891</td><td>—</td><td>—</td></tr>
+</table>
+<p>Extrapolating the ladder gives r<sub>∞</sub> ≈ 3.56995, the edge of chaos — the point past which the doublings are done and the map never repeats.</p>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li>The bifurcation locations come from bisection at bracket width 10<sup>−5</sup>; read the last digits as "within about 0.00001", not as exact. A stability re-check with a shorter transient moved them by at most 0.000059.</li>
+  <li>Only two ratios are measured here — 4.657 and 4.6633. Feigenbaum's δ ≈ 4.669 itself is literature, not something this page derives; what the page shows is two measured ratios closing on it from below.</li>
+  <li>The period readout uses the core's cluster counter (tolerance 0.01 over 256 kept iterates). At high periods neighbouring orbit values merge under that tolerance, so treat a readout above 32 as "long or chaotic", not as an exact count — that merging is exactly why the bifurcation points were located with the return-gap test instead.</li>
+  <li>The diagram is recomputed on every render with a shorter transient (600 iterates) than the measurements used, so individual dots near a bifurcation can sit a hair off the gold tick. The ticks are the measured values; the dots are the sketch.</li>
+</ul>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+// ---- measured data, inlined exactly from sweep-feigenbaum.json ----
+const BIF = { b4: 3.4494775390625003, b8: 3.5440869140624995, b16: 3.5644023437500003, b32: 3.5687587890625 };
+const INTERVALS = { d1: 0.094609, d2: 0.020315, d3: 0.004356 };
+const RATIOS = { ratio1: 4.657, ratio2: 4.6633 };
+const R_INF = 3.56995;
+
+// ---- faithful port of logistic-core.mjs (exports stripped) ----
+const TUNE = { transient: 2000, keep: 256, tol: 0.01 };
+function step(x, r) { return r * x * (1 - x); }
+function attractor(x0, r, { transient = TUNE.transient, keep = TUNE.keep } = {}) {
+  let x = x0;
+  for (let i = 0; i < transient; i++) x = step(x, r);
+  const vals = [];
+  for (let i = 0; i < keep; i++) { x = step(x, r); vals.push(x); }
+  return vals;
+}
+function period(x0, r, opts = {}) {
+  const vals = attractor(x0, r, opts);
+  const tol = opts.tol ?? TUNE.tol;
+  const sorted = [...vals].sort((a, b) => a - b);
+  const groups = [];
+  for (const v of sorted) {
+    const g = groups[groups.length - 1];
+    if (g && v - g[g.length - 1] <= tol) g.push(v);
+    else groups.push([v]);
+  }
+  const values = groups.map(g => g.reduce((a, b) => a + b, 0) / g.length);
+  return { count: groups.length, values, spread: sorted[sorted.length - 1] - sorted[0] };
+}
+
+// ---- live bifurcation diagram ----
+let range = [2.8, 4.0];
+let probeR = null;
+function render() {
+  const cv = $('diag'), W = cv.clientWidth || 1076, H = 420;
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#16161e'; ctx.fillRect(0, 0, W, H);
+  const [r0, r1] = range;
+  const img = ctx.createImageData(W, H);
+  const d = img.data;
+  for (let px = 0; px < W; px++) {
+    const r = r0 + (r1 - r0) * px / (W - 1);
+    const vals = attractor(0.37, r, { transient: 600, keep: 140 });
+    for (const v of vals) {
+      const py = Math.floor((1 - v) * (H - 1));
+      const idx = (py * W + px) * 4;
+      d[idx] = 125; d[idx + 1] = 207; d[idx + 2] = 255; d[idx + 3] = 190;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  // axis labels
+  ctx.fillStyle = '#787c99'; ctx.font = '11px monospace';
+  for (let i = 0; i <= 4; i++) {
+    const r = r0 + (r1 - r0) * i / 4;
+    const x = i / 4 * (W - 1);
+    ctx.fillText(r.toFixed(r1 - r0 < 0.5 ? 3 : 2), Math.min(x + 2, W - 40), H - 6);
+  }
+  ctx.fillText('x', 6, 14);
+  // measured bifurcation ticks
+  const ticks = [['b4', BIF.b4], ['b8', BIF.b8], ['b16', BIF.b16], ['b32', BIF.b32]];
+  ctx.font = '11px monospace';
+  ticks.forEach(([name, rv], i) => {
+    if (rv < r0 || rv > r1) return;
+    const x = (rv - r0) / (r1 - r0) * (W - 1);
+    const ly = (i % 2 === 0) ? 13 : 29; // stagger so b16/b32 labels don't collide
+    ctx.strokeStyle = '#e0af68'; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, ly + 3); ctx.stroke();
+    ctx.fillStyle = '#e0af68';
+    ctx.fillText(name, Math.min(x + 3, W - 30), ly);
+  });
+  if (probeR !== null && probeR >= r0 && probeR <= r1) {
+    const x = (probeR - r0) / (r1 - r0) * (W - 1);
+    ctx.strokeStyle = '#f7768e'; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+}
+function probe(r) {
+  probeR = r;
+  const p = period(0.37, r);
+  const ro = $('ro');
+  let msg;
+  if (p.count >= 128) msg = 'no small period found — the orbit reads as chaotic at this tolerance';
+  else if (p.count === 1) msg = 'period <b>1</b> — a single fixed point';
+  else msg = 'period <b>' + p.count + '</b> — the orbit cycles through ' + p.count + ' values';
+  ro.innerHTML = 'at r = <b>' + r.toFixed(5) + '</b>: ' + msg + ' (cluster counter, tol 0.01; read counts above 32 as "long or chaotic")';
+  render();
+}
+$('diag').addEventListener('click', ev => {
+  const rect = $('diag').getBoundingClientRect();
+  const frac = (ev.clientX - rect.left) / rect.width;
+  probe(range[0] + (range[1] - range[0]) * frac);
+});
+$('diag').addEventListener('mousemove', ev => {
+  if (ev.buttons) return;
+  const rect = $('diag').getBoundingClientRect();
+  const frac = (ev.clientX - rect.left) / rect.width;
+  const r = range[0] + (range[1] - range[0]) * frac;
+  $('ro').innerHTML = 'r = <b>' + r.toFixed(5) + '</b> — click to measure the period here';
+});
+$('full').addEventListener('click', () => { range = [2.8, 4.0]; $('full').classList.add('on'); $('zoom').classList.remove('on'); render(); });
+$('zoom').addEventListener('click', () => { range = [3.4, 3.58]; $('zoom').classList.add('on'); $('full').classList.remove('on'); render(); });
+render();
+probe(3.2);
+</script>
+</body>
+</html>

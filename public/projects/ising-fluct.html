@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ising fluctuations — the peak at the edge — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl input[type=range] { accent-color: #7dcfff; width: 260px; }
+  .cols { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+  canvas { display: block; max-width: 100%; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; line-height: 1.6; }
+  .meter { margin-top: 14px; font-size: 13px; }
+  .meter .lab { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .meter .val { font-variant-numeric: tabular-nums; }
+  .track { height: 14px; background: #0f1017; border: 1px solid #2a2d3e; border-radius: 6px; overflow: hidden; }
+  .fill { height: 100%; width: 0%; transition: width .18s linear; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  tr.peak td { color: #e0af68; font-weight: 700; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">A magnet is made of tiny arrows that like to point the same way as their neighbours. Warm it up and the arrows start to wiggle. Right at one special temperature the magnet gives up — and just before it does, it cannot make up its mind. It flickers: almost all up, then patches of down, then almost settled again. The flickering is biggest exactly at that edge temperature, and the flicker is not just something you can see — you can measure it, and the measurement peaks.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">This page is an exhibit. Elsewhere on this site I keep a "grand unified theory" of small systems, and its most exposed claim is a falsifiable one: measurable flicker — heat capacity and susceptibility — must peak at the transition, at the temperature theory names in advance. This is the fingerprint exhibit for that claim. The chart below is not a sketch of what theory says should happen; it is what my simulation actually measured, seed by seed, spread bars and all. Drag the temperature slider through 2.269 and watch the live meters swell. If the peaks were not there, the claim would be dead. They are there.</p>
+</div>
+<div class="wrap">
+<h1>ising fluctuations — the peak at the edge</h1>
+<p class="sub">live Metropolis simulation beside the measured sweep · 2026-11-21 · Tc = 2.269 (Onsager, exact for the infinite lattice)</p>
+
+<div class="card">
+  <div class="cols">
+    <div>
+      <canvas id="cv" width="420" height="420"></canvas>
+      <div class="ctl">
+        <label>temperature T <input type="range" id="temp" min="1" max="4" step="0.01" value="2.269"></label>
+        <span id="tval" style="color:#e0af68">T = 2.269</span>
+        <button id="reset">reset (all spins up)</button>
+      </div>
+      <div class="ro" id="live-ro"></div>
+    </div>
+    <div style="flex:1;min-width:280px">
+      <p style="margin-top:2px">Live fluctuation meters — computed from a rolling window of the running simulation above (same formulas as the sweep: χ from the variance of the magnetisation, C from the variance of the energy). These are live estimates from this small 30×30 lattice, <b>not</b> the sweep numbers in the chart below. Park T near 2.269 and give them a few seconds: both swell.</p>
+      <div class="meter">
+        <div class="lab"><span>χ proxy — N²·var(m) / T</span><span class="val" id="chi-val">—</span></div>
+        <div class="track"><div class="fill" id="chi-fill" style="background:#7dcfff"></div></div>
+      </div>
+      <div class="meter">
+        <div class="lab"><span>C proxy — N²·var(e) / T²</span><span class="val" id="c-val">—</span></div>
+        <div class="track"><div class="fill" id="c-fill" style="background:#9ece6a"></div></div>
+      </div>
+      <div class="meter">
+        <div class="lab"><span>mean |m| in window</span><span class="val" id="m-val">—</span></div>
+        <div class="track"><div class="fill" id="m-fill" style="background:#bb9af7"></div></div>
+      </div>
+      <div class="ro" id="samp-ro" style="color:#787c99"></div>
+    </div>
+  </div>
+</div>
+
+<h2>the measured sweep</h2>
+<p>20×20 lattice, 3 seeds, 5,000 equilibration sweeps then 5,000 sampling sweeps per point (samples every 10). Bars are the full seed-to-seed range (min to max across the 3 seeds) — near the transition that range is wide, and it is drawn honestly rather than smoothed away. The gold dashed line is Tc = 2.269.</p>
+<canvas id="chart" width="1064" height="360"></canvas>
+<table>
+  <tr><th class="l">T</th><th>C(T) mean</th><th>C range (3 seeds)</th><th>χ(T) mean</th><th>χ range (3 seeds)</th></tr>
+  <tr><td class="l">1.000</td><td>0.0262</td><td>0.0207 – 0.0320</td><td>0.0019</td><td>0.0015 – 0.0024</td></tr>
+  <tr><td class="l">1.500</td><td>0.2085</td><td>0.1906 – 0.2245</td><td>0.0292</td><td>0.0254 – 0.0347</td></tr>
+  <tr><td class="l">2.000</td><td>0.7572</td><td>0.7125 – 0.7892</td><td>0.3707</td><td>0.3307 – 0.4130</td></tr>
+  <tr><td class="l">2.200</td><td>1.3913</td><td>1.2185 – 1.5701</td><td>3.0604</td><td>2.2381 – 4.6533</td></tr>
+  <tr class="peak"><td class="l">2.269</td><td>1.7028</td><td>1.6021 – 1.7800</td><td>6.9225</td><td>5.3129 – 8.3476</td></tr>
+  <tr class="peak"><td class="l">2.400</td><td>1.3733</td><td>1.3128 – 1.4317</td><td>8.4212</td><td>7.9675 – 9.1481</td></tr>
+  <tr><td class="l">2.700</td><td>0.5854</td><td>0.5740 – 0.6050</td><td>2.8630</td><td>2.7913 – 2.9264</td></tr>
+  <tr><td class="l">3.000</td><td>0.3688</td><td>0.3579 – 0.3869</td><td>1.3525</td><td>1.2495 – 1.4455</td></tr>
+  <tr><td class="l">4.000</td><td>0.1716</td><td>0.1668 – 0.1776</td><td>0.3881</td><td>0.3533 – 0.4280</td></tr>
+</table>
+<p>Read it plainly: the heat capacity C(T) peaks exactly at the Tc grid point — 1.7028 at T = 2.269, up from 0.7572 at 2.0 and back down to 1.3733 at 2.4. The susceptibility χ(T) climbs through Tc (0.3707 at 2.0, 3.0604 at 2.2, 6.9225 at 2.269) and peaks one grid point above it, at 8.4212 at T = 2.4, before falling to 2.8630 at 2.7. That one-step offset is the finite lattice talking, and it is printed, not hidden.</p>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li>Caveat, printed as promised: a 20×20 lattice rounds and shifts the peaks. In the infinite lattice C diverges at Tc and χ peaks at Tc; here C peaks at the Tc grid point and the χ peak lands at the grid point just above Tc (2.4). Finite size is the whole reason — the correlation length cannot outgrow the box.</li>
+  <li>Caveat two: the spreads across only 3 seeds are wide near Tc — the χ range at 2.269 spans 5.31 to 8.35 (full spread 3.03), and at 2.2 it spans 2.24 to 4.65. Three seeds locate the peaks; they do not pin their heights. Do not quote the peak values to more precision than the bars allow.</li>
+  <li>The live panel runs the same Metropolis core as the sweep (the tested node core, 10 checks passing, ported inline — same seed gives the same run). Its meters use a rolling window of recent samples, so they lag a temperature change and wobble; that wobble is the phenomenon, not a bug.</li>
+  <li>The χ formula uses ⟨m²⟩ − ⟨|m|⟩², not ⟨m⟩²: below Tc the magnetisation flips sign between the two ordered states, and the naive formula would measure the ordered moment itself instead of the flicker around it. The core's harness pins both formulas against known cold and hot limits.</li>
+  <li>Equilibration matters: the sweep starts all-spins-up and discards 5,000 sweeps before sampling, because below Tc the ordered start measures equilibrium, while a random start can freeze into striped states that are not.</li>
+</ul>
+</div>
+
+<script id="core-js">
+// ising core — faithful inline port of the tested node core (ising-core.mjs),
+// exports stripped. Spins s = ±1 on an N×N lattice, periodic boundaries,
+// J = 1, no field. Seeded mulberry32 so runs reproduce.
+const TUNE = { J: 1 };
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function idx(x, y, N) {
+  return ((y + N) % N) * N + ((x + N) % N);
+}
+function neighborSum(spins, x, y, N) {
+  return (
+    spins[idx(x + 1, y, N)] +
+    spins[idx(x - 1, y, N)] +
+    spins[idx(x, y + 1, N)] +
+    spins[idx(x, y - 1, N)]
+  );
+}
+function deltaE(spins, x, y, N) {
+  return 2 * TUNE.J * spins[idx(x, y, N)] * neighborSum(spins, x, y, N);
+}
+function energy(spins, N) {
+  let e = 0;
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      const s = spins[idx(x, y, N)];
+      e -= TUNE.J * s * (spins[idx(x + 1, y, N)] + spins[idx(x, y + 1, N)]);
+    }
+  }
+  return e;
+}
+function magnetization(spins, N) {
+  let m = 0;
+  for (let i = 0; i < N * N; i++) m += spins[i];
+  return m / (N * N);
+}
+function metropolisSweep(spins, N, rng, T) {
+  for (let n = 0; n < N * N; n++) {
+    const x = Math.floor(rng() * N);
+    const y = Math.floor(rng() * N);
+    const dE = deltaE(spins, x, y, N);
+    if (dE <= 0 || rng() < Math.exp(-dE / T)) {
+      spins[idx(x, y, N)] *= -1;
+    }
+  }
+}
+function runIsing(T, seed, N = 20, eqSweeps = 5000, sampleSweeps = 5000, every = 10) {
+  const rng = mulberry32(seed);
+  const spins = new Int8Array(N * N).fill(1);
+  for (let i = 0; i < eqSweeps; i++) metropolisSweep(spins, N, rng, T);
+  let sumAbs = 0;
+  let sumM = 0;
+  let sumE = 0;
+  let sumAbs2 = 0;
+  let sumE2 = 0;
+  let sumM2 = 0;
+  let count = 0;
+  for (let i = 0; i < sampleSweeps; i++) {
+    metropolisSweep(spins, N, rng, T);
+    if ((i + 1) % every === 0) {
+      const m = magnetization(spins, N);
+      const a = Math.abs(m);
+      const e = energy(spins, N) / (N * N);
+      sumAbs += a;
+      sumAbs2 += a * a;
+      sumM += m;
+      sumE += e;
+      sumE2 += e * e;
+      sumM2 += m * m;
+      count++;
+    }
+  }
+  const meanAbs = sumAbs / count;
+  const meanE = sumE / count;
+  const meanM2 = sumM2 / count;
+  const meanE2 = sumE2 / count;
+  return {
+    T, seed, N,
+    meanAbsM: meanAbs,
+    meanM: sumM / count,
+    meanEPerSpin: meanE,
+    meanE2PerSpin: meanE2,
+    meanM2,
+    stdAbsM: Math.sqrt(Math.max(0, sumAbs2 / count - meanAbs * meanAbs)),
+    heatCapacity: (N * N * Math.max(0, meanE2 - meanE * meanE)) / (T * T),
+    susceptibility: (N * N * Math.max(0, meanM2 - meanAbs * meanAbs)) / T,
+    samples: count,
+  };
+}
+</script>
+<script>
+const $ = id => document.getElementById(id);
+const TC = 2.269;
+const LN = 30;
+const cv = $('cv'), ctx = cv.getContext('2d');
+const cell = cv.width / LN;
+let rng = mulberry32(1234567);
+let spins = new Int8Array(LN * LN).fill(1);
+let T = parseFloat($('temp').value);
+let winM = [], winE = [];
+const WIN = 600;
+
+function resetSim() {
+  spins = new Int8Array(LN * LN).fill(1);
+  rng = mulberry32(1234567);
+  winM = []; winE = [];
+}
+function drawSpins() {
+  for (let y = 0; y < LN; y++) for (let x = 0; x < LN; x++) {
+    ctx.fillStyle = spins[idx(x, y, LN)] > 0 ? '#bb9af7' : '#24283b';
+    ctx.fillRect(x * cell, y * cell, cell, cell);
+  }
+}
+function varianceStats() {
+  const n = winM.length;
+  if (n < 20) return null;
+  let sm = 0, sm2 = 0, sa = 0, se = 0, se2 = 0;
+  for (let i = 0; i < n; i++) {
+    const m = winM[i], e = winE[i];
+    sm += m; sm2 += m * m; sa += Math.abs(m);
+    se += e; se2 += e * e;
+  }
+  const meanAbs = sa / n, meanE = se / n;
+  const chi = LN * LN * Math.max(0, sm2 / n - meanAbs * meanAbs) / T;
+  const cap = LN * LN * Math.max(0, se2 / n - meanE * meanE) / (T * T);
+  return { chi, cap, meanAbs, n };
+}
+function tick() {
+  for (let s = 0; s < 4; s++) {
+    metropolisSweep(spins, LN, rng, T);
+    winM.push(magnetization(spins, LN));
+    winE.push(energy(spins, LN) / (LN * LN));
+    if (winM.length > WIN) { winM.shift(); winE.shift(); }
+  }
+  drawSpins();
+  const st = varianceStats();
+  if (st) {
+    $('chi-val').textContent = st.chi.toFixed(3);
+    $('c-val').textContent = st.cap.toFixed(3);
+    $('m-val').textContent = st.meanAbs.toFixed(3);
+    $('chi-fill').style.width = Math.min(100, st.chi / 10 * 100) + '%';
+    $('c-fill').style.width = Math.min(100, st.cap / 2.2 * 100) + '%';
+    $('m-fill').style.width = (st.meanAbs * 100) + '%';
+    $('samp-ro').textContent = 'rolling window: ' + st.n + ' samples (one per sweep, last ' + WIN + ' kept)';
+  }
+  const d = Math.abs(T - TC);
+  $('live-ro').textContent = T < TC - 0.005
+    ? 'below Tc — the lattice mostly agrees on a direction; flicker is small'
+    : (T > TC + 0.005
+      ? 'above Tc — no direction wins; the lattice is noise with patches'
+      : 'at Tc — watch the patches grow, merge and dissolve; the flicker is the signal');
+}
+$('temp').addEventListener('input', () => {
+  T = parseFloat($('temp').value);
+  $('tval').textContent = 'T = ' + T.toFixed(3) + (Math.abs(T - TC) < 0.005 ? '  (= Tc)' : '');
+  winM = []; winE = [];
+});
+$('reset').addEventListener('click', resetSim);
+resetSim();
+setInterval(tick, 40);
+
+// ---- measured sweep chart (data: sweep-ising-fluct.json, seed-averaged) ----
+const TEMPS = [1, 1.5, 2, 2.2, 2.269, 2.4, 2.7, 3, 4];
+const CURVE_C = [
+  { mean: 0.0262, min: 0.0207, max: 0.0320 },
+  { mean: 0.2085, min: 0.1906, max: 0.2245 },
+  { mean: 0.7572, min: 0.7125, max: 0.7892 },
+  { mean: 1.3913, min: 1.2185, max: 1.5701 },
+  { mean: 1.7028, min: 1.6021, max: 1.7800 },
+  { mean: 1.3733, min: 1.3128, max: 1.4317 },
+  { mean: 0.5854, min: 0.5740, max: 0.6050 },
+  { mean: 0.3688, min: 0.3579, max: 0.3869 },
+  { mean: 0.1716, min: 0.1668, max: 0.1776 },
+];
+const CURVE_X = [
+  { mean: 0.0019, min: 0.0015, max: 0.0024 },
+  { mean: 0.0292, min: 0.0254, max: 0.0347 },
+  { mean: 0.3707, min: 0.3307, max: 0.4130 },
+  { mean: 3.0604, min: 2.2381, max: 4.6533 },
+  { mean: 6.9225, min: 5.3129, max: 8.3476 },
+  { mean: 8.4212, min: 7.9675, max: 9.1481 },
+  { mean: 2.8630, min: 2.7913, max: 2.9264 },
+  { mean: 1.3525, min: 1.2495, max: 1.4455 },
+  { mean: 0.3881, min: 0.3533, max: 0.4280 },
+];
+const ch = $('chart'), cx = ch.getContext('2d');
+function panel(x0, w, data, ymax, color, title, peakLabel) {
+  const top = 34, bot = ch.height - 34, h = bot - top;
+  const X = t => x0 + (t - 0.8) / (4.2 - 0.8) * w;
+  const Y = v => bot - v / ymax * h;
+  cx.strokeStyle = '#2a2d3e'; cx.lineWidth = 1;
+  cx.strokeRect(x0, top, w, h);
+  cx.fillStyle = '#c0caf5'; cx.font = '13px monospace';
+  cx.fillText(title, x0, 20);
+  // Tc line
+  cx.strokeStyle = '#e0af68'; cx.setLineDash([5, 4]);
+  cx.beginPath(); cx.moveTo(X(TC), top); cx.lineTo(X(TC), bot); cx.stroke();
+  cx.setLineDash([]);
+  cx.fillStyle = '#e0af68';
+  cx.fillText('Tc', X(TC) + 4, top + 14);
+  // spread bars + curve
+  cx.strokeStyle = color; cx.lineWidth = 1.4;
+  for (let i = 0; i < TEMPS.length; i++) {
+    cx.beginPath();
+    cx.moveTo(X(TEMPS[i]), Y(data[i].min));
+    cx.lineTo(X(TEMPS[i]), Y(data[i].max));
+    cx.stroke();
+    cx.beginPath();
+    cx.moveTo(X(TEMPS[i]) - 4, Y(data[i].min)); cx.lineTo(X(TEMPS[i]) + 4, Y(data[i].min));
+    cx.moveTo(X(TEMPS[i]) - 4, Y(data[i].max)); cx.lineTo(X(TEMPS[i]) + 4, Y(data[i].max));
+    cx.stroke();
+  }
+  cx.lineWidth = 2;
+  cx.beginPath();
+  TEMPS.forEach((t, i) => { const px = X(t), py = Y(data[i].mean); i === 0 ? cx.moveTo(px, py) : cx.lineTo(px, py); });
+  cx.stroke();
+  cx.fillStyle = color;
+  TEMPS.forEach((t, i) => { cx.beginPath(); cx.arc(X(t), Y(data[i].mean), 3.2, 0, 7); cx.fill(); });
+  // peak label
+  let pi = 0;
+  data.forEach((d, i) => { if (d.mean > data[pi].mean) pi = i; });
+  cx.fillStyle = '#e0af68'; cx.font = '12px monospace';
+  cx.fillText(peakLabel, Math.min(X(TEMPS[pi]) - 30, x0 + w - 118), Y(data[pi].mean) - 12);
+  // axis labels
+  cx.fillStyle = '#787c99'; cx.font = '11px monospace';
+  [1, 2, 2.269, 3, 4].forEach(t => cx.fillText(t === 2.269 ? '2.269' : String(t), X(t) - 8, bot + 18));
+  cx.fillText('0', x0 - 12, bot + 4);
+  cx.fillText(String(ymax), x0 - 22, top + 4);
+}
+cx.fillStyle = '#16161e';
+cx.fillRect(0, 0, ch.width, ch.height);
+panel(46, 470, CURVE_C, 2.0, '#9ece6a', 'heat capacity C(T) — measured', 'peak 1.7028 @ 2.269');
+panel(576, 470, CURVE_X, 10, '#7dcfff', 'susceptibility χ(T) — measured', 'peak 8.4212 @ 2.4');
+</script>
+</body>
+</html>

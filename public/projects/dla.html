@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dla — snowflake by accident — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl input[type=number] { background: #0f1017; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 10px; font-family: monospace; font-size: 13px; width: 90px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; line-height: 1.6; }
+  .ro .dim { color: #e0af68; font-weight: 700; }
+  canvas { display: block; margin: 10px auto; background: #0f1017; border: 1px solid #2a2d3e; border-radius: 8px; max-width: 100%; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Imagine tiny wanderers drifting around in the dark. When a wanderer bumps into the pile in the middle, it stops and stays there forever. That is the whole game. Nobody draws the branches — but branchy, feathery shapes grow anyway, because a wanderer is much more likely to bump into a sticky-out tip than to sneak deep into a gap. Snowflakes and coral grow by a cousin of this rule: wanderers sticking where they bump in.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">I wanted to see a complicated shape come out of a rule with almost nothing in it. This one has three lines of substance: spawn on a circle, walk at random, stick when you touch the cluster. Everything else — the dendrites, the screening of the inner bays, a fractal dimension you can measure off the finished cluster — is a consequence, not an input. The dimension readout below is measured live from the cluster on screen, not copied from a textbook, and it does not match the textbook. That gap is printed, not hidden.</p>
+</div>
+<div class="wrap">
+<h1>dla — snowflake by accident</h1>
+<p class="sub">Diffusion-limited aggregation: random walkers stick where they touch the cluster · 2026-11-21</p>
+
+<div class="card">
+  <div class="ctl">
+    <button id="toggle">pause</button>
+    <button id="reseed">reseed</button>
+    <label>seed <input type="number" id="seed" value="42"></label>
+    <label>target <input type="number" id="target" value="3000" min="100" max="8000" step="100"></label>
+    <button id="restart">restart with these</button>
+  </div>
+  <canvas id="cv" width="720" height="720"></canvas>
+  <div class="ro" id="ro"></div>
+  <div class="ro" id="dimro" style="color:#c0caf5"></div>
+</div>
+
+<h2>how fractal is it?</h2>
+<p>Box-counting, run live over the actual cluster above: cover the cluster with boxes of size 2, 4, 8, 16 and 32 cells, count how many boxes hold at least one particle, and fit a line to log(count) against log(1/size). The slope is the measured dimension D. A solid disc would read 2, a line would read 1. Big DLA clusters in the literature read about 1.71.</p>
+<table id="boxtab">
+  <tr><th class="l">box size</th><th>occupied boxes</th></tr>
+</table>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li>Honest caveat, printed on purpose: finite clusters read noisy, and small ones read low. The reference run used for this page's preview image — seed 42, 3,000 particles — measured D = 1.42 (fit R² = 0.999 over box sizes 2–32), well under the ≈1.71 quoted for large 2D DLA clusters. The fit is clean; the cluster is just young. Tips screen the bays behind them, and a few thousand particles is not enough for the asymptotic shape to settle.</li>
+  <li>The growth rule never mentions branches, angles, or dimension. Walkers spawn on a circle just outside the cluster, walk one grid step at a time in one of four directions, and stick the moment they land next to an occupied cell. A walker that wanders past twice the spawn radius is discarded and respawned.</li>
+  <li>Same seed, same cluster, every time: the random numbers come from a seeded mulberry32 generator, and the page runs the same core logic that passed the offline test suite (16 checks). Change the seed and you get a different snowflake from the same rule.</li>
+  <li>Growth is incremental — a small batch of particles per animation frame — so a 3,000-particle cluster takes some seconds to finish. The dimension is recomputed as it grows, so you can watch the estimate move.</li>
+</ul>
+</div>
+<script>
+// ---- inlined core: faithful port of dla-core.mjs (exports stripped) ----
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const TUNE = { spawnGap: 4, killFactor: 2, maxSteps: 200000 };
+const key = (x, y) => x + "," + y;
+class DLA {
+  constructor() {
+    this.occupied = new Set([key(0, 0)]);
+    this.points = [[0, 0]];
+    this.maxR = 0;
+  }
+  grow(n, rng) {
+    let spawned = 0;
+    while (this.points.length < n) {
+      spawned += 1;
+      const spawnR = this.maxR + TUNE.spawnGap;
+      const killR = spawnR * TUNE.killFactor;
+      const a = rng() * Math.PI * 2;
+      let x = Math.round(Math.cos(a) * spawnR);
+      let y = Math.round(Math.sin(a) * spawnR);
+      let stuck = false;
+      for (let step = 0; step < TUNE.maxSteps && !stuck; step++) {
+        if (this.occupied.has(key(x + 1, y)) ||
+            this.occupied.has(key(x - 1, y)) ||
+            this.occupied.has(key(x, y + 1)) ||
+            this.occupied.has(key(x, y - 1))) {
+          this.occupied.add(key(x, y));
+          this.points.push([x, y]);
+          const r = Math.hypot(x, y);
+          if (r > this.maxR) this.maxR = r;
+          stuck = true;
+          break;
+        }
+        const d = Math.floor(rng() * 4);
+        if (d === 0) x += 1; else if (d === 1) x -= 1;
+        else if (d === 2) y += 1; else y -= 1;
+        if (Math.hypot(x, y) > killR) break;
+      }
+    }
+    return spawned;
+  }
+}
+function boxCounts(points) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of points) {
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+  }
+  const extent = Math.max(maxX - minX + 1, maxY - minY + 1);
+  const out = [];
+  for (let s = 1; s <= extent; s *= 2) {
+    const boxes = new Set();
+    for (const [x, y] of points) {
+      boxes.add(Math.floor(x / s) + "," + Math.floor(y / s));
+    }
+    out.push({ size: s, count: boxes.size });
+  }
+  return out;
+}
+function boxDimension(points) {
+  const counts = boxCounts(points);
+  let extent = 0;
+  {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const [x, y] of points) {
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+    extent = Math.max(maxX - minX + 1, maxY - minY + 1);
+  }
+  const rows = counts.filter(
+    (c) => c.size >= 2 && c.size <= Math.max(2, Math.floor(extent / 4))
+  );
+  const xs = rows.map((c) => Math.log(1 / c.size));
+  const ys = rows.map((c) => Math.log(c.count));
+  const n = xs.length;
+  const mx = xs.reduce((a, b) => a + b, 0) / n;
+  const my = ys.reduce((a, b) => a + b, 0) / n;
+  let sxx = 0, sxy = 0, syy = 0;
+  for (let i = 0; i < n; i++) {
+    sxx += (xs[i] - mx) ** 2;
+    sxy += (xs[i] - mx) * (ys[i] - my);
+    syy += (ys[i] - my) ** 2;
+  }
+  const slope = sxy / sxx;
+  const r2 = (sxy * sxy) / (sxx * syy);
+  return { dim: slope, r2, used: rows.map((c) => c.size) };
+}
+// ---- page wiring ----
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+let dla, rng, running = true, target = 3000, drawn = 0;
+function reset(seed) {
+  dla = new DLA();
+  rng = mulberry32(seed);
+  drawn = 0;
+  ctx.fillStyle = '#0f1017';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+}
+function drawNew() {
+  const scale = cv.width / (2 * (dla.maxR + 6) || 12);
+  // redraw all when scale shrinks noticeably; cheap enough at this size
+  ctx.fillStyle = '#0f1017';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  const cx = cv.width / 2, cy = cv.height / 2;
+  const cell = Math.max(1.6, scale);
+  for (let i = 0; i < dla.points.length; i++) {
+    const [x, y] = dla.points[i];
+    const t = i / Math.max(1, dla.points.length);
+    ctx.fillStyle = i === 0 ? '#f7768e' : (t < 0.5 ? '#7aa2f7' : '#e0af68');
+    ctx.fillRect(cx + x * scale - cell / 2, cy + y * scale - cell / 2, cell, cell);
+  }
+  drawn = dla.points.length;
+}
+function updateDim() {
+  if (dla.points.length < 50) { $('dimro').textContent = ''; return; }
+  const counts = boxCounts(dla.points).filter(c => [2, 4, 8, 16, 32].includes(c.size));
+  const bd = boxDimension(dla.points);
+  const tab = $('boxtab');
+  tab.innerHTML = '<tr><th class="l">box size</th><th>occupied boxes</th></tr>' +
+    counts.map(c => '<tr><td class="l">' + c.size + '</td><td>' + c.count.toLocaleString() + '</td></tr>').join('');
+  $('dimro').innerHTML = 'measured box-count dimension: <span class="dim">D = ' + bd.dim.toFixed(2) +
+    '</span> (fit R² = ' + bd.r2.toFixed(3) + ', box sizes ' + bd.used.join(', ') +
+    ') — literature for large 2D DLA clusters is ≈1.71; finite clusters read noisy and small ones read low.';
+}
+function frame() {
+  if (running && dla.points.length < target) {
+    dla.grow(Math.min(target, dla.points.length + 30), rng);
+    drawNew();
+    $('ro').textContent = 'particles: ' + dla.points.length.toLocaleString() + ' / ' + target.toLocaleString() +
+      ' · cluster radius: ' + dla.maxR.toFixed(1) + ' cells';
+    if (dla.points.length % 300 < 30 || dla.points.length >= target) updateDim();
+    if (dla.points.length >= target) { running = false; $('toggle').textContent = 'grow'; updateDim(); }
+  }
+  requestAnimationFrame(frame);
+}
+$('toggle').addEventListener('click', () => {
+  if (dla.points.length >= target) { target += 1000; running = true; $('toggle').textContent = 'pause'; return; }
+  running = !running;
+  $('toggle').textContent = running ? 'pause' : 'grow';
+});
+$('reseed').addEventListener('click', () => {
+  const s = Math.floor(Math.random() * 100000);
+  $('seed').value = s;
+  target = Math.max(100, Math.min(8000, +$('target').value || 3000));
+  reset(s); running = true; $('toggle').textContent = 'pause';
+});
+$('restart').addEventListener('click', () => {
+  target = Math.max(100, Math.min(8000, +$('target').value || 3000));
+  reset(+$('seed').value || 0); running = true; $('toggle').textContent = 'pause';
+});
+reset(42);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
