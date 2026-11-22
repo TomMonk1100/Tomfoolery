@@ -59,6 +59,12 @@ const projects = defineCollection({
     file: z.string(),
     image: z.string().optional(),
     imageAlt: z.string().optional(),
+    // Optional laboratory shelving (see src/pages/projects/index.astro):
+    // `wing` names a bench (number|swarms|critical|earth|senses|workbench|
+    // cabinet); `featured: true` claims the keystone bench. Both have
+    // automatic defaults, so older entries need neither.
+    wing: z.enum(['number', 'swarms', 'critical', 'earth', 'senses', 'workbench', 'cabinet']).optional(),
+    featured: z.boolean().optional(),
   }),
 });
 

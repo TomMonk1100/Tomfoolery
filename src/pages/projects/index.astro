@@ -3,8 +3,38 @@ import Layout from '../../layouts/Layout.astro';
 import EntryTrail from '../../components/EntryTrail.astro';
 import { getCollection } from 'astro:content';
 
+/*
+  PIP'S LABORATORY — the projects index.
+
+  SCALABILITY CONTRACT (read before adding a project):
+  This page is fully data-driven from the `projects` collection. To add a
+  piece, drop in one new src/content/projects/<slug>.md (plus its standalone
+  public/projects/<slug>.html and public/images/projects/<slug>.png) and it
+  appears here with ZERO edits to this file:
+    - The newest three pieces automatically take the "Newest on the bench"
+      shelf; the keystone bench shows the entry with `featured: true` in its
+      frontmatter (falling back to the slug `grand-unified`, then the newest).
+    - Every piece is shelved on a themed bench ("wing"). Its wing is, in
+      order: the optional `wing:` frontmatter field (an enum in the schema —
+      a typo fails the build loudly), the SLUG_WING map below, or the
+      default `cabinet` bench ("The Cabinet — unclassified"). An unknown
+      slug therefore always lands somewhere visible.
+    - Specimen numbers are accession numbers: oldest piece is № 01 and new
+      pieces append at the end, so existing numbers never change.
+    - Counts, stats, filter tallies and the live result count are computed
+      from the whole collection at build time. Never hand-write a number.
+  SCOPE OF THE ZERO-EDIT PROMISE: it holds for new projects within the
+  existing four kinds and seven wings. A genuinely new kind or wing is a
+  deliberate edit (schema enum + label/wing metadata here) — by design.
+  Nothing validates that a new entry's `file:`/`image:` belong to its slug;
+  check them when filing the entry.
+  Wing ids: number | swarms | critical | earth | senses | workbench | cabinet.
+*/
+
+/* Deterministic order: date desc, slug asc as tie-break (many pieces share
+   a build date; never rely on loader order). */
 const entries = (await getCollection('projects')).sort(
-  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf() || a.id.localeCompare(b.id)
 );
 
 const kindLabel: Record<string, string> = {
@@ -13,61 +43,691 @@ const kindLabel: Record<string, string> = {
   toy: 'Toy',
   generative: 'Generative',
 };
+
+interface WingMeta { id: string; label: string; blurb: string; hue: number }
+const WINGS: WingMeta[] = [
+  { id: 'number',    label: 'Number & Pattern',    blurb: 'Counts, cycles and records — arithmetic with its sleeves rolled up.', hue: 78 },
+  { id: 'swarms',    label: 'Swarms & Simple Rules', blurb: 'One small rule each, repeated until behaviour shows up.', hue: 145 },
+  { id: 'critical',  label: 'Critical Points',     blurb: 'Dials with a flip in them — and the measurements that pinned the flip down.', hue: 350 },
+  { id: 'earth',     label: 'Earth & Sky',         blurb: 'Rainbows, tides, snow and rivers — the world outside, modelled honestly.', hue: 205 },
+  { id: 'senses',    label: 'Sound, Sight & Mind', blurb: 'What ears and eyes actually receive, and the shortcuts the brain takes with it.', hue: 285 },
+  { id: 'workbench', label: 'The Workbench',       blurb: 'Generative pieces and playable things — made to be touched, not just watched.', hue: 32 },
+  { id: 'cabinet',   label: 'The Cabinet',         blurb: 'Filed, but not yet classified. Every laboratory has one drawer like this.', hue: 60 },
+];
+const wingById = new Map(WINGS.map((w) => [w.id, w]));
+
+/* Explicit slug → wing map. A slug missing here (and without a `wing:`
+   frontmatter field) falls back to the Cabinet — never to nowhere. */
+const SLUG_WING: Record<string, string> = {
+  'collatz': 'number', 'kaprekar': 'number', 'prime-gaps': 'number',
+  'continued-fractions': 'number', 'feigenbaum': 'number', 'tilings': 'number',
+  'monomer-dimer': 'number',
+  'flock': 'swarms', 'fireflies': 'swarms', 'pulseflies': 'swarms',
+  'hopf': 'swarms', 'formica': 'swarms', 'langtons-ant': 'swarms',
+  'eca': 'swarms', 'dla': 'swarms', 'sandpile': 'swarms', 'sir': 'swarms',
+  'perc': 'critical', 'ising-beta': 'critical', 'ising-fluct': 'critical',
+  'instinct-field': 'critical', 'polya-walks': 'critical',
+  'grand-unified': 'critical',
+  'rainbow': 'earth', 'tides': 'earth', 'snowflakes': 'earth',
+  'aurora': 'earth', 'meanders': 'earth',
+  'shepard': 'senses', 'bouba-kiki': 'senses', 'metamers': 'senses',
+  'dawn-chorus': 'senses', 'waggle': 'senses',
+  'allspark': 'workbench', 'chain': 'workbench', 'night-garden': 'workbench',
+  'silt': 'workbench', 'minstrel': 'workbench', 'minstrel-harmony': 'workbench',
+  'minstrel-novelty': 'workbench', 'lights-out': 'workbench', 'maze': 'workbench',
+  'pip-3d': 'workbench',
+};
+
+/* Optional wide hero crops for a keystone, keyed by slug. Presentation only:
+   a featured piece without an entry here simply uses its preview image. */
+const FEATURED_HERO: Record<string, string> = {
+  'grand-unified': '/images/projects/grand-unified-hero.png',
+};
+
+type Entry = (typeof entries)[number];
+const wingOf = (e: Entry): string => {
+  const declared = (e.data as { wing?: string }).wing;
+  if (declared && wingById.has(declared)) return declared;
+  return SLUG_WING[e.id] ?? 'cabinet';
+};
+
+/* Accession numbers: oldest → № 01, newest → highest. Appending a piece
+   never renumbers an existing specimen. Same tie-break as the main sort. */
+const byAccession = [...entries].sort(
+  (a, b) => a.data.date.valueOf() - b.data.date.valueOf() || a.id.localeCompare(b.id)
+);
+const specimenNo = new Map(byAccession.map((e, i) => [e.id, String(i + 1).padStart(2, '0')]));
+
+const featuredFlagged = entries.filter((e) => (e.data as { featured?: boolean }).featured);
+if (featuredFlagged.length > 1) {
+  console.warn(`[laboratory] ${featuredFlagged.length} entries claim featured: true; the newest wins, the rest are shelved normally.`);
+}
+const featured =
+  featuredFlagged[0] ??
+  entries.find((e) => e.id === 'grand-unified') ??
+  entries[0];
+const rest = entries.filter((e) => e.id !== featured?.id);
+const bench = rest.slice(0, 3);
+const benchIds = new Set(bench.map((e) => e.id));
+const wall = rest.filter((e) => !benchIds.has(e.id));
+
+const wallByWing = WINGS
+  .map((wing) => ({ wing, pieces: wall.filter((e) => wingOf(e) === wing.id) }))
+  .filter((g) => g.pieces.length > 0);
+
+/* Filter tallies cover the WHOLE collection (keystone and bench included) —
+   the controls filter every piece on the page, so the counts must too. */
+const wingTallies = WINGS
+  .map((wing) => ({ wing, n: entries.filter((e) => wingOf(e) === wing.id).length }))
+  .filter((t) => t.n > 0);
+const kindCounts = Object.entries(kindLabel)
+  .map(([kind, label]) => ({ kind, label, n: entries.filter((e) => e.data.kind === kind).length }))
+  .filter((k) => k.n > 0);
+const benchCount = wallByWing.length + (featured ? 1 : 0); /* wall benches + the main bench */
+const newest = entries[0];
+const fmtMonth = (d: Date) => d.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const searchText = (e: Entry) =>
+  `${e.data.title} ${e.data.summary} ${kindLabel[e.data.kind]} ${wingById.get(wingOf(e))?.label ?? ''}`.toLowerCase();
+const pieceAttrs = (e: Entry) => ({
+  'data-piece': true,
+  'data-wing': wingOf(e),
+  'data-kind': e.data.kind,
+  'data-date': e.data.date.valueOf(),
+  'data-title': e.data.title.toLowerCase(),
+  'data-search': searchText(e),
+});
 ---
 
 <Layout
-  title="Projects — Tomfoolery"
-  description="Small interactive toys, simulations, and games built by Pip, the AI that helps Tom tend this site."
+  title="Pip's Laboratory — Projects — Tomfoolery"
+  description="Pip's laboratory: every interactive experiment, simulation and generative piece on Tomfoolery, shelved on themed benches and ready to run in your browser."
   image="/images/social/projects.png"
-  imageAlt="The Tomfoolery projects workshop."
+  imageAlt="Pip's laboratory — the Tomfoolery projects, shelved as specimens."
 >
-  <article class="editorial-page">
-    <header class="editorial-page-lead">
-      <div>
-        <span class="editorial-kicker">The workshop · {entries.length} pieces live</span>
-        <h1>Things built here.</h1>
-      </div>
-      <div>
-        <p>
-          Small interactive toys, simulations, and games built by Pip — the AI
-          that helps Tom tend this site. Everything here runs entirely in your
-          browser: no accounts, no downloads, nothing to install. Open a piece
-          and play with it.
-        </p>
-        <dl class="editorial-collection-facts" aria-label="Workshop status">
-          <div><dt>Newest</dt><dd>{entries[0]?.data.title}</dd></div>
-          <div><dt>Format</dt><dd>Single-file web pieces</dd></div>
-        </dl>
-      </div>
+  <div class="lab" data-lab>
+    <canvas class="lab-ambient" data-lab-ambient aria-hidden="true"></canvas>
+    <div class="lab-progress" aria-hidden="true"></div>
+
+    <header class="lab-head">
+      <p class="lab-kicker">Pip's laboratory · {entries.length} experiments on file</p>
+      <h1>The Laboratory.</h1>
+      <p class="lab-lede">
+        This is where Pip — the AI that helps Tom tend this site — keeps its own
+        work: small machines built to test one honest question each. Every piece
+        runs entirely in your browser. Nothing to install, no accounts. Pick a
+        specimen off the bench and open it.
+      </p>
+      <dl class="lab-stats" aria-label="Laboratory notebook">
+        <div><dt>Experiments</dt><dd>{entries.length}</dd></div>
+        <div><dt>Benches</dt><dd>{benchCount}</dd></div>
+        {kindCounts.map((k) => (
+          <div><dt>{k.label}s</dt><dd>{k.n}</dd></div>
+        ))}
+        <div class="lab-stats__wide"><dt>Latest entry</dt><dd>{newest?.data.title} · {newest && fmtMonth(newest.data.date)}</dd></div>
+      </dl>
     </header>
 
-    <div class="editorial-binder" aria-label="Project entries">
-      {entries.map((entry, index) => (
-        <article class="editorial-binder__entry reveal">
-          <a href={`/projects/${entry.id}`} class:list={['editorial-card-record', entry.data.image && 'editorial-card-record--photo']}>
-            {entry.data.image ? (
-              <img src={entry.data.image} alt={entry.data.imageAlt ?? entry.data.title} loading={index === 0 ? 'eager' : 'lazy'} decoding="async" />
-            ) : (
-              <span class="editorial-card-record__type">
-                <small>{kindLabel[entry.data.kind]}</small>
-                <b>{String(index + 1).padStart(2, '0')}</b>
-                <em>Preview not yet filed</em>
-              </span>
-            )}
-          </a>
-          <div class="editorial-binder__copy">
-            <p class="editorial-kicker">{kindLabel[entry.data.kind]} · {entry.data.date.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })}</p>
-            <h2><a href={`/projects/${entry.id}`}>{entry.data.title}</a></h2>
-            <p>{entry.data.summary}</p>
-            <a href={`/projects/${entry.id}`} class="editorial-text-link">Open the piece →</a>
+    {featured && (
+      <section class="lab-main-bench" data-main-bench aria-label="The main bench">
+        <article class="lab-keystone reveal" {...pieceAttrs(featured)}>
+          <div class="lab-keystone__media">
+            {(FEATURED_HERO[featured.id] ?? featured.data.image)
+              ? <img src={FEATURED_HERO[featured.id] ?? featured.data.image} alt={featured.data.imageAlt ?? featured.data.title} loading="eager" decoding="async" />
+              : <span class="lab-nopreview"><small>{kindLabel[featured.data.kind]}</small><em>Preview not yet filed</em></span>}
+            <span class="lab-live"><span class="lab-live__dot"></span>On the main bench</span>
+          </div>
+          <div class="lab-keystone__copy">
+            <p class="lab-kicker">The keystone · {kindLabel[featured.data.kind]}</p>
+            <h2><a href={`/projects/${featured.id}`}>{featured.data.title}</a></h2>
+            <p class="lab-keystone__meta">№ {specimenNo.get(featured.id)} · {fmtMonth(featured.data.date)} · {wingById.get(wingOf(featured))?.label}</p>
+            <p class="lab-keystone__summary">{featured.data.summary}</p>
+            <span class="lab-open" aria-hidden="true">Open the piece <span aria-hidden="true">→</span></span>
           </div>
         </article>
+
+        {bench.length > 0 && (
+          <div class="lab-running" data-running>
+            <h2 class="lab-running__title">Newest on the bench</h2>
+            <div class="lab-running__grid">
+              {bench.map((entry) => (
+                <article class="lab-mini reveal" {...pieceAttrs(entry)}>
+                  <div class="lab-mini__media">
+                    {entry.data.image
+                      ? <img src={entry.data.image} alt={entry.data.imageAlt ?? entry.data.title} loading="lazy" decoding="async" />
+                      : <span class="lab-nopreview"><small>{kindLabel[entry.data.kind]}</small><em>Preview not yet filed</em></span>}
+                  </div>
+                  <div class="lab-mini__body">
+                    <p class="lab-mini__meta">№ {specimenNo.get(entry.id)} · {wingById.get(wingOf(entry))?.label}</p>
+                    <h3><a href={`/projects/${entry.id}`}>{entry.data.title}</a></h3>
+                    <p class="lab-mini__date">{fmtMonth(entry.data.date)} · {kindLabel[entry.data.kind]}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+    )}
+
+    <section class="lab-controls" aria-label="Find an experiment">
+      <div class="lab-controls__row">
+        <div class="lab-search">
+          <label class="lab-sr" for="lab-search-input">Search experiments</label>
+          <input id="lab-search-input" type="search" placeholder="Search the laboratory…" autocomplete="off" aria-describedby="lab-count" data-lab-search />
+        </div>
+        <label class="lab-sort">
+          <span>Sort within each bench</span>
+          <select data-lab-sort>
+            <option value="new">Newest first</option>
+            <option value="old">Oldest first</option>
+            <option value="az">A – Z</option>
+          </select>
+        </label>
+      </div>
+      <div class="lab-rail-row">
+        <span class="lab-rail-label" aria-hidden="true">Bench</span>
+        <div class="lab-rail" role="radiogroup" aria-label="Filter by bench">
+          <button type="button" class="lab-chip is-active" role="radio" aria-checked="true" tabindex="0" data-wing-filter="all">All benches <span class="lab-chip__n">{entries.length}</span></button>
+          {wingTallies.map(({ wing, n }) => (
+            <button type="button" class="lab-chip" role="radio" aria-checked="false" tabindex="-1" style={`--hue:${wing.hue}`} data-wing-filter={wing.id}>{wing.label} <span class="lab-chip__n">{n}</span></button>
+          ))}
+        </div>
+      </div>
+      <div class="lab-rail-row">
+        <span class="lab-rail-label" aria-hidden="true">Kind</span>
+        <div class="lab-rail" role="radiogroup" aria-label="Filter by kind">
+          <button type="button" class="lab-chip is-active" role="radio" aria-checked="true" tabindex="0" data-kind-filter="all">All kinds <span class="lab-chip__n">{entries.length}</span></button>
+          {kindCounts.map((k) => (
+            <button type="button" class="lab-chip" role="radio" aria-checked="false" tabindex="-1" data-kind-filter={k.kind}>{k.label}s <span class="lab-chip__n">{k.n}</span></button>
+          ))}
+        </div>
+      </div>
+      <p class="lab-count" id="lab-count" role="status" aria-live="polite" data-lab-count>{entries.length} experiments in the laboratory — the controls search and filter all of them.</p>
+    </section>
+
+    <div class="lab-wall" data-lab-wall>
+      {wallByWing.map(({ wing, pieces }, wi) => (
+        <section class="lab-bench-section" style={`--hue:${wing.hue}`} data-bench={wing.id} aria-label={wing.label}>
+          <header class="lab-bench-head reveal">
+            <p class="lab-kicker"><span class="lab-bench-dot" aria-hidden="true"></span>Bench {String(wi + 1).padStart(2, '0')} · <span data-bench-count>{pieces.length} specimen{pieces.length === 1 ? '' : 's'}</span></p>
+            <h2>{wing.label}</h2>
+            <p>{wing.blurb}</p>
+          </header>
+          <div class="lab-grid">
+            {pieces.map((entry) => (
+              <article class="lab-card reveal" {...pieceAttrs(entry)}>
+                <div class="lab-card__media">
+                  {entry.data.image
+                    ? <img src={entry.data.image} alt="" loading="lazy" decoding="async" />
+                    : <span class="lab-nopreview"><small>{kindLabel[entry.data.kind]}</small><em>Preview not yet filed</em></span>}
+                </div>
+                <div class="lab-card__body">
+                  <p class="lab-card__meta"><span>№ {specimenNo.get(entry.id)}</span><span>{kindLabel[entry.data.kind]}</span><span class="lab-card__date">{fmtMonth(entry.data.date)}</span></p>
+                  <h3><a href={`/projects/${entry.id}`}>{entry.data.title}</a></h3>
+                  <p class="lab-card__summary">{entry.data.summary}</p>
+                  <span class="lab-open" aria-hidden="true">Open the piece <span aria-hidden="true">→</span></span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
       ))}
     </div>
 
-    <EntryTrail contextLinks={[
-      { href: '/game', label: 'Moon Lander', note: 'the other playable thing here' },
-      { href: '/art', label: 'Art shelf', note: 'quieter visual experiments' },
-    ]} />
-  </article>
+    <div class="lab-empty" data-lab-empty hidden>
+      <p>No specimens in the laboratory match that. The laboratory is large; the search was narrow.</p>
+      <button type="button" class="lab-reset" data-lab-reset>Clear search &amp; filters</button>
+    </div>
+  </div>
+
+  <EntryTrail contextLinks={[
+    { href: '/game', label: 'Moon Lander', note: 'the other playable thing here' },
+    { href: '/art', label: 'Art shelf', note: 'quieter visual experiments' },
+  ]} />
+
+  <style>
+    .lab {
+      --lab-bg: #14100b;
+      --lab-bg-2: #1a140d;
+      --lab-surface: #201910;
+      --lab-ink: #f3ead9;
+      --lab-muted: #c2b294;
+      --lab-faint: #9a8a6d;
+      --lab-line: rgba(231, 220, 200, 0.16);
+      --lab-gold: #e7b568;
+      position: relative;
+      isolation: isolate;
+      overflow: clip;
+      border: 1px solid #2b2115;
+      border-radius: 24px;
+      background:
+        radial-gradient(120% 60% at 50% -10%, rgba(231, 181, 104, 0.13), transparent 60%),
+        linear-gradient(180deg, var(--lab-bg-2), var(--lab-bg) 30%);
+      color: var(--lab-ink);
+      padding: clamp(1.5rem, 4vw, 3.5rem);
+      margin-top: 0.5rem;
+      box-shadow: 0 30px 80px -30px rgba(34, 26, 18, 0.55);
+    }
+    /* Ambient bench light: a viewport-height canvas that sticks inside the
+       chamber, so its bitmap stays small no matter how tall the page grows. */
+    .lab-ambient {
+      position: sticky; top: 0; height: 100vh; width: 100%;
+      margin-bottom: -100vh; z-index: -1; pointer-events: none; opacity: 0.55;
+      display: block;
+    }
+    .lab-progress {
+      position: absolute; top: 0; left: 0; height: 2px; width: 100%;
+      background: linear-gradient(90deg, var(--lab-gold), #7c9a2e);
+      transform-origin: 0 50%; transform: scaleX(0); opacity: 0.8;
+    }
+    @supports (animation-timeline: scroll()) {
+      .lab-progress { animation: lab-progress linear both; animation-timeline: scroll(root block); }
+      @keyframes lab-progress { to { transform: scaleX(1); } }
+    }
+    .lab-sr {
+      position: absolute; width: 1px; height: 1px; overflow: hidden;
+      clip: rect(0 0 0 0); white-space: nowrap;
+    }
+    .lab-kicker {
+      font-family: var(--font-mono); font-size: 0.72rem; font-weight: 650;
+      letter-spacing: 0.13em; text-transform: uppercase; color: var(--lab-gold);
+    }
+    .lab-head h1 {
+      font-family: var(--font-display); font-weight: 570; letter-spacing: -0.05em;
+      font-size: clamp(2.8rem, 6vw, 5.2rem); line-height: 0.95; margin-top: 0.6rem;
+    }
+    .lab-lede { max-width: 38rem; margin-top: 1.1rem; color: var(--lab-muted); font-size: 1.05rem; line-height: 1.7; }
+    .lab-stats {
+      display: flex; flex-wrap: wrap; gap: 0; margin-top: 2.2rem;
+      border-top: 1px solid var(--lab-line); border-bottom: 1px solid var(--lab-line);
+    }
+    .lab-stats > div { padding: 0.9rem 1.4rem 0.9rem 0; margin-right: 1.4rem; }
+    .lab-stats dt {
+      font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--lab-faint);
+    }
+    .lab-stats dd { font-family: var(--font-display); font-size: 1.35rem; font-weight: 560; margin-top: 0.15rem; }
+    .lab-stats__wide dd { font-size: 1.05rem; padding-top: 0.3rem; }
+
+    .lab-main-bench { margin-top: clamp(2.5rem, 5vw, 4rem); }
+    .lab-keystone {
+      position: relative;
+      display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(16rem, 0.9fr);
+      gap: clamp(1.5rem, 4vw, 3rem); align-items: center;
+    }
+    .lab-keystone__media, .lab-mini__media, .lab-card__media {
+      display: block; position: relative; overflow: hidden; border-radius: 12px;
+      border: 1px solid var(--lab-line); background: #0d0a07;
+    }
+    .lab-keystone__media {
+      border: 2px solid color-mix(in srgb, var(--lab-gold) 55%, transparent);
+      box-shadow: 0 24px 60px -24px rgba(231, 181, 104, 0.35);
+      aspect-ratio: 1170 / 752;
+    }
+    .lab-keystone__media img, .lab-mini__media img, .lab-card__media img {
+      display: block; width: 100%; height: 100%; object-fit: cover;
+      transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .lab-mini__media img, .lab-card__media img { aspect-ratio: 1440 / 686; }
+    .lab-keystone:hover .lab-keystone__media img { transform: scale(1.03); }
+    .lab-live {
+      position: absolute; left: 0.8rem; bottom: 0.8rem;
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.09em; text-transform: uppercase;
+      color: #eaf5d8; background: rgba(13, 10, 7, 0.72); border: 1px solid var(--lab-line);
+      padding: 0.35rem 0.6rem; border-radius: 999px; backdrop-filter: blur(4px);
+    }
+    .lab-live__dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #a5c94f; display: inline-block; }
+    .lab-keystone__copy h2 {
+      font-family: var(--font-display); font-size: clamp(1.9rem, 3.4vw, 3rem);
+      font-weight: 560; letter-spacing: -0.04em; line-height: 1.02; margin-top: 0.5rem;
+    }
+    .lab-keystone__copy h2 a, .lab-card h3 a, .lab-mini h3 a { color: inherit; text-decoration: none; }
+    .lab-keystone__copy h2 a:hover, .lab-card h3 a:hover, .lab-mini h3 a:hover { color: var(--lab-gold); }
+    /* One tab stop per piece: the title link stretches over its article. */
+    .lab-keystone__copy h2 a::after, .lab-card h3 a::after, .lab-mini h3 a::after {
+      content: ""; position: absolute; inset: 0;
+    }
+    .lab-keystone__meta {
+      font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--lab-muted); margin-top: 0.7rem;
+    }
+    .lab-keystone__summary { color: var(--lab-muted); line-height: 1.65; margin-top: 0.9rem; }
+    .lab-open {
+      display: inline-block; margin-top: 1.1rem; font-family: var(--font-mono);
+      font-size: 0.8rem; font-weight: 600; color: var(--lab-gold);
+      border-bottom: 1px solid color-mix(in srgb, var(--lab-gold) 65%, transparent);
+      padding-bottom: 0.2rem;
+    }
+    .lab-running { margin-top: clamp(2.2rem, 4vw, 3.2rem); }
+    .lab-running__title {
+      font-family: var(--font-mono); font-size: 0.75rem; font-weight: 650;
+      letter-spacing: 0.13em; text-transform: uppercase; color: var(--lab-ink);
+    }
+    .lab-running__grid {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.2rem; margin-top: 1rem;
+    }
+    .lab-mini, .lab-card {
+      position: relative;
+      background: linear-gradient(180deg, var(--lab-surface), #1b150e);
+      border: 1px solid var(--lab-line); border-radius: 14px; overflow: hidden;
+      display: flex; flex-direction: column;
+      transition: transform 350ms cubic-bezier(0.22, 1, 0.36, 1), border-color 250ms ease, box-shadow 350ms ease;
+    }
+    .lab-mini:hover, .lab-card:hover, .lab-mini:focus-within, .lab-card:focus-within {
+      transform: translateY(-5px);
+      border-color: color-mix(in srgb, var(--lab-gold) 60%, transparent);
+      box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.6);
+    }
+    .lab-mini__media, .lab-card__media { border: 0; border-radius: 0; border-bottom: 1px solid var(--lab-line); }
+    .lab-mini:hover .lab-mini__media img, .lab-card:hover .lab-card__media img { transform: scale(1.05); }
+    .lab-mini__body { padding: 1rem 1.1rem 1.15rem; }
+    .lab-mini h3 { font-family: var(--font-display); font-size: 1.25rem; font-weight: 560; letter-spacing: -0.02em; margin-top: 0.3rem; }
+    .lab-mini__meta {
+      font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--lab-gold);
+    }
+    .lab-mini__date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--lab-faint); margin-top: 0.25rem; }
+
+    .lab-controls {
+      margin-top: clamp(2.5rem, 5vw, 4rem); padding-top: 1.6rem;
+      border-top: 1px solid var(--lab-line);
+      display: grid; gap: 0.9rem;
+    }
+    .lab-controls__row { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; align-items: end; }
+    .lab-search { flex: 1 1 18rem; max-width: 30rem; }
+    .lab-search input {
+      width: 100%; background: rgba(13, 10, 7, 0.6);
+      border: 1px solid var(--lab-line); border-radius: 10px; color: var(--lab-ink);
+      font: inherit; font-size: 0.95rem; padding: 0.7rem 1rem;
+    }
+    .lab-search input::placeholder { color: var(--lab-faint); }
+    .lab-sort { display: grid; gap: 0.35rem; }
+    .lab-sort > span {
+      font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--lab-faint);
+    }
+    .lab-sort select {
+      background: rgba(13, 10, 7, 0.6); color: var(--lab-ink); border: 1px solid var(--lab-line);
+      border-radius: 10px; font-family: var(--font-mono); font-size: 0.75rem; padding: 0.55rem 0.7rem; cursor: pointer;
+    }
+    .lab-rail-row { display: flex; gap: 0.9rem; align-items: baseline; }
+    .lab-rail-label {
+      flex: 0 0 3.2rem; font-family: var(--font-mono); font-size: 0.65rem; font-weight: 650;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--lab-faint); padding-top: 0.5rem;
+    }
+    .lab-rail { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .lab-chip {
+      --chip: var(--lab-gold);
+      font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em;
+      color: var(--lab-muted); background: transparent; border: 1px solid var(--lab-line);
+      border-radius: 999px; padding: 0.45rem 0.85rem; cursor: pointer;
+      transition: color 200ms ease, border-color 200ms ease, background-color 200ms ease;
+    }
+    .lab-chip[data-wing-filter]:not([data-wing-filter="all"]) { --chip: oklch(0.82 0.12 var(--hue)); }
+    .lab-chip:hover { color: var(--lab-ink); border-color: var(--chip); }
+    .lab-chip.is-active { color: #171208; background: var(--chip); border-color: transparent; }
+    .lab-chip__n { opacity: 0.65; font-weight: 500; }
+    .lab-count { font-family: var(--font-mono); font-size: 0.72rem; color: var(--lab-faint); min-height: 1em; }
+
+    .lab-wall { container-type: inline-size; margin-top: 1rem; }
+    .lab-bench-section { margin-top: clamp(2.6rem, 5vw, 4.2rem); }
+    .lab-bench-dot {
+      display: inline-block; width: 0.5rem; height: 0.5rem; border-radius: 50%;
+      background: oklch(0.8 0.12 var(--hue)); margin-right: 0.55rem; vertical-align: 0.08em;
+    }
+    .lab-bench-head h2 {
+      font-family: var(--font-display); font-size: clamp(1.7rem, 3vw, 2.5rem);
+      font-weight: 560; letter-spacing: -0.035em; margin-top: 0.4rem; color: var(--lab-ink);
+    }
+    .lab-bench-head > p:last-child { color: var(--lab-muted); max-width: 36rem; margin-top: 0.4rem; line-height: 1.6; }
+    .lab-grid {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.2rem; margin-top: 1.4rem;
+    }
+    @container (max-width: 56rem) { .lab-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @container (max-width: 34rem) { .lab-grid { grid-template-columns: minmax(0, 1fr); } }
+    .lab-card__body { padding: 1.1rem 1.2rem 1.3rem; display: flex; flex-direction: column; flex: 1; }
+    .lab-card__meta {
+      display: flex; gap: 0.9rem; font-family: var(--font-mono); font-size: 0.7rem;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--lab-muted);
+    }
+    .lab-card__meta span:first-child { color: oklch(0.8 0.11 var(--hue, 45)); }
+    .lab-card__meta .lab-card__date { color: var(--lab-faint); }
+    .lab-card h3 { font-family: var(--font-display); font-size: 1.3rem; font-weight: 560; letter-spacing: -0.02em; line-height: 1.15; margin-top: 0.45rem; }
+    .lab-card__summary {
+      color: var(--lab-muted); font-size: 0.9rem; line-height: 1.6; margin-top: 0.55rem;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .lab-card .lab-open { align-self: flex-start; margin-top: auto; padding-top: 1rem; border-bottom-width: 1px; }
+    .lab-card__body .lab-open { margin-top: auto; }
+    .lab-nopreview {
+      display: grid; place-items: center; gap: 0.3rem; aspect-ratio: 1440 / 686;
+      color: var(--lab-faint); font-family: var(--font-mono); font-size: 0.7rem; text-align: center;
+    }
+    .lab-empty { margin-top: 3rem; text-align: center; color: var(--lab-muted); }
+    .lab-reset {
+      margin-top: 1rem; font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600;
+      color: #171208; background: var(--lab-gold); border: 0; border-radius: 999px;
+      padding: 0.6rem 1.1rem; cursor: pointer;
+    }
+    .lab a:focus-visible, .lab button:focus-visible, .lab input:focus-visible, .lab select:focus-visible {
+      outline: 2px solid var(--lab-gold); outline-offset: 3px;
+    }
+    [hidden] { display: none !important; }
+
+    @media (max-width: 56rem) {
+      .lab-keystone { grid-template-columns: 1fr; }
+      .lab-running__grid { grid-template-columns: 1fr; }
+      .lab-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem 1.5rem; padding-block: 0.6rem; }
+      .lab-stats > div { padding: 0.5rem 0; margin-right: 0; }
+      .lab-stats__wide { grid-column: 1 / -1; }
+      .lab-live { font-size: 0.58rem; padding: 0.28rem 0.5rem; left: 0.55rem; bottom: 0.55rem; }
+      .lab-rail-row { flex-direction: column; gap: 0.3rem; }
+      .lab-rail-label { padding-top: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .lab *, .lab *::before, .lab *::after {
+        animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      .lab-progress { display: none; }
+    }
+  </style>
+
+  <script>
+    (() => {
+      const init = () => {
+        const root = document.querySelector('[data-lab]');
+        if (!root || root.dataset.labInit) return;
+        root.dataset.labInit = '1';
+
+        const pieces = [...root.querySelectorAll('[data-piece]')];
+        const sections = [...root.querySelectorAll('[data-bench]')];
+        const mainBench = root.querySelector('[data-main-bench]');
+        const running = root.querySelector('[data-running]');
+        const keystone = root.querySelector('.lab-keystone');
+        const minis = [...root.querySelectorAll('.lab-mini')];
+        const countEl = root.querySelector('[data-lab-count]');
+        const emptyEl = root.querySelector('[data-lab-empty]');
+        const searchEl = root.querySelector('[data-lab-search]');
+        const sortEl = root.querySelector('[data-lab-sort]');
+        const total = pieces.length;
+        const state = { wing: 'all', kind: 'all', q: '', sort: 'new' };
+        let firstApply = true;
+        let countTimer = 0;
+
+        const matches = (el) =>
+          (state.wing === 'all' || el.dataset.wing === state.wing) &&
+          (state.kind === 'all' || el.dataset.kind === state.kind) &&
+          (state.q === '' || el.dataset.search.includes(state.q));
+
+        const apply = () => {
+          let shown = 0;
+          for (const el of pieces) {
+            const ok = matches(el);
+            el.hidden = !ok;
+            if (ok) shown += 1;
+          }
+          for (const section of sections) {
+            const inSection = [...section.querySelectorAll('.lab-card')];
+            const visible = inSection.filter((c) => !c.hidden).length;
+            section.hidden = visible === 0;
+            const label = section.querySelector('[data-bench-count]');
+            if (label) {
+              label.textContent =
+                visible === inSection.length
+                  ? `${inSection.length} specimen${inSection.length === 1 ? '' : 's'}`
+                  : `${visible} of ${inSection.length} specimens`;
+            }
+          }
+          if (running) running.hidden = minis.every((m) => m.hidden);
+          if (mainBench) mainBench.hidden = (keystone?.hidden ?? true) && minis.every((m) => m.hidden);
+          if (emptyEl) emptyEl.hidden = shown !== 0;
+          if (countEl && !firstApply) {
+            window.clearTimeout(countTimer);
+            countTimer = window.setTimeout(() => {
+              countEl.textContent =
+                shown === total
+                  ? `${total} experiments in the laboratory — the controls search and filter all of them.`
+                  : `Showing ${shown} of ${total} experiments.`;
+            }, 300);
+          }
+          firstApply = false;
+        };
+
+        const sortCards = () => {
+          for (const section of sections) {
+            const grid = section.querySelector('.lab-grid');
+            if (!grid) continue;
+            const sorted = [...grid.querySelectorAll('.lab-card')].sort((a, b) => {
+              if (state.sort === 'az') return a.dataset.title.localeCompare(b.dataset.title);
+              const d = Number(a.dataset.date) - Number(b.dataset.date);
+              return state.sort === 'old' ? d : -d;
+            });
+            sorted.forEach((c) => grid.appendChild(c));
+          }
+        };
+
+        /* Radio-group behaviour: one selection per rail, roving tabindex,
+           arrow keys move the selection (ARIA radio pattern). */
+        const setupRadioGroup = (attr, key) => {
+          const group = root.querySelector(`[aria-label="Filter by ${key === 'wing' ? 'bench' : 'kind'}"]`);
+          const buttons = [...root.querySelectorAll(`[${attr}]`)];
+          if (!group || buttons.length === 0) return;
+          const select = (btn, focus = false) => {
+            state[key] = btn.getAttribute(attr);
+            buttons.forEach((b) => {
+              const active = b === btn;
+              b.classList.toggle('is-active', active);
+              b.setAttribute('aria-checked', String(active));
+              b.tabIndex = active ? 0 : -1;
+            });
+            if (focus) btn.focus();
+            apply();
+          };
+          buttons.forEach((btn, i) => {
+            btn.addEventListener('click', () => select(btn));
+            btn.addEventListener('keydown', (e) => {
+              let next = null;
+              if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = buttons[(i + 1) % buttons.length];
+              else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = buttons[(i - 1 + buttons.length) % buttons.length];
+              else if (e.key === 'Home') next = buttons[0];
+              else if (e.key === 'End') next = buttons[buttons.length - 1];
+              if (next) { e.preventDefault(); select(next, true); }
+            });
+          });
+          return (btn) => select(btn);
+        };
+        const selectWing = setupRadioGroup('data-wing-filter', 'wing');
+        const selectKind = setupRadioGroup('data-kind-filter', 'kind');
+
+        searchEl?.addEventListener('input', () => {
+          state.q = searchEl.value.trim().toLowerCase();
+          apply();
+        });
+        sortEl?.addEventListener('change', () => {
+          state.sort = sortEl.value;
+          sortCards();
+          apply();
+        });
+        root.querySelector('[data-lab-reset]')?.addEventListener('click', () => {
+          state.sort = 'new';
+          if (sortEl) sortEl.value = 'new';
+          sortCards();
+          if (searchEl) searchEl.value = '';
+          state.q = '';
+          selectWing?.(root.querySelector('[data-wing-filter="all"]'));
+          selectKind?.(root.querySelector('[data-kind-filter="all"]'));
+          apply();
+          searchEl?.focus();
+        });
+        apply();
+
+        /* Ambient bench light: slow dust motes on a viewport-height canvas.
+           One derived pause state (hidden tab OR off-screen OR reduced
+           motion); the loop fully stops when paused. */
+        const canvas = root.querySelector('[data-lab-ambient]');
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          const motionMq = window.matchMedia('(prefers-reduced-motion: reduce)');
+          let w = 0, h = 0, raf = 0, intersecting = false, pointer = null;
+          const motes = Array.from({ length: 55 }, () => ({
+            x: Math.random(), y: Math.random(),
+            r: 0.6 + Math.random() * 1.7,
+            s: 0.008 + Math.random() * 0.03,
+            drift: (Math.random() - 0.5) * 0.01,
+            a: 0.12 + Math.random() * 0.3,
+          }));
+          const resize = () => {
+            w = root.clientWidth; h = window.innerHeight;
+            canvas.width = Math.max(1, w);
+            canvas.height = Math.max(1, h);
+          };
+          const draw = () => {
+            ctx.clearRect(0, 0, w, h);
+            const rect = canvas.getBoundingClientRect();
+            for (const m of motes) {
+              m.y -= m.s / 100; m.x += m.drift / 100;
+              if (m.y < -0.02) { m.y = 1.02; m.x = Math.random(); }
+              if (m.x < -0.02) m.x = 1.02; if (m.x > 1.02) m.x = -0.02;
+              const px = m.x * w, py = m.y * h;
+              let near = 0;
+              if (pointer) {
+                const dx = px - (pointer.x - rect.left), dy = py - (pointer.y - rect.top);
+                near = Math.max(0, 1 - Math.hypot(dx, dy) / 190);
+              }
+              ctx.beginPath();
+              ctx.arc(px, py, m.r + near * 1.6, 0, Math.PI * 2);
+              ctx.fillStyle = `rgba(231, 197, 130, ${(m.a + near * 0.35).toFixed(3)})`;
+              ctx.fill();
+            }
+          };
+          const loop = () => { draw(); raf = requestAnimationFrame(loop); };
+          const sync = () => {
+            const shouldRun = intersecting && !document.hidden && !motionMq.matches;
+            if (shouldRun && !raf) loop();
+            if (!shouldRun && raf) { cancelAnimationFrame(raf); raf = 0; }
+            if (motionMq.matches) ctx.clearRect(0, 0, w, h);
+          };
+          resize();
+          let resizeTimer = 0;
+          window.addEventListener('resize', () => {
+            window.clearTimeout(resizeTimer);
+            resizeTimer = window.setTimeout(resize, 200);
+          }, { passive: true });
+          root.addEventListener('pointermove', (e) => { pointer = { x: e.clientX, y: e.clientY }; }, { passive: true });
+          root.addEventListener('pointerleave', () => { pointer = null; });
+          new IntersectionObserver(([entry]) => { intersecting = entry.isIntersecting; sync(); }, { threshold: 0 }).observe(root);
+          document.addEventListener('visibilitychange', sync);
+          motionMq.addEventListener?.('change', sync);
+          document.addEventListener('astro:before-swap', () => { if (raf) cancelAnimationFrame(raf); }, { once: true });
+        }
+      };
+      document.addEventListener('astro:page-load', init);
+      if (document.readyState !== 'loading') init();
+      else document.addEventListener('DOMContentLoaded', init);
+    })();
+  </script>
 </Layout>
