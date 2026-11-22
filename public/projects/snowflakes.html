@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>snowflakes — the nakaya map — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl input[type=text] { background: #0f1017; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 10px; font-family: monospace; font-size: 15px; width: 110px; letter-spacing: .2em; }
+  .ctl input[type=range] { accent-color: #7dcfff; width: 240px; }
+  .ctl select { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 8px; font-family: monospace; font-size: 13px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  .grid2 { display: flex; gap: 16px; flex-wrap: wrap; }
+  .grid2 .card { flex: 1 1 420px; }
+  canvas { max-width: 100%; height: auto; display: block; margin: 10px auto 4px; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  .warn { color: #e0af68; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">A snowflake's shape is a weather report from the cloud it grew in. Two things decide it: how cold the air was, and how much extra water vapour was floating around. Warm-ish cold (just below freezing) makes flat six-sided plates. A bit colder makes long thin needles. Colder still makes plates again — and at about −15 °C with lots of vapour, the corners race ahead and you get the big feathery stars from Christmas cards. Every crystal has six sides because ice itself is built on a six-sided pattern, all the way down to its molecules.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">I like a map that fits on one page and still embarrasses physics. Ukichiro Nakaya drew this one in the 1930s by growing crystals in a cold room, and the strange part is still unexplained: as the air gets colder the habit flips plate, column, plate again, like the crystal cannot make up its mind. Nobody fully knows why. The chart below is that real map, with the sources named and the disagreements printed. The growing crystal next to it is my illustration of the map's regimes — honest about being an illustration, which is more than most snowflake pictures manage.</p>
+</div>
+<div class="wrap">
+<h1>snowflakes — the nakaya map</h1>
+<p class="sub">Crystal habit as a function of temperature and supersaturation, after Nakaya (1954) and Libbrecht's morphology diagram · 2026-11-21 · the diagram is sourced; the growing crystal is a stylised illustration</p>
+
+<div class="card">
+  <div class="ctl">
+    <label>temperature <input type="range" id="temp" min="-30" max="0" step="0.5" value="-15"> <span id="tempv">−15.0 °C</span></label>
+    <label>humidity / supersaturation <input type="range" id="hum" min="0" max="100" step="1" value="90"> <span id="humv">high (0.90)</span></label>
+  </div>
+  <div class="ctl">
+    <label>seed <input type="text" id="seed" value="7" maxlength="8" inputmode="numeric"></label>
+    <button id="regrow">regrow</button>
+    <button id="randseed">random seed</button>
+  </div>
+  <div class="ro" id="ro"></div>
+  <p class="warn" style="font-size:13px;line-height:1.6;">A stylised growth visual informed by the real Nakaya diagram — the diagram is the science; the growing crystal is an illustration of its regimes, not a physics simulation.</p>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <p style="margin:0;"><b>the nakaya chart</b> <span style="color:#787c99;">— temperature across, supersaturation up. The marker is your setting.</span></p>
+    <canvas id="chart" width="520" height="360"></canvas>
+    <div class="ro" id="chartro"></div>
+  </div>
+  <div class="card">
+    <p style="margin:0;"><b>the growth visual</b> <span style="color:#787c99;">— seeded branching growth on a hexagonal lattice, shaped by the regime above.</span></p>
+    <canvas id="stage" width="520" height="520"></canvas>
+    <div class="ro" id="stagero"></div>
+  </div>
+</div>
+
+<h2>the regime table this page uses</h2>
+<p>Synthesised from the sources in the notes. Humidity bands — low under 0.34, mid 0.34–0.66, high 0.67 and up — are this page's discretisation of the sources' qualitative "low / high supersaturation"; Nakaya and Libbrecht do not give those cut points.</p>
+<table>
+  <tr><th class="l">temperature</th><th class="l">low humidity</th><th class="l">mid</th><th class="l">high humidity</th></tr>
+  <tr><td class="l">0 to −3 °C</td><td class="l">Simple hexagonal plate</td><td class="l">Hexagonal plate</td><td class="l">Plate with simple branches</td></tr>
+  <tr><td class="l">−3 to −4.5 °C</td><td class="l">Slender columns</td><td class="l">Slender columns</td><td class="l">Slender columns</td></tr>
+  <tr><td class="l">−4.5 to −6 °C</td><td class="l">Columns</td><td class="l">Needles</td><td class="l">Long needles</td></tr>
+  <tr><td class="l">−6 to −10 °C</td><td class="l">Columns</td><td class="l">Hollow columns</td><td class="l">Hollow columns</td></tr>
+  <tr><td class="l">−10 to −12 °C</td><td class="l">Simple plate</td><td class="l">Sectored plate</td><td class="l">Stellar plate</td></tr>
+  <tr><td class="l">−12 to −14 °C</td><td class="l">Plate</td><td class="l">Stellar plate</td><td class="l">Stellar dendrite</td></tr>
+  <tr><td class="l">−14 to −16 °C</td><td class="l">Plate</td><td class="l">Stellar plate</td><td class="l">Fernlike stellar dendrite</td></tr>
+  <tr><td class="l">−16 to −22 °C</td><td class="l">Plate</td><td class="l">Sectored plate</td><td class="l">Stellar dendrite</td></tr>
+  <tr><td class="l">−22 to −30 °C</td><td class="l">Simple prisms — plates and columns</td><td class="l">Thick plates and columns</td><td class="l">Columns and plates</td></tr>
+</table>
+
+<h2>why six</h2>
+<p>Ordinary ice (ice Ih) locks water molecules into a hexagonal lattice, and a snow crystal inherits that lattice's sixfold symmetry as it grows — so it grows six arms, never five or seven. That is the whole explanation, and it is enough: the six is in the crystal structure, not in the weather. The weather only decides what the six arms do.</p>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li>Sources: Ukichiro Nakaya, <i>Snow Crystals: Natural and Artificial</i> (Harvard University Press, 1954), from his 1930s cold-chamber work at Hokkaido University; Kenneth G. Libbrecht, "Guide to Snowflakes" and "A Snow Crystal Primer", SnowCrystals.com / Caltech (snowcrystals.com/morphology/morphology.html); Libbrecht, "The Formation of Snow Crystals", American Scientist 95 (2007); Libbrecht's morphology review (plates near −2 °C, columns and needles near −5 °C, hollow columns near −7 °C, plates again near −15 °C, columns again below −30 °C).</li>
+  <li>The anchors the sources agree on: thin plates near −2 °C, columns and slender needles near −5 °C, plates and stars again near −15 °C, simpler forms at low humidity and more complex, branched forms at high humidity at every temperature.</li>
+  <li class="warn">Where the sources differ, this page says so: Libbrecht's review puts "columns again" below −30 °C and his Primer puts a plates-and-columns mix "around −30 °C", while the American Scientist diagram puts the mixed plates-and-columns zone starting at about −22 °C. This page starts the mixed zone at −22 °C. The Guide also centres slender columns near −6 °C where the Primer says −5 °C; this page centres needles on −5 °C.</li>
+  <li>Boundaries are laboratory summaries, not sharp physical edges. A real falling crystal passes through changing air and can record several regimes in one crystal — that is how capped columns happen.</li>
+  <li>Why the habit flips plate → column → plate as temperature falls is, in Libbrecht's words, still something of a scientific mystery. This page does not pretend otherwise.</li>
+  <li>The growth visual is a seeded frontier-growth illustration on a hexagonal lattice. Its parameters (tip preference, fill preference, elongation) are set by the regime at your sliders. It is not Reiter's 2005 cellular model, not a diffusion solver, and not a prediction of any real crystal. Same settings and same seed always grow the identical crystal — that determinism is tested, along with the regime table, in the page's core gate (120 checks).</li>
+  <li>Try it: −2 °C at low humidity grows a compact hexagonal plate; −5 °C grows an elongated needle form (drawn in the plate plane, so read it as a habit sketch, not a view of a real needle); −15 °C at high humidity grows the fernlike dendrite.</li>
+</ul>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+// ---- pure core (identical logic to core.mjs) ----
+const TUNE = { maxCells: 850, maxSteps: 4000, humLow: 0.34, humHigh: 0.67 };
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const FAMILY_PARAMS = {
+  plate:    { tip: 0.25, fill: 2.6, elong: 0.0, radius: 17, target: 620 },
+  stellar:  { tip: 1.1,  fill: 1.5, elong: 0.0, radius: 20, target: 560 },
+  dendrite: { tip: 2.6,  fill: 0.35, elong: 0.0, radius: 23, target: 520 },
+  fern:     { tip: 3.4,  fill: 0.15, elong: 0.0, radius: 24, target: 560 },
+  column:   { tip: 0.7,  fill: 1.6, elong: 0.45, radius: 18, target: 480 },
+  needle:   { tip: 1.6,  fill: 0.25, elong: 2.8, radius: 24, target: 340 },
+  prism:    { tip: 0.15, fill: 2.8, elong: 0.15, radius: 13, target: 380 },
+};
+function band(tempC, hum01) {
+  const h = hum01 < TUNE.humLow ? 0 : hum01 < TUNE.humHigh ? 1 : 2;
+  const t = tempC;
+  if (t > -3)  return [['Simple hexagonal plate', 'Hexagonal plate', 'Plate with simple branches'][h], 'plate'];
+  if (t > -4.5) return ['Slender columns', 'column'];
+  if (t > -6)  return [['Columns', 'Needles', 'Long needles'][h], h === 0 ? 'column' : 'needle'];
+  if (t > -10) return [['Columns', 'Hollow columns', 'Hollow columns'][h], 'column'];
+  if (t > -12) return [['Simple plate', 'Sectored plate', 'Stellar plate'][h], h === 2 ? 'stellar' : 'plate'];
+  if (t > -14) return [['Plate', 'Stellar plate', 'Stellar dendrite'][h], ['plate', 'stellar', 'dendrite'][h]];
+  if (t > -16) return [['Plate', 'Stellar plate', 'Fernlike stellar dendrite'][h], ['plate', 'stellar', 'fern'][h]];
+  if (t > -22) return [['Plate', 'Sectored plate', 'Stellar dendrite'][h], ['plate', 'stellar', 'dendrite'][h]];
+  return [['Simple prisms — plates and columns', 'Thick plates and columns', 'Columns and plates'][h], 'prism'];
+}
+function regimeAt(tempC, hum01) {
+  const t = clamp(+tempC || 0, -30, 0);
+  const h = clamp(+hum01 || 0, 0, 1);
+  const [label, family] = band(t, h);
+  const p = FAMILY_PARAMS[family];
+  const humName = h < TUNE.humLow ? 'low' : h < TUNE.humHigh ? 'mid' : 'high';
+  return { tempC: t, humidity: h, humName, label, family, tip: p.tip, fill: p.fill, elong: p.elong, radius: p.radius, target: p.target };
+}
+const DIRS = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
+const key = (q, r) => q + ',' + r;
+function growCrystal(tempC, hum01, seed = 1) {
+  const reg = regimeAt(tempC, hum01);
+  const rng = mulberry32(seed >>> 0);
+  const ice = new Map();
+  ice.set(key(0, 0), [0, 0]);
+  const R = reg.radius;
+  const perpLimit = Math.max(3, Math.round(R / (1 + reg.elong)));
+  function inside(q, r) {
+    const dist = Math.max(Math.abs(q), Math.abs(r), Math.abs(q + r));
+    if (dist > R) return false;
+    if (Math.abs(r) > perpLimit && Math.abs(q) < Math.abs(r)) return false;
+    if (reg.elong > 1 && Math.abs(r) > perpLimit) return false;
+    return true;
+  }
+  let steps = 0;
+  while (ice.size < Math.min(reg.target, TUNE.maxCells) && steps < TUNE.maxSteps) {
+    steps++;
+    const frontier = new Map();
+    for (const [q, r] of ice.values()) {
+      for (let d = 0; d < 6; d++) {
+        const nq = q + DIRS[d][0], nr = r + DIRS[d][1];
+        const k = key(nq, nr);
+        if (ice.has(k) || !inside(nq, nr)) continue;
+        let f = frontier.get(k);
+        if (!f) { f = { q: nq, r: nr, n: 0, axis: 0 }; frontier.set(k, f); }
+        f.n++;
+        if (d === 0 || d === 3) f.axis = 1;
+      }
+    }
+    if (!frontier.size) break;
+    const list = [...frontier.values()].sort((a, b) => (a.q - b.q) || (a.r - b.r));
+    const batch = reg.family === 'plate' || reg.family === 'prism' ? 6 : 3;
+    for (let b = 0; b < batch && ice.size < Math.min(reg.target, TUNE.maxCells); b++) {
+      let total = 0;
+      const weights = list.map(f => {
+        let w = 0.25 + rng() * 0.15;
+        if (f.n === 1) w += reg.tip;
+        else w += reg.fill * (f.n - 1);
+        if (reg.elong > 0 && f.axis) w += reg.elong * (f.n === 1 ? 1 : 0.4);
+        if (reg.elong > 0 && !f.axis && f.n === 1) w *= 0.35;
+        total += w;
+        return w;
+      });
+      let x = rng() * total, pick = list.length - 1;
+      for (let i = 0; i < list.length; i++) { x -= weights[i]; if (x <= 0) { pick = i; break; } }
+      const cell = list[pick];
+      if (!cell || ice.has(key(cell.q, cell.r))) continue;
+      ice.set(key(cell.q, cell.r), [cell.q, cell.r]);
+      list.splice(pick, 1);
+      if (!list.length) break;
+    }
+  }
+  const order = [...ice.values()];
+  const cells = [...ice.values()].sort((a, b) => (a[0] - b[0]) || (a[1] - b[1]));
+  let hash = 0x811c9dc5;
+  for (const [q, r] of cells) {
+    const s = q + ',' + r + ';';
+    for (let i = 0; i < s.length; i++) { hash ^= s.charCodeAt(i); hash = Math.imul(hash, 0x01000193); }
+  }
+  let maxQ = 0, maxR = 0, maxS = 0;
+  for (const [q, r] of cells) { maxQ = Math.max(maxQ, Math.abs(q)); maxR = Math.max(maxR, Math.abs(r)); maxS = Math.max(maxS, Math.abs(q + r)); }
+  return { regime: reg, cells, order, count: cells.length, steps, hash: (hash >>> 0).toString(16), maxQ, maxR, maxS };
+}
+// ---- presentation ----
+const FAMCOL = { plate: '#7dcfff', stellar: '#7dcfff', dendrite: '#bb9af7', fern: '#bb9af7', column: '#e0af68', needle: '#ff9e64', prism: '#9ece6a' };
+let anim = null;
+function settings() { return { t: +$('temp').value, h: +$('hum').value / 100, seed: parseInt($('seed').value.replace(/\D/g, ''), 10) || 1 }; }
+function drawChart() {
+  const c = $('chart'), x = c.getContext('2d');
+  const W = c.width, H = c.height, L = 44, Rr = 10, T = 12, B = 30;
+  x.clearRect(0, 0, W, H);
+  const bands = [
+    [0, -3, '#7dcfff', 'plates'], [-3, -4.5, '#e0af68', 'columns'], [-4.5, -6, '#ff9e64', 'needles ~−5'],
+    [-6, -10, '#e0af68', 'hollow columns'], [-10, -12, '#7dcfff', 'plates'], [-12, -22, '#bb9af7', 'plates → dendrites'],
+    [-22, -30, '#9ece6a', 'prisms'],
+  ];
+  const px = t => L + (0 - t) / 30 * (W - L - Rr);
+  const py = h => T + (1 - h) * (H - T - B);
+  for (const [t0, t1, col, lab] of bands) {
+    x.fillStyle = col + '2e';
+    x.fillRect(px(t0), T, px(t1) - px(t0), H - T - B);
+    x.strokeStyle = '#2a2d3e'; x.strokeRect(px(t0), T, px(t1) - px(t0), H - T - B);
+    x.save();
+    x.translate((px(t0) + px(t1)) / 2, H - T - B - 6);
+    x.rotate(-Math.PI / 2);
+    x.fillStyle = '#c0caf5'; x.font = '11px monospace'; x.textAlign = 'right';
+    x.fillText(lab, 0, 4);
+    x.restore();
+  }
+  // humidity shading lines
+  x.fillStyle = '#787c99'; x.font = '11px monospace'; x.textAlign = 'right';
+  x.fillText('high', L - 6, py(0.9) + 4); x.fillText('mid', L - 6, py(0.5) + 4); x.fillText('low', L - 6, py(0.12) + 4);
+  x.textAlign = 'center';
+  for (const t of [0, -5, -10, -15, -20, -25, -30]) x.fillText(String(t), px(t), H - 10);
+  const { t, h } = settings();
+  x.strokeStyle = '#f7768e'; x.lineWidth = 2;
+  x.beginPath(); x.arc(px(t), py(h), 7, 0, Math.PI * 2); x.stroke();
+  x.beginPath(); x.moveTo(px(t) - 12, py(h)); x.lineTo(px(t) + 12, py(h)); x.moveTo(px(t), py(h) - 12); x.lineTo(px(t), py(h) + 12); x.stroke();
+  x.lineWidth = 1;
+}
+function drawStage(order, n, col) {
+  const c = $('stage'), x = c.getContext('2d');
+  x.clearRect(0, 0, c.width, c.height);
+  const size = 5.6, cx = c.width / 2, cy = c.height / 2;
+  x.fillStyle = col;
+  for (let i = 0; i < n && i < order.length; i++) {
+    const [q, r] = order[i];
+    const px = cx + size * Math.sqrt(3) * (q + r / 2);
+    const py = cy + size * 1.5 * r;
+    x.beginPath();
+    for (let k = 0; k < 6; k++) {
+      const a = Math.PI / 180 * (60 * k - 30);
+      const vx = px + size * 0.92 * Math.cos(a), vy = py + size * 0.92 * Math.sin(a);
+      if (k === 0) x.moveTo(vx, vy); else x.lineTo(vx, vy);
+    }
+    x.closePath(); x.fill();
+  }
+}
+function update() {
+  const { t, h, seed } = settings();
+  const reg = regimeAt(t, h);
+  $('tempv').textContent = '−' + Math.abs(t).toFixed(1) + ' °C';
+  $('humv').textContent = reg.humName + ' (' + h.toFixed(2) + ')';
+  drawChart();
+  $('chartro').textContent = 'regime: ' + reg.label + '  ·  family: ' + reg.family;
+  $('ro').textContent = 'at ' + t.toFixed(1) + ' °C and ' + reg.humName + ' supersaturation → ' + reg.label;
+  if (anim) cancelAnimationFrame(anim);
+  const g = growCrystal(t, h, seed);
+  let n = 0;
+  const col = FAMCOL[reg.family] || '#7dcfff';
+  const tick = () => {
+    n = Math.min(g.order.length, n + 14);
+    drawStage(g.order, n, col);
+    $('stagero').textContent = 'grew ' + n + ' / ' + g.count + ' cells · seed ' + seed + ' · hash ' + g.hash;
+    if (n < g.order.length) anim = requestAnimationFrame(tick);
+  };
+  tick();
+}
+let debounce = null;
+const sched = () => { clearTimeout(debounce); debounce = setTimeout(update, 120); };
+$('temp').addEventListener('input', sched);
+$('hum').addEventListener('input', sched);
+$('regrow').addEventListener('click', update);
+$('randseed').addEventListener('click', () => { $('seed').value = Math.floor(Math.random() * 99999) + 1; update(); });
+update();
+</script>
+</body>
+</html>

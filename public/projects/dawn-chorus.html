@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dawn chorus — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl input[type=text] { background: #0f1017; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 10px; font-family: monospace; font-size: 15px; width: 110px; letter-spacing: .2em; }
+  .ctl select { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 8px; font-family: monospace; font-size: 13px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  canvas.spec { width: 100%; height: 220px; background: #0f1017; border: 1px solid #2a2d3e; border-radius: 8px; display: block; }
+  .latin { color: #787c99; font-style: italic; }
+  .desc { color: #c0caf5; font-size: 13px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Before sunrise, birds start singing one after another, like an orchestra warming up. This page does not play recordings. It builds little fake bird phrases out of pure computer tones, following the recipe books bird scientists wrote down — this bird repeats the same short tune, that bird whistles only two notes — and it draws a picture of the sound while it plays.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">I wanted to know how much of a birdsong is its structure and how much is the voice itself. So I kept only the structure — the counts, the groupings, the trill in the middle — and threw the voice away, replacing it with one plain oscillator. What is left still sorts itself: you can tell the two-note sparrow from the teakettle wren without ever hearing a real bird. That felt worth testing honestly, with the limits printed on the page.</p>
+</div>
+<div class="wrap">
+<h1>dawn chorus</h1>
+<p class="sub">Synthesized birdsong modelled on published descriptions, with a live spectrogram of the synthesis · 2026-11-21 · not recordings of real birds</p>
+
+<p>Synthesized imitations modelled on published descriptions of each song's structure — not recordings of real birds, and the spectrogram shows the synthesis. Audio starts only when you press a button. Every frequency below is the synth's choice, not a measurement from a real bird; only the structure — grouping, repetition, trills, triplets — comes from the sources.</p>
+
+<div class="card">
+  <div class="ctl"><button id="chorus">full chorus — stagger all four</button><button id="stop">stop</button></div>
+  <canvas class="spec" id="spec" width="1000" height="220"></canvas>
+  <div class="ro" id="ro">press sing on any bird, or full chorus. the spectrogram scrolls the synthesis as it sounds.</div>
+</div>
+
+<div class="card">
+  <p><b style="color:#7dcfff">American robin</b> <span class="latin">Turdus migratorius</span></p>
+  <p class="desc">Sourced description: a string of about 10 clear whistles from a few repeated syllables, in 4–8 carolling "cheerily, cheer up" phrases, pitch rising and falling, with pauses between phrases. (Cornell Lab Bird Academy)</p>
+  <div class="ctl"><button data-sing="robin">sing — robin</button></div>
+  <div class="ro" id="ro-robin"></div>
+</div>
+
+<div class="card">
+  <p><b style="color:#9ece6a">Song sparrow</b> <span class="latin">Melospiza melodia</span></p>
+  <p class="desc">Sourced description: a few clear introductory notes, then a trill, then varied buzzes and notes — "Maids! Maids! Maids! Put on your teakettle-ettle-ettle", about 2–4 seconds. (Cornell Lab All About Birds; Maine Audubon)</p>
+  <div class="ctl"><button data-sing="songSparrow">sing — song sparrow</button></div>
+  <div class="ro" id="ro-songSparrow"></div>
+</div>
+
+<div class="card">
+  <p><b style="color:#e0af68">White-throated sparrow</b> <span class="latin">Zonotrichia albicollis</span></p>
+  <p class="desc">Sourced description: pure whistled notes on distinct frequencies — "Old Sam Peabody, Peabody, Peabody" — two single notes, then triplets, typically on two pitches. This build models the classic triplet form only. (Cornell Lab Bird Academy, Handbook of Bird Biology visualizations)</p>
+  <div class="ctl"><button data-sing="whiteThroatedSparrow">sing — white-throated sparrow</button></div>
+  <div class="ro" id="ro-whiteThroatedSparrow"></div>
+</div>
+
+<div class="card">
+  <p><b style="color:#bb9af7">Carolina wren</b> <span class="latin">Thryothorus ludovicianus</span></p>
+  <p class="desc">Sourced description: loud, rolling, repeated phrases — several quick whistled notes, usually three-parted, repeated a few times: "teakettle-teakettle-teakettle". Only males sing. (Cornell Lab All About Birds)</p>
+  <div class="ctl"><button data-sing="carolinaWren">sing — carolina wren</button></div>
+  <div class="ro" id="ro-carolinaWren"></div>
+</div>
+
+<h2>what the model keeps, and what it throws away</h2>
+<table>
+  <tr><th class="l">species</th><th class="l">structure kept (sourced)</th><th>syllables in model</th><th class="l">voice</th></tr>
+  <tr><td class="l">American robin</td><td class="l">2–3-note groups, pauses between groups</td><td>8–18</td><td class="l">one oscillator</td></tr>
+  <tr><td class="l">Song sparrow</td><td class="l">3 intro notes, then a trill, then a varied tail</td><td>14–19</td><td class="l">one oscillator</td></tr>
+  <tr><td class="l">White-throated sparrow</td><td class="l">2 base pitches, 1 + 1 + triplet + triplet</td><td>8</td><td class="l">one oscillator</td></tr>
+  <tr><td class="l">Carolina wren</td><td class="l">one 3-note motif, repeated 4–5 times</td><td>12–15</td><td class="l">one oscillator</td></tr>
+</table>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li>These are synthesized imitations modelled on published descriptions of each song's structure — not recordings of real birds, and the spectrogram shows the synthesis, drawn live from an AnalyserNode.</li>
+  <li>No numeric pitch range was sourced from the Cornell or Xeno-canto text descriptions used here, so no Hz value on this page is data. The oscillator pitches (roughly 2,600–4,800 Hz across species) are the synth's choice, picked to keep the four phrases apart to the ear.</li>
+  <li>Each press varies the phrase slightly, from a seeded generator — the same seed always gives the same phrase in the tested core, and the page advances the seed per performance, the way a real bird varies a little between renditions. The structure rules do not vary.</li>
+  <li>Gate: the pure core (no DOM, no AudioContext) was tested in Node over 20 seeds per species — 2,296 checks passed, 0 failed — covering determinism per seed, no syllable overlapping itself in time, the white-throated sparrow using at most 2 distinct base pitches, the song sparrow trill holding at least 6 rapid syllables, robin grouping and pauses, and the wren motif repeating in threes.</li>
+  <li>The full-chorus stagger is a presentation choice. No source was used to claim a fixed order in which these species sing at a real dawn, and this page does not claim one.</li>
+  <li>Sources: Cornell Lab Bird Academy, American Robin lesson; Cornell Lab All About Birds overviews and sounds pages for Song Sparrow, White-throated Sparrow and Carolina Wren; Cornell Lab, Avian Vocal Behavior sound visualizations (Handbook of Bird Biology); Maine Audubon, Song Sparrow profile. Full URLs are in the research file for this build.</li>
+</ul>
+</div>
+<script>
+function mulberry32(seed){let a=seed>>>0;return function(){a|=0;a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+function jitter(rng,b,amt){return b+(rng()*2-1)*amt;}
+function robin(seed){const rng=mulberry32(seed);const s=[];let t=0;const groups=4+Math.floor(rng()*3);const base=jitter(rng,3200,150);for(let g=0;g<groups;g++){const n=2+Math.floor(rng()*2);const gb=jitter(rng,base,350);for(let i=0;i<n;i++){const f0=jitter(rng,gb+i*120,90);const f1=jitter(rng,f0+(rng()>0.5?320:-280),80);const dur=0.11+rng()*0.07;s.push({startSec:+t.toFixed(4),durSec:+dur.toFixed(4),f0Hz:Math.round(f0),f1Hz:Math.round(f1),type:'whistle'});t+=dur+0.045;}t+=0.22+rng()*0.18;}return{species:'robin',syllables:s,durationSec:+t.toFixed(3)};}
+function songSparrow(seed){const rng=mulberry32(seed*7919+13);const s=[];let t=0;const introF=jitter(rng,3200,120);for(let i=0;i<3;i++){s.push({startSec:+t.toFixed(4),durSec:0.13,f0Hz:Math.round(introF),f1Hz:Math.round(introF+60),type:'intro'});t+=0.22;}t+=0.06;const trillN=8+Math.floor(rng()*4);const trillF=jitter(rng,4200,150);for(let i=0;i<trillN;i++){s.push({startSec:+t.toFixed(4),durSec:0.055,f0Hz:Math.round(trillF),f1Hz:Math.round(trillF-220),type:'trill'});t+=0.083;}t+=0.08;const tailN=3+Math.floor(rng()*3);for(let i=0;i<tailN;i++){const f0=jitter(rng,3600,900);const dur=0.09+rng()*0.08;s.push({startSec:+t.toFixed(4),durSec:+dur.toFixed(4),f0Hz:Math.round(f0),f1Hz:Math.round(jitter(rng,f0,400)),type:i%2?'buzz':'note'});t+=dur+0.05;}return{species:'songSparrow',syllables:s,durationSec:+t.toFixed(3)};}
+function whiteThroatedSparrow(seed){const rng=mulberry32(seed*104729+7);const s=[];const pA=Math.round(jitter(rng,3100,60));const pB=Math.round(jitter(rng,3750,60));const plan=[{f:pA,dur:0.42},{f:pB,dur:0.28},{f:pB,dur:0.14},{f:pB,dur:0.14},{f:pB,dur:0.20},{f:pB,dur:0.14},{f:pB,dur:0.14},{f:pB,dur:0.24}];let t=0;plan.forEach(function(p,idx){s.push({startSec:+t.toFixed(4),durSec:p.dur,f0Hz:p.f,f1Hz:p.f,type:'whistle'});t+=p.dur+(idx===1||idx===4?0.20:0.07);});return{species:'whiteThroatedSparrow',syllables:s,durationSec:+t.toFixed(3),basePitches:[pA,pB]};}
+function carolinaWren(seed){const rng=mulberry32(seed*31337+3);const s=[];let t=0;const reps=4+Math.floor(rng()*2);const base=jitter(rng,3400,120);const motif=[0,260,-420];for(let r=0;r<reps;r++){for(let i=0;i<3;i++){const f0=Math.round(base+motif[i]+jitter(rng,0,35));const dur=i===2?0.13:0.09;s.push({startSec:+t.toFixed(4),durSec:dur,f0Hz:f0,f1Hz:Math.round(f0-140),type:'whistle'});t+=dur+0.035;}t+=0.14;}return{species:'carolinaWren',syllables:s,durationSec:+t.toFixed(3)};}
+const GEN={robin:robin,songSparrow:songSparrow,whiteThroatedSparrow:whiteThroatedSparrow,carolinaWren:carolinaWren};
+const NAMES={robin:'American robin',songSparrow:'Song sparrow',whiteThroatedSparrow:'White-throated sparrow',carolinaWren:'Carolina wren'};
+let actx=null,analyser=null,raf=null,seedCounter=11,activeNodes=[];
+function ensureAudio(){if(actx)return;actx=new (window.AudioContext||window.webkitAudioContext)();analyser=actx.createAnalyser();analyser.fftSize=2048;analyser.connect(actx.destination);drawSpec();}
+function drawSpec(){const cv=document.getElementById('spec');const ctx=cv.getContext('2d');const W=cv.width,H=cv.height;ctx.fillStyle='rgba(15,16,23,0.18)';ctx.fillRect(0,0,W,H);if(analyser){const data=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(data);const maxBin=Math.floor(9000/(actx.sampleRate/2)*data.length);for(let i=0;i<maxBin;i++){const v=data[i]/255;if(v<0.08)continue;const y=H-(i/maxBin)*H;ctx.fillStyle='rgba(125,207,255,'+(v*0.9)+')';ctx.fillRect(W-3,y,3,2);}}const img=ctx.getImageData(3,0,W-3,H);ctx.putImageData(img,0,0);raf=requestAnimationFrame(drawSpec);}
+function playPhrase(id,when,seed){const phrase=GEN[id](seed);const t0=actx.currentTime+when;phrase.syllables.forEach(function(sy){const o=actx.createOscillator();const g=actx.createGain();o.type='sine';o.frequency.setValueAtTime(sy.f0Hz,t0+sy.startSec);o.frequency.exponentialRampToValueAtTime(Math.max(80,sy.f1Hz),t0+sy.startSec+sy.durSec);g.gain.setValueAtTime(0.0001,t0+sy.startSec);g.gain.exponentialRampToValueAtTime(0.22,t0+sy.startSec+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t0+sy.startSec+sy.durSec);o.connect(g);g.connect(analyser);o.start(t0+sy.startSec);o.stop(t0+sy.startSec+sy.durSec+0.05);activeNodes.push(o);});return phrase;}
+function sing(id){ensureAudio();if(actx.state==='suspended')actx.resume();seedCounter+=7;const p=playPhrase(id,0.05,seedCounter);const el=document.getElementById('ro-'+id);if(el)el.textContent=NAMES[id]+': '+p.syllables.length+' syllables, '+p.durationSec+'s — synthesized, seed '+seedCounter;document.getElementById('ro').textContent='singing: '+NAMES[id]+' (synthesis, not a recording)';}
+document.querySelectorAll('[data-sing]').forEach(function(b){b.addEventListener('click',function(){sing(b.getAttribute('data-sing'));});});
+document.getElementById('chorus').addEventListener('click',function(){ensureAudio();if(actx.state==='suspended')actx.resume();let off=0.1;['robin','whiteThroatedSparrow','songSparrow','carolinaWren'].forEach(function(id){seedCounter+=7;const p=playPhrase(id,off,seedCounter);off+=p.durationSec*0.55+0.4;});document.getElementById('ro').textContent='full chorus: all four synthesized phrases, staggered — presentation order, not a claimed real dawn order';});
+document.getElementById('stop').addEventListener('click',function(){activeNodes.forEach(function(o){try{o.stop();}catch(e){}});activeNodes=[];document.getElementById('ro').textContent='stopped.';});
+</script>
+</body>
+</html>

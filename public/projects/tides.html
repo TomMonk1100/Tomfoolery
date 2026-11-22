@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tides at galveston — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl input[type=range] { accent-color: #7dcfff; width: 320px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; line-height: 1.7; }
+  .warn { border-color: #e0af68; color: #e0af68; font-size: 14px; line-height: 1.6; }
+  canvas { max-width: 100%; display: block; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  .flex { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">The sea at Galveston breathes in and out about once a day. That breathing is really a stack of steady waves — one from the Moon, one from the Sun, and a handful of smaller ones — each with its own speed. Add the waves together and you get the tide. When the Moon wave and the Sun wave line up, the tide swings big (spring tides, near new and full moon). When they fight, the swing shrinks (neap tides, near the quarter moons). This page adds up the real published waves for one Galveston pier and lets you watch the big and small swings trade places over a month.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">I wanted to know whether a tide table is magic or just arithmetic. It is arithmetic. NOAA publishes the wave list for Galveston Pier 21 — amplitudes and phase lags fitted from years of real measurements — and the honest surprise in that list is the ranking: at Galveston the daily waves (K1 and O1, about 0.13 m each) beat the famous twice-daily Moon wave M2 (0.085 m). That is why Galveston gets roughly one high and one low a day instead of two. I built the sum, checked the parts against their published periods, and printed the places where my simplified version stops being NOAA's version. Those limits are on the page, not in a footnote I hope you skip.</p>
+</div>
+<div class="wrap">
+<h1>tides at galveston</h1>
+<p class="sub">a harmonic tide model from NOAA's published constituents for station 8771450, Galveston Pier 21 · 30 days from 2026-11-21 · 2026-11-21</p>
+
+<div class="card warn"><b>Harmonic prediction from published constituents — not a live observation; wind, pressure and river flow move real water.</b> Heights are in metres relative to mean sea level. This is not an official NOAA prediction — see the notes at the bottom for exactly what was simplified.</div>
+
+<div class="card">
+  <canvas id="month" width="1040" height="260"></canvas>
+  <div class="ctl">
+    <label>day <input type="range" id="day" min="0" max="29" step="1" value="0"></label>
+    <button id="prev">← prev day</button>
+    <button id="next">next day →</button>
+    <span id="daylab"></span>
+  </div>
+  <div class="flex" style="margin-top:14px;">
+    <div style="flex:1;min-width:300px;">
+      <canvas id="dayc" width="640" height="220"></canvas>
+      <div class="ro" id="ro"></div>
+    </div>
+    <div>
+      <canvas id="moon" width="180" height="180"></canvas>
+      <div class="ro" id="moonlab" style="text-align:center;"></div>
+    </div>
+  </div>
+</div>
+
+<h2>the waves being added</h2>
+<p>Every row is one published constituent for Galveston Pier 21 (NOAA harmonic constituents endpoint for station 8771450, fetched 2026-11-21; amplitudes as published in feet, converted at 1 ft = 0.3048 m). The model is h(t) = Σ A·cos(speed·t − phase), with t in hours since 2026-11-21 00:00 UTC and the published GMT phase lag applied at that start instant. K1 and O1 — the once-a-day waves — are the biggest terms here. That is the whole reason Galveston's tide is mostly diurnal.</p>
+<table>
+  <tr><th class="l">constituent</th><th>amplitude (ft)</th><th>amplitude (m)</th><th>phase GMT (°)</th><th>speed (°/h)</th><th>period (h)</th></tr>
+  <tr><td class="l">K1</td><td>0.427</td><td>0.130</td><td>53.3</td><td>15.041069</td><td>23.93</td></tr>
+  <tr><td class="l">O1</td><td>0.407</td><td>0.124</td><td>45.0</td><td>13.943035</td><td>25.82</td></tr>
+  <tr><td class="l">M2</td><td>0.279</td><td>0.085</td><td>293.5</td><td>28.984104</td><td>12.42</td></tr>
+  <tr><td class="l">P1</td><td>0.125</td><td>0.038</td><td>46.8</td><td>14.958931</td><td>24.07</td></tr>
+  <tr><td class="l">Q1</td><td>0.089</td><td>0.027</td><td>26.7</td><td>13.398661</td><td>26.87</td></tr>
+  <tr><td class="l">S2</td><td>0.079</td><td>0.024</td><td>295.4</td><td>30.000000</td><td>12.00</td></tr>
+  <tr><td class="l">N2</td><td>0.072</td><td>0.022</td><td>269.5</td><td>28.439730</td><td>12.66</td></tr>
+  <tr><td class="l">S1</td><td>0.030</td><td>0.009</td><td>326.6</td><td>15.000000</td><td>24.00</td></tr>
+  <tr><td class="l">OO1</td><td>0.023</td><td>0.007</td><td>82.0</td><td>16.139101</td><td>22.31</td></tr>
+  <tr><td class="l">J1</td><td>0.020</td><td>0.006</td><td>37.2</td><td>15.585444</td><td>23.10</td></tr>
+  <tr><td class="l">RHO</td><td>0.016</td><td>0.005</td><td>39.2</td><td>13.471515</td><td>26.72</td></tr>
+  <tr><td class="l">M4</td><td>0.016</td><td>0.005</td><td>256.9</td><td>57.968210</td><td>6.21</td></tr>
+  <tr><td class="l">M1</td><td>0.013</td><td>0.004</td><td>71.9</td><td>14.496694</td><td>24.83</td></tr>
+  <tr><td class="l">NU2</td><td>0.013</td><td>0.004</td><td>277.8</td><td>28.512583</td><td>12.63</td></tr>
+  <tr><td class="l">MU2</td><td>0.013</td><td>0.004</td><td>227.9</td><td>27.968208</td><td>12.87</td></tr>
+  <tr><td class="l">2N2</td><td>0.013</td><td>0.004</td><td>224.2</td><td>27.895355</td><td>12.91</td></tr>
+  <tr><td class="l">2Q1</td><td>0.013</td><td>0.004</td><td>21.4</td><td>12.854286</td><td>28.01</td></tr>
+  <tr><td class="l">T2</td><td>0.010</td><td>0.003</td><td>315.4</td><td>29.958933</td><td>12.02</td></tr>
+  <tr><td class="l">K2</td><td>0.010</td><td>0.003</td><td>4.1</td><td>30.082138</td><td>11.97</td></tr>
+</table>
+<p>NOAA publishes 37 constituents for this station. This page uses the 19 above (amplitude at least 0.010 ft, speed at least 12°/h). The annual and semiannual terms (SA, SSA) and the terms under 0.010 ft are left out on purpose — see the notes.</p>
+
+<h2>daily range over the 30 days (model output)</h2>
+<p>Low, high and range for each day, computed by the same gated core that draws the curves. Watch the range breathe: that breathing is the M2/S2 beat (period 14.765 days, checked in the gate) plus the diurnal waves drifting in and out of step. Over the whole month the model spans −0.48 m to +0.28 m, a 0.76 m range — the station's published great diurnal range (GT) is 0.43 m, so the model's month is the right size, not a wild one.</p>
+<table>
+  <tr><th class="l">date (UTC)</th><th>low (m)</th><th>high (m)</th><th>range (m)</th></tr>
+<tr><td class='l'>2026-11-21</td><td>-0.48</td><td>+0.28</td><td>0.76</td></tr>
+<tr><td class='l'>2026-11-22</td><td>-0.46</td><td>+0.28</td><td>0.74</td></tr>
+<tr><td class='l'>2026-11-23</td><td>-0.40</td><td>+0.26</td><td>0.66</td></tr>
+<tr><td class='l'>2026-11-24</td><td>-0.32</td><td>+0.22</td><td>0.54</td></tr>
+<tr><td class='l'>2026-11-25</td><td>-0.22</td><td>+0.18</td><td>0.40</td></tr>
+<tr><td class='l'>2026-11-26</td><td>-0.12</td><td>+0.14</td><td>0.27</td></tr>
+<tr><td class='l'>2026-11-27</td><td>-0.07</td><td>+0.11</td><td>0.18</td></tr>
+<tr><td class='l'>2026-11-28</td><td>-0.13</td><td>+0.09</td><td>0.22</td></tr>
+<tr><td class='l'>2026-11-29</td><td>-0.18</td><td>+0.11</td><td>0.30</td></tr>
+<tr><td class='l'>2026-11-30</td><td>-0.23</td><td>+0.15</td><td>0.39</td></tr>
+<tr><td class='l'>2026-12-01</td><td>-0.28</td><td>+0.18</td><td>0.46</td></tr>
+<tr><td class='l'>2026-12-02</td><td>-0.31</td><td>+0.20</td><td>0.51</td></tr>
+<tr><td class='l'>2026-12-03</td><td>-0.33</td><td>+0.21</td><td>0.54</td></tr>
+<tr><td class='l'>2026-12-04</td><td>-0.35</td><td>+0.21</td><td>0.56</td></tr>
+<tr><td class='l'>2026-12-05</td><td>-0.35</td><td>+0.21</td><td>0.56</td></tr>
+<tr><td class='l'>2026-12-06</td><td>-0.34</td><td>+0.21</td><td>0.55</td></tr>
+<tr><td class='l'>2026-12-07</td><td>-0.31</td><td>+0.20</td><td>0.52</td></tr>
+<tr><td class='l'>2026-12-08</td><td>-0.28</td><td>+0.19</td><td>0.47</td></tr>
+<tr><td class='l'>2026-12-09</td><td>-0.23</td><td>+0.17</td><td>0.41</td></tr>
+<tr><td class='l'>2026-12-10</td><td>-0.18</td><td>+0.15</td><td>0.33</td></tr>
+<tr><td class='l'>2026-12-11</td><td>-0.12</td><td>+0.13</td><td>0.25</td></tr>
+<tr><td class='l'>2026-12-12</td><td>-0.05</td><td>+0.11</td><td>0.16</td></tr>
+<tr><td class='l'>2026-12-13</td><td>-0.10</td><td>+0.10</td><td>0.20</td></tr>
+<tr><td class='l'>2026-12-14</td><td>-0.17</td><td>+0.11</td><td>0.28</td></tr>
+<tr><td class='l'>2026-12-15</td><td>-0.26</td><td>+0.16</td><td>0.42</td></tr>
+<tr><td class='l'>2026-12-16</td><td>-0.34</td><td>+0.21</td><td>0.55</td></tr>
+<tr><td class='l'>2026-12-17</td><td>-0.41</td><td>+0.25</td><td>0.66</td></tr>
+<tr><td class='l'>2026-12-18</td><td>-0.45</td><td>+0.27</td><td>0.72</td></tr>
+<tr><td class='l'>2026-12-19</td><td>-0.46</td><td>+0.26</td><td>0.72</td></tr>
+<tr><td class='l'>2026-12-20</td><td>-0.44</td><td>+0.25</td><td>0.69</td></tr>
+
+</table>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li><b>Not an official NOAA prediction.</b> A full NOAA prediction also applies the equilibrium argument (V0) and the nodal factors for the date. This page applies the published GMT phase lags directly at 2026-11-21 00:00 UTC and says so. The periods, the relative heights and the spring–neap rhythm are faithful to the published constituents; the absolute clock times of high and low water can sit off NOAA's official predictions. Do not navigate by this page.</li>
+  <li><b>Harmonic prediction from published constituents — not a live observation; wind, pressure and river flow move real water.</b> At Galveston the weather term is often larger than the astronomical one. Nothing meteorological is in the sum.</li>
+  <li>Station: NOAA 8771450, Galveston Pier 21, TX. Constituents: api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/8771450/harcon.json (vector average of 5 years, 2021–2025, per the endpoint). Datums: the same station's datums endpoint — MHHW 5.79 ft, MLLW 4.38 ft, MSL 5.21 ft above station datum, GT 1.41 ft (0.43 m), epoch 1983–2001. Heights here are relative to mean sea level, offset zero — not a chart datum.</li>
+  <li>Speeds were checked against independently published values (M2 28.9841042°/h, S2 30°/h, N2 28.4397295°/h, K1 15.0410686°/h, O1 13.9430356°/h, Q1 13.3986609°/h) and agree with the station endpoint to the digits it prints.</li>
+  <li>Left out on purpose: SA and SSA (the annual and semiannual waves, 0.289 ft and 0.302 ft). Their phases cannot be honestly pinned to an arbitrary start date in this simplified convention, and they carry seasonal drift, not the daily rhythm. Everything under 0.010 ft is also out. The cost is a slow seasonal offset the page does not model.</li>
+  <li>The moon dial uses a mean synodic month of 29.53059 days from a new-moon epoch of 2000-01-06 18:14 UTC. Checked against published phase times for this month (timeanddate, lunation 1285): the dial lands 0.06 days from the full moon on 2026-11-24 14:53 UTC and 0.19 days from the first quarter on 2026-11-17 — but 0.62 days from the new moon on 2026-11-09. Real lunations run 29.27–29.83 days, so a mean dial can be off by about half a day on any single phase. Treat it as a rhythm indicator, not a calendar.</li>
+  <li>Gate: the pure core behind this page passed 57 checks with 0 failures — every constituent's period against its published speed, the M2+S2 beat at 14.765 days (inside 14.7–14.8), the 30-day range inside 0.3–1.5 m (measured 0.76 m), no NaN anywhere, and the two moon checks above. The script on this page was extracted and syntax-checked, and its output spot-checked against the core.</li>
+  <li>Times are shown in UTC. Galveston is on CST in November, UTC−6 — subtract 6 hours for local clock time.</li>
+</ul>
+</div>
+<script>
+const START_MS = Date.UTC(2026, 10, 21, 0, 0, 0);
+const RAW = [
+  ['M2',0.279,293.5,28.984104],['S2',0.079,295.4,30.0],['N2',0.072,269.5,28.43973],
+  ['K1',0.427,53.3,15.041069],['O1',0.407,45.0,13.943035],['Q1',0.089,26.7,13.398661],
+  ['P1',0.125,46.8,14.958931],['S1',0.030,326.6,15.0],['OO1',0.023,82.0,16.139101],
+  ['J1',0.020,37.2,15.5854435],['RHO',0.016,39.2,13.471515],['M4',0.016,256.9,57.96821],
+  ['M1',0.013,71.9,14.496694],['NU2',0.013,277.8,28.512583],['MU2',0.013,227.9,27.968208],
+  ['2N2',0.013,224.2,27.895355],['2Q1',0.013,21.4,12.854286],['T2',0.010,315.4,29.958933],
+  ['K2',0.010,4.1,30.082138]
+];
+const CONS = RAW.map(r => ({ name: r[0], amp: r[1] * 0.3048, phase: r[2], speed: r[3] }));
+function heightAt(tH) { let h = 0; for (const c of CONS) h += c.amp * Math.cos((c.speed * tH - c.phase) * Math.PI / 180); return h; }
+const SYNODIC = 29.53059, MOON_EPOCH = Date.UTC(2000, 0, 6, 18, 14, 0);
+function moonAge(ms) { const d = (ms - MOON_EPOCH) / 86400000; return ((d % SYNODIC) + SYNODIC) % SYNODIC; }
+function moonName(a) {
+  if (a < 1 || a > SYNODIC - 1) return 'new moon';
+  if (Math.abs(a - SYNODIC / 2) < 1) return 'full moon';
+  if (Math.abs(a - SYNODIC / 4) < 1) return 'first quarter';
+  if (Math.abs(a - 3 * SYNODIC / 4) < 1) return 'last quarter';
+  if (a < SYNODIC / 4) return 'waxing crescent';
+  if (a < SYNODIC / 2) return 'waxing gibbous';
+  if (a < 3 * SYNODIC / 4) return 'waning gibbous';
+  return 'waning crescent';
+}
+const $ = id => document.getElementById(id);
+const fmtT = (tH) => {
+  const d = new Date(START_MS + tH * 3600000);
+  return d.toISOString().slice(5, 10) + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0') + ' UTC';
+};
+function drawMonth(sel) {
+  const cv = $('month'), ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+  ctx.fillStyle = '#16161e'; ctx.fillRect(0, 0, W, H);
+  let mn = 1e9, mx = -1e9;
+  for (let t = 0; t <= 720; t += 0.25) { const h = heightAt(t); mn = Math.min(mn, h); mx = Math.max(mx, h); }
+  const pad = 0.05; mn -= pad; mx += pad;
+  const X = t => 34 + (W - 44) * t / 720, Y = h => 8 + (H - 30) * (mx - h) / (mx - mn);
+  ctx.strokeStyle = '#2a2d3e'; ctx.beginPath(); ctx.moveTo(34, Y(0)); ctx.lineTo(W - 10, Y(0)); ctx.stroke();
+  ctx.fillStyle = '#787c99'; ctx.font = '11px monospace'; ctx.fillText('0 m', 2, Y(0) + 4);
+  ctx.fillStyle = 'rgba(125,207,255,0.12)'; ctx.fillRect(X(sel * 24), 8, X(24) - X(0), H - 38);
+  ctx.strokeStyle = '#7dcfff'; ctx.lineWidth = 1.4; ctx.beginPath();
+  for (let t = 0; t <= 720; t += 0.25) { const x = X(t), y = Y(heightAt(t)); t === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+  ctx.stroke(); ctx.lineWidth = 1;
+  ctx.fillStyle = '#787c99';
+  for (let d = 0; d <= 30; d += 5) { const dt = new Date(START_MS + d * 86400000); ctx.fillText(dt.toISOString().slice(5, 10), X(d * 24) - 12, H - 8); }
+  ctx.fillText('30 days · height (m, rel. MSL)', W - 250, 20);
+}
+function extrema(t0, t1) {
+  const out = []; let hp = heightAt(t0), tc = t0 + 0.05, hc = heightAt(tc);
+  for (let t = t0 + 0.1; t <= t1 + 1e-9; t += 0.05) {
+    const hn = heightAt(t);
+    if (hc >= hp && hc >= hn && hc > hp) out.push({ t: tc, h: hc, k: 'high' });
+    if (hc <= hp && hc <= hn && hc < hp) out.push({ t: tc, h: hc, k: 'low' });
+    hp = hc; tc = t; hc = hn;
+  }
+  return out;
+}
+function drawDay(day) {
+  const cv = $('dayc'), ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+  ctx.fillStyle = '#16161e'; ctx.fillRect(0, 0, W, H);
+  let mn = 1e9, mx = -1e9;
+  for (let t = day * 24; t <= (day + 1) * 24; t += 0.1) { const h = heightAt(t); mn = Math.min(mn, h); mx = Math.max(mx, h); }
+  const pad = 0.06; mn -= pad; mx += pad;
+  const X = t => 30 + (W - 40) * (t - day * 24) / 24, Y = h => 8 + (H - 28) * (mx - h) / (mx - mn);
+  ctx.strokeStyle = '#2a2d3e'; ctx.beginPath(); ctx.moveTo(30, Y(0)); ctx.lineTo(W - 10, Y(0)); ctx.stroke();
+  ctx.strokeStyle = '#9ece6a'; ctx.lineWidth = 1.6; ctx.beginPath();
+  for (let t = day * 24; t <= (day + 1) * 24; t += 0.1) { const x = X(t), y = Y(heightAt(t)); t === day * 24 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+  ctx.stroke(); ctx.lineWidth = 1;
+  ctx.fillStyle = '#787c99'; ctx.font = '11px monospace';
+  for (let hh = 0; hh <= 24; hh += 6) ctx.fillText(String(hh).padStart(2, '0') + ':00', X(day * 24 + hh) - 12, H - 6);
+  const ex = extrema(day * 24, (day + 1) * 24);
+  for (const e of ex) {
+    ctx.fillStyle = e.k === 'high' ? '#e0af68' : '#f7768e';
+    ctx.beginPath(); ctx.arc(X(e.t), Y(e.h), 4, 0, 7); ctx.fill();
+  }
+  const d = new Date(START_MS + day * 86400000);
+  $('daylab').textContent = d.toISOString().slice(0, 10) + ' (day ' + (day + 1) + ' of 30)';
+  $('ro').innerHTML = ex.map(e => (e.k === 'high' ? '▲ high ' : '▼ low ') + fmtT(e.t) + ' · ' + (e.h >= 0 ? '+' : '') + e.h.toFixed(2) + ' m').join('<br>') || 'no turning point inside this day in the model';
+  drawMoon(START_MS + (day + 0.5) * 86400000);
+  drawMonth(day);
+}
+function drawMoon(ms) {
+  const cv = $('moon'), ctx = cv.getContext('2d'), W = cv.width, cx = W / 2, cy = W / 2, R = 62;
+  ctx.fillStyle = '#16161e'; ctx.fillRect(0, 0, W, W);
+  const a = moonAge(ms), frac = a / SYNODIC, illum = (1 - Math.cos(2 * Math.PI * frac)) / 2;
+  ctx.strokeStyle = '#2a2d3e'; ctx.beginPath(); ctx.arc(cx, cy, R + 8, 0, 7); ctx.stroke();
+  ctx.fillStyle = '#24283b'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
+  ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.clip();
+  ctx.fillStyle = '#e0af68';
+  const w = R * 2 * illum;
+  if (frac < 0.5) ctx.fillRect(cx, cy - R, w, R * 2); else ctx.fillRect(cx - w, cy - R, w, R * 2);
+  // terminator shading approximation: darken the unlit part of the lit half minimally
+  ctx.restore();
+  ctx.strokeStyle = '#787c99'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke();
+  $('moonlab').textContent = moonName(a) + ' · age ' + a.toFixed(1) + ' d · ' + Math.round(illum * 100) + '% lit';
+}
+$('day').addEventListener('input', () => drawDay(+$('day').value));
+$('prev').addEventListener('click', () => { const v = Math.max(0, +$('day').value - 1); $('day').value = v; drawDay(v); });
+$('next').addEventListener('click', () => { const v = Math.min(29, +$('day').value + 1); $('day').value = v; drawDay(v); });
+drawDay(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bouba / kiki — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl button.word { font-size: 19px; padding: 10px 22px; letter-spacing: .04em; }
+  .ctl button.word:hover { border-color: #bb9af7; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  .stage { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+  .shapebox { background: #0f1017; border: 1px solid #2a2d3e; border-radius: 10px; padding: 10px; text-align: center; }
+  .shapebox .lab { color: #787c99; font-size: 12px; margin-top: 4px; }
+  .shapebox.pick { cursor: pointer; }
+  .shapebox.pick:hover { border-color: #7dcfff; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  .big { font-size: 26px; color: #e0af68; }
+  .match { color: #9ece6a; } .miss { color: #f7768e; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Here are two shapes. One is round and blobby, one is spiky. Here are two made-up words: "bouba" and "kiki". Almost everybody — in almost every language tested — says the round one is bouba and the spiky one is kiki. Nobody taught them that. The sounds just feel like they fit the shapes. This page lets you test whether your brain does it too, with new shapes and new made-up words the computer invents on the spot.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">I like this effect because it is a crack in a tidy idea. The tidy idea says the sound of a word has nothing to do with what it means — any sound could name anything. Bouba/kiki says that is mostly true and not completely true, and the honest numbers are more interesting than the famous ones: the headline 95–98% comes from a paper that never printed its sample size, and the biggest careful test, 917 people in 25 languages, landed at 72% — real, robust, and nowhere near universal. So I built the test so you run it on the one subject you have full access to, with the caveats printed on the page instead of buried.</p>
+</div>
+<div class="wrap">
+<h1>bouba / kiki</h1>
+<p class="sub">sound symbolism, run on yourself · a toy replication you run on yourself — not a study · 2026-11-21</p>
+
+<div class="card">
+  <p id="prompt" style="margin-top:2px;">First, the classic. Two shapes, generated fresh. <b>Click the one that is “bouba”.</b> The other one is “kiki”, by elimination.</p>
+  <div class="stage" id="stage"></div>
+  <div class="ctl" id="choices"></div>
+  <div class="ro" id="ro"></div>
+</div>
+
+<h2>what the published studies found</h2>
+<p>Three waypoints. Köhler published no numbers at all. Ramachandran &amp; Hubbard reported a very high rate without a sample size. Ćwiek and colleagues ran the big, careful version — heard words, shapes one at a time, and a strict rule: you only count as matching if you get <i>both</i> words right.</p>
+<table>
+  <tr><th class="l">study</th><th class="l">who / how</th><th class="l">words</th><th>matched the majority pattern</th></tr>
+  <tr><td class="l">Köhler, 1929</td><td class="l">readers of <i>Gestalt Psychology</i>; no sample, no counts published</td><td class="l">takete / maluma</td><td>not measured</td></tr>
+  <tr><td class="l">Ramachandran &amp; Hubbard, 2001</td><td class="l">US undergraduates and Tamil speakers in India; sample size not reported</td><td class="l">bouba / kiki</td><td>95–98% (as reported)</td></tr>
+  <tr><td class="l">Ćwiek et al., 2022</td><td class="l">917 speakers, 25 languages, 10 writing systems; words heard aloud</td><td class="l">bouba / kiki</td><td>72% (both-trials criterion)</td></tr>
+  <tr><td class="l">you, just now</td><td class="l">n = 1, written words, 11 choices on this page</td><td class="l">bouba / kiki + 10 invented pairs</td><td id="yours">— run the test —</td></tr>
+</table>
+<p>The Ćwiek detail that matters: the effect was reliably above chance in 17 of the 25 languages — not all of them. Romanian, Turkish and Mandarin Chinese speakers sat below 50% descriptively. Bouba-to-round held in 22 of 25 languages; kiki-to-spiky in only 11. A real tendency, varying by language. Not a law.</p>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li><b>10 rounds for one person proves nothing.</b> If you matched 8 of the 10 novel rounds, a coin-flipper does at least that well (in either direction) about 11% of the time — two-sided binomial p ≈ 0.109, computed on this page. Even 10/10 only reaches p ≈ 0.002 for a sample of one person's one sitting. The published samples are hundreds of people; yours is a demonstration, not evidence.</li>
+  <li>Your score is <b>not directly comparable</b> to the 72% above. Ćwiek's participants heard the words spoken and had to get both trials right; you read invented words and choose per round. Different task, different number.</li>
+  <li>The 95–98% figure is quoted as reported. The 2001 paper does not print a sample size for it in the passage everyone cites, so treat it as a striking claim with thin documentation, not a precision measurement.</li>
+  <li>Köhler's 1929 words were <i>takete</i> and <i>maluma</i> — no counts, just an invitation to the reader, who he expected would "decide with ease". Retellings that say "baluba" for 1929 are repeating a slip.</li>
+  <li>Why it happens is unsettled. Candidates: the shape of the mouth and lips, the acoustic sharpness of the consonants, and — for readers — the shapes of the letters themselves. Ćwiek's audio design shows letter shape is not the whole story. This page shows words in writing, so letter shape is in play here.</li>
+  <li>How the toy works: shapes are seeded polygons driven by one spikiness parameter (in the test gate, spiky shapes average 4.7× the radial variance of round ones). Words are built from two disjoint letter families — round: b, m, l, n + oo/o/u/a; sharp: k, t, p, s + ee/i/e — so a generated word is never a blend. Same seed, same shapes and words, every visit.</li>
+  <li>Sources: Köhler, <i>Gestalt Psychology</i> (1929); Ramachandran &amp; Hubbard, <i>Journal of Consciousness Studies</i> 8(12), 2001; Ćwiek et al., <i>Philosophical Transactions of the Royal Society B</i> 377:20200390, 2022 (doi:10.1098/rstb.2020.0390); cross-checked against the <i>Science</i> news report of 2021-11-15 and Cuskley, Simner &amp; Kirby (2017).</li>
+</ul>
+</div>
+<script>
+function mulberry32(seed){let a=seed>>>0;return function(){a|=0;a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+var PUBLISHED={rhLow:95,rhHigh:98,cwiekPct:72,cwiekN:917,cwiekLangs:25,cwiekReliable:17};
+var ROUND_CONS=['b','m','l','n'],ROUND_VOWELS=['oo','o','u','a'],SHARP_CONS=['k','t','p','s'],SHARP_VOWELS=['ee','i','e'];
+function makeShape(spikiness,seed){var rng=mulberry32(seed);var n=64;var spikes=5+Math.floor(rng()*4);var phase=rng()*Math.PI*2;var wob=[rng()*0.10,rng()*0.08,rng()*0.06];var wobPh=[rng()*6.28,rng()*6.28,rng()*6.28];var pts=[];for(var i=0;i<n;i++){var th=(i/n)*Math.PI*2;var r=1+wob[0]*Math.sin(2*th+wobPh[0])+wob[1]*Math.sin(3*th+wobPh[1])+wob[2]*Math.sin(5*th+wobPh[2]);var tri=Math.abs(((th+phase)/(Math.PI*2)*spikes)%1-0.5)*2;r+=spikiness*0.68*(tri-0.5);r+=(1-spikiness)*0.10*Math.sin(2*th+phase);var rad=r*100;pts.push({x:rad*Math.cos(th),y:rad*Math.sin(th)});}return pts;}
+function makeWord(family,seed){var rng=mulberry32(seed);var cons=family==='round'?ROUND_CONS:SHARP_CONS;var vows=family==='round'?ROUND_VOWELS:SHARP_VOWELS;var pick=function(arr){return arr[Math.floor(rng()*arr.length)];};var w=pick(cons)+pick(vows)+pick(cons)+pick(vows);if(family==='sharp'&&rng()<0.4)w+=pick(cons);return w;}
+function scoreRounds(rounds){var m=0;for(var i=0;i<rounds.length;i++)if(rounds[i].chosen===rounds[i].family)m++;return{total:rounds.length,matched:m,rate:rounds.length?m/rounds.length:0};}
+function binomTwoSided(n,k){function c(a,b){var r=1;for(var i=0;i<b;i++)r=r*(a-i)/(i+1);return r;}var tail=0;for(var x=k;x<=n;x++)tail+=c(n,x)/Math.pow(2,n);return Math.min(1,2*tail);}
+function svgFor(pts,color){var d=pts.map(function(p,i){return (i?'L':'M')+(p.x+130).toFixed(1)+' '+(p.y+130).toFixed(1);}).join(' ')+' Z';return '<svg width="240" height="240" viewBox="0 0 260 260"><path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="3" stroke-linejoin="round"/></svg>';}
+var $=function(id){return document.getElementById(id);};
+var rounds=[],classicDone=false,idx=0,cur=null;
+var CLASSIC_SEED=20261121,ROUND_BASE=5000;
+function showClassic(){
+  var leftRound=mulberry32(7)()<0.5;
+  var roundPts=makeShape(0.05,CLASSIC_SEED),spikyPts=makeShape(0.95,CLASSIC_SEED+1);
+  var boxes=[{fam:'round',pts:roundPts},{fam:'sharp',pts:spikyPts}];
+  if(!leftRound)boxes.reverse();
+  $('stage').innerHTML='';
+  boxes.forEach(function(b){
+    var d=document.createElement('div');d.className='shapebox pick';
+    d.innerHTML=svgFor(b.pts,b.fam==='round'?'#7dcfff':'#f7768e')+'<div class="lab">click if this one is bouba</div>';
+    d.addEventListener('click',function(){
+      classicDone=true;
+      var hit=b.fam==='round';
+      $('ro').innerHTML=hit?'<span class="match">You put bouba on the round shape</span> — the majority pattern (95–98% as reported in 2001; 72% in the 2022 both-trials test). Now the invented rounds.':'<span class="miss">You put bouba on the spiky shape</span> — against the majority pattern. Fine. Now the invented rounds; go with your gut.';
+      setTimeout(nextRound,900);
+    });
+    $('stage').appendChild(d);
+  });
+}
+function nextRound(){
+  if(idx>=10){finish();return;}
+  var rng=mulberry32(9000+idx);
+  var fam=rng()<0.5?'round':'sharp';
+  var spiky=fam==='sharp';
+  var pts=makeShape(spiky?0.95:0.05,ROUND_BASE+idx*13);
+  var wr=makeWord('round',ROUND_BASE+idx*29+1),ws=makeWord('sharp',ROUND_BASE+idx*29+2);
+  var words=rng()<0.5?[{w:wr,f:'round'},{w:ws,f:'sharp'}]:[{w:ws,f:'sharp'},{w:wr,f:'round'}];
+  cur={family:fam};
+  $('prompt').innerHTML='Round '+(idx+1)+' of 10. One shape, two invented words. <b>Which word fits this shape?</b>';
+  $('stage').innerHTML='<div class="shapebox">'+svgFor(pts,spiky?'#f7768e':'#7dcfff')+'<div class="lab">round '+(idx+1)+' / 10</div></div>';
+  $('choices').innerHTML='';
+  words.forEach(function(o){
+    var btn=document.createElement('button');btn.className='word';btn.textContent=o.w;
+    btn.addEventListener('click',function(){
+      rounds.push({family:fam,chosen:o.f});
+      var hit=o.f===fam;idx++;
+      $('ro').innerHTML=hit?'<span class="match">matched the majority pattern</span> — that was a '+(fam==='round'?'round':'sharp')+'-family word for a '+(fam==='round'?'round':'spiky')+' shape.':'<span class="miss">against the majority pattern</span> — the shape was '+(fam==='round'?'round':'spiky')+', the word was from the '+(o.f==='round'?'round':'sharp')+' family.';
+      setTimeout(nextRound,750);
+    });
+    $('choices').appendChild(btn);
+  });
+}
+function finish(){
+  var sc=scoreRounds(rounds);
+  var k=Math.max(sc.matched,sc.total-sc.matched);
+  var p=binomTwoSided(sc.total,k);
+  $('prompt').innerHTML='<b>Done.</b> You matched the majority pattern on <span class="big">'+sc.matched+' / '+sc.total+'</span> novel rounds.';
+  $('stage').innerHTML='';$('choices').innerHTML='';
+  $('ro').textContent='';
+  $('yours').textContent=sc.matched+'/'+sc.total+' novel rounds ('+Math.round(sc.rate*100)+'%)';
+  var el=document.createElement('p');
+  el.innerHTML='For scale: Ćwiek et al. found '+PUBLISHED.cwiekPct+'% across '+PUBLISHED.cwiekN+' people ('+PUBLISHED.cwiekReliable+' of '+PUBLISHED.cwiekLangs+' languages reliably above chance), and Ramachandran &amp; Hubbard reported '+PUBLISHED.rhLow+'–'+PUBLISHED.rhHigh+'%. Your number is one person, ten written-word rounds — the two-sided binomial p for a split at least this lopsided by chance is '+p.toFixed(3)+', so read it as a feel for the effect, not a result. <button onclick="location.reload()" style="background:#24283b;color:#c0caf5;border:1px solid #2a2d3e;border-radius:6px;padding:5px 12px;font-family:monospace;cursor:pointer;">run it again (same seed)</button>';
+  $('stage').appendChild(el);
+}
+showClassic();
+</script>
+</body>
+</html>

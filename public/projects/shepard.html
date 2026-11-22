@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>shepard tones &amp; phantom sounds — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl input[type=text] { background: #0f1017; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 10px; font-family: monospace; font-size: 15px; width: 110px; letter-spacing: .2em; }
+  .ctl select { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 8px; font-family: monospace; font-size: 13px; }
+  .ctl input[type=range] { accent-color: #7dcfff; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  canvas { display: block; width: 100%; max-width: 860px; background: #0f1017; border: 1px solid #2a2d3e; border-radius: 8px; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Your ears can be fooled in honest ways. One sound seems to climb up and up forever, like stairs that never get higher — but it is going in a circle. One sound is a low note you can hear even though that note was never played. And if each ear hears a slightly different tone, you hear a slow pulsing that is not in either ear's sound at all. Three tricks, and every one of them is your hearing doing its normal job on purpose-built sounds.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">I like illusions where the trick is fully visible and still works. Nothing on this page is hidden: the diagram shows the partials sliding under the envelope while the endless-rise sound plays, the missing-fundamental demo lists every frequency it actually plays, and the binaural demo shows both ear frequencies on screen. I checked the maths behind all three with a test gate before building the sounds — including proving that after one full glide the Shepard tone is literally the same set of frequencies and gains it started with. It does not rise. That is the point, and it still sounds like it does.</p>
+</div>
+<div class="wrap">
+<h1>shepard tones &amp; phantom sounds</h1>
+<p class="sub">Three psychoacoustic illusions, synthesised live in your browser · 2026-11-21 · no recordings, no audio files — every sound is built from the functions tested in the gate</p>
+
+<p>All three demos are synthesis, labelled as synthesis. Audio starts only when you press a play button (your browser's autoplay rules, and plain politeness). Keep the volume modest: these are pure tones, and pure tones get loud-feeling fast.</p>
+
+<h2>1 · the shepard glide — rising forever, going nowhere</h2>
+<p>Roger Shepard's 1964 paper in the <i>Journal of the Acoustical Society of America</i>, "Circularity in judgments of relative pitch," built complex tones that break the idea of pitch as a straight line: each tone could be judged higher than the one before it, all the way around a circle. The construction, as described in the <i>Psychology of Music</i> auditory demonstrations: components separated by octaves, their amplitudes scaled by a fixed, bell-shaped spectral envelope — loudest in the middle of the range, quietest at the extremes — with all components shifted up or down in log-frequency.</p>
+<p>This demo glides continuously instead of stepping in semitones (Shepard's originals stepped; the envelope trick is the same). Eight sine partials, exactly one octave apart, all glide up together. The bell envelope — drawn below, centred on 440 Hz — does not move. A partial climbing toward the top fades out; a new one fades in at the bottom. After 24 seconds each partial has climbed exactly one octave, and the set of frequencies and gains is <b>exactly</b> the set it started with. That return is not a slogan: the test gate asserts it. The sound does not really rise. It circles, and your pitch sense follows the circle.</p>
+<div class="card">
+  <div class="ctl">
+    <button id="sPlay">▶ play endless rise</button>
+    <button id="sDir">switch to endless fall</button>
+    <button id="sStop">■ stop</button>
+  </div>
+  <canvas id="shepCanvas" width="860" height="260"></canvas>
+  <div class="ro" id="sRead">the bell is the fixed envelope; the dots are the eight partials, sized by their gain right now.</div>
+</div>
+
+<h2>2 · the missing fundamental — a pitch with no tone at it</h2>
+<p>Play a harmonic complex tone — a fundamental plus its whole-number multiples — and you hear one pitch: the fundamental. Now remove the fundamental and keep the multiples. In 1940 J. F. Schouten showed that cancelling the fundamental of a pitched tone did not change its pitch, and he named the surviving pitch the <i>residue</i>. His experiments also showed the missing fundamental is not being re-created inside the ear by distortion in any appreciable amount; he pointed at the periodicity of the waveform instead. That fits the arithmetic: 200, 300, 400, 500 and 600 Hz are harmonics 2–6 of 100 Hz, their greatest common divisor is still 100, and the summed wave still repeats 100 times a second — even though nothing in it vibrates at 100 Hz.</p>
+<div class="card">
+  <div class="ctl">
+    <button id="mWith">▶ play WITH fundamental (100 Hz present)</button>
+    <button id="mWithout">▶ play WITHOUT fundamental (no 100 Hz component)</button>
+    <button id="mStop">■ stop</button>
+  </div>
+  <div class="ro" id="mRead">both versions are built to be heard at the same pitch — 100 Hz. only the first one contains any 100 Hz.</div>
+</div>
+<table>
+  <tr><th class="l">version</th><th class="l">frequencies actually played (Hz)</th><th>component at 100 Hz?</th><th>waveform repeats</th></tr>
+  <tr><td class="l">with fundamental</td><td class="l">100, 200, 300, 400, 500, 600</td><td>yes</td><td>100 times / s</td></tr>
+  <tr><td class="l">without fundamental</td><td class="l">200, 300, 400, 500, 600</td><td><b>no</b></td><td>100 times / s</td></tr>
+</table>
+<p>Honest caveat: small laptop and phone speakers reproduce 100 Hz very poorly, so on weak speakers the "with" version may sound thinner than it should. The pitch comparison is fairest on headphones or a real speaker.</p>
+
+<h2>3 · binaural beats — a pulse that is in neither ear</h2>
+<p><b>Use headphones for this one.</b> Gerald Oster's 1973 <i>Scientific American</i> article "Auditory beats in the brain" describes what happens when tones of different frequency are presented separately to each ear: a slow modulation — a binaural beat — is perceived. Ordinary beats, heard when two tones mix in the air, pulse at the difference between the two frequencies. Binaural beats are different in kind: each ear receives one steady pure tone, nothing pulses in either channel, and the pulsing is perceived as a consequence of the two signals being combined in the brain. Oster notes binaural beats need low carrier tones — best perceived around 440 Hz, less distinct above that, and gone above about 1,000 Hz — which is why this demo's base tone is 400 Hz.</p>
+<div class="card">
+  <div class="ctl">
+    <button id="bPlay">▶ play binaural beat</button>
+    <button id="bStop">■ stop</button>
+    <label>difference Δ <input type="range" id="bDelta" min="1" max="30" step="1" value="6"> <span id="bDeltaVal">6 Hz</span></label>
+  </div>
+  <div class="ro" id="bRead">left ear 400 Hz · right ear 406 Hz · perceived beat 6 Hz. the beat is perceived only — neither channel contains it.</div>
+</div>
+<p>What this page claims about binaural beats is only that: a beat at the difference frequency is perceived. Full stop. See the notes for what is deliberately not claimed.</p>
+
+<h2>what the gate checked</h2>
+<table>
+  <tr><th class="l">claim</th><th class="l">how it was checked</th></tr>
+  <tr><td class="l">envelope gain is maximal at its centre (440 Hz) and symmetric in log-frequency</td><td class="l">pure-function tests on the envelope formula</td></tr>
+  <tr><td class="l">shepard partials sit exactly one octave apart at every moment of the glide</td><td class="l">ratio test at phase 0 and mid-glide</td></tr>
+  <tr><td class="l">after one full 24 s glide cycle, the multiset of (frequency, gain) pairs is identical to the start — rising and falling</td><td class="l">multiset comparison within 1e-6, at four starting times, both directions</td></tr>
+  <tr><td class="l">the without-fundamental partial list contains no 100 Hz component, and its gcd is still 100 Hz</td><td class="l">list inspection plus gcd computation</td></tr>
+  <tr><td class="l">binaural left/right frequencies differ by exactly the slider Δ</td><td class="l">difference test at Δ = 1, 6, 15, 30 Hz</td></tr>
+  <tr><td class="l">the page's own script runs and its play buttons create oscillators</td><td class="l">smoke run of the extracted page script against DOM and AudioContext stubs that record oscillator creation</td></tr>
+</table>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li>Sources: Shepard, R. N. (1964), "Circularity in judgments of relative pitch," <i>Journal of the Acoustical Society of America</i> 36(12), 2346–2353 (doi 10.1121/1.1919362); Schouten, J. F. (1940), "The residue, a new component in subjective sound analysis," <i>Proceedings of the Koninklijke Nederlandsche Akademie van Wetenschappen</i> 43(3), 356–365; Oster, G. (1973), "Auditory beats in the brain," <i>Scientific American</i> 229(4), 94–102. Oster credits the discovery of binaural beats to H. W. Dove in 1839.</li>
+  <li>The Shepard tone does not really rise or fall without limit. After one octave of glide the sound is bit-for-bit the same recipe it started as. The page says this while the illusion is playing, because the illusion surviving the explanation is the interesting part.</li>
+  <li>This page makes <b>no</b> claim that binaural beats entrain brainwaves, heal anything, improve focus or sleep, or have any other health effect. Oster's 1973 article is about how the auditory system processes the two signals, and about the beat as a research and diagnostic tool. The health-product claims attached to binaural beats elsewhere are not in that paper and are not made here.</li>
+  <li>Shepard's 1964 tones stepped in semitones; this demo glides continuously (a glissando form of the same construction). Schouten's own examples used a 200 Hz fundamental; this demo uses 100 Hz so the with/without contrast is easy to hear — the choice of 100 Hz is this page's, not his.</li>
+  <li>Design parameters of this synthesis, stated as design parameters and not as facts from the papers: 8 partials from a 55 Hz base, a Gaussian envelope of width 1.1 octaves centred on 440 Hz, a 24-second glide cycle, harmonics 1–6 (with) and 2–6 (without) at gains 1/n, and a 400 Hz binaural base with Δ from 1–30 Hz (6 Hz default — the difference in Oster's own worked example, 440 Hz against 434 Hz).</li>
+  <li>Perception varies between listeners, headphones, and rooms. The gate verifies the signals, not your experience of them; if a demo sounds weak, the likeliest suspects are small speakers (demo 2) and speakers instead of headphones (demo 3, where the two tones mix in the air and you get ordinary monaural beats instead).</li>
+  <li>Everything is synthesised live from the same pure functions the gate tested — octave spacing, envelope gains, partial lists, and the binaural pair are computed, not recorded or hard-coded per demo.</li>
+</ul>
+</div>
+<script>
+'use strict';
+// ---- pure core (same functions as core.mjs, inlined so the file stands alone) ----
+const TUNE = {
+  shepard: { baseHz: 55, partialCount: 8, envelopeCentreHz: 440, envelopeSigmaOctaves: 1.1, cycleSeconds: 24 },
+  missing: { f0: 100, maxHarmonic: 6 },
+  binaural: { baseHz: 400, minDelta: 1, maxDelta: 30, defaultDelta: 6 }
+};
+function envelopeGain(freqHz, centreHz, sigmaOctaves) {
+  centreHz = centreHz === undefined ? TUNE.shepard.envelopeCentreHz : centreHz;
+  sigmaOctaves = sigmaOctaves === undefined ? TUNE.shepard.envelopeSigmaOctaves : sigmaOctaves;
+  const d = Math.log2(freqHz / centreHz) / sigmaOctaves;
+  return Math.exp(-0.5 * d * d);
+}
+function shepardPartials(t, direction) {
+  direction = direction === undefined ? 1 : direction;
+  const s = TUNE.shepard;
+  let phase = (direction * t / s.cycleSeconds) % 1;
+  if (phase < 0) phase += 1;
+  const out = [];
+  for (let k = 0; k < s.partialCount; k++) {
+    const freq = s.baseHz * Math.pow(2, k + phase);
+    out.push({ freq: freq, gain: envelopeGain(freq) });
+  }
+  return out;
+}
+function missingPartials(f0, includeFundamental) {
+  const out = [];
+  for (let n = includeFundamental ? 1 : 2; n <= TUNE.missing.maxHarmonic; n++) out.push({ freq: f0 * n, gain: 1 / n, harmonic: n });
+  return out;
+}
+function binauralPair(baseHz, deltaHz) { return { leftHz: baseHz, rightHz: baseHz + deltaHz, beatHz: deltaHz }; }
+
+// ---- presentation ----
+const $ = id => document.getElementById(id);
+let ctx = null;
+function audio() { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); if (ctx.resume) ctx.resume(); return ctx; }
+function makeVoice(freq, gainVal, pan) {
+  const ac = audio();
+  const osc = ac.createOscillator(); osc.type = 'sine'; osc.frequency.value = freq;
+  const g = ac.createGain(); g.gain.value = gainVal;
+  let node = g;
+  if (pan !== undefined && ac.createStereoPanner) { const p = ac.createStereoPanner(); p.pan.value = pan; g.connect(p); node = p; }
+  osc.connect(g); node.connect(ac.destination); osc.start();
+  return { osc: osc, gain: g };
+}
+function stopVoices(voices) { if (!voices) return; voices.forEach(v => { try { v.osc.stop(); } catch (e) {} try { v.osc.disconnect(); } catch (e) {} }); }
+
+// --- Shepard ---
+let sVoices = null, sTimer = null, sDir = 1, sStart = 0;
+function drawShepard(t) {
+  const cv = $('shepCanvas'); if (!cv || !cv.getContext) return;
+  const c = cv.getContext('2d'); const W = cv.width, H = cv.height;
+  c.clearRect(0, 0, W, H);
+  const lo = Math.log2(40), hi = Math.log2(12000);
+  const xOf = f => (Math.log2(f) - lo) / (hi - lo) * W;
+  c.strokeStyle = '#bb9af7'; c.beginPath();
+  for (let x = 0; x <= W; x += 4) {
+    const f = Math.pow(2, lo + (hi - lo) * x / W);
+    const y = H - 20 - envelopeGain(f) * (H - 50);
+    if (x === 0) c.moveTo(x, y); else c.lineTo(x, y);
+  }
+  c.stroke();
+  c.fillStyle = '#787c99'; c.fillText('40 Hz', 6, H - 4); c.fillText('envelope centre 440 Hz', xOf(440) - 52, H - 4); c.fillText('12 kHz', W - 46, H - 4);
+  const parts = shepardPartials(t, sDir);
+  parts.forEach(p => {
+    c.fillStyle = '#7dcfff'; c.beginPath();
+    c.arc(xOf(p.freq), H - 20 - p.gain * (H - 50), 3 + p.gain * 7, 0, Math.PI * 2); c.fill();
+  });
+}
+function sStopFn() { if (sTimer) { clearInterval(sTimer); sTimer = null; } stopVoices(sVoices); sVoices = null; $('sRead').textContent = 'stopped. the bell is the fixed envelope; the dots are the eight partials.'; }
+function sPlayFn() {
+  sStopFn();
+  const ac = audio(); sStart = ac.currentTime;
+  sVoices = shepardPartials(0, sDir).map(p => makeVoice(p.freq, p.gain * 0.12));
+  $('sRead').textContent = (sDir > 0 ? 'rising' : 'falling') + '… and after 24 s the recipe is exactly the one it started with. watch the dots: out at one end, in at the other.';
+  sTimer = setInterval(() => {
+    const t = audio().currentTime - sStart;
+    const parts = shepardPartials(t, sDir);
+    if (sVoices) parts.forEach((p, i) => { sVoices[i].osc.frequency.value = p.freq; sVoices[i].gain.gain.value = p.gain * 0.12; });
+    drawShepard(t);
+  }, 50);
+}
+$('sPlay').addEventListener('click', sPlayFn);
+$('sStop').addEventListener('click', sStopFn);
+$('sDir').addEventListener('click', () => {
+  sDir = -sDir;
+  $('sDir').textContent = sDir > 0 ? 'switch to endless fall' : 'switch to endless rise';
+  $('sPlay').textContent = sDir > 0 ? '▶ play endless rise' : '▶ play endless fall';
+  if (sVoices) sPlayFn();
+});
+drawShepard(0);
+
+// --- Missing fundamental ---
+let mVoices = null;
+function mStopFn() { stopVoices(mVoices); mVoices = null; }
+function mPlay(include) {
+  mStopFn();
+  mVoices = missingPartials(TUNE.missing.f0, include).map(p => makeVoice(p.freq, p.gain * 0.16));
+  $('mRead').textContent = include
+    ? 'playing WITH the fundamental: oscillators at 100, 200, 300, 400, 500, 600 Hz.'
+    : 'playing WITHOUT the fundamental: oscillators at 200, 300, 400, 500, 600 Hz — nothing at 100 Hz, same perceived pitch.';
+}
+$('mWith').addEventListener('click', () => mPlay(true));
+$('mWithout').addEventListener('click', () => mPlay(false));
+$('mStop').addEventListener('click', () => { mStopFn(); $('mRead').textContent = 'stopped.'; });
+
+// --- Binaural beats ---
+let bVoices = null;
+function bStopFn() { stopVoices(bVoices); bVoices = null; }
+function bUpdate() {
+  const d = +$('bDelta').value;
+  const pair = binauralPair(TUNE.binaural.baseHz, d);
+  $('bDeltaVal').textContent = d + ' Hz';
+  $('bRead').textContent = 'left ear ' + pair.leftHz + ' Hz · right ear ' + pair.rightHz + ' Hz · perceived beat ' + pair.beatHz + ' Hz. the beat is perceived only — neither channel contains it.';
+  if (bVoices) { bVoices[0].osc.frequency.value = pair.leftHz; bVoices[1].osc.frequency.value = pair.rightHz; }
+  return pair;
+}
+function bPlayFn() {
+  bStopFn();
+  const pair = bUpdate();
+  bVoices = [makeVoice(pair.leftHz, 0.15, -1), makeVoice(pair.rightHz, 0.15, 1)];
+}
+$('bPlay').addEventListener('click', bPlayFn);
+$('bStop').addEventListener('click', () => { bStopFn(); $('bRead').textContent = 'stopped. headphones on, then play.'; });
+$('bDelta').addEventListener('input', bUpdate);
+bUpdate();
+</script>
+</body>
+</html>

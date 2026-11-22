@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>aurora — the kp dial — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl input[type=range] { accent-color: #7dcfff; width: 300px; }
+  .ctl select { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 8px; font-family: monospace; font-size: 13px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  .big { font-size: 30px; font-weight: 700; }
+  .g1 { color: #9ece6a; } .g2 { color: #e0af68; } .g3 { color: #ff9e64; } .g4 { color: #f7768e; } .g5 { color: #bb9af7; }
+  canvas.sky { width: 100%; display: block; border-radius: 8px; background: #050914; }
+  .strip { position: relative; height: 74px; margin: 26px 8px 4px; border-top: 2px solid #2a2d3e; }
+  .strip .mark { position: absolute; top: -7px; width: 2px; height: 12px; background: #787c99; }
+  .strip .lab { position: absolute; top: 10px; transform: translateX(-50%); font-size: 11px; color: #787c99; text-align: center; width: 110px; }
+  .strip .mark.hit { background: #9ece6a; } .strip .lab.hit { color: #9ece6a; }
+  .strip .edge { position: absolute; top: -16px; width: 3px; height: 30px; background: #7dcfff; }
+  .strip .edgelab { position: absolute; top: -38px; transform: translateX(-50%); font-size: 11px; color: #7dcfff; white-space: nowrap; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  tr.cur td { background: #24283b; color: #c0caf5; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">The Sun is always blowing a wind of tiny charged bits at Earth. Earth's magnet is like an umbrella that funnels that wind toward the poles, where it hits the thin air high above us and makes it glow — green, sometimes red on top, purple at the bottom edge. One number, Kp, from 0 to 9, says how hard the wind is shaking the umbrella. Small number: the glow stays up near the pole, faint. Big number: the glow spreads toward the equator, bright and wild, and people far south can see it. This page is a dial for that number. Turn it and watch the sky obey.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">I wanted to know what Kp actually buys you. People quote it like a score — "Kp 5 tonight!" — but the number is a magnetometer average from 13 observatories, and what it does to the sky follows one plain rule NOAA publishes: the auroral oval's edge sits near 66 degrees of magnetic latitude when Kp is 0 and walks about 2 degrees toward the equator with every step. So I built the dial around that rule and NOAA's storm scale, and let the curtains be a drawing driven by them. Plainly: this is a visual model driven by what the real Kp scale means — not a forecast. It uses no live data and tells you nothing about tonight.</p>
+</div>
+<div class="wrap">
+<h1>aurora — the kp dial</h1>
+<p class="sub">one number, 0–9, and what it does to the night sky · 2026-11-21 · a visual model driven by what the real Kp scale means — not a forecast, no live data</p>
+
+<div class="card">
+  <div class="ctl">
+    <span class="big">Kp <span id="kpval">7</span></span>
+    <input type="range" id="kp" min="0" max="9" step="1" value="7">
+    <span id="gread" class="ro" style="margin-top:0"></span>
+  </div>
+  <div class="ro" id="ro"></div>
+  <canvas class="sky" id="sky" width="1120" height="560"></canvas>
+  <h2 style="margin-top:22px">where the oval reaches</h2>
+  <p>Geomagnetic latitude, pole at the left. The blue tick is the oval's equatorward edge at the current Kp, from NOAA's rule below. Places at or poleward of the tick sit under or inside the oval; places to its right may still catch the aurora low on their northern horizon. Place latitudes are approximate geomagnetic values — sources in the notes.</p>
+  <div class="strip" id="strip"></div>
+</div>
+
+<h2>the dial, in a table</h2>
+<p>Kp is the planetary K-index: a 3-hour, quasi-logarithmic index built from ground magnetometers at 13 observatories, produced in definitive form by GFZ Potsdam. The G labels and the boundary column are NOAA SWPC's published mapping and rule of thumb — the boundary is an approximate average in geomagnetic latitude, not a measured edge.</p>
+<table id="ktab">
+  <tr><th>Kp</th><th class="l">NOAA G-scale</th><th>oval boundary (° geomagnetic)</th><th class="l">NOAA's description</th></tr>
+</table>
+
+<h2>why those colours</h2>
+<p>Charged particles guided by Earth's magnetic field strike atoms in the thin upper air. Each gas gives back the energy as light of specific wavelengths, and the wavelength depends on the gas and the height.</p>
+<table>
+  <tr><th class="l">colour</th><th class="l">source</th><th>wavelength</th><th class="l">height</th></tr>
+  <tr><td class="l" style="color:#9ece6a">green</td><td class="l">atomic oxygen</td><td>557.7 nm</td><td class="l">~100–150 km — the common body of the curtain</td></tr>
+  <tr><td class="l" style="color:#f7768e">red</td><td class="l">atomic oxygen</td><td>630.0 nm</td><td class="l">above ~200 km — the faint tops, mostly in strong storms</td></tr>
+  <tr><td class="l" style="color:#bb9af7">purple / blue</td><td class="l">ionised nitrogen (N<sub>2</sub><sup>+</sup>)</td><td class="l">band emissions</td><td class="l">the lower edge, where particles reach denser air</td></tr>
+</table>
+<p>On this page the red tops only appear at Kp 5 and above, and strengthen with Kp — that timing is the model's choice, made to match NOAA's qualitative bands (dim and quiet at Kp 0–2, bright and active at 6–7, very bright at 8–9), not a measured emission threshold.</p>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li><b>Not a forecast.</b> This page makes no network calls and holds no live data. The Kp you set is the Kp you get. For tonight, use NOAA SWPC's own products.</li>
+  <li>Kp definition — GFZ Potsdam, the IAGA-endorsed producer of the definitive index (kp.gfz.de; dataset doi.org/10.5880/Kp.0001; Matzka et al. 2021). NOAA SWPC publishes a near-real-time estimated Kp from a subset of magnetometers. Real Kp is expressed in thirds (5−, 5o, 5+); the dial uses whole steps only.</li>
+  <li>G-scale mapping — NOAA SWPC Space Weather Scales (swpc-drupal.woc.noaa.gov/noaa-scales-explanation): Kp 5 = G1 Minor, 6 = G2 Moderate, 7 = G3 Strong, 8 = G4 Severe, 9 = G5 Extreme; below Kp 5 is below storm level.</li>
+  <li>Oval boundary — NOAA SWPC "Tips on Viewing the Aurora": at Kp 0 the equatorward edge is approximately 66° geomagnetic, moving equatorward about 2° per Kp step, reaching ~48° at Kp 9. NOAA states this is approximate and represents averages. The page's model is exactly boundary = 66 − 2·Kp.</li>
+  <li>One honest tension: NOAA's G-scale text says aurora at G5 has been seen as low as Florida and southern Texas, "typically 40° geomagnetic latitude" — well equatorward of the 48° oval edge at Kp 9. Both are NOAA's numbers; they differ because aurora can be seen low on the horizon from roughly 1,000 km away (NOAA's viewing tips). The strip plots the oval edge, and the table's descriptions keep NOAA's viewing language.</li>
+  <li>Reference places on the strip: Fairbanks (~65.7°) and Anchorage (~61.9°) geomagnetic, from a WMM-based compilation at auroralights.app; the regional markers (New York/Idaho ~55°, Illinois/Oregon ~50°, Alabama/northern California ~45°, southern Texas/Florida ~40°) are NOAA's own "typically" geomagnetic latitudes from the G-scale descriptions. All are approximate; none is a surveyed city coordinate.</li>
+  <li>Colours — NOAA space-environment topics (Combs &amp; Viereck): atomic oxygen gives green at 557.7 nm and red at 630.0 nm; University of Alaska Fairbanks Geophysical Institute: green from oxygen, red from high-altitude oxygen, purple/violet from nitrogen. Screen colours are a drawing — a monitor cannot reproduce a single emission line exactly.</li>
+  <li>The curtain drawing is a seeded model: ray count, brightness, coverage and motion rise monotonically with Kp through formulas in the page's core, gated by tests (315 checks: monotonicity, the 66→48 boundary, the G mapping, determinism, no NaN over long runs). Those parameters are artistic, not measured emission intensities.</li>
+  <li>Kp alone decides nothing in the real sky: darkness, clear weather, moonlight and a view toward the pole all matter, per NOAA's viewing tips.</li>
+</ul>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+// ---- core (inlined copy of core.mjs; same logic, gated headlessly) ----
+const TUNE = { boundaryAtKp0: 66, boundaryPerKp: 2, maxRays: 42, minRays: 3, previewSeed: 20261121 };
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function clampKp(kp) { if (!Number.isFinite(kp)) return 0; return Math.min(9, Math.max(0, kp)); }
+function gScale(kp) {
+  const k = Math.round(clampKp(kp));
+  if (k < 5) return { g: 0, label: 'below storm', name: 'below storm level' };
+  const names = { 5: 'Minor', 6: 'Moderate', 7: 'Strong', 8: 'Severe', 9: 'Extreme' };
+  return { g: k - 4, label: 'G' + (k - 4), name: names[k] };
+}
+function ovalBoundaryLatitude(kp) { return TUNE.boundaryAtKp0 - TUNE.boundaryPerKp * clampKp(kp); }
+function kpToActivity(kp) {
+  const k = clampKp(kp); const t = k / 9;
+  return {
+    kp: k,
+    brightness: 0.03 + 0.97 * Math.pow(t, 1.25),
+    coverage: 0.10 + 0.90 * t,
+    rayCount: Math.round(TUNE.minRays + (TUNE.maxRays - TUNE.minRays) * t),
+    raySpeed: 0.15 + 1.55 * t,
+    raySharpness: 0.35 + 0.65 * t,
+    redTop: k < 5 ? 0 : (k - 4) / 5,
+    purpleEdge: 0.15 + 0.85 * t,
+    starDim: 1 - 0.75 * Math.pow(t, 1.5),
+  };
+}
+function generateCurtains(seed, kp) {
+  const act = kpToActivity(kp);
+  const rnd = mulberry32(seed >>> 0);
+  const rays = [];
+  for (let i = 0; i < act.rayCount; i++) {
+    rays.push({ cx: 0.5 + (rnd() - 0.5) * act.coverage, w: 0.006 + rnd() * 0.030, amp: 0.35 + rnd() * 0.65, phase: rnd() * Math.PI * 2, sway: 0.004 + rnd() * 0.020, speed: (0.25 + rnd() * 0.9) * act.raySpeed });
+  }
+  const bands = [];
+  for (let i = 0; i < 3; i++) {
+    bands.push({ cx: 0.5 + (rnd() - 0.5) * act.coverage * 0.8, w: 0.16 + rnd() * 0.22, amp: 0.30 + rnd() * 0.30, phase: rnd() * Math.PI * 2, speed: (0.05 + rnd() * 0.10) * act.raySpeed });
+  }
+  return { seed: seed >>> 0, kp: act.kp, activity: act, rays, bands };
+}
+const clamp01 = v => Math.min(1, Math.max(0, v));
+function curtainEdges(field, x, t) {
+  const a = field.activity;
+  const top = 0.05 + 0.030 * Math.sin(x * 5.1 + field.bands[0].phase + t * 0.05 * a.raySpeed) + 0.018 * Math.sin(x * 11.7 + field.bands[1].phase - t * 0.03 * a.raySpeed);
+  const bottom = 0.74 + 0.08 * Math.sin(x * 3.3 + field.bands[2].phase + t * 0.07 * a.raySpeed) + 0.04 * Math.sin(x * 8.9 + field.bands[0].phase * 2 - t * 0.11 * a.raySpeed) + 0.08 * a.coverage * Math.sin(x * 1.7 + 1.3);
+  return { top, bottom };
+}
+function fieldSample(field, x, y, t) {
+  const a = field.activity;
+  const e = curtainEdges(field, x, t);
+  if (y < e.top - 0.06 || y > e.bottom + 0.02) return { i: 0, red: 0, green: 0, purple: 0 };
+  const v = (y - e.top) / Math.max(0.05, e.bottom - e.top);
+  let prof;
+  if (v < 0) prof = 0.45 * Math.max(0, 1 + v * 7);
+  else if (v < 0.5) { const sv = v / 0.5; prof = 0.45 + 0.55 * (sv * sv * (3 - 2 * sv)); }
+  else if (v < 0.90) prof = 1.0 - 0.22 * ((v - 0.5) / 0.4);
+  else if (v < 1.0) prof = 0.78 * (1 - (v - 0.90) / 0.10);
+  else prof = 0;
+  let h = 0;
+  for (const b of field.bands) { const dx = (x - b.cx - 0.02 * Math.sin(t * b.speed + b.phase)) / b.w; h += b.amp * Math.exp(-dx * dx); }
+  let r = 0;
+  for (const ray of field.rays) { const sway = ray.sway * Math.sin(t * ray.speed + ray.phase + v * 2.2); const dx = (x - ray.cx - sway) / ray.w; r += ray.amp * Math.exp(-dx * dx); }
+  const rayMix = (1 - a.raySharpness) * 0.6 + a.raySharpness * clamp01(r);
+  const i = a.brightness * prof * (0.50 * clamp01(h) + 0.62 * rayMix + 0.18);
+  const vv = clamp01(v);
+  const redW = a.redTop * Math.max(0, 1 - vv * 2.2);
+  const purpleW = a.purpleEdge * Math.max(0, (vv - 0.86) / 0.14);
+  const greenW = Math.max(0, 1 - redW * 0.75 - purpleW * 0.55);
+  return { i, red: i * redW, green: i * greenW, purple: i * purpleW };
+}
+// ---- presentation ----
+const PLACES = [
+  { name: 'Fairbanks', lat: 65.7 }, { name: 'Anchorage', lat: 61.9 },
+  { name: 'New York / Idaho', lat: 55 }, { name: 'Illinois / Oregon', lat: 50 },
+  { name: 'Alabama / N. California', lat: 45 }, { name: 'S. Texas / Florida', lat: 40 },
+];
+const DESCS = ['far north, dim, barely moving', 'far north, dim, not very active', 'far north, dim, not very active',
+  'moving equatorward, brighter, more activity', 'moving equatorward, brighter, more activity', 'minor storm — pleasing displays in the right place',
+  'quite bright and active', 'quite bright and active', 'very bright, very active — overhead from the northern US', 'very bright, very active — the extended oval, seen by the most people'];
+let field = generateCurtains(TUNE.previewSeed, 7);
+const strip = $('strip');
+const stripEls = PLACES.map(p => {
+  const m = document.createElement('div'); m.className = 'mark';
+  const l = document.createElement('div'); l.className = 'lab'; l.textContent = p.name + ' ~' + p.lat + '°';
+  strip.appendChild(m); strip.appendChild(l);
+  return { p, m, l };
+});
+const edge = document.createElement('div'); edge.className = 'edge'; strip.appendChild(edge);
+const edgelab = document.createElement('div'); edgelab.className = 'edgelab'; strip.appendChild(edgelab);
+const latX = lat => ((72 - lat) / (72 - 34)) * 100;
+for (const e of stripEls) { e.m.style.left = latX(e.p.lat) + '%'; e.l.style.left = latX(e.p.lat) + '%'; }
+
+const ktab = $('ktab');
+const rows = [];
+for (let kp = 0; kp <= 9; kp++) {
+  const g = gScale(kp);
+  const tr = document.createElement('tr');
+  tr.innerHTML = '<td>' + kp + '</td><td class="l">' + (g.g ? g.label + ' — ' + g.name : 'below storm') + '</td><td>' + ovalBoundaryLatitude(kp) + '°</td><td class="l">' + DESCS[kp] + '</td>';
+  ktab.appendChild(tr); rows.push(tr);
+}
+
+function setKp(kp) {
+  field = generateCurtains(TUNE.previewSeed, kp);
+  const g = gScale(kp), b = ovalBoundaryLatitude(kp);
+  $('kpval').textContent = kp;
+  const gr = $('gread');
+  gr.textContent = g.g ? g.label + ' · ' + g.name + ' storm' : 'below storm level';
+  gr.className = 'ro' + (g.g ? ' g' + g.g : '');
+  gr.style.marginTop = '0';
+  $('ro').textContent = 'oval edge reaches ~' + b + '° geomagnetic latitude · ' + DESCS[kp];
+  edge.style.left = latX(b) + '%';
+  edgelab.style.left = latX(b) + '%';
+  edgelab.textContent = 'oval edge ' + b + '°';
+  for (const e of stripEls) {
+    const hit = e.p.lat >= b;
+    e.m.className = 'mark' + (hit ? ' hit' : ''); e.l.className = 'lab' + (hit ? ' hit' : '');
+  }
+  rows.forEach((r, i) => { r.className = i === kp ? 'cur' : ''; });
+}
+$('kp').addEventListener('input', () => setKp(+$('kp').value));
+
+// Sky rendering: low-res field buffer upscaled with smoothing for a soft glow.
+const sky = $('sky'), ctx = sky.getContext('2d');
+const LW = 256, LH = 128;
+const low = document.createElement('canvas'); low.width = LW; low.height = LH;
+const lctx = low.getContext('2d');
+const img = lctx.createImageData(LW, LH);
+const starRnd = mulberry32(99);
+const stars = [];
+for (let i = 0; i < 260; i++) stars.push({ x: starRnd(), y: starRnd() * 0.85, r: starRnd() * 1.3 + 0.3, tw: starRnd() * 6.28 });
+function frame(now) {
+  const t = now / 1000;
+  const W = sky.width, H = sky.height;
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#03040c'); grad.addColorStop(0.7, '#070b1d'); grad.addColorStop(1, '#0b1026');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+  const sd = field.activity.starDim;
+  ctx.fillStyle = '#c0caf5';
+  for (const s of stars) {
+    ctx.globalAlpha = sd * (0.35 + 0.4 * (0.5 + 0.5 * Math.sin(t * 0.7 + s.tw)));
+    ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.r, 0, 6.29); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  const d = img.data;
+  for (let py = 0; py < LH; py++) {
+    const y = py / LH * 0.88;
+    for (let px = 0; px < LW; px++) {
+      const s = fieldSample(field, px / LW, y, t);
+      const o = (py * LW + px) * 4;
+      const glow = 1 - Math.exp(-s.i * 1.6);
+      d[o] = Math.min(255, (s.green * 90 + s.red * 255 + s.purple * 150) * glow * 1.4);
+      d[o + 1] = Math.min(255, (s.green * 235 + s.red * 35 + s.purple * 90) * glow * 1.4);
+      d[o + 2] = Math.min(255, (s.green * 140 + s.red * 55 + s.purple * 255) * glow * 1.4);
+      d[o + 3] = Math.min(255, glow * 255);
+    }
+  }
+  lctx.putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(low, 0, 0, W, H * 0.88);
+  // Ground silhouette.
+  ctx.fillStyle = '#02030a';
+  ctx.beginPath(); ctx.moveTo(0, H);
+  for (let px = 0; px <= W; px += 16) ctx.lineTo(px, H * 0.90 + 10 * Math.sin(px * 0.011 + 2) + 6 * Math.sin(px * 0.031));
+  ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+  requestAnimationFrame(frame);
+}
+setKp(7);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

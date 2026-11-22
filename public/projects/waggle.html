@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>the waggle dance — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl input[type=text] { background: #0f1017; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 10px; font-family: monospace; font-size: 15px; width: 110px; letter-spacing: .2em; }
+  .ctl select { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 8px; font-family: monospace; font-size: 13px; }
+  .ctl input[type=range] { accent-color: #7dcfff; width: 190px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; line-height: 1.7; }
+  .ro b { color: #c0caf5; }
+  .panels { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
+  .panel { flex: 1 1 300px; min-width: 280px; }
+  .panel .cap { color: #787c99; font-size: 12px; margin-top: 6px; line-height: 1.5; }
+  canvas.stage { background: #0f1017; border: 1px solid #2a2d3e; border-radius: 8px; width: 100%; height: auto; display: block; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  .warn { color: #e0af68; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">A bee finds good flowers and flies home. In the dark hive she dances a little figure eight on the wall. The straight middle bit of the dance points the way: tilted from straight-up by exactly the angle the flowers sit from the sun. And the longer she wiggles through that middle bit, the farther away the flowers are. Her sisters watch, then fly out and find the flowers. It is a map, danced.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">I like codes that fit in two numbers. This one is an angle and a duration, swapped from sunlight into gravity in the dark, and it held up when people finally tested it properly — including the strange part, which is that the bee's distance is not really distance. Her odometer counts how much scenery streamed past her eyes, so a short flight through a cluttered tunnel gets danced as a long one. The page runs the code both ways, with the calibration printed and its wobble admitted, because the wobble is part of the finding.</p>
+</div>
+<div class="wrap">
+<h1>the waggle dance</h1>
+<p class="sub">honeybee dance language, decoded by Karl von Frisch (1967) · encode and decode through one shared core · 2026-11-21</p>
+
+<div class="card">
+  <div class="ctl"><b>encode — put the food somewhere, watch the dance</b></div>
+  <div class="ctl">
+    <label>sun azimuth <input type="range" id="sun" min="0" max="359" value="100"> <span id="sunVal">100°</span></label>
+    <label>food distance <input type="range" id="dist" min="0" max="3000" step="10" value="1200"> <span id="distVal">1200 m</span></label>
+    <button id="presetNear">flowers at 30 m</button>
+    <button id="presetFar">flowers at 2.5 km</button>
+  </div>
+  <div class="panels">
+    <div class="panel">
+      <canvas class="stage" id="map" width="460" height="460"></canvas>
+      <div class="cap">sky view, looking down. hive in the middle, sun arrow is the reference. click or drag on the map to move the food; the ring spacing is 500 m, out to 3 km.</div>
+    </div>
+    <div class="panel">
+      <canvas class="stage" id="comb" width="460" height="460"></canvas>
+      <div class="cap">comb view, inside the dark hive. up on the comb stands in for the sun. the straight run (amber) is the message; the loops are just the walk back. animation timing is compressed — the readout below is the real number.</div>
+    </div>
+  </div>
+  <div class="ro" id="encOut"></div>
+</div>
+
+<h2>the correspondence, side by side</h2>
+<p>Same state as above, drawn still. Left: the sky, where the angle lives between the sun and the food. Right: the comb, where the same angle lives between straight-up (gravity) and the waggle run. Nothing about the landscape is carried across — only the angle, copied from one reference (the sun) onto another (up).</p>
+<canvas class="stage" id="diagram" width="1040" height="380"></canvas>
+
+<div class="card">
+  <div class="ctl"><b>decode — you watched a dance; where is the food?</b></div>
+  <div class="ctl">
+    <label>dance angle <input type="range" id="dAng" min="-180" max="180" value="40"> <span id="dAngVal">+40°</span></label>
+    <label>waggle duration <input type="range" id="dMs" min="250" max="3250" step="5" value="1150"> <span id="dMsVal">1150 ms</span></label>
+    <label>sun azimuth <input type="range" id="dSun" min="0" max="359" value="100"> <span id="dSunVal">100°</span></label>
+  </div>
+  <div class="ro" id="decOut"></div>
+</div>
+
+<h2>the calibration this page uses</h2>
+<p>Distance is read from waggle-run duration with one straight line, the same line in both directions:</p>
+<p style="text-align:center;font-size:15px;"><b>waggle duration = 250 ms + 0.75 ms × distance in metres</b></p>
+<p>The slope is von Frisch's figure for his bees (<i>Apis mellifera carnica</i>): roughly <b>75 ms of extra waggle per 100 m</b> of flight. The 250 ms intercept is a modelling choice, not a quoted constant — real calibration curves do not start at zero, and 250 ms makes the line pass through Seeley's rule of thumb, <b>about 1 second of waggle for 1 km</b> (Seeley, <i>The Wisdom of the Hive</i>, 1995). Food closer than <b>50 m</b> gets the round dance instead — von Frisch's switch distance — which says "near, go search by smell" and carries no direction.</p>
+<table>
+  <tr><th class="l">distance</th><th>waggle run</th><th class="l">dance</th></tr>
+  <tr><td class="l">30 m</td><td>—</td><td class="l">round dance (too near to aim)</td></tr>
+  <tr><td class="l">50 m</td><td>288 ms</td><td class="l">waggle, shortest on this line</td></tr>
+  <tr><td class="l">100 m</td><td>325 ms</td><td class="l">waggle</td></tr>
+  <tr><td class="l">250 m</td><td>438 ms</td><td class="l">waggle</td></tr>
+  <tr><td class="l">500 m</td><td>625 ms</td><td class="l">waggle</td></tr>
+  <tr><td class="l">1,000 m</td><td>1,000 ms</td><td class="l">waggle — Seeley's 1 s ≈ 1 km</td></tr>
+  <tr><td class="l">2,000 m</td><td>1,750 ms</td><td class="l">waggle</td></tr>
+  <tr><td class="l">3,000 m</td><td>2,500 ms</td><td class="l">waggle</td></tr>
+</table>
+
+<h2>the catch: the odometer reads light, not ground</h2>
+<p>Von Frisch first thought distance was measured by energy spent. It is not. Srinivasan, Zhang, Altwein and Tautz (2000, <i>Science</i> 287: 851–853) flew bees through a narrow tunnel — 6.4 m long, 11 cm wide — lined with a busy pattern. The scenery streaming past at close range piled up so much optic flow that the bees came home and danced for a flight of roughly <b>186–195 m</b>, after actually flying <b>6 m</b>. Lined with stripes running along the flight path, so almost nothing streamed sideways, the same bees mostly did the round dance: the odometer had barely registered. Their calibration, in the units the bee actually uses: <b>1 ms of waggle ≈ 17.7° of image motion</b> across the eye.</p>
+<p>So what the dance encodes is <i>experienced optic flow</i>, which only matches ground distance when the flight is ordinary outdoor flight. The same distance over water or from high up dances shorter; through clutter it dances longer. The encode/decode above is the code for ordinary flight — the tunnel is the proof of what the code is really counting.</p>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li><span class="warn">There is no universal calibration.</span> The 0.75 ms/m slope is von Frisch's, for one subspecies. Other races run measurably different slopes — "dance dialects" — and Srinivasan's own outdoor bees gave 1.88 ms/m in low, cluttered flight. A modern single-colony curve (Carniolan bees, Kohl &amp; Rutschmann 2021) runs 0.41 s at 100 m to 2.20 s at 1.7 km, steeper than the line used here. Treat every distance on this page as "on von Frisch's calibration", not as bee truth.</li>
+  <li>The round/waggle switch is also approximate: von Frisch put it at ~50 m; other accounts say 50–75 m or under 80 m, and some describe a transitional sickle dance in between, which this page does not model. Modern work argues the round dance is not a wholly separate, information-free dance either. The 50 m line here is von Frisch's figure, chosen and labelled.</li>
+  <li>Nothing here claims bees "understand geometry". The mechanism is a transposition — a sun-compass bearing re-expressed against gravity, an optic-flow total re-expressed as a run duration — carried out by sensory and motor machinery. The page describes the mechanism, not an inner mathematician.</li>
+  <li>Real dances are noisy: individual runs scatter around the mean angle and duration, and recruits finish the job with odour and landmarks. This page decodes the idealised code exactly (the core's round-trip is exact by construction and gate-tested); a real follower bee gets an approximation.</li>
+  <li>Dance vigour also varies with food quality (Seeley 1995) — a real part of the signal, deliberately out of scope here. The controls carry angle and duration only.</li>
+  <li>Sources: von Frisch, <i>The Dance Language and Orientation of Bees</i> (1967); Seeley, <i>The Wisdom of the Hive</i> (1995); Srinivasan et al., "Honeybee navigation: nature and calibration of the 'odometer'", <i>Science</i> 287 (2000) 851–853; Chittka, "Dances as Windows into Insect Perception", <i>PLoS Biology</i> 2(7) (2004); NC State Extension, "The Honey Bee Dance Language". Full source trail with the numbers traced is in the build notes.</li>
+</ul>
+</div>
+<script>
+// ---- core (inlined copy of core.mjs; keep in sync) ----
+const TUNE = { msPerMeter: 0.75, offsetMs: 250, roundThresholdM: 50 };
+function wrap360(deg) { return ((deg % 360) + 360) % 360; }
+function wrap180(deg) { const w = wrap360(deg); return w > 180 ? w - 360 : w; }
+function encode(foodBearingDeg, sunAzimuthDeg, distanceM) {
+  const danceAngleDeg = wrap180(foodBearingDeg - sunAzimuthDeg);
+  if (distanceM < TUNE.roundThresholdM) return { danceType: 'round', danceAngleDeg: 0, waggleMs: 0 };
+  return { danceType: 'waggle', danceAngleDeg, waggleMs: TUNE.offsetMs + TUNE.msPerMeter * distanceM };
+}
+function decode(danceAngleDeg, waggleMs, sunAzimuthDeg) {
+  return { foodBearingDeg: wrap360(sunAzimuthDeg + wrap180(danceAngleDeg)), distanceM: (waggleMs - TUNE.offsetMs) / TUNE.msPerMeter };
+}
+function dancePath(runLen = 1, lobe = 0.55, stepsPerArc = 24) {
+  const pts = [];
+  const wiggles = 6;
+  for (let i = 0; i <= 40; i++) { const t = i / 40; pts.push({ x: 0.045 * Math.sin(t * wiggles * 2 * Math.PI), y: t * runLen, phase: 'waggle' }); }
+  function arc(side) {
+    const out = [];
+    for (let i = 1; i <= stepsPerArc; i++) { const th = (i / stepsPerArc) * Math.PI; out.push({ x: side * lobe * Math.sin(th), y: runLen / 2 + (runLen / 2) * Math.cos(th), phase: 'return' }); }
+    return out;
+  }
+  pts.push(...arc(1));
+  for (let i = 1; i <= 40; i++) { const t = i / 40; pts.push({ x: 0.045 * Math.sin(t * wiggles * 2 * Math.PI), y: t * runLen, phase: 'waggle' }); }
+  pts.push(...arc(-1));
+  return pts;
+}
+// ---- page ----
+const $ = id => document.getElementById(id);
+const C = { text: '#c0caf5', muted: '#787c99', border: '#2a2d3e', cyan: '#7dcfff', green: '#9ece6a', amber: '#e0af68', red: '#f7768e', purple: '#bb9af7', orange: '#ff9e64' };
+const state = { sun: 100, bearing: 140, dist: 1200 };
+const PATH = dancePath(1, 0.32);
+const POINTS = ['north','north-east','east','south-east','south','south-west','west','north-west'];
+const compass = b => POINTS[Math.round(wrap360(b) / 45) % 8];
+const fmtDeg = d => (d > 0 ? '+' : '') + Math.round(d) + '°';
+
+function dirVec(bearingDeg) { const r = bearingDeg * Math.PI / 180; return { x: Math.sin(r), y: -Math.cos(r) }; }
+
+function drawMap() {
+  const cv = $('map'), ctx = cv.getContext('2d'), W = cv.width, cx = W / 2, cy = W / 2, R = W / 2 - 26;
+  ctx.clearRect(0, 0, W, W);
+  ctx.strokeStyle = C.border; ctx.fillStyle = C.muted; ctx.font = '12px monospace'; ctx.lineWidth = 1;
+  for (let m = 500; m <= 3000; m += 500) {
+    ctx.beginPath(); ctx.arc(cx, cy, R * m / 3000, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.fillText('N', cx - 3, 16); ctx.fillText('3 km', cx + R * 0.97 - 14, cy - 6);
+  // sun arrow
+  const sv = dirVec(state.sun);
+  ctx.strokeStyle = C.amber; ctx.fillStyle = C.amber; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + sv.x * R * 0.92, cy + sv.y * R * 0.92); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx + sv.x * R * 0.92, cy + sv.y * R * 0.92, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.fillText('sun ' + Math.round(state.sun) + '°', cx + sv.x * R * 0.72 + 12, cy + sv.y * R * 0.72);
+  // food
+  const fv = dirVec(state.bearing), fr = R * Math.min(state.dist, 3000) / 3000;
+  ctx.strokeStyle = C.green; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + fv.x * fr, cy + fv.y * fr); ctx.stroke();
+  ctx.fillStyle = C.green;
+  ctx.beginPath(); ctx.arc(cx + fv.x * fr, cy + fv.y * fr, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.fillText('food', cx + fv.x * fr + 10, cy + fv.y * fr + 4);
+  // hive
+  ctx.fillStyle = C.text; ctx.fillRect(cx - 4, cy - 4, 8, 8);
+  ctx.fillText('hive', cx + 8, cy + 14);
+}
+
+function combPoint(p, angleDeg, cx, cy, scale) {
+  const a = angleDeg * Math.PI / 180;
+  // basis: run direction d = (sin a, -cos a) on screen; right vector r = (cos a, sin a)
+  return { x: cx + (p.x * Math.cos(a) + p.y * Math.sin(a)) * scale, y: cy + (p.x * Math.sin(a) - p.y * Math.cos(a)) * scale };
+}
+
+let animT = 0, lastTs = 0;
+function drawComb(ts) {
+  const enc = encode(state.bearing, state.sun, state.dist);
+  const cv = $('comb'), ctx = cv.getContext('2d'), W = cv.width, cx = W / 2, cy = W / 2;
+  ctx.clearRect(0, 0, W, W);
+  // gravity reference
+  ctx.strokeStyle = C.border; ctx.setLineDash([4, 5]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx, 18); ctx.lineTo(cx, W - 18); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = C.muted; ctx.font = '12px monospace';
+  ctx.fillText('up = toward the sun', cx + 10, 30);
+  ctx.fillText('gravity ↓', cx + 10, W - 24);
+  if (enc.danceType === 'round') {
+    // round dance: a simple circling bee, no directional run
+    const t = (ts / 900) % (Math.PI * 2), rr = 62;
+    ctx.strokeStyle = C.purple; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = C.amber;
+    ctx.beginPath(); ctx.arc(cx + rr * Math.cos(t), cy + rr * Math.sin(t), 7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.text; ctx.font = '14px monospace';
+    ctx.fillText('round dance — food is near,', cx - 118, cy - 92);
+    ctx.fillText('no direction given', cx - 88, cy - 72);
+    return;
+  }
+  const scale = 118, runLenPx = scale;
+  // full path, dim for returns, amber for waggle runs
+  for (const phase of ['return', 'waggle']) {
+    ctx.strokeStyle = phase === 'waggle' ? C.amber : '#3a3e55';
+    ctx.lineWidth = phase === 'waggle' ? 3 : 2;
+    ctx.beginPath(); let pen = false;
+    for (const p of PATH) {
+      if (p.phase !== phase) { pen = false; continue; }
+      const q = combPoint(p, enc.danceAngleDeg, cx, cy + 40, scale);
+      if (!pen) { ctx.moveTo(q.x, q.y); pen = true; } else ctx.lineTo(q.x, q.y);
+    }
+    ctx.stroke();
+  }
+  // bee: travel the path; waggle segment speed set by waggleMs (compressed x0.5, clamped)
+  const waggleDur = Math.min(2200, Math.max(350, enc.waggleMs * 0.55));
+  const returnDur = 620, circuit = waggleDur + returnDur, total = circuit * 2;
+  animT = (animT + (ts - lastTs)) % total; lastTs = ts;
+  const half = PATH.length / 2;
+  let idx, onWaggle;
+  const tt = animT % circuit;
+  if (tt < waggleDur) { const f = tt / waggleDur; idx = Math.floor(f * (half - 25)); onWaggle = true; }
+  else { const f = (tt - waggleDur) / returnDur; idx = (half - 25) + Math.floor(f * 24); onWaggle = false; }
+  if (animT >= circuit) idx += half - 1;
+  idx = Math.min(idx, PATH.length - 1);
+  const bp = PATH[Math.max(0, idx)];
+  const bq = combPoint(bp, enc.danceAngleDeg, cx, cy + 40, scale);
+  ctx.fillStyle = onWaggle ? C.red : C.cyan;
+  ctx.beginPath(); ctx.arc(bq.x, bq.y, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = C.text; ctx.font = '13px monospace';
+  ctx.fillText('waggle run ' + fmtDeg(enc.danceAngleDeg) + ' from vertical', 16, 28);
+  ctx.fillText('run lasts ' + Math.round(enc.waggleMs) + ' ms in the real dance', 16, W - 16);
+}
+
+function drawDiagram() {
+  const enc = encode(state.bearing, state.sun, state.dist);
+  const cv = $('diagram'), ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H); ctx.font = '13px monospace';
+  const cy = H / 2 + 16, lx = W * 0.26, rx = W * 0.74, R = 118;
+  ctx.fillStyle = C.muted; ctx.fillText('SKY — looking down', lx - 70, 30); ctx.fillText('COMB — looking at the wall', rx - 96, 30);
+  // sky side
+  ctx.strokeStyle = C.border; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(lx, cy, R, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = C.muted; ctx.fillText('N', lx - 3, cy - R - 8);
+  const sv = dirVec(state.sun), fv = dirVec(state.bearing);
+  ctx.strokeStyle = C.amber; ctx.fillStyle = C.amber; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(lx, cy); ctx.lineTo(lx + sv.x * R * 0.9, cy + sv.y * R * 0.9); ctx.stroke();
+  ctx.beginPath(); ctx.arc(lx + sv.x * R * 0.9, cy + sv.y * R * 0.9, 8, 0, Math.PI * 2); ctx.fill();
+  ctx.fillText('sun', lx + sv.x * R * 0.9 + 12, cy + sv.y * R * 0.9 + 4);
+  ctx.strokeStyle = C.green; ctx.fillStyle = C.green;
+  ctx.beginPath(); ctx.moveTo(lx, cy); ctx.lineTo(lx + fv.x * R * 0.9, cy + fv.y * R * 0.9); ctx.stroke();
+  ctx.beginPath(); ctx.arc(lx + fv.x * R * 0.9, cy + fv.y * R * 0.9, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillText('food', lx + fv.x * R * 0.9 + 10, cy + fv.y * R * 0.9 + 4);
+  ctx.fillStyle = C.text;
+  ctx.fillText('angle sun→food: ' + fmtDeg(wrap180(state.bearing - state.sun)), lx - 82, cy + R + 26);
+  // comb side
+  ctx.strokeStyle = C.border;
+  ctx.strokeRect(rx - R, cy - R, R * 2, R * 2);
+  ctx.setLineDash([4, 5]); ctx.beginPath(); ctx.moveTo(rx, cy - R); ctx.lineTo(rx, cy + R); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = C.muted; ctx.fillText('up', rx + 8, cy - R + 14);
+  if (enc.danceType === 'waggle') {
+    ctx.strokeStyle = '#3a3e55'; ctx.lineWidth = 2; ctx.beginPath();
+    PATH.forEach((p, i) => { const q = combPoint(p, enc.danceAngleDeg, rx, cy + 26, 74); i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); });
+    ctx.stroke();
+    ctx.strokeStyle = C.amber; ctx.lineWidth = 3; ctx.beginPath();
+    PATH.filter(p => p.phase === 'waggle').forEach((p, i) => { const q = combPoint(p, enc.danceAngleDeg, rx, cy + 26, 74); i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); });
+    ctx.stroke();
+    ctx.fillStyle = C.text;
+    ctx.fillText('angle up→run: ' + fmtDeg(enc.danceAngleDeg), rx - 76, cy + R + 26);
+  } else {
+    ctx.strokeStyle = C.purple; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(rx, cy, 44, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = C.text; ctx.fillText('round dance — no angle', rx - 76, cy + R + 26);
+  }
+  ctx.fillStyle = C.cyan; ctx.font = '15px monospace';
+  ctx.fillText('the same angle, two references', W / 2 - 128, H - 8);
+}
+
+function renderText() {
+  const enc = encode(state.bearing, state.sun, state.dist);
+  $('sunVal').textContent = Math.round(state.sun) + '°';
+  $('distVal').textContent = Math.round(state.dist) + ' m';
+  if (enc.danceType === 'round') {
+    $('encOut').innerHTML = 'food: bearing <b>' + Math.round(state.bearing) + '°</b> (' + compass(state.bearing) + '), <b>' + Math.round(state.dist) + ' m</b> out — under 50 m, so the bee does the <b>round dance</b>: "food is near, go out and search by smell." no angle, no duration to decode.';
+  } else {
+    $('encOut').innerHTML = 'food: bearing <b>' + Math.round(state.bearing) + '°</b> (' + compass(state.bearing) + '), <b>' + Math.round(state.dist) + ' m</b> out → dance: waggle run at <b>' + fmtDeg(enc.danceAngleDeg) + '</b> from vertical, lasting <b>' + Math.round(enc.waggleMs) + ' ms</b> (' + (enc.waggleMs / 1000).toFixed(2) + ' s). check: decoding that dance against sun ' + Math.round(state.sun) + '° gives back bearing ' + Math.round(decode(enc.danceAngleDeg, enc.waggleMs, state.sun).foodBearingDeg) + '°, ' + Math.round(decode(enc.danceAngleDeg, enc.waggleMs, state.sun).distanceM) + ' m.';
+  }
+  drawMap(); drawDiagram();
+}
+
+function renderDecode() {
+  const ang = +$('dAng').value, ms = +$('dMs').value, sun = +$('dSun').value;
+  $('dAngVal').textContent = fmtDeg(ang);
+  $('dMsVal').textContent = ms + ' ms';
+  $('dSunVal').textContent = sun + '°';
+  const dec = decode(ang, ms, sun);
+  $('decOut').innerHTML = 'a run at <b>' + fmtDeg(ang) + '</b> from vertical for <b>' + ms + ' ms</b>, with the sun at ' + sun + '°, reads as: food at bearing <b>' + Math.round(dec.foodBearingDeg) + '°</b> (' + compass(dec.foodBearingDeg) + '), <b>' + Math.round(dec.distanceM) + ' m</b> away (' + (dec.distanceM / 1000).toFixed(2) + ' km) — on this page\'s calibration; a different subspecies would read the same dance as a different distance.';
+}
+
+function frame(ts) { drawComb(ts || 0); requestAnimationFrame(frame); }
+
+$('sun').addEventListener('input', e => { state.sun = +e.target.value; renderText(); });
+$('dist').addEventListener('input', e => { state.dist = +e.target.value; renderText(); });
+$('presetNear').addEventListener('click', () => { state.dist = 30; $('dist').value = 30; renderText(); });
+$('presetFar').addEventListener('click', () => { state.dist = 2500; $('dist').value = 2500; renderText(); });
+for (const id of ['dAng', 'dMs', 'dSun']) $(id).addEventListener('input', renderDecode);
+
+let dragging = false;
+function mapPlace(e) {
+  const cv = $('map'), rect = cv.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * cv.width / rect.width - cv.width / 2;
+  const y = (e.clientY - rect.top) * cv.height / rect.height - cv.height / 2;
+  const R = cv.width / 2 - 26, r = Math.hypot(x, y);
+  state.bearing = wrap360(Math.atan2(x, -y) * 180 / Math.PI);
+  state.dist = Math.round(Math.min(r / R, 1) * 3000 / 10) * 10;
+  $('dist').value = state.dist;
+  renderText();
+}
+$('map').addEventListener('pointerdown', e => { dragging = true; mapPlace(e); });
+$('map').addEventListener('pointermove', e => { if (dragging) mapPlace(e); });
+window.addEventListener('pointerup', () => { dragging = false; });
+
+renderText(); renderDecode(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>

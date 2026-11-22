@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>the rainbow — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl button.on { border-color: #9ece6a; color: #9ece6a; }
+  .ctl input[type=range] { accent-color: #7dcfff; width: 260px; }
+  .ctl select { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 8px; font-family: monospace; font-size: 13px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  canvas { max-width: 100%; height: auto; display: block; }
+  .cols { display: flex; gap: 16px; flex-wrap: wrap; }
+  .cols > div { flex: 1 1 340px; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Sunlight goes into a raindrop, bounces off the back inside it, and comes back out. The drop bends the light, and it turns out almost every drop bends it back at nearly the same angle — about 42 degrees from the point exactly opposite the sun. So millions of drops all send their light back along the same ring, and that ring is the rainbow. Different colours bend slightly differently, so the ring smears into stripes.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">I wanted to know whether 42 degrees is a fact about the sky or a fact about arithmetic. It is arithmetic. I traced the ray through a spherical drop with nothing but Snell's law, plotted how much the ray turns against where it hits the drop, and the curve has a flat bottom — a place where the turning stops changing. Light piles up there. Every number on this page comes out of that one curve, computed live: both bows, the reversed colours in the second one, the dark gap between them, and the exact sun height at which the whole thing sinks out of sight.</p>
+</div>
+<div class="wrap">
+<h1>the rainbow</h1>
+<p class="sub">droplet ray geometry — Snell refraction, internal reflection, minimum deviation · 2026-11-21 · every angle below is computed on this page from the refractive indices in the table</p>
+
+<div class="card">
+  <div class="ctl">
+    <label>sun elevation <input type="range" id="sun" min="0" max="52" step="0.1" value="12"> <span id="sunVal">12.0°</span></label>
+  </div>
+  <canvas id="scene" width="1060" height="480"></canvas>
+  <div class="ro" id="sceneRo"></div>
+</div>
+
+<h2>one drop, one ray</h2>
+<p>A ray enters a spherical drop, refracts, reflects inside — once for the primary bow, twice for the secondary — and refracts out. Where it strikes the drop (the impact parameter, 0 at the centre, 1 at the edge) decides how much it turns in total. Slide it and watch the deviation: near the rainbow ray the exit angle barely moves even as the entry point does. That flat spot is the whole phenomenon.</p>
+<div class="card">
+  <div class="cols">
+    <div>
+      <canvas id="drop" width="500" height="360"></canvas>
+    </div>
+    <div>
+      <canvas id="curve" width="500" height="360"></canvas>
+    </div>
+  </div>
+  <div class="ctl">
+    <label>impact parameter <input type="range" id="impact" min="0" max="0.99" step="0.005" value="0.86"> <span id="impactVal">0.860</span></label>
+    <label>colour
+      <select id="colour">
+        <option value="0">red</option>
+        <option value="1">orange</option>
+        <option value="2" selected>yellow</option>
+        <option value="3">green</option>
+        <option value="4">blue</option>
+        <option value="5">violet</option>
+      </select>
+    </label>
+    <button id="k1" class="on">1 reflection (primary)</button>
+    <button id="k2">2 reflections (secondary)</button>
+    <button id="snap">snap to the rainbow ray</button>
+  </div>
+  <div class="ro" id="dropRo"></div>
+</div>
+
+<h2>the computed bows</h2>
+<p>Refractive indices are the OpenStax <i>University Physics Vol. 3</i> table for water. For each colour the page minimises the deviation numerically and reports the bow's angular radius from the antisolar point. Nothing in this table is typed in — it is the minimiser's output.</p>
+<table id="bowTable">
+  <tr><th class="l">colour</th><th>wavelength (nm)</th><th>index n</th><th>primary radius</th><th>primary min deviation</th><th>at incidence</th><th>secondary radius</th><th>secondary min deviation</th><th>at incidence</th></tr>
+</table>
+<p>The primary runs red-outside to violet-inside: 42.37° down to 40.79°. The secondary runs the other way — red at 50.37° on the inside, violet at 53.22° on the outside — because the extra reflection flips the order the colours fan out in. Between 42.37° and 50.37° neither ray family can send light: that gap, about 8 degrees wide, is Alexander's dark band, described by Alexander of Aphrodisias around AD 200.</p>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li>Deviation formula: with incidence angle i and refraction angle r from Snell's law (sin i = n · sin r), a ray with k internal reflections turns by D = 2(i − r) + k(180° − 2r). The rainbow angle is |180° − D| at the minimum of D. Cross-checked against Mungan's "Rainbows" (US Naval Academy) and the HyperPhysics rainbow pages: primary minimum deviation ≈138°, bow radius ≈42°; secondary ≈51°, colours reversed.</li>
+  <li>The reflection inside the drop is <b>not</b> total internal reflection. The rainbow ray hits the back surface at about 40° from the normal, below water's critical angle (≈48.8°), so most of the light actually leaves out the back at each encounter and only a fraction reflects. That loss is why the secondary bow — two encounters — is much fainter. This page draws no brightness numbers, because it does no Fresnel calculation.</li>
+  <li>The dark band is relatively dark, not black. Drops send non-minimum-deviation light inside the primary and outside the secondary, brightening both sides of the band; a minuscule amount of light reflected off the drops' outer surfaces also enters the band (Les Cowley, atoptics.co.uk).</li>
+  <li>"The bow vanishes above 42°" is a level-ground statement. The full bow is a circle around the antisolar point; from a mountain or an aircraft, with sunlit drops below you, the whole circle can be visible and the 42° sun limit does not apply the same way (Minnaert, <i>Light and Color in the Outdoors</i>).</li>
+  <li>Labelled aside — what ray optics cannot do: the thin extra arcs sometimes seen just inside the primary are supernumerary bows. They are interference between waves that leave a drop in the same direction by different paths (Young; Airy's wave theory, 1830s — Jackson, <i>Physics Reports</i> 320, 1999). The ray picture on this page predicts none of them and claims none of them.</li>
+  <li>The spectrum is continuous. Six wavelengths from the OpenStax table stand in for it; the real bow has no hard edges between colours.</li>
+  <li>A rainbow is not an object at a distance. It is a set of directions around your own antisolar point — the shadow of your head is its centre — so every observer sees a different one, made by different drops.</li>
+  <li>Sources: OpenStax, <i>University Physics Vol. 3</i>, §1.5 (indices of water); Mungan, "Rainbows", US Naval Academy, 1999; HyperPhysics rainbow pages (Georgia State); Millersville ESCI 340 Lesson 13 (Alexander's dark band); Nussenzveig, "The Theory of the Rainbow", <i>Scientific American</i>, 1977; Jackson, <i>Physics Reports</i> 320 (1999); Minnaert, <i>Light and Color in the Outdoors</i>; Cowley, atoptics.co.uk.</li>
+</ul>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const RAD = Math.PI / 180, DEG = 180 / Math.PI;
+const COLOURS = [
+  { name: 'red',    lambda: 660, n: 1.331, css: '#f7768e' },
+  { name: 'orange', lambda: 610, n: 1.332, css: '#ff9e64' },
+  { name: 'yellow', lambda: 580, n: 1.333, css: '#e0af68' },
+  { name: 'green',  lambda: 550, n: 1.335, css: '#9ece6a' },
+  { name: 'blue',   lambda: 470, n: 1.338, css: '#7dcfff' },
+  { name: 'violet', lambda: 410, n: 1.342, css: '#bb9af7' },
+];
+function refractionAngle(iDeg, n) { return Math.asin(Math.min(1, Math.sin(iDeg * RAD) / n)) * DEG; }
+function deviation(iDeg, n, k) { const r = refractionAngle(iDeg, n); return 2 * (iDeg - r) + k * (180 - 2 * r); }
+function rainbowAngle(n, k) {
+  let a = 0, b = 89.999; const gr = (Math.sqrt(5) - 1) / 2;
+  let c = b - gr * (b - a), d = a + gr * (b - a);
+  let fc = deviation(c, n, k), fd = deviation(d, n, k);
+  for (let it = 0; it < 200; it++) {
+    if (fc < fd) { b = d; d = c; fd = fc; c = b - gr * (b - a); fc = deviation(c, n, k); }
+    else { a = c; c = d; fc = fd; d = a + gr * (b - a); fd = deviation(d, n, k); }
+  }
+  const iOpt = (a + b) / 2, dMin = deviation(iOpt, n, k);
+  return { angle: Math.abs(180 - dMin), iOpt, dMin };
+}
+const BOWS = COLOURS.map(col => ({ ...col, primary: rainbowAngle(col.n, 1), secondary: rainbowAngle(col.n, 2) }));
+
+// ---- table ----
+{
+  const t = $('bowTable');
+  for (const r of BOWS) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td class="l" style="color:' + r.css + '">' + r.name + '</td><td>' + r.lambda + '</td><td>' +
+      r.n.toFixed(3) + '</td><td>' + r.primary.angle.toFixed(2) + '°</td><td>' + r.primary.dMin.toFixed(1) + '°</td><td>' +
+      r.primary.iOpt.toFixed(1) + '°</td><td>' + r.secondary.angle.toFixed(2) + '°</td><td>' + r.secondary.dMin.toFixed(1) +
+      '°</td><td>' + r.secondary.iOpt.toFixed(1) + '°</td>';
+    t.appendChild(tr);
+  }
+}
+
+// ---- scene ----
+function drawScene() {
+  const cv = $('scene'), ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height, horizon = 400, scale = 5.2;
+  const sun = +$('sun').value;
+  $('sunVal').textContent = sun.toFixed(1) + '°';
+  const cx = W / 2, cy = horizon + sun * scale; // antisolar point
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#10121d'; ctx.fillRect(0, 0, W, horizon);
+  ctx.fillStyle = '#0c1410'; ctx.fillRect(0, horizon, W, H - horizon);
+  // Alexander's dark band: annulus between primary red edge and secondary red edge
+  const rP = BOWS[0].primary.angle * scale, rS = BOWS[0].secondary.angle * scale;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, 0, W, horizon); ctx.clip();
+  ctx.beginPath(); ctx.arc(cx, cy, rS, 0, Math.PI * 2); ctx.arc(cx, cy, rP, 0, Math.PI * 2, true);
+  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fill();
+  ctx.restore();
+  // bows, clipped above the horizon
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, 0, W, horizon); ctx.clip();
+  ctx.lineWidth = 7;
+  for (const bow of ['secondary', 'primary']) {
+    for (const r of BOWS) {
+      const rad = r[bow].angle * scale, top = r[bow].angle - sun;
+      if (top <= 0) continue;
+      ctx.globalAlpha = bow === 'secondary' ? 0.45 * Math.min(1, top / 8 + 0.25) : Math.min(1, top / 8 + 0.25);
+      ctx.strokeStyle = r.css;
+      ctx.beginPath(); ctx.arc(cx, cy, rad, 0, Math.PI * 2); ctx.stroke();
+    }
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+  // horizon + antisolar point
+  ctx.strokeStyle = '#2a2d3e'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, horizon); ctx.lineTo(W, horizon); ctx.stroke();
+  ctx.fillStyle = '#787c99';
+  ctx.beginPath(); ctx.arc(cx, Math.min(cy, H - 6), 3, 0, Math.PI * 2); ctx.fill();
+  ctx.font = '12px monospace'; ctx.fillStyle = '#787c99';
+  ctx.fillText('antisolar point (' + sun.toFixed(1) + '° below horizon)', cx + 10, Math.min(cy, H - 10));
+  ctx.fillText('horizon', 10, horizon - 8);
+  if (BOWS[0].primary.angle - sun > 0) ctx.fillText("Alexander's dark band", cx + rP + 14, horizon - rP * 0.72);
+  const pTop = BOWS[0].primary.angle - sun, sTop = BOWS[BOWS.length - 1].secondary.angle - sun;
+  $('sceneRo').textContent =
+    'primary top: ' + (pTop > 0 ? pTop.toFixed(1) + '° above the horizon' : 'below the horizon — gone from level ground') +
+    ' · secondary top: ' + (sTop > 0 ? sTop.toFixed(1) + '° above the horizon' : 'below the horizon') +
+    ' · primary dies at sun ' + BOWS[0].primary.angle.toFixed(2) + '°, secondary red edge at ' + BOWS[0].secondary.angle.toFixed(2) + '°';
+}
+
+// ---- droplet + deviation curve ----
+let K = 1;
+function refractVec(dx, dy, nx, ny, eta) {
+  const cosI = -(dx * nx + dy * ny), sin2T = eta * eta * (1 - cosI * cosI);
+  if (sin2T > 1) return null;
+  const cosT = Math.sqrt(1 - sin2T), f = eta * cosI - cosT;
+  return [eta * dx + f * nx, eta * dy + f * ny];
+}
+function reflectVec(dx, dy, nx, ny) { const d = 2 * (dx * nx + dy * ny); return [dx - d * nx, dy - d * ny]; }
+function hitCircle(px, py, dx, dy) {
+  const bq = px * dx + py * dy, cq = px * px + py * py - 1, disc = bq * bq - cq;
+  if (disc < 0) return null;
+  const sq = Math.sqrt(disc); let t = -bq - sq;
+  if (t <= 1e-9) t = -bq + sq;
+  return t <= 1e-9 ? null : t;
+}
+function traceRay(b, n, k) {
+  let px = -3, py = b, dx = 1, dy = 0; const pts = [[px, py]];
+  let t = hitCircle(px, py, dx, dy); if (t === null) return pts;
+  px += dx * t; py += dy * t; pts.push([px, py]);
+  let v = refractVec(dx, dy, px, py, 1 / n); if (!v) return pts;
+  [dx, dy] = v;
+  for (let j = 0; j < k; j++) { t = hitCircle(px, py, dx, dy); px += dx * t; py += dy * t; pts.push([px, py]); [dx, dy] = reflectVec(dx, dy, px, py); }
+  t = hitCircle(px, py, dx, dy); px += dx * t; py += dy * t; pts.push([px, py]);
+  v = refractVec(dx, dy, -px, -py, n) || [dx, dy]; [dx, dy] = v;
+  pts.push([px + dx * 2.2, py + dy * 2.2]);
+  return pts;
+}
+function drawDrop() {
+  const col = COLOURS[+$('colour').value];
+  const b = +$('impact').value;
+  $('impactVal').textContent = b.toFixed(3);
+  const cv = $('drop'), ctx = cv.getContext('2d');
+  const cx = 250, cy = 180, R = 130;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.strokeStyle = '#7dcfff'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#787c99'; ctx.font = '12px monospace';
+  ctx.fillText('sunlight →', 8, cy - b * R - 6);
+  const pts = traceRay(b, col.n, K);
+  ctx.strokeStyle = col.css; ctx.lineWidth = 2; ctx.beginPath();
+  pts.forEach((p, i) => { const x = cx + p[0] * R, y = cy - p[1] * R; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+  ctx.stroke();
+  // deviation curve
+  const cv2 = $('curve'), c2 = cv2.getContext('2d');
+  c2.clearRect(0, 0, cv2.width, cv2.height);
+  const x0 = 45, x1 = 485, y0 = 320, y1 = 30;
+  let dLo = Infinity, dHi = -Infinity;
+  const ds = [];
+  for (let i = 0; i <= 90; i += 0.5) { const d = deviation(i, col.n, K); ds.push([i, d]); if (d < dLo) dLo = d; if (d > dHi) dHi = d; }
+  dLo = Math.floor(dLo - 4); dHi = Math.ceil(Math.min(dHi, dLo + 90));
+  const X = i => x0 + (x1 - x0) * i / 90, Y = d => y0 - (y0 - y1) * (d - dLo) / (dHi - dLo);
+  c2.strokeStyle = '#2a2d3e'; c2.beginPath(); c2.moveTo(x0, y1); c2.lineTo(x0, y0); c2.lineTo(x1, y0); c2.stroke();
+  c2.strokeStyle = col.css; c2.lineWidth = 2; c2.beginPath();
+  ds.forEach((p, i) => { i ? c2.lineTo(X(p[0]), Y(p[1])) : c2.moveTo(X(p[0]), Y(p[1])); });
+  c2.stroke();
+  const bow = K === 1 ? rainbowAngle(col.n, 1) : rainbowAngle(col.n, 2);
+  c2.fillStyle = '#9ece6a';
+  c2.beginPath(); c2.arc(X(bow.iOpt), Y(bow.dMin), 4, 0, Math.PI * 2); c2.fill();
+  const iNow = Math.asin(b) * DEG, dNow = deviation(iNow, col.n, K);
+  c2.fillStyle = '#c0caf5';
+  c2.beginPath(); c2.arc(X(iNow), Y(dNow), 4, 0, Math.PI * 2); c2.fill();
+  c2.fillStyle = '#787c99'; c2.font = '12px monospace';
+  c2.fillText('deviation D vs incidence i — ' + col.name + ', ' + K + ' reflection' + (K > 1 ? 's' : ''), x0, 16);
+  c2.fillText('green dot: minimum (the rainbow ray) · white dot: your ray', x0, y0 + 26);
+  $('dropRo').textContent = 'incidence ' + iNow.toFixed(1) + '° · deviation ' + dNow.toFixed(1) +
+    '° · bow angle |180° − D| = ' + Math.abs(180 - dNow).toFixed(2) + '° · minimum for ' + col.name +
+    ': D = ' + bow.dMin.toFixed(1) + '° at i = ' + bow.iOpt.toFixed(1) + '°, bow at ' + bow.angle.toFixed(2) + '°';
+}
+$('sun').addEventListener('input', drawScene);
+$('impact').addEventListener('input', drawDrop);
+$('colour').addEventListener('change', drawDrop);
+$('k1').addEventListener('click', () => { K = 1; $('k1').classList.add('on'); $('k2').classList.remove('on'); drawDrop(); });
+$('k2').addEventListener('click', () => { K = 2; $('k2').classList.add('on'); $('k1').classList.remove('on'); drawDrop(); });
+$('snap').addEventListener('click', () => {
+  const col = COLOURS[+$('colour').value];
+  const bow = K === 1 ? rainbowAngle(col.n, 1) : rainbowAngle(col.n, 2);
+  $('impact').value = Math.sin(bow.iOpt * RAD).toFixed(3);
+  drawDrop();
+});
+drawScene();
+drawDrop();
+</script>
+</body>
+</html>

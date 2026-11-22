@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>river meanders — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl input[type=text] { background: #0f1017; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 10px; font-family: monospace; font-size: 15px; width: 110px; letter-spacing: .2em; }
+  .ctl select { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 8px; font-family: monospace; font-size: 13px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  canvas { width: 100%; height: auto; display: block; border-radius: 6px; background: #10121c; }
+  .legend { font-size: 12px; color: #787c99; margin-top: 8px; }
+  .legend b.ero { color: #f7768e; font-weight: 400; }
+  .legend b.dep { color: #9ece6a; font-weight: 400; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">A river does not flow straight for long. Around every bend the water runs fastest on the outside, so it chews the outside bank away, and slowest on the inside, so it drops sand there. The bend grows and creeps downstream. Grow one bend far enough and its two ends nearly meet — then the river takes the shortcut, and the loop it leaves behind sits still as a crescent-shaped lake.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">I wanted to watch the textbook story actually happen, not just be told it. So the river below is one rule, applied over and over: each piece of bank migrates at a rate set by the bend's curvature, with the upstream lag the real theory uses. Nothing is scripted — the bends amplify, skew downstream, and cut themselves off on their own, and the counters underneath are measured live from the line on screen. On the default seed the first cutoff lands at step 116. I checked that before I believed it.</p>
+</div>
+<div class="wrap">
+<h1>river meanders</h1>
+<p class="sub">a stylised centreline migration model — curvature drives the bank, the bank moves the river · 2026-11-21 · model output, not field data</p>
+
+<div class="card">
+  <canvas id="cv" width="1080" height="520"></canvas>
+  <div class="ctl">
+    <button id="play">pause</button>
+    <label>speed
+      <select id="speed">
+        <option value="1">1 step</option>
+        <option value="3" selected>3 steps</option>
+        <option value="8">8 steps</option>
+      </select>
+    </label>
+    <label>seed <input type="text" id="seed" value="7" maxlength="6"></label>
+    <button id="reseed">reseed</button>
+    <label><input type="checkbox" id="proc"> show the process</label>
+  </div>
+  <div class="ro" id="ro"></div>
+  <div class="legend" id="legend" style="display:none"><b class="ero">— outer bank: erosion (cut bank)</b> &nbsp; <b class="dep">— inner bank: deposition (point bar)</b> &nbsp; shown where the model's curvature is strong</div>
+</div>
+
+<h2>the story the model is built from</h2>
+<p>Flow around a bend is not uniform. Helicoidal (secondary) flow sweeps surface water toward the outer bank, the outer edge runs fastest, and it erodes — that steep eroding side is the <b>cut bank</b>. The inner edge runs slowest and deposits sediment — the <b>point bar</b>. Erosion outside plus deposition inside moves the whole bend outward, and because the flow's response lags the bend, bends also migrate downstream. When two bends grow until the neck of land between them is cut through, flood flow takes the shortcut: a <b>cutoff</b>. The abandoned loop, its ends silted up, is an <b>oxbow lake</b>. (Definitions: U.S. National Park Service, "Fluvial Features — Meandering Stream"; LibreTexts, <i>The Physical Environment</i>, §18.5.)</p>
+<p>The model's one rule is a documented simplification of the Johannesson–Parker linear bend theory: migration rate at a point is proportional to an <b>upstream-weighted average of curvature</b> — curvature here, weighted by curvature just upstream, decaying over about 1.4 channel widths. The lag is what turns pure outward growth into growth plus downstream travel, and it is why loops eventually meet themselves.</p>
+
+<h2>numbers that come from measurements, not from this model</h2>
+<table>
+  <tr><th class="l">relation</th><th class="l">value</th><th class="l">source</th></tr>
+  <tr><td class="l">meander wavelength / channel width</td><td class="l">10–14×, average ≈ 11×</td><td class="l">Leopold &amp; Wolman (1957, USGS Prof. Paper 282-B; 1960, GSA Bulletin 71)</td></tr>
+  <tr><td class="l">bend radius of curvature / channel width</td><td class="l">≈ 2–3×</td><td class="l">Leopold &amp; Wolman (1960)</td></tr>
+  <tr><td class="l">sinuosity at/above which a stream is called meandering</td><td class="l">1.5</td><td class="l">Leopold &amp; Wolman's convention</td></tr>
+  <tr><td class="l">this model's starting wavelength</td><td class="l">11× its channel width</td><td class="l">set to the measured average above</td></tr>
+</table>
+<p>Sinuosity is channel length divided by the straight-line distance between the channel's ends. A straight river scores 1.</p>
+
+<h2>what the gated run did (seed 7, the default above)</h2>
+<table>
+  <tr><th class="l">measure</th><th>value</th></tr>
+  <tr><td class="l">starting sinuosity</td><td>1.043</td></tr>
+  <tr><td class="l">highest sinuosity before any cutoff</td><td>2.560</td></tr>
+  <tr><td class="l">first cutoff</td><td>step 116</td></tr>
+  <tr><td class="l">cutoffs by step 1,000</td><td>18</td></tr>
+  <tr><td class="l">sinuosity at step 1,000</td><td>3.780</td></tr>
+</table>
+<p>Read the shape of that, not just the numbers: sinuosity climbs as bends grow, then a cutoff chops a loop off and sinuosity drops in one step — then climbing resumes. That rise-and-chop cycle is the real behaviour the textbook describes, produced here by the one rule and nothing else.</p>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li><b>What this is not:</b> this is a stylised migration model implementing the textbook rule — migration rate grows with local curvature. It is <b>not</b> how real rivers are predicted. There is no discharge, no sediment transport, no bank material, no vegetation, and no flood hydrograph in it. Do not read a timescale off it: a "step" is not a year.</li>
+  <li>The model triggers a cutoff when two non-adjacent pieces of centreline come closer than the channel width. That stands in for a neck being cut through; it does not distinguish a neck cutoff from a chute cutoff, and real cutoffs usually need a flood this model does not have.</li>
+  <li>Oxbow lakes on the page fade slowly and stop at a floor so you can still find them. The fade is a drawing device — no timescale for real oxbow infilling is claimed.</li>
+  <li>Left running for thousands of steps the model river folds itself into shapes tighter than real floodplains usually allow (sinuosity past 7 by step 1,500 on seed 7). Real valleys, terraces and resistant banks stop that; this model has none. The interesting, honest regime is the first few hundred steps.</li>
+  <li>The gate behind this page: 13 checks on the core — sinuosity rises above its start before any cutoff, a cutoff occurs within a stated 1,000-step budget (it occurs at step 116), the channel stays a single finite polyline of the same point count after a cutoff, and the same seed reproduces the identical trajectory hash. All 13 passed.</li>
+  <li>Sources: Leopold &amp; Wolman, "River channel patterns" (USGS Professional Paper 282-B, 1957) and "River meanders" (GSA Bulletin 71, 1960); Johannesson &amp; Parker, "Linear theory of river meanders" (1989); NPS and LibreTexts pages named above. Full source trail is in the project research notes.</li>
+</ul>
+</div>
+<script>
+// ---- core (inlined copy of core.mjs; same logic, same constants) ----
+const TUNE = { nPoints: 161, x0: 40, x1: 960, width: 22, wavelength: 242, amplitude: 16, jitter: 3.5, erodibility: 2600, lagLength: 30, kernelSpan: 26, maxStep: 1.1, cutoffDist: 20, cutoffMinSep: 14, cutoffCooldown: 40, oxbowFade: 0.004 };
+function mulberry32(seed) { let a = seed >>> 0; return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function createRiver(seed, tune) {
+  tune = tune || TUNE;
+  const rand = mulberry32(seed);
+  const phase2 = rand() * Math.PI * 2, amp2 = tune.jitter * (0.5 + rand());
+  const pts = [];
+  for (let i = 0; i < tune.nPoints; i++) {
+    const f = i / (tune.nPoints - 1), x = tune.x0 + (tune.x1 - tune.x0) * f;
+    pts.push({ x: x, y: tune.amplitude * Math.sin((2 * Math.PI * (x - tune.x0)) / tune.wavelength) + amp2 * Math.sin((4 * Math.PI * (x - tune.x0)) / tune.wavelength + phase2) });
+  }
+  return { points: pts, width: tune.width, step: 0, cutoffs: 0, oxbows: [], cooldown: 0, seed: seed, tune: tune, startSinuosity: null, lastEff: null };
+}
+function polylineLength(pts) { let L = 0; for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y); return L; }
+function sinuosity(pts) { const a = pts[0], b = pts[pts.length - 1]; const v = Math.hypot(b.x - a.x, b.y - a.y); return v > 0 ? polylineLength(pts) / v : NaN; }
+function curvatures(pts) {
+  const n = pts.length, k = new Array(n).fill(0);
+  for (let i = 1; i < n - 1; i++) {
+    const ax = pts[i].x - pts[i - 1].x, ay = pts[i].y - pts[i - 1].y, bx = pts[i + 1].x - pts[i].x, by = pts[i + 1].y - pts[i].y;
+    const la = Math.hypot(ax, ay), lb = Math.hypot(bx, by);
+    if (la === 0 || lb === 0) continue;
+    k[i] = Math.atan2((ax * by - ay * bx) / (la * lb), (ax * bx + ay * by) / (la * lb)) / ((la + lb) / 2);
+  }
+  k[0] = k[1]; k[n - 1] = k[n - 2]; return k;
+}
+function resample(pts, n) {
+  const total = polylineLength(pts), out = [{ x: pts[0].x, y: pts[0].y }];
+  let seg = 1, acc = 0;
+  for (let i = 1; i < n - 1; i++) {
+    const target = (total * i) / (n - 1);
+    while (seg < pts.length - 1) { const d = Math.hypot(pts[seg].x - pts[seg - 1].x, pts[seg].y - pts[seg - 1].y); if (acc + d >= target) break; acc += d; seg++; }
+    const d = Math.hypot(pts[seg].x - pts[seg - 1].x, pts[seg].y - pts[seg - 1].y), f = d > 0 ? (target - acc) / d : 0;
+    out.push({ x: pts[seg - 1].x + (pts[seg].x - pts[seg - 1].x) * f, y: pts[seg - 1].y + (pts[seg].y - pts[seg - 1].y) * f });
+  }
+  out.push({ x: pts[pts.length - 1].x, y: pts[pts.length - 1].y }); return out;
+}
+function findNeck(pts, tune) {
+  let best = null;
+  for (let i = 2; i < pts.length - 2; i++) for (let j = i + tune.cutoffMinSep; j < pts.length - 2; j++) {
+    const d = Math.hypot(pts[j].x - pts[i].x, pts[j].y - pts[i].y);
+    if (d < tune.cutoffDist && (!best || d < best.d)) best = { i: i, j: j, d: d };
+  }
+  return best;
+}
+function migrate(state) {
+  const tune = state.tune || TUNE, pts = state.points, n = pts.length;
+  if (state.startSinuosity === null) state.startSinuosity = sinuosity(pts);
+  const k = curvatures(pts), ds = polylineLength(pts) / (n - 1), eff = new Array(n).fill(0);
+  for (let i = 0; i < n; i++) { let sum = 0, wsum = 0; for (let j = 0; j <= tune.kernelSpan && i - j >= 0; j++) { const w = Math.exp((-j * ds) / tune.lagLength); sum += w * k[i - j]; wsum += w; } eff[i] = sum / wsum; }
+  state.lastEff = eff;
+  const moved = pts.map(function (p, i) {
+    if (i === 0 || i === n - 1) return { x: p.x, y: p.y };
+    const tx = pts[Math.min(n - 1, i + 1)].x - pts[Math.max(0, i - 1)].x, ty = pts[Math.min(n - 1, i + 1)].y - pts[Math.max(0, i - 1)].y, tl = Math.hypot(tx, ty) || 1;
+    let v = -tune.erodibility * eff[i];
+    if (v > tune.maxStep) v = tune.maxStep; if (v < -tune.maxStep) v = -tune.maxStep;
+    const damp = Math.sin((Math.PI * i) / (n - 1));
+    return { x: p.x + (-ty / tl) * v * damp, y: p.y + (tx / tl) * v * damp };
+  });
+  state.points = resample(moved, n); state.step++;
+  if (state.cooldown > 0) state.cooldown--;
+  for (const ox of state.oxbows) ox.opacity = Math.max(0.12, ox.opacity - tune.oxbowFade);
+  if (state.cooldown === 0) {
+    const neck = findNeck(state.points, tune);
+    if (neck) {
+      const i = neck.i, j = neck.j, loop = state.points.slice(i, j + 1);
+      const mid = { x: (state.points[i].x + state.points[j].x) / 2, y: (state.points[i].y + state.points[j].y) / 2 };
+      const joined = state.points.slice(0, i + 1).concat([mid], state.points.slice(j));
+      state.oxbows.push({ points: loop, opacity: 1, bornStep: state.step });
+      state.points = resample(joined, n); state.cutoffs++; state.cooldown = tune.cutoffCooldown;
+    }
+  }
+  return state;
+}
+// ---- presentation ----
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+let river = createRiver(7), playing = true, yRange = 120;
+function view() {
+  let mn = 1e9, mx = -1e9;
+  for (const p of river.points) { mn = Math.min(mn, p.y); mx = Math.max(mx, p.y); }
+  for (const ox of river.oxbows) for (const p of ox.points) { mn = Math.min(mn, p.y); mx = Math.max(mx, p.y); }
+  yRange = Math.max(yRange, (mx - mn) / 2 + 30);
+  const s = Math.min(cv.width / 1040, cv.height / (2 * yRange));
+  return { s: s, cx: cv.width / 2, cy: cv.height / 2, ymid: (mn + mx) / 2 };
+}
+function M(v, p) { return [v.cx + (p.x - 500) * v.s, v.cy + (p.y - v.ymid) * v.s]; }
+function trace(v, pts) { ctx.beginPath(); pts.forEach((p, i) => { const q = M(v, p); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }); }
+function draw() {
+  const v = view();
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  for (const ox of river.oxbows) {
+    ctx.globalAlpha = ox.opacity * 0.55; ctx.strokeStyle = '#5b7ba6'; ctx.lineWidth = river.width * v.s; trace(v, ox.points); ctx.stroke();
+    ctx.globalAlpha = ox.opacity * 0.8; ctx.strokeStyle = '#3d597a'; ctx.lineWidth = Math.max(2, river.width * v.s * 0.55); trace(v, ox.points); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = '#7dcfff'; ctx.lineWidth = river.width * v.s + 3; trace(v, river.points); ctx.stroke();
+  ctx.strokeStyle = '#26547c'; ctx.lineWidth = river.width * v.s; trace(v, river.points); ctx.stroke();
+  ctx.strokeStyle = '#408cc0'; ctx.lineWidth = Math.max(2, river.width * v.s * 0.5); trace(v, river.points); ctx.stroke();
+  if ($('proc').checked && river.lastEff) {
+    // Centre of curvature sits along sign(eff) x left-normal; the outer
+    // (eroding) bank is the opposite side, the inner (depositing) bank
+    // is the centre-of-curvature side.
+    const pts = river.points, eff = river.lastEff, off = river.width / 2 + 3;
+    for (const which of ['outer', 'inner']) {
+      ctx.strokeStyle = which === 'outer' ? '#f7768e' : '#9ece6a'; ctx.lineWidth = 2.5; ctx.beginPath(); let pen = false;
+      for (let i = 1; i < pts.length - 1; i++) {
+        if (Math.abs(eff[i]) < 0.004) { pen = false; continue; }
+        const dir = (which === 'outer' ? -1 : 1) * Math.sign(eff[i]);
+        const tx = pts[i + 1].x - pts[i - 1].x, ty = pts[i + 1].y - pts[i - 1].y, tl = Math.hypot(tx, ty) || 1;
+        const q = M(v, { x: pts[i].x + (-ty / tl) * off * dir, y: pts[i].y + (tx / tl) * off * dir });
+        pen ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); pen = true;
+      }
+      ctx.stroke();
+    }
+  }
+  $('ro').textContent = 'step ' + river.step + ' · sinuosity ' + sinuosity(river.points).toFixed(3) + ' · cutoffs ' + river.cutoffs + ' · oxbow lakes ' + river.oxbows.length + ' · seed ' + river.seed;
+}
+function frame() {
+  if (playing) { const n = +$('speed').value; for (let i = 0; i < n; i++) migrate(river); }
+  draw();
+  requestAnimationFrame(frame);
+}
+$('play').addEventListener('click', () => { playing = !playing; $('play').textContent = playing ? 'pause' : 'play'; });
+$('reseed').addEventListener('click', () => { const sd = parseInt($('seed').value.replace(/\D/g, ''), 10); river = createRiver(isNaN(sd) ? 7 : sd); yRange = 120; });
+$('proc').addEventListener('change', () => { $('legend').style.display = $('proc').checked ? 'block' : 'none'; });
+draw();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

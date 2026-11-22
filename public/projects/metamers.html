@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>metamers — 2026-11-21</title>
+<style>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl input[type=range] { accent-color: #7dcfff; width: 110px; }
+  .ctl select { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 8px; font-family: monospace; font-size: 13px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  .warn { color: #f7768e; font-size: 13px; margin-top: 6px; min-height: 18px; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  td.l, th.l { text-align: left; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  canvas.spec { background: #0f1017; border: 1px solid #2a2d3e; border-radius: 8px; width: 100%; max-width: 520px; height: 180px; cursor: crosshair; touch-action: none; }
+  .cols { display: flex; gap: 16px; flex-wrap: wrap; }
+  .col { flex: 1 1 480px; }
+  .swatch { height: 64px; border: 1px solid #2a2d3e; border-radius: 8px; margin-top: 10px; }
+  .bump { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #787c99; margin-top: 6px; flex-wrap: wrap; }
+  .bigsw { height: 96px; border: 1px solid #2a2d3e; border-radius: 8px; }
+</style>
+</head>
+<body>
+<div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Your eye doesn't see the whole rainbow recipe of a light — it only takes three measurements. So two lights with completely different recipes can give the same three measurements, and then they look exactly the same colour. Different recipe, same taste. Those look-alike lights are called metamers, and it's the only reason a screen with just three colours of lamp can fool you into seeing every colour.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">I wanted to watch the collapse happen. A spectrum here has 81 numbers; a colour has 3. That 81-to-3 squeeze is done with the real CIE 1931 colour-matching functions, downloaded as a published table, not invented. The part I like: give the page a smooth, broad spectrum, and it will build you a completely different light — three thin spikes — that the standard observer cannot tell apart, and it prints the difference as a number, about 10<sup>−16</sup>. Not "looks close." The same, to machine precision, with a wildly different spectrum.</p>
+</div>
+<div class="wrap">
+<h1>metamers</h1>
+<p class="sub">different spectra, same colour — CIE 1931 colour-matching functions, 380–780 nm at 5 nm steps · 2026-11-21 · all math runs locally in this page</p>
+
+<p>A spectrum on this page is the light itself: relative power in each of 81 wavelength bins. Its colour is three integrals — the spectrum times each of the CIE 1931 colour-matching functions x̄, ȳ, z̄, summed. Drag on a spectrum to paint it, use the preset buttons, or build one from three gaussian bumps. The swatch updates live.</p>
+
+<canvas id="cmfchart" width="1060" height="150" style="width:100%;max-width:1060px;height:150px;background:#0f1017;border:1px solid #2a2d3e;border-radius:8px;"></canvas>
+<p class="sub" style="margin-top:6px;">the three colour-matching functions: <span style="color:#f7768e;">x̄</span> · <span style="color:#9ece6a;">ȳ</span> · <span style="color:#7dcfff;">z̄</span> — every colour below is these three curves doing the squeezing.</p>
+
+<div class="cols">
+  <div class="col"><div class="card">
+    <b>spectrum A</b>
+    <canvas class="spec" id="cvA" width="520" height="180"></canvas>
+    <div class="ctl">
+      <button data-preset="A:flat">flat</button><button data-preset="A:warm">warm</button><button data-preset="A:cool">cool</button><button data-preset="A:spiky">spiky</button><button data-preset="A:black">black</button>
+    </div>
+    <div id="bumpsA"></div>
+    <div class="swatch" id="swA"></div>
+    <div class="ro" id="roA"></div>
+    <div class="warn" id="warnA"></div>
+  </div></div>
+  <div class="col"><div class="card">
+    <b>spectrum B</b>
+    <canvas class="spec" id="cvB" width="520" height="180"></canvas>
+    <div class="ctl">
+      <button data-preset="B:flat">flat</button><button data-preset="B:warm">warm</button><button data-preset="B:cool">cool</button><button data-preset="B:spiky">spiky</button><button data-preset="B:black">black</button>
+    </div>
+    <div id="bumpsB"></div>
+    <div class="swatch" id="swB"></div>
+    <div class="ro" id="roB"></div>
+    <div class="warn" id="warnB"></div>
+  </div></div>
+</div>
+
+<div class="card">
+  <b>the match-it challenge</b>
+  <p>Below is a target colour. Its spectrum is a smooth curve, and it stays hidden. Press the button and the page builds a <i>different</i> spectrum — three narrow spikes, amplitudes solved exactly against the colour-matching functions — loads it into spectrum B, and prints the mismatch as a number.</p>
+  <div class="cols">
+    <div class="col"><div class="bigsw" id="swT"></div><div class="ro" id="roT"></div></div>
+    <div class="col">
+      <div class="ctl"><button id="newtarget">new target</button><button id="construct">construct a metamer</button></div>
+      <div class="ro" id="roM"></div>
+      <table id="spiketab" style="display:none;">
+        <tr><th class="l">spike (nm)</th><th>amplitude</th></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<h2>how the metamer is built</h2>
+<p>Three spikes have three unknown amplitudes, and a colour match is three equations (X, Y, Z) — so the page searches triples of wavelengths on a 10 nm grid from 400 to 700 nm, solves the 3×3 linear system for each triple exactly (the square case of least squares), and keeps the all-nonnegative solution with the smallest total amplitude. The result is not tuned until it looks right; it is solved. In the offline test gate, five different target colours all matched with ΔXYZ below 2×10<sup>−16</sup> while the spectra differed by an L2 distance of 10–15 (the spectra themselves have L2 norms around 5–9, so the difference is larger than the thing itself).</p>
+
+<h2>notes</h2>
+<ul class="notes">
+  <li>Data: CIE 1931 2° colour-matching functions from the Colour &amp; Vision Research Laboratory (CVRL), file <i>ciexyz31.csv</i>, 5 nm steps; this page embeds the 380–780 nm slice (81 rows). cvrl.org was unreachable from my machine, so the identical file came from the University of Ottawa's mirror of the same table; I verified ȳ(555 nm) = 1 exactly and that the three column sums agree to ~0.03% before trusting it.</li>
+  <li>Convention, stated precisely: a spectrum here <i>is</i> the light — relative spectral power per bin. There is no separate illuminant and no reflecting object. XYZ = Σ S·(x̄, ȳ, z̄) / Σ ȳ, so a flat spectrum gives Y = 1 and X ≈ Z ≈ 1.</li>
+  <li>XYZ → sRGB uses the IEC 61966-2-1 matrix for the D65 white point, in the form published by Bruce Lindbloom, then the sRGB gamma curve. The gate checks that the D65 white point (0.95047, 1, 1.08883) converts to linear sRGB ≈ (1, 1, 1).</li>
+  <li>Out of gamut is flagged, not hidden: when a computed linear sRGB channel leaves [0, 1], the page says so under the swatch. The swatch colour itself is then the clipped display value — your screen physically cannot show the real colour.</li>
+  <li>The match is exact only for the CIE 1931 standard observer — an average built from a small group of 1920s observers, known to be off at short wavelengths (that is why the Judd and Judd–Vos corrections exist). Real observers vary; a metamer for the standard observer can be a visible mismatch for you.</li>
+  <li>Metamerism here is under this page's single fixed convention. Change the illuminant in the real world — daylight to tungsten — and two spectra that matched can split apart. Nothing on this page models that.</li>
+  <li>The spike spectra are solutions to a linear system on a 5 nm grid, not a recipe for a buildable lamp.</li>
+</ul>
+</div>
+<script>
+// metamers core — pure logic, no DOM. CIE 1931 2-degree colour-matching functions,
+// 380-780 nm at 5 nm steps (81 rows), from CVRL file ciexyz31.csv (see RESEARCH.md).
+const CMF = [
+  [380,0.001368,0.000039,0.006450],
+  [385,0.002236,0.000064,0.010550],
+  [390,0.004243,0.000120,0.020050],
+  [395,0.007650,0.000217,0.036210],
+  [400,0.014310,0.000396,0.067850],
+  [405,0.023190,0.000640,0.110200],
+  [410,0.043510,0.001210,0.207400],
+  [415,0.077630,0.002180,0.371300],
+  [420,0.134380,0.004000,0.645600],
+  [425,0.214770,0.007300,1.039050],
+  [430,0.283900,0.011600,1.385600],
+  [435,0.328500,0.016840,1.622960],
+  [440,0.348280,0.023000,1.747060],
+  [445,0.348060,0.029800,1.782600],
+  [450,0.336200,0.038000,1.772110],
+  [455,0.318700,0.048000,1.744100],
+  [460,0.290800,0.060000,1.669200],
+  [465,0.251100,0.073900,1.528100],
+  [470,0.195360,0.090980,1.287640],
+  [475,0.142100,0.112600,1.041900],
+  [480,0.095640,0.139020,0.812950],
+  [485,0.057950,0.169300,0.616200],
+  [490,0.032010,0.208020,0.465180],
+  [495,0.014700,0.258600,0.353300],
+  [500,0.004900,0.323000,0.272000],
+  [505,0.002400,0.407300,0.212300],
+  [510,0.009300,0.503000,0.158200],
+  [515,0.029100,0.608200,0.111700],
+  [520,0.063270,0.710000,0.078250],
+  [525,0.109600,0.793200,0.057250],
+  [530,0.165500,0.862000,0.042160],
+  [535,0.225750,0.914850,0.029840],
+  [540,0.290400,0.954000,0.020300],
+  [545,0.359700,0.980300,0.013400],
+  [550,0.433450,0.994950,0.008750],
+  [555,0.512050,1.000000,0.005750],
+  [560,0.594500,0.995000,0.003900],
+  [565,0.678400,0.978600,0.002750],
+  [570,0.762100,0.952000,0.002100],
+  [575,0.842500,0.915400,0.001800],
+  [580,0.916300,0.870000,0.001650],
+  [585,0.978600,0.816300,0.001400],
+  [590,1.026300,0.757000,0.001100],
+  [595,1.056700,0.694900,0.001000],
+  [600,1.062200,0.631000,0.000800],
+  [605,1.045600,0.566800,0.000600],
+  [610,1.002600,0.503000,0.000340],
+  [615,0.938400,0.441200,0.000240],
+  [620,0.854450,0.381000,0.000190],
+  [625,0.751400,0.321000,0.000100],
+  [630,0.642400,0.265000,0.000050],
+  [635,0.541900,0.217000,0.000030],
+  [640,0.447900,0.175000,0.000020],
+  [645,0.360800,0.138200,0.000010],
+  [650,0.283500,0.107000,0.000000],
+  [655,0.218700,0.081600,0.000000],
+  [660,0.164900,0.061000,0.000000],
+  [665,0.121200,0.044580,0.000000],
+  [670,0.087400,0.032000,0.000000],
+  [675,0.063600,0.023200,0.000000],
+  [680,0.046770,0.017000,0.000000],
+  [685,0.032900,0.011920,0.000000],
+  [690,0.022700,0.008210,0.000000],
+  [695,0.015840,0.005723,0.000000],
+  [700,0.011359,0.004102,0.000000],
+  [705,0.008111,0.002929,0.000000],
+  [710,0.005790,0.002091,0.000000],
+  [715,0.004106,0.001484,0.000000],
+  [720,0.002899,0.001047,0.000000],
+  [725,0.002049,0.000740,0.000000],
+  [730,0.001440,0.000520,0.000000],
+  [735,0.001000,0.000361,0.000000],
+  [740,0.000690,0.000249,0.000000],
+  [745,0.000476,0.000172,0.000000],
+  [750,0.000332,0.000120,0.000000],
+  [755,0.000235,0.000085,0.000000],
+  [760,0.000166,0.000060,0.000000],
+  [765,0.000117,0.000042,0.000000],
+  [770,0.000083,0.000030,0.000000],
+  [775,0.000059,0.000021,0.000000],
+  [780,0.000042,0.000015,0.000000],
+];
+const WL0 = 380, WL1 = 780, STEP = 5, N = 81;
+// Normalisation: k = 1 / sum(ybar) so a flat spectrum S=1 gives Y = 1 exactly and
+// X, Z within ~0.1% of 1 (the three CMF column sums are nearly equal by construction).
+const SUMY = CMF.reduce((a, r) => a + r[2], 0);
+function spectrumToXYZ(s) {
+  let X = 0, Y = 0, Z = 0;
+  for (let i = 0; i < N; i++) { const v = s[i] || 0; X += v * CMF[i][1]; Y += v * CMF[i][2]; Z += v * CMF[i][3]; }
+  return [X / SUMY, Y / SUMY, Z / SUMY];
+}
+// XYZ (D65, Y-white normalised) -> linear sRGB. Matrix: IEC 61966-2-1, as published
+// by Bruce Lindbloom (brucelindbloom.com), D65 reference white.
+const XYZ2LIN = [
+  [ 3.2404542, -1.5371385, -0.4985314],
+  [-0.9692660,  1.8760108,  0.0415560],
+  [ 0.0556434, -0.2040259,  1.0572252],
+];
+const D65 = [0.95047, 1.0, 1.08883];
+function xyzToLinearSrgb(xyz) {
+  return XYZ2LIN.map(r => r[0] * xyz[0] + r[1] * xyz[1] + r[2] * xyz[2]);
+}
+function gamma(c) { return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055; }
+function xyzToSrgb(xyz) {
+  const lin = xyzToLinearSrgb(xyz);
+  const out = lin.map(gamma);
+  const gamut = lin.every(c => c >= -1e-9 && c <= 1 + 1e-9);
+  return { lin, srgb: out, inGamut: gamut };
+}
+function gaussianSpectrum(bumps) {
+  const s = new Array(N).fill(0);
+  for (let i = 0; i < N; i++) {
+    const wl = WL0 + i * STEP;
+    for (const b of bumps) s[i] += b.h * Math.exp(-((wl - b.c) ** 2) / (2 * b.w * b.w));
+  }
+  return s;
+}
+function solve3(M, v) { // M: 3 cols as [c0,c1,c2] each [x,y,z]; Gaussian elimination
+  const a = [[M[0][0], M[1][0], M[2][0], v[0]], [M[0][1], M[1][1], M[2][1], v[1]], [M[0][2], M[1][2], M[2][2], v[2]]];
+  for (let c = 0; c < 3; c++) {
+    let p = c; for (let r = c + 1; r < 3; r++) if (Math.abs(a[r][c]) > Math.abs(a[p][c])) p = r;
+    if (Math.abs(a[p][c]) < 1e-12) return null;
+    [a[c], a[p]] = [a[p], a[c]];
+    for (let r = 0; r < 3; r++) if (r !== c) { const f = a[r][c] / a[c][c]; for (let k = c; k < 4; k++) a[r][k] -= f * a[c][k]; }
+  }
+  return [a[0][3] / a[0][0], a[1][3] / a[1][1], a[2][3] / a[2][2]];
+}
+// findMetamer: search wavelength triples (10 nm grid), solve the 3x3 system exactly
+// (least-squares-exact for 3 unknowns / 3 equations), keep the all-nonnegative solution
+// whose spikes are narrowest in total amplitude; returns a 3-spike spectrum.
+function findMetamer(targetXYZ) {
+  let best = null;
+  const idx = []; for (let wl = 400; wl <= 700; wl += 10) idx.push((wl - WL0) / STEP);
+  for (let a = 0; a < idx.length; a++) for (let b = a + 1; b < idx.length; b++) for (let c = b + 1; c < idx.length; c++) {
+    const cols = [idx[a], idx[b], idx[c]].map(i => [CMF[i][1] / SUMY, CMF[i][2] / SUMY, CMF[i][3] / SUMY]);
+    const sol = solve3(cols, targetXYZ);
+    if (!sol || sol.some(v => v < 0)) continue;
+    const cost = sol.reduce((x, y) => x + y, 0);
+    if (!best || cost < best.cost) best = { cost, idx: [idx[a], idx[b], idx[c]], amps: sol };
+  }
+  if (!best) return null;
+  const s = new Array(N).fill(0);
+  best.idx.forEach((ix, k) => { s[ix] = best.amps[k]; });
+  return { spectrum: s, spikeIdx: best.idx, amps: best.amps, xyz: spectrumToXYZ(s) };
+}
+function l2(a, b) { let t = 0; for (let i = 0; i < N; i++) t += (a[i] - b[i]) ** 2; return Math.sqrt(t); }
+function deltaXYZ(a, b) { return Math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2); }
+
+const $ = id => document.getElementById(id);
+const clamp01 = v => Math.min(1, Math.max(0, v));
+function hexOf(srgb) { return '#' + srgb.map(v => Math.round(clamp01(v) * 255).toString(16).padStart(2, '0')).join(''); }
+const PRESETS = {
+  flat: () => new Array(N).fill(0.8),
+  warm: () => gaussianSpectrum([{ c: 610, w: 55, h: 1.1 }, { c: 520, w: 40, h: 0.35 }]),
+  cool: () => gaussianSpectrum([{ c: 465, w: 45, h: 1.1 }, { c: 540, w: 35, h: 0.4 }]),
+  spiky: () => { const s = new Array(N).fill(0); s[(450 - 380) / 5] = 1.4; s[(530 - 380) / 5] = 1.2; s[(630 - 380) / 5] = 1.3; return s; },
+  black: () => new Array(N).fill(0),
+};
+const editors = {};
+function makeEditor(key, cvId, swId, roId, warnId, bumpsId, init) {
+  const ed = { spec: init.slice(), bumps: [{ c: 560, w: 40, h: 1 }, { c: 470, w: 30, h: 0 }, { c: 640, w: 30, h: 0 }] };
+  editors[key] = ed;
+  const cv = $(cvId), ctx = cv.getContext('2d');
+  const bw = $(bumpsId);
+  ed.bumps.forEach((b, i) => {
+    const row = document.createElement('div'); row.className = 'bump';
+    row.innerHTML = `bump ${i + 1} centre <input type="range" min="400" max="700" step="5" value="${b.c}"> width <input type="range" min="5" max="100" step="1" value="${b.w}"> height <input type="range" min="0" max="1.5" step="0.05" value="${b.h}">`;
+    const [ci, wi, hi] = row.querySelectorAll('input');
+    const upd = () => { b.c = +ci.value; b.w = +wi.value; b.h = +hi.value; ed.spec = gaussianSpectrum(ed.bumps); refresh(); };
+    [ci, wi, hi].forEach(x => x.addEventListener('input', upd));
+    bw.appendChild(row);
+  });
+  let painting = false;
+  const paint = e => {
+    const r = cv.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    const i = Math.max(0, Math.min(N - 1, Math.floor(x * N)));
+    ed.spec[i] = Math.max(0, Math.min(2, (1 - y) * 2));
+    refresh();
+  };
+  cv.addEventListener('pointerdown', e => { painting = true; cv.setPointerCapture(e.pointerId); paint(e); });
+  cv.addEventListener('pointermove', e => { if (painting) paint(e); });
+  cv.addEventListener('pointerup', () => { painting = false; });
+  function refresh() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.strokeStyle = '#2a2d3e'; ctx.beginPath(); ctx.moveTo(0, cv.height - 1); ctx.lineTo(cv.width, cv.height - 1); ctx.stroke();
+    ctx.strokeStyle = key === 'A' ? '#7dcfff' : '#bb9af7'; ctx.lineWidth = 2; ctx.beginPath();
+    ed.spec.forEach((v, i) => { const x = i / (N - 1) * cv.width, y = cv.height - clamp01(v / 2) * (cv.height - 8) - 1; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.stroke(); ctx.lineWidth = 1;
+    ctx.fillStyle = '#787c99'; ctx.font = '11px monospace';
+    ctx.fillText('380', 4, cv.height - 6); ctx.fillText('780 nm', cv.width - 48, cv.height - 6);
+    const xyz = spectrumToXYZ(ed.spec);
+    const { lin, srgb, inGamut } = xyzToSrgb(xyz);
+    $(swId).style.background = hexOf(srgb);
+    $(roId).textContent = `XYZ (${xyz.map(v => v.toFixed(3)).join(', ')}) · sRGB ${hexOf(srgb)}`;
+    $(warnId).textContent = inGamut ? '' : `out of sRGB gamut — linear RGB (${lin.map(v => v.toFixed(2)).join(', ')}); the swatch is clipped, not the real colour`;
+    ed.xyz = xyz;
+  }
+  ed.refresh = refresh;
+  refresh();
+  return ed;
+}
+makeEditor('A', 'cvA', 'swA', 'roA', 'warnA', 'bumpsA', gaussianSpectrum([{ c: 560, w: 40, h: 1 }]));
+makeEditor('B', 'cvB', 'swB', 'roB', 'warnB', 'bumpsB', PRESETS.spiky());
+document.querySelectorAll('[data-preset]').forEach(btn => btn.addEventListener('click', () => {
+  const [k, p] = btn.dataset.preset.split(':');
+  editors[k].spec = PRESETS[p](); editors[k].refresh();
+}));
+// CMF chart
+(() => {
+  const cv = $('cmfchart'), ctx = cv.getContext('2d');
+  const cols = ['#f7768e', '#9ece6a', '#7dcfff'];
+  for (let c = 1; c <= 3; c++) {
+    ctx.strokeStyle = cols[c - 1]; ctx.lineWidth = 2; ctx.beginPath();
+    CMF.forEach((r, i) => { const x = i / (N - 1) * cv.width, y = cv.height - (r[c] / 1.9) * (cv.height - 10) - 2; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.stroke();
+  }
+  ctx.lineWidth = 1; ctx.fillStyle = '#787c99'; ctx.font = '11px monospace'; ctx.fillText('380 nm', 4, cv.height - 6); ctx.fillText('780 nm', cv.width - 48, cv.height - 6);
+})();
+// challenge
+let target = null;
+function newTarget() {
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const bumps = [{ c: rnd(440, 660), w: rnd(25, 60), h: rnd(0.6, 1.1) }, { c: rnd(420, 680), w: rnd(20, 50), h: rnd(0.2, 0.7) }];
+  const spec = gaussianSpectrum(bumps);
+  const xyz = spectrumToXYZ(spec);
+  target = { spec, xyz };
+  $('swT').style.background = hexOf(xyzToSrgb(xyz).srgb);
+  $('roT').textContent = `target XYZ (${xyz.map(v => v.toFixed(3)).join(', ')}) — spectrum hidden`;
+  $('roM').textContent = ''; $('spiketab').style.display = 'none';
+}
+$('newtarget').addEventListener('click', newTarget);
+$('construct').addEventListener('click', () => {
+  if (!target) return;
+  const m = findMetamer(target.xyz);
+  if (!m) { $('roM').textContent = 'no all-nonnegative 3-spike solution found for this target on the 10 nm search grid'; return; }
+  editors.B.spec = m.spectrum.slice(); editors.B.refresh();
+  const d = deltaXYZ(m.xyz, target.xyz), dist = l2(m.spectrum, target.spec);
+  $('roM').textContent = `ΔXYZ = ${d.toExponential(2)} · spectral L2 distance = ${dist.toFixed(2)} · the two spectra share no shape at all`;
+  const tab = $('spiketab'); tab.style.display = '';
+  tab.innerHTML = '<tr><th class="l">spike (nm)</th><th>amplitude</th></tr>' + m.spikeIdx.map((ix, k) => `<tr><td class="l">${380 + ix * 5}</td><td>${m.amps[k].toFixed(3)}</td></tr>`).join('');
+});
+newTarget();
+</script>
+</body>
+</html>
