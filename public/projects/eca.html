@@ -52,12 +52,13 @@
     </label>
     <button id="run">run it</button>
   </div>
+  <p style="font-size:13px;color:#787c99;margin:8px 0 0;">Start options: single seed cell = one black cell in the middle; seeded random = a shuffled starting row — the rule doesn't change, the starting row does.</p>
   <canvas id="cv" width="1005" height="500"></canvas>
   <div class="ro" id="ro"></div>
 </div>
 
 <div class="card">
-  <h2 style="margin-top:2px">damage spreading — one flipped cell</h2>
+  <h2 style="margin-top:2px">damage spreading — how far one flipped cell's effect reaches</h2>
   <p>Same rule, same starting row, twice — except that in the second copy exactly one cell, in the centre, is flipped. Below, <span class="sw" style="background:#7dcfff"></span>blue cells are on in both copies, and <span class="sw" style="background:#f7768e"></span>pink cells are where the two copies disagree. The pink region is the damage: how far one flipped cell's influence travels.</p>
   <canvas id="dmg" width="1005" height="500"></canvas>
   <div class="ro" id="dmgro"></div>
@@ -65,9 +66,9 @@
 
 <h2>notes</h2>
 <ul class="notes">
-  <li>The rule number is the whole rulebook: for each of the 8 possible neighbourhoods (left, centre, right), one bit of the number says whether the cell turns on. Bit index is 4·left + 2·centre + right — Wolfram indexing. There is no hidden machinery; the page runs the same core that passed the offline test suite (43 checks).</li>
+  <li>The rule number is the whole rulebook: for each of the 8 possible neighbourhoods (left, centre, right), one bit of the number says whether the cell turns on. There is no hidden machinery; the page runs the same core that passed the offline test suite (43 checks).</li>
   <li>The ring wraps: the leftmost cell's left neighbour is the rightmost cell. Patterns that walk off one edge come back on the other, which is why long runs eventually collide with themselves.</li>
-  <li>Damage numbers are exact, not sampled: two full runs, compared cell by cell (Hamming distance). From the seeded random start used here (seed 11), rule 110 ends the 99 steps shown with 55 of 201 cells differing from one flipped cell; rule 184, fed the identical start and the identical flip, ends with exactly 1 differing cell — the insult moves, but it never grows. Rule 30 from a single seed cell spreads damage to 43 cells in 50 steps; rule 90 from the same start keeps it at 8.</li>
+  <li>Damage numbers are exact, not sampled: two full runs, compared cell by cell — the count is simply the number of cells that differ. From the seeded random start used here (seed 11), rule 110 ends the 99 steps shown with 55 of 201 cells differing from one flipped cell; rule 184, fed the identical start and the identical flip, ends with exactly 1 differing cell — the insult moves, but it never grows. Rule 30 from a single seed cell spreads damage to 43 cells in 50 steps; rule 90 from the same start keeps it at 8.</li>
   <li>Rule 110's "universal" label is a theorem about what it can compute given the right starting pattern and unlimited room — not a claim that a 201-cell ring run shows computation happening. On this page it shows structure: persistent shapes moving through a busy background.</li>
   <li>The random start is seeded (mulberry32, seed 11), so every visitor sees the same starting row and the damage numbers above are reproducible exactly.</li>
 </ul>
@@ -170,6 +171,7 @@ document.querySelectorAll('.preset').forEach(b =>
 $('run').addEventListener('click', runAll);
 $('init').addEventListener('change', runAll);
 $('rule').addEventListener('change', runAll);
+$('rule').addEventListener('input', runAll);
 runAll();
 </script>
 </body>

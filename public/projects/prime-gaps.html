@@ -43,7 +43,7 @@
 
 <div class="card">
   <div>
-    <span class="stat">primes ≤ 10⁸<b>5,761,455</b></span>
+    <span class="stat">primes ≤ 10<sup>8</sup><b>5,761,455</b></span>
     <span class="stat">twin-prime pairs<b>440,312</b></span>
     <span class="stat">record gaps<b>25</b></span>
     <span class="stat">largest gap<b>220 after 47,326,693</b></span>
@@ -51,19 +51,19 @@
 </div>
 
 <h2>sieve a window yourself</h2>
-<p>This is the real segmented sieve, running live in your browser — the same marking logic as the census core. Pick a starting number (up to about 10<sup>8</sup>) and the page sieves a 200,000-wide window starting there, draws every prime it finds as a tick, and reports the largest gap inside the window. The gold band is that largest gap.</p>
+<p>This is the real segmented sieve, running live in your browser — the same marking logic as the census core. (A segmented sieve checks the range in blocks, so a hundred-million-wide census fits in memory.) Pick a starting number (up to about 10<sup>8</sup>) and the page sieves a 200,000-wide window starting there, draws every prime it finds as a tick, and reports the largest gap inside the window. The gold band is that largest gap.</p>
 <div class="card">
   <div class="ctl">
     <label>start <input type="text" id="start" value="47326000" inputmode="numeric"></label>
     <button id="go">sieve the window</button>
-    <button id="rec">jump to the record gap</button>
+    <button id="rec">Jump to the record gap — 220, after 47,326,693</button>
   </div>
   <canvas id="strip" height="90"></canvas>
   <div class="ro" id="ro"></div>
 </div>
 
 <h2>the record staircase</h2>
-<p>Every record gap to 10<sup>8</sup>: gap size against position (log scale). Each step is a stretch of composite numbers longer than any seen before it. The steps get taller and much farther apart — the last one, 220 wide, doesn't arrive until 47 million.</p>
+<p>Every record gap to 10<sup>8</sup>: gap size against position (log scale). Each step is a stretch of composite numbers (numbers that are not prime) longer than any seen before it. The steps get taller and much farther apart — the last one, 220 wide, doesn't arrive until 47 million.</p>
 <div class="card">
   <canvas id="stairs" height="340"></canvas>
 </div>
@@ -173,7 +173,8 @@ function drawStairs() {
   ctx.strokeStyle = '#2a2d3e'; ctx.fillStyle = '#787c99'; ctx.font = '11px monospace';
   for (let e = 0; e <= 8; e++) {
     ctx.beginPath(); ctx.moveTo(X(Math.pow(10, e)), padT); ctx.lineTo(X(Math.pow(10, e)), H - padB); ctx.stroke();
-    ctx.fillText('10^' + e, X(Math.pow(10, e)) - 12, H - 12);
+    ctx.fillText('10', X(Math.pow(10, e)) - 12, H - 12);
+    ctx.save(); ctx.font = '8px monospace'; ctx.fillText(String(e), X(Math.pow(10, e)) + 2, H - 19); ctx.restore();
   }
   for (let g = 0; g <= 240; g += 60) {
     ctx.beginPath(); ctx.moveTo(padL, Y(g)); ctx.lineTo(W - padR, Y(g)); ctx.stroke();

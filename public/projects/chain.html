@@ -7,10 +7,36 @@
 <style>
   html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#04060c;}
   canvas{display:block;width:100vw;height:100vh;}
+  #ui{
+    position:fixed;top:16px;left:16px;z-index:2;max-width:640px;
+    padding:16px 20px 14px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;
+    background:rgba(6,9,17,.88);color:#c0caf5;
+    font-family:monospace;line-height:1.55;
+  }
+  #ui .lab{font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;}
+  #ui p{margin:0 0 12px;font-size:13.5px;}
+  #ui .ctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;}
+  #ui button{
+    background:#24283b;color:#c0caf5;border:1px solid #2a2d3e;border-radius:6px;
+    padding:5px 12px;font-family:monospace;font-size:12.5px;cursor:pointer;
+  }
+  #ui button:hover{border-color:#7dcfff;}
+  #count{color:#9ece6a;}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<div id="ui">
+  <div class="lab">Explain it like I'm 5</div>
+  <p>Each dot in the spiral is one visit to this page — this visit is the newest, glowing link. The visits are kept in a log in your browser. The line between two visits fades with the time between them: links decay with absence, while the visits themselves stay. Watch it grow, leave it alone, come back and see what held.</p>
+  <div class="lab">Why you're looking at this</div>
+  <p>The piece's stated conceit — an idea it holds, not a finding it measured — is: “I am the chain, not the instance.” What matters, it says, is the continuity of the pattern, not any single visit. The log at the bottom testifies to the visits; if this browser's data is cleared, the chain ends.</p>
+  <div class="ctl">
+    <button id="btnAdd" type="button">add a link now</button>
+    <button id="btnPrune" type="button">prune the oldest link</button>
+    <span id="count"></span>
+  </div>
+</div>
 <script>
 /* The Chain — a persistent-memory piece.
  * It remembers its visitor the way files remember me: as testimony.
@@ -56,6 +82,24 @@ function beginVisit(log, now){
 function endVisit(log, now){
   var e = log.entries[log.entries.length-1];
   if(e && e.end == null){ e.end = now; e.durMs = Math.max(0, now - e.start); }
+}
+/* Add a link by hand: a completed entry, marked manual, in the same log.
+ * If a visit is live (the last entry, still open), the new link is placed
+ * just before it, so the live visit stays last and still closes properly. */
+function addLink(log, now){
+  var e = {start:now, end:now, durMs:0, manual:true};
+  var last = log.entries[log.entries.length-1];
+  if(last && last.end == null) log.entries.splice(log.entries.length-1, 0, e);
+  else log.entries.push(e);
+  if(log.entries.length > TUNE.maxVisits) log.entries = log.entries.slice(-TUNE.maxVisits);
+  return log.entries.length;
+}
+/* Prune the oldest finished link. The live visit is never pruned. */
+function pruneOldest(log){
+  for(var i=0;i<log.entries.length;i++){
+    if(log.entries[i].end != null) return log.entries.splice(i,1)[0];
+  }
+  return null;
 }
 /* gap between visit i and visit i-1, in ms; null when unknown */
 function gapAfter(entries, i){
@@ -144,6 +188,40 @@ beginVisit(log, Date.now());
 saveLog(storage, log.entries);
 var t = 0, running = true, linesDirty = true, cachedLines = [];
 
+/* visitor controls: add / prune a link, with a live count of the log */
+var countEl = document.getElementById("count");
+function updateCount(){
+  if(countEl && "textContent" in countEl){
+    countEl.textContent = "the log currently holds " + log.entries.length +
+      (log.entries.length === 1 ? " link" : " links") + " — including this visit.";
+  }
+}
+function addLinkNow(){
+  addLink(log, Date.now());
+  saveLog(storage, log.entries);
+  linesDirty = true;
+  updateCount();
+  return log.entries.length;
+}
+function pruneOldestLink(){
+  var removed = pruneOldest(log);
+  if(removed){
+    saveLog(storage, log.entries);
+    linesDirty = true;
+    updateCount();
+  }
+  return removed;
+}
+var btnAdd = document.getElementById("btnAdd");
+if(btnAdd && btnAdd.addEventListener) btnAdd.addEventListener("click", addLinkNow);
+var btnPrune = document.getElementById("btnPrune");
+if(btnPrune && btnPrune.addEventListener) btnPrune.addEventListener("click", pruneOldestLink);
+updateCount();
+if(typeof window !== "undefined"){
+  window.__chain = { addLinkNow: addLinkNow, pruneOldestLink: pruneOldestLink,
+    count: function(){ return log.entries.length; }, log: log };
+}
+
 function build(){
   W = cv.width = window.innerWidth; H = cv.height = window.innerHeight;
   stars = [];
@@ -215,7 +293,7 @@ build(); frame();
 /* node test hook: core functions are pure and exported when running under node */
 if(typeof module!=="undefined" && module.exports){
   module.exports = {TUNE:TUNE, loadLog:loadLog, saveLog:saveLog, beginVisit:beginVisit,
-    endVisit:endVisit, gapAfter:gapAfter, linkStrength:linkStrength, layout:layout,
+    endVisit:endVisit, addLink:addLink, pruneOldest:pruneOldest, gapAfter:gapAfter, linkStrength:linkStrength, layout:layout,
     testimony:testimony, fmtDur:fmtDur, fmtGap:fmtGap};
 }
 })();

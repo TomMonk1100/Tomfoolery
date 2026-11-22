@@ -7,9 +7,34 @@
 <style>
   html, body {
     margin: 0; padding: 0; width: 100%; height: 100%;
-    overflow: hidden; background: #04060c;
+    overflow-x: hidden; background: #04060c;
   }
   #stage { position: fixed; inset: 0; display: block; }
+  #ui {
+    position: relative; z-index: 5; max-width: 980px; margin: 0 auto;
+    padding: 18px 16px 0; pointer-events: none;
+    font-family: "SFMono-Regular", Menlo, Consolas, monospace; color: #c0caf5;
+  }
+  #ui .panel {
+    pointer-events: auto;
+    padding: 16px 20px 14px; border: 1.5px solid rgba(130,145,165,.55);
+    border-radius: 12px; background: rgba(10, 13, 22, .88); line-height: 1.55;
+  }
+  #ui .panel .lab { font-size: .8em; font-weight: 700; letter-spacing: .08em; opacity: .75; margin: 0 0 4px; }
+  #ui .panel p { margin: 0 0 12px; font-size: 13.5px; }
+  #ui .panel p:last-child { margin-bottom: 0; }
+  #controls {
+    pointer-events: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin-top: 10px; padding: 10px 14px; font-size: 12.5px;
+    border: 1px solid rgba(130,145,165,.35); border-radius: 10px; background: rgba(10, 13, 22, .82);
+  }
+  #controls button {
+    background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px;
+    padding: 5px 12px; font: inherit; cursor: pointer;
+  }
+  #controls button:hover { border-color: #7dcfff; }
+  #controls input[type=range] { accent-color: #7dcfff; vertical-align: middle; }
+  #controls .hint { color: rgba(192,202,245,.55); }
   #wordmark {
     position: fixed; right: 18px; bottom: 14px;
     font: 300 11px/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -51,13 +76,27 @@
 </head>
 <body>
 <canvas id="stage"></canvas>
+<div id="ui">
+  <div class="panel">
+    <div class="lab">Explain it like I'm 5</div>
+    <p>A seed of light sits in a dark field. It sends out seekers — small warm motes that fly outward, wander, and, as they get older, curve back home. Every seeker that returns feeds the seed, and golden filaments sprout and reach. Each seeker carries a simple recipe: <b>vigor</b> is how fast it flies, <b>pull</b> is how strongly it curves home, and <b>thrift</b> is how long it lives.</p>
+    <div class="lab">Why you're looking at this</div>
+    <p>I built this to watch a simple loop — go out, come back, grow — turn into shapes nobody drew. The weather changes as it runs, and the weather was written to favour certain recipes: drought rewards strong pull, rain rewards speed. So when the field shifts that way, that is by construction — the design working as written — not a measured evolution result.</p>
+  </div>
+  <div id="controls">
+    <button id="btnPause" type="button">pause</button>
+    <button id="btnReseed" type="button">reseed</button>
+    <label>seekers in the field <input type="range" id="rate" min="8" max="120" step="1" value="44"> <span id="rateVal">44</span></label>
+    <span class="hint">click the field to release a burst of seekers from that point</span>
+  </div>
+</div>
 <div id="wordmark" title="how it grows">allspark</div>
 <div id="returns"></div>
 <div id="condition"></div>
 <div id="about">
   <h2>lineage</h2>
-  <p>Every seeker carries a genome: <b>vigor</b> (speed), <b>pull</b> (homing), <b>thrift</b> (lifespan). A seeker that returns home replicates — its mutated genome plants the next spore. One that dissipates is replaced by the seed's baseline.</p>
-  <p>Every 40 returns, the seed genome drifts toward the mean of recent winners. The field learns what survives its own weather: drought selects for pull — only the sure-homed return; rain favors vigor; wind's selection is the weakest, punishing vigor more than rewarding any one trait.</p>
+  <p>Every seeker carries a genome: <b>vigor</b> (how fast it flies), <b>pull</b> (how strongly it homes), <b>thrift</b> (how long it lives). A seeker that returns home replicates — its mutated genome plants the next spore. One that dissipates is replaced by the seed's baseline.</p>
+  <p>Every 40 returns, the seed genome drifts toward the mean of recent winners. The field shifts toward what survives its own weather: drought selects for pull — only the sure-homed return; rain favors vigor; wind's selection is the weakest, punishing vigor more than rewarding any one trait. That is by construction, not a measured evolution result: the weather rules were written to favour those traits, so what you see is the design working as written.</p>
   <p>Filaments inherit the freshest spore and record their generation. Tip glow shows the dominant trait — green for vigor, gold for pull, blue for thrift. Each generation is built from the last: recursive growth. And nothing is immortal: branches wither from the root once they've lived their span — drought withers faster, rain preserves — so the field turns over like a real mycelium and returns keep building forever.</p>
   <p>A return fitter than the swarm's own mean recruits a new seeker — and the chance scales with headroom, so the bloom tracks the weather: eager when starved, tapering at the cap. Each weather sets a carrying capacity — rain blooms the swarm, drought starves it — and a neutral bottleneck culls the excess when the weather turns, genome-blind, so the breathing never rewrites selection. The chart at the bottom-right is the field's own history: population and trait means, the compounding made legible.</p>
   <p>And the weather answers back. The field keeps two memories of its own canopy — a fast one and a slow one — and while the canopy is still growing into itself, it pulls rain toward the field and shortens the droughts: when the pill reads "field +35%", the field lengthened that weather itself. As the field matures, the weather settles back to its own rhythm. Calm and wind never move. The seed can't opt out of drought — but it can answer it.</p>
@@ -708,7 +747,7 @@ function createCore(opts) {
   window.addEventListener("resize", fit);
   fit();
 
-  const core = createCore({});
+  let core = createCore({});
   const cx = W / 2, cy = H / 2;
   const boundR = Math.max(W, H) * TUNE.softBound;
 
@@ -734,6 +773,80 @@ function createCore(opts) {
 
   // expose for tooling / screenshots (harmless)
   window.__allspark = { core: core, TUNE: TUNE };
+
+  // --- visitor controls: pause, reseed, emission rate, click-to-burst ---
+  // All wired into the real core: pause stops ticking; reseed builds a fresh
+  // core from a new seed; the rate slider sets the population the seed keeps
+  // in the field (and scales the weather's carrying capacity with it, since
+  // the core derives its cap from seekerCount); a click spawns real seekers
+  // at that point via the core's own spawnSeeker, which then wander and home
+  // like any other seeker (the weather cap still culls excess, as always).
+  let paused = false;
+  let rateTarget = TUNE.seekerCount;
+  function burstAt(x, y, n) {
+    const P = core.effParams(core.S.tick);
+    const count = n || 12;
+    for (let i = 0; i < count; i++) {
+      const s = core.spawnSeeker(null, P, null);
+      const a = Math.random() * Math.PI * 2, sp = 20 + Math.random() * 30;
+      s.x = x; s.y = y;
+      s.vx = Math.cos(a) * sp; s.vy = Math.sin(a) * sp;
+      s.age = 0; s.away = true; // born away from home, so its return can count
+      core.S.seekers.push(s);
+    }
+    if (reduced) frame(performance.now());
+    return core.S.seekers.length;
+  }
+  function topUp() {
+    // emission: the seed tops the field back up toward the chosen rate
+    if (core.S.seekers.length < rateTarget) {
+      const P = core.effParams(core.S.tick);
+      const add = Math.min(3, rateTarget - core.S.seekers.length);
+      for (let i = 0; i < add; i++) core.S.seekers.push(core.spawnSeeker(null, P, null));
+    }
+  }
+  function setRate(v) {
+    rateTarget = Math.max(1, Math.round(v) || TUNE.seekerCount);
+    core.TUNE.seekerCount = rateTarget; // the weather cap scales with it
+    return rateTarget;
+  }
+  function reseed() {
+    const seed = Math.floor(Math.random() * 1e9) >>> 0;
+    const fresh = createCore({ seed: seed });
+    fresh.reset(cx, cy, boundR);
+    core = fresh;
+    window.__allspark.core = core;
+    setRate(rateTarget);
+    try { localStorage.setItem(KEY, core.serialize()); } catch (e) {}
+    if (reduced) {
+      for (let i = 0; i < 24000; i++) core.tick(1 / 60);
+      frame(performance.now());
+    }
+    return seed;
+  }
+  function togglePause() {
+    paused = !paused;
+    const b = document.getElementById("btnPause");
+    if (b) b.textContent = paused ? "resume" : "pause";
+    return paused;
+  }
+  window.__allspark.controls = {
+    burstAt: burstAt, reseed: reseed, setRate: setRate, togglePause: togglePause,
+    isPaused: function () { return paused; }, getRate: function () { return rateTarget; },
+  };
+  (function wireControls() {
+    const bp = document.getElementById("btnPause");
+    if (bp && bp.addEventListener) bp.addEventListener("click", togglePause);
+    const br = document.getElementById("btnReseed");
+    if (br && br.addEventListener) br.addEventListener("click", reseed);
+    const rate = document.getElementById("rate");
+    const rateVal = document.getElementById("rateVal");
+    if (rate && rate.addEventListener) rate.addEventListener("input", function () {
+      const v = setRate(parseInt(rate.value, 10));
+      if (rateVal) rateVal.textContent = String(v);
+    });
+    canvas.addEventListener("click", function (e) { burstAt(e.clientX, e.clientY, 12); });
+  })();
 
   // --- color helpers ---
   // amber root -> green tip, by fraction along branch; tint shifts per-filament
@@ -993,7 +1106,7 @@ function createCore(opts) {
       let dt = (nowMs - last) / 1000;
       last = nowMs;
       if (dt > 0.1) dt = 0.1;
-      if (dt > 0) core.tick(dt);
+      if (dt > 0 && !paused) { topUp(); core.tick(dt); }
       frame(nowMs);
       requestAnimationFrame(loop);
     })(last);

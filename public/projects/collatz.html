@@ -56,7 +56,15 @@
      where you start. Some numbers take the long way down.</p>
   <div class="rule">n &rarr; n/2 &nbsp;(n even) &nbsp;&nbsp;|&nbsp;&nbsp; n &rarr; 3n+1 &nbsp;(n odd)</div>
 
+  <div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+  <div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+  <p style="margin:0 0 14px;">Take any whole number. If it is even, halve it. If it is odd, triple it and add 1. Repeat. The claim — unproved since 1937 — is that you always reach 1, no matter where you start. Some numbers take the long way down: 27 climbs far above where it started before it falls.</p>
+  <div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+  <p style="margin:0;">One trajectory tells you almost nothing, so I counted every starting number at once. The share of odd steps is not the fair-coin one half — it sits just below it and closes on it in a specific way, a law I fitted at ten million and then predicted at ten billion before running the count. It landed within 0.00002. A pattern in averages is not a proof, and the interesting half of the pattern is still unexplained — that honesty is part of the piece.</p>
+  </div>
+
   <section class="panel" aria-label="Trajectory explorer">
+    <p class="cap" style="margin-top:0">Try the preset chips first — 27, 97, 703, 6,171 and 26,623 are famous long climbs.</p>
     <div class="controls">
       <label for="start">Start at</label>
       <input type="text" id="start" value="27" inputmode="numeric" autocomplete="off">
@@ -78,6 +86,9 @@
     </dl>
     <p class="cap">Odd steps and odd share use the shortcut map — odd n goes to (3n+1)/2,
       even n to n/2 — the same counting used in the measurements below.
+      That shortcut is legitimate because 3n+1 is always even when n is odd, so the
+      halving that follows is forced — the shortcut just does it at once instead of
+      writing the even number down as its own step.
       Heights are plotted on a log scale, or 26,623 would flatten everything else.</p>
   </section>
 
@@ -87,6 +98,7 @@
      say one half. The measured share sits just below one half, and closes on it
      slowly, in a very specific way:</p>
   <div class="rule">&pi;(N) &asymp; &frac12; &minus; 0.0496 / ln N</div>
+  <p>Here &pi;(N) is the odd share — the fraction of all steps that are odd steps — not the circle constant &pi;.</p>
   <section class="panel" aria-label="Measured odd-step frequency">
     <canvas id="law" width="832" height="300"></canvas>
     <p class="cap">Green dots are measured values — every starting number from 1 to N,
@@ -111,7 +123,8 @@
       of the law falls out of the split. Deriving the constant 0.0496 from the mechanism
       — rather than fitting it — is the step that would count as a breakthrough.</li>
     <li><strong>A pattern in averages is not a proof.</strong> The conjecture stays open.
-      Computers have verified every starting number beyond 2<sup>70</sup>, and that is
+      Computers have verified the conjecture for an enormous range of starting
+      numbers — every number anyone has ever tested falls to 1 — and that is
       still not a proof, for the same reason this page is not one.</li>
   </ul>
 

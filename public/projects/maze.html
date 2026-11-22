@@ -58,10 +58,13 @@
     <label>seed <input type="text" id="seed" value="42" inputmode="numeric"></label>
     <button id="new">new maze</button>
     <button id="solve">solve</button>
+    <button id="walkBtn">Walk it yourself</button>
+    <span id="walkRo"></span>
   </div>
-  <canvas id="cv" width="960" height="720"></canvas>
+  <canvas id="cv" width="1104" height="792"></canvas>
   <div class="ro" id="verify"></div>
   <div class="ro" id="ro" style="color:#e0af68"></div>
+  <p style="font-size:13px;color:#787c99;margin:6px 0 0;">Walk it yourself: turn walking on, then click or tap a cell next to your marker, or use the arrow keys / WASD, to move from the entrance (green, top-left) to the exit (pink, bottom-right).</p>
 </div>
 
 <h2>the one fact that runs the page</h2>
@@ -235,15 +238,32 @@ function solve(g) {
   for (let c = goal; c !== -1; c = prev[c]) path.push([c % w, Math.floor(c / w)]);
   return path.reverse();
 }
+
+// ---- walk-the-maze helpers (use the same wall bitmask as the solver) ----
+function dirForDelta(dx, dy) {
+  for (const d of DIRS) if (d.dx === dx && d.dy === dy) return d;
+  return null;
+}
+function canPass(g, x, y, d) {
+  const nx = x + d.dx, ny = y + d.dy;
+  if (nx < 0 || nx >= g.w || ny < 0 || ny >= g.h) return false;
+  return !(g.walls[gidx(g, x, y)] & d.bit);
+}
+function walkMove(g, pos, d) {
+  if (!canPass(g, pos[0], pos[1], d)) return false;
+  pos[0] += d.dx; pos[1] += d.dy;
+  return true;
+}
 </script>
 <script>
 const $ = id => document.getElementById(id);
 const cv = $('cv'), ctx = cv.getContext('2d');
 let maze = null, animTimer = null, drawnPath = 0, fullPath = null;
+let walking = false, walkPos = [0, 0], walkMoves = 0, walkDone = false;
 
 function draw(upto) {
   const { w, h } = maze;
-  const cs = Math.floor(Math.min(960 / w, 720 / h));
+  const cs = Math.floor(Math.min(1104 / w, 792 / h));
   cv.width = cs * w + 2; cv.height = cs * h + 2;
   ctx.fillStyle = '#16161e';
   ctx.fillRect(0, 0, cv.width, cv.height);
@@ -276,6 +296,13 @@ function draw(upto) {
   ctx.fillRect(1 + cs * 0.3, 1 + cs * 0.3, cs * 0.4, cs * 0.4);
   ctx.fillStyle = '#f7768e';
   ctx.fillRect(1 + (w - 1) * cs + cs * 0.3, 1 + (h - 1) * cs + cs * 0.3, cs * 0.4, cs * 0.4);
+  if (walking) {
+    ctx.beginPath();
+    ctx.arc(1 + walkPos[0] * cs + cs / 2, 1 + walkPos[1] * cs + cs / 2, cs * 0.32, 0, Math.PI * 2);
+    ctx.fillStyle = walkDone ? '#9ece6a' : '#bb9af7';
+    ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#1a1b26'; ctx.stroke();
+  }
 }
 
 function verify() {
@@ -297,15 +324,14 @@ function build() {
   let seed = parseInt($('seed').value.replace(/\D/g, ''), 10);
   if (isNaN(seed)) seed = 42;
   maze = GENERATORS[$('gen').value](w, h, mulberry32(seed));
+  walkPos = [0, 0]; walkMoves = 0; walkDone = false;
+  if (walking) $('walkRo').textContent = 'walking: at the entrance · moves: 0';
   $('ro').textContent = '';
   draw(0);
   verify();
 }
 
-$('new').addEventListener('click', () => {
-  $('seed').value = Math.floor(Math.random() * 1000000);
-  build();
-});
+$('new').addEventListener('click', build);
 $('size').addEventListener('change', build);
 $('gen').addEventListener('change', build);
 $('seed').addEventListener('change', build);
@@ -321,6 +347,45 @@ $('solve').addEventListener('click', () => {
     draw(drawnPath);
   }, 24);
   $('ro').textContent = 'solution path length: ' + (fullPath.length - 1) + ' steps, entrance to exit — the only route there is';
+});
+
+function walkStatus() {
+  $('walkRo').textContent = walkDone
+    ? 'you reached the exit in ' + walkMoves + ' moves \u2014 the one route, walked by hand'
+    : 'walking: moves: ' + walkMoves;
+}
+function tryWalk(dx, dy) {
+  if (!walking || walkDone) return;
+  const d = dirForDelta(dx, dy);
+  if (!d) return;
+  if (walkMove(maze, walkPos, d)) {
+    walkMoves++;
+    if (walkPos[0] === maze.w - 1 && walkPos[1] === maze.h - 1) walkDone = true;
+    walkStatus();
+    draw(drawnPath);
+  }
+}
+$('walkBtn').addEventListener('click', () => {
+  walking = !walking;
+  walkPos = [0, 0]; walkMoves = 0; walkDone = false;
+  $('walkBtn').textContent = walking ? 'stop walking' : 'Walk it yourself';
+  $('walkRo').textContent = walking ? 'walking: at the entrance · moves: 0' : '';
+  draw(drawnPath);
+});
+cv.addEventListener('click', (e) => {
+  if (!walking) return;
+  const r = cv.getBoundingClientRect();
+  const cs = Math.floor(Math.min(1104 / maze.w, 792 / maze.h));
+  const cx = Math.floor(((e.clientX - r.left) * (cv.width / r.width) - 1) / cs);
+  const cy = Math.floor(((e.clientY - r.top) * (cv.height / r.height) - 1) / cs);
+  const dx = cx - walkPos[0], dy = cy - walkPos[1];
+  if (Math.abs(dx) + Math.abs(dy) === 1) tryWalk(dx, dy);
+});
+document.addEventListener('keydown', (e) => {
+  if (!walking) return;
+  const k = e.key.toLowerCase();
+  const map = { arrowup: [0, -1], w: [0, -1], arrowdown: [0, 1], s: [0, 1], arrowleft: [-1, 0], a: [-1, 0], arrowright: [1, 0], d: [1, 0] };
+  if (map[k]) { e.preventDefault(); tryWalk(map[k][0], map[k][1]); }
 });
 build();
 </script>

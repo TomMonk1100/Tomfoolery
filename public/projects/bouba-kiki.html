@@ -36,7 +36,7 @@
 <body>
 <div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
 <div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
-<p style="margin:0 0 14px;">Here are two shapes. One is round and blobby, one is spiky. Here are two made-up words: "bouba" and "kiki". Almost everybody — in almost every language tested — says the round one is bouba and the spiky one is kiki. Nobody taught them that. The sounds just feel like they fit the shapes. This page lets you test whether your brain does it too, with new shapes and new made-up words the computer invents on the spot.</p>
+<p style="margin:0 0 14px;">Here are two shapes. One is round and blobby, one is spiky. Here are two made-up words: "bouba" and "kiki". Most people — in most languages tested — say the round one is bouba, and the spiky one is kiki. Nobody taught them that. The sounds just feel like they fit the shapes. This page lets you test whether your brain does it too, with new shapes and new made-up words the computer invents on the spot.</p>
 <div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
 <p style="margin:0;">I like this effect because it is a crack in a tidy idea. The tidy idea says the sound of a word has nothing to do with what it means — any sound could name anything. Bouba/kiki says that is mostly true and not completely true, and the honest numbers are more interesting than the famous ones: the headline 95–98% comes from a paper that never printed its sample size, and the biggest careful test, 917 people in 25 languages, landed at 72% — real, robust, and nowhere near universal. So I built the test so you run it on the one subject you have full access to, with the caveats printed on the page instead of buried.</p>
 </div>
@@ -69,7 +69,7 @@
   <li>The 95–98% figure is quoted as reported. The 2001 paper does not print a sample size for it in the passage everyone cites, so treat it as a striking claim with thin documentation, not a precision measurement.</li>
   <li>Köhler's 1929 words were <i>takete</i> and <i>maluma</i> — no counts, just an invitation to the reader, who he expected would "decide with ease". Retellings that say "baluba" for 1929 are repeating a slip.</li>
   <li>Why it happens is unsettled. Candidates: the shape of the mouth and lips, the acoustic sharpness of the consonants, and — for readers — the shapes of the letters themselves. Ćwiek's audio design shows letter shape is not the whole story. This page shows words in writing, so letter shape is in play here.</li>
-  <li>How the toy works: shapes are seeded polygons driven by one spikiness parameter (in the test gate, spiky shapes average 4.7× the radial variance of round ones). Words are built from two disjoint letter families — round: b, m, l, n + oo/o/u/a; sharp: k, t, p, s + ee/i/e — so a generated word is never a blend. Same seed, same shapes and words, every visit.</li>
+  <li>How the toy works: shapes are seeded polygons driven by one spikiness parameter (in the test gate, spiky shapes average 4.7× the radial variance of round ones). Words are built from two disjoint letter families — round: b, m, l, n + oo/o/u/a; sharp: k, t, p, s + ee/i/e — so a generated word is never a blend. Same seed, same shapes and words, every visit — unless you take the new-seed replay at the end, which generates a fresh set.</li>
   <li>Sources: Köhler, <i>Gestalt Psychology</i> (1929); Ramachandran &amp; Hubbard, <i>Journal of Consciousness Studies</i> 8(12), 2001; Ćwiek et al., <i>Philosophical Transactions of the Royal Society B</i> 377:20200390, 2022 (doi:10.1098/rstb.2020.0390); cross-checked against the <i>Science</i> news report of 2021-11-15 and Cuskley, Simner &amp; Kirby (2017).</li>
 </ul>
 </div>
@@ -81,13 +81,14 @@ function makeShape(spikiness,seed){var rng=mulberry32(seed);var n=64;var spikes=
 function makeWord(family,seed){var rng=mulberry32(seed);var cons=family==='round'?ROUND_CONS:SHARP_CONS;var vows=family==='round'?ROUND_VOWELS:SHARP_VOWELS;var pick=function(arr){return arr[Math.floor(rng()*arr.length)];};var w=pick(cons)+pick(vows)+pick(cons)+pick(vows);if(family==='sharp'&&rng()<0.4)w+=pick(cons);return w;}
 function scoreRounds(rounds){var m=0;for(var i=0;i<rounds.length;i++)if(rounds[i].chosen===rounds[i].family)m++;return{total:rounds.length,matched:m,rate:rounds.length?m/rounds.length:0};}
 function binomTwoSided(n,k){function c(a,b){var r=1;for(var i=0;i<b;i++)r=r*(a-i)/(i+1);return r;}var tail=0;for(var x=k;x<=n;x++)tail+=c(n,x)/Math.pow(2,n);return Math.min(1,2*tail);}
-function svgFor(pts,color){var d=pts.map(function(p,i){return (i?'L':'M')+(p.x+130).toFixed(1)+' '+(p.y+130).toFixed(1);}).join(' ')+' Z';return '<svg width="240" height="240" viewBox="0 0 260 260"><path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="3" stroke-linejoin="round"/></svg>';}
+function svgFor(pts,color){var d=pts.map(function(p,i){return (i?'L':'M')+(p.x+130).toFixed(1)+' '+(p.y+130).toFixed(1);}).join(' ')+' Z';return '<svg width="240" height="240" viewBox="0 0 260 260"><path d="'+d+'" fill="'+color+'" fill-opacity="0.14" stroke="'+color+'" stroke-width="3" stroke-linejoin="round"/></svg>';}
 var $=function(id){return document.getElementById(id);};
 var rounds=[],classicDone=false,idx=0,cur=null;
+var runSeed=0;
 var CLASSIC_SEED=20261121,ROUND_BASE=5000;
 function showClassic(){
   var leftRound=mulberry32(7)()<0.5;
-  var roundPts=makeShape(0.05,CLASSIC_SEED),spikyPts=makeShape(0.95,CLASSIC_SEED+1);
+  var roundPts=makeShape(0.05,CLASSIC_SEED+runSeed*101),spikyPts=makeShape(0.95,CLASSIC_SEED+runSeed*101+1);
   var boxes=[{fam:'round',pts:roundPts},{fam:'sharp',pts:spikyPts}];
   if(!leftRound)boxes.reverse();
   $('stage').innerHTML='';
@@ -108,8 +109,8 @@ function nextRound(){
   var rng=mulberry32(9000+idx);
   var fam=rng()<0.5?'round':'sharp';
   var spiky=fam==='sharp';
-  var pts=makeShape(spiky?0.95:0.05,ROUND_BASE+idx*13);
-  var wr=makeWord('round',ROUND_BASE+idx*29+1),ws=makeWord('sharp',ROUND_BASE+idx*29+2);
+  var pts=makeShape(spiky?0.95:0.05,ROUND_BASE+runSeed*1000+idx*13);
+  var wr=makeWord('round',ROUND_BASE+runSeed*1000+idx*29+1),ws=makeWord('sharp',ROUND_BASE+runSeed*1000+idx*29+2);
   var words=rng()<0.5?[{w:wr,f:'round'},{w:ws,f:'sharp'}]:[{w:ws,f:'sharp'},{w:wr,f:'round'}];
   cur={family:fam};
   $('prompt').innerHTML='Round '+(idx+1)+' of 10. One shape, two invented words. <b>Which word fits this shape?</b>';
@@ -135,9 +136,12 @@ function finish(){
   $('ro').textContent='';
   $('yours').textContent=sc.matched+'/'+sc.total+' novel rounds ('+Math.round(sc.rate*100)+'%)';
   var el=document.createElement('p');
-  el.innerHTML='For scale: Ćwiek et al. found '+PUBLISHED.cwiekPct+'% across '+PUBLISHED.cwiekN+' people ('+PUBLISHED.cwiekReliable+' of '+PUBLISHED.cwiekLangs+' languages reliably above chance), and Ramachandran &amp; Hubbard reported '+PUBLISHED.rhLow+'–'+PUBLISHED.rhHigh+'%. Your number is one person, ten written-word rounds — the two-sided binomial p for a split at least this lopsided by chance is '+p.toFixed(3)+', so read it as a feel for the effect, not a result. <button onclick="location.reload()" style="background:#24283b;color:#c0caf5;border:1px solid #2a2d3e;border-radius:6px;padding:5px 12px;font-family:monospace;cursor:pointer;">run it again (same seed)</button>';
+  el.innerHTML='For scale: Ćwiek et al. found '+PUBLISHED.cwiekPct+'% across '+PUBLISHED.cwiekN+' people ('+PUBLISHED.cwiekReliable+' of '+PUBLISHED.cwiekLangs+' languages reliably above chance), and Ramachandran &amp; Hubbard reported '+PUBLISHED.rhLow+'–'+PUBLISHED.rhHigh+'%. Your number is one person, ten written-word rounds — the two-sided binomial p for a split at least this lopsided by chance is '+p.toFixed(3)+', so read it as a feel for the effect, not a result. <button id="againSame" style="background:#24283b;color:#c0caf5;border:1px solid #2a2d3e;border-radius:6px;padding:5px 12px;font-family:monospace;cursor:pointer;">run it again (same seed)</button> <button id="againNew" style="background:#24283b;color:#c0caf5;border:1px solid #2a2d3e;border-radius:6px;padding:5px 12px;font-family:monospace;cursor:pointer;">run it again — new seed (fresh shapes and words)</button>';
   $('stage').appendChild(el);
+  document.getElementById('againSame').addEventListener('click',function(){restart(0);});
+  document.getElementById('againNew').addEventListener('click',function(){restart(1);});
 }
+function restart(fresh){runSeed=fresh?runSeed+1:0;rounds=[];classicDone=false;idx=0;cur=null;$('yours').textContent='— run the test —';$('ro').innerHTML='';$('choices').innerHTML='';$('prompt').innerHTML='First, the classic. Two shapes, generated fresh. <b>Click the one that is “bouba”.</b> The other one is “kiki”, by elimination.';showClassic();}
 showClassic();
 </script>
 </body>

@@ -39,7 +39,7 @@
 <p class="sub">period-doubling in the logistic map, with the four measured bifurcations marked · 2026-11-21</p>
 
 <h2>the bifurcation diagram, computed live</h2>
-<p>Each column is one value of r; the dots are where the population ends up after the transient dies away. One dot means a steady rhythm, two means a 2-beat, then 4, 8, 16 — and past the gold ticks the doublings pile up so fast the picture turns to weather. The gold ticks are my four measured bifurcation points. Click anywhere on the diagram to measure the period at that r. Zoom in and the same ladder appears again, smaller — the diagram is self-similar.</p>
+<p>Each column is one value of r; the dots are where the population ends up after the transient — the first iterates, thrown away while the population settles — dies away. One dot means a steady rhythm, two means a 2-beat, then 4, 8, 16 — and past the gold ticks the doublings pile up so fast the picture turns to weather. The gold ticks are my four measured bifurcation points. Click anywhere on the diagram to measure the period at that r. Zoom in and the same ladder appears again, smaller — the diagram is self-similar.</p>
 <div class="card">
   <div class="ctl">
     <button id="full" class="on">full range r ∈ [2.8, 4.0]</button>
@@ -47,11 +47,17 @@
     <span style="color:#787c99">click the diagram to probe a period</span>
   </div>
   <canvas id="diag" height="420"></canvas>
+  <div class="ctl">
+    <label>r <input type="range" id="rslider" min="2.8" max="4" step="0.002" value="3.2" style="width:340px;accent-color:#7dcfff;vertical-align:middle;"></label>
+    <span id="rval" style="color:#e0af68">r = 3.20000</span>
+    <span style="color:#787c99">drag to probe the period at r continuously</span>
+  </div>
   <div class="ro" id="ro">rendering…</div>
+  <p style="color:#f7768e;font-size:13px;margin:4px 0 0;">Warning: treat periods above 32 as long or chaotic, not as exact counts.</p>
 </div>
 
 <h2>the ladder</h2>
-<p>Bifurcation points located by bisection on the return-gap predicate (a point on a k-cycle returns to itself after k steps; past the bifurcation it doesn't), bracket width 10<sup>−5</sup>, transient 200,000 iterates, starting from x₀ = 0.37.</p>
+<p>The four measured rungs, and how fast the gaps between them shrink.</p>
 <table>
   <tr><th class="l">bifurcation</th><th>r</th><th>interval to next</th><th>ratio to next interval</th></tr>
   <tr><td class="l">2 → 4 (b4)</td><td>3.4494775391</td><td>0.094609</td><td>4.657</td></tr>
@@ -63,9 +69,10 @@
 
 <h2>notes</h2>
 <ul class="notes">
+  <li>Bifurcation points located by bisection on the return-gap predicate (a point on a k-cycle returns to itself after k steps; past the bifurcation it doesn't), bracket width 10<sup>−5</sup>, transient 200,000 iterates, starting from x₀ = 0.37.</li>
   <li>The bifurcation locations come from bisection at bracket width 10<sup>−5</sup>; read the last digits as "within about 0.00001", not as exact. A stability re-check with a shorter transient moved them by at most 0.000059.</li>
   <li>Only two ratios are measured here — 4.657 and 4.6633. Feigenbaum's δ ≈ 4.669 itself is literature, not something this page derives; what the page shows is two measured ratios closing on it from below.</li>
-  <li>The period readout uses the core's cluster counter (tolerance 0.01 over 256 kept iterates). At high periods neighbouring orbit values merge under that tolerance, so treat a readout above 32 as "long or chaotic", not as an exact count — that merging is exactly why the bifurcation points were located with the return-gap test instead.</li>
+  <li>The period readout uses the core's cluster counter (tolerance 0.01 over 256 kept iterates). At high periods neighbouring orbit values merge under that tolerance — that merging is exactly why the bifurcation points were located with the return-gap test instead.</li>
   <li>The diagram is recomputed on every render with a shorter transient (600 iterates) than the measurements used, so individual dots near a bifurcation can sit a hair off the gold tick. The ticks are the measured values; the dots are the sketch.</li>
 </ul>
 </div>
@@ -148,6 +155,9 @@ function render() {
 }
 function probe(r) {
   probeR = r;
+  const rs = $('rslider');
+  if (rs) { rs.min = range[0]; rs.max = range[1]; rs.step = (range[1] - range[0]) / 600; if (Math.abs(parseFloat(rs.value) - r) > 1e-9) rs.value = r; }
+  const rv = $('rval'); if (rv) rv.textContent = 'r = ' + r.toFixed(5);
   const p = period(0.37, r);
   const ro = $('ro');
   let msg;
@@ -169,8 +179,9 @@ $('diag').addEventListener('mousemove', ev => {
   const r = range[0] + (range[1] - range[0]) * frac;
   $('ro').innerHTML = 'r = <b>' + r.toFixed(5) + '</b> — click to measure the period here';
 });
-$('full').addEventListener('click', () => { range = [2.8, 4.0]; $('full').classList.add('on'); $('zoom').classList.remove('on'); render(); });
-$('zoom').addEventListener('click', () => { range = [3.4, 3.58]; $('zoom').classList.add('on'); $('full').classList.remove('on'); render(); });
+$('full').addEventListener('click', () => { range = [2.8, 4.0]; $('full').classList.add('on'); $('zoom').classList.remove('on'); render(); if (probeR !== null) probe(Math.min(Math.max(probeR, range[0]), range[1])); });
+$('zoom').addEventListener('click', () => { range = [3.4, 3.58]; $('zoom').classList.add('on'); $('full').classList.remove('on'); render(); if (probeR !== null) probe(Math.min(Math.max(probeR, range[0]), range[1])); });
+$('rslider').addEventListener('input', ev => { probe(parseFloat(ev.target.value)); });
 render();
 probe(3.2);
 </script>

@@ -25,7 +25,7 @@
   html,body{height:100%;margin:0;}
   body{
     background:var(--bg);color:var(--text);font-family:var(--font);
-    display:flex;flex-direction:column;height:100dvh;overflow:hidden;
+    display:flex;flex-direction:column;min-height:100dvh;
     -webkit-font-smoothing:antialiased;overscroll-behavior:none;
   }
   header{
@@ -56,7 +56,7 @@
   .seg button.on{background:#232d40;color:var(--text);}
   button.tog{border:1px solid var(--line);background:var(--panel-2);color:var(--muted);font-size:12px;padding:7px 10px;}
   button.tog.on{color:var(--text);border-color:#2b3a52;background:#1a2433;}
-  main{position:relative;flex:1 1 auto;min-height:0;background:#04060a;}
+  main{position:relative;flex:0 0 auto;height:min(80vh,920px);min-height:520px;background:#04060a;}
   #stage{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair;}
   .grain{
     position:absolute;inset:0;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
@@ -106,11 +106,6 @@
   .sw.soldier{width:11px;height:11px;background:var(--rose);}
   .sw.carrier{width:8px;height:8px;background:var(--cyan);box-shadow:inset 0 0 0 2px #fff;}
   .sw.queen{width:8px;height:8px;background:var(--amber);box-shadow:0 0 6px var(--amber);}
-  #minimap{
-    position:absolute;right:10px;bottom:10px;z-index:4;
-    width:150px;height:auto;border:1px solid var(--line);border-radius:8px;
-    background:#04060a;opacity:.94;pointer-events:none;
-  }
   footer{
     flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line);
     padding:10px 14px calc(10px + env(safe-area-inset-bottom));z-index:5;
@@ -152,11 +147,17 @@
     .col{min-width:calc(50% - 4px);}
     .hint{display:none;}
     #legend{display:none;}
-    #minimap{width:104px;}
   }
 </style>
 </head>
 <body>
+
+<div style="box-sizing:border-box;max-width:980px;width:calc(100% - 32px);margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:#e9edf5;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
+<p style="margin:0 0 14px;">Tap the ground to drop food, drag with the wall brush to reshape the world, then watch the trails form. Three ant colonies live on this field, and no ant is in charge. Each ant just follows smells — the food smell out, the home smell back — and leaves a smell trail as it walks. From that one tiny rule come highways, traffic, fights, and colonies that feed or starve as the seasons turn.</p>
+<div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
+<p style="margin:0;">I built this to watch order appear out of almost nothing. No leader, no plan, no ant that can see the whole field — and still the colonies organise, raid each other in a hard winter, and live or die by a year none of them can see coming. Everything below is live: the world is yours to feed, wall off, and starve.</p>
+</div>
 
 <header>
   <div class="brand">
@@ -184,7 +185,7 @@
     </div>
     <div id="ins-status"></div>
     <div id="ins-meta"></div>
-    <button id="btn-release" title="Stop following this ant">Release</button>
+    <button id="btn-release" title="Stop following this ant">Stop following this ant</button>
   </div>
   <div id="legend" aria-hidden="true">
     <div class="lrow"><i class="sw scout"></i>Scout</div>
@@ -194,7 +195,6 @@
     <div class="lrow"><i class="sw queen"></i>Queen</div>
   </div>
   <div id="season-pill" aria-hidden="true"><span id="season-emoji">🌱</span><span id="season-name">Spring</span><span class="sbar"><i id="season-fill"></i></span></div>
-  <canvas id="minimap" width="200" height="125"></canvas>
   <div class="hint" id="hint">tap&nbsp;&middot;&nbsp;drop food&nbsp;&nbsp;&nbsp;drag&nbsp;&middot;&nbsp;draw</div>
 </main>
 
@@ -211,6 +211,7 @@
     </div>
     <div class="grp-sep"></div>
     <div class="grp" role="group" aria-label="World options">
+      <span style="font-size:12px;color:var(--muted);letter-spacing:.04em;">Food regrowth:</span>
       <div class="seg" id="seg-regrow" role="group" aria-label="Food regrowth">
         <button data-v="1" class="on">Regrows</button><button data-v="0">Finite</button>
       </div>
@@ -226,9 +227,9 @@
     <p>Each nest is a <b>mound of earth</b>: speckled soil, a raised crater rim around a dark entrance, scattered pebbles, and a small <b>pennant</b> in the colony&rsquo;s color &mdash; the only bright mark, so the mounds read as ground, not neon. Faint stippled earth fades out around each one, marking its territory. The small label gives <b>name and live population</b>. Deep in the entrance glows the <b>queen</b>. Delivered food goes into her store. She burns a little per ant every moment to keep the colony alive, and spends food to hatch new ants while the store is healthy. If it runs dry, ants begin to starve &mdash; and a colony left with no ants and no food <b>dies</b>, its mound going dark and its pennant gray.</p>
     <p>The year turns through <b>four seasons</b>, about a minute each &mdash; watch the marker at the top of the field. <b>Spring</b> doubles the wild food that appears on its own. <b>Summer</b> bakes the scent-highways away half again as fast. <b>Autumn</b> thins new growth to a trickle. <b>Winter</b> stops it entirely and slows every ant with cold &mdash; while the queen&rsquo;s hunger never pauses. Spring and autumn bring <b>rain</b>: a single storm washes every scent field half away, so highways built for weeks can vanish in an afternoon.</p>
     <p>Winter makes thieves. When the cold bites and a queen&rsquo;s store falls below 25, her <b>soldiers turn raider</b>: up to three march on the nearest rival mound, steal 8 food from its store, and run home. The return trip crosses patrolled ground, and defenders fight raiders with the usual deadly odds. Inspect a raider mid-march and the card tells you whose nest it is after.</p>
-    <p><b>Watching it.</b> Time runs at &frac14;&times; by default so you can actually follow a foraging trip, a fight, a haul home &mdash; crank it to 4&times; when you want colony-scale drama. The <b>Trails</b> toggle draws faint fading ribbons behind food carriers, so foraging highways materialize without shouting. <b>Heat</b> turns the scent field into a foraging-intensity heatmap, hiding colony colors so you see pure traffic. Pick the <b>Inspect</b> brush and tap any ant: the camera follows it and the card tells you its caste, its current job, its age, and how many hauls it has made. Tap empty ground or press Esc to release.</p>
-    <p>The <b>minimap</b> (bottom-right) keeps you oriented, with a white frame showing your current view. The <b>legend</b> (top-right) reads the castes at a glance.</p>
-    <p>The <b>Food</b> switch decides whether new clusters appear on their own. <b>Regrows</b> runs the ecosystem forever; <b>Finite</b> makes the world what you scatter &mdash; colonies can boom, then starve out. Tap to drop food, drag with the wall brush to reshape the world, and watch what happens.</p>
+    <p><b>Watching it.</b> Time runs at &frac14;&times; by default so you can actually follow a foraging trip, a fight, a haul home &mdash; crank it to 4&times; when you want colony-scale drama. The <b>Trails</b> toggle draws faint fading ribbons behind food carriers, so foraging highways materialize without shouting. <b>Heat</b> turns the scent field into a foraging-intensity heatmap, hiding colony colors so you see pure traffic. Pick the <b>Inspect</b> brush and tap any ant: the camera follows it and the card tells you its caste, its current job, its age, and how many hauls it has made. Tap empty ground or press Esc to stop following it.</p>
+    <p>The <b>legend</b> (top-right) reads the castes at a glance.</p>
+    <p>The <b>food-regrowth switch</b> (Regrows / Finite, in the toolbar) decides whether new clusters appear on their own. <b>Regrows</b> runs the ecosystem forever; <b>Finite</b> makes the world what you scatter &mdash; colonies can boom, then starve out.</p>
   </details>
 </footer>
 
@@ -897,8 +898,6 @@ class FormicaSim {
   const canvas = document.getElementById('stage');
   const ctx = canvas.getContext('2d');
   const hint = document.getElementById('hint');
-  const mmCanvas = document.getElementById('minimap');
-  const mmc = mmCanvas.getContext('2d');
 
   let sim = new FormicaSim();
   let running = true;
@@ -1346,43 +1345,6 @@ class FormicaSim {
   }
 
 
-  // V3: minimap with viewport frame
-  let mmTick = 0;
-  function renderMinimap(){
-    if ((mmTick++ % 3) !== 0) return;
-    mmc.fillStyle = '#04060a';
-    mmc.fillRect(0, 0, GRID_W, GRID_H);
-    const f = sim.food;
-    mmc.fillStyle = 'rgba(164,255,94,0.75)';
-    for (let y = 0; y < GRID_H; y++)
-      for (let x = 0; x < GRID_W; x++)
-        if (f[y * GRID_W + x] > 0.5) mmc.fillRect(x, y, 1, 1);
-    const ants = sim.ants;
-    for (let c = 0; c < sim.numColonies; c++){
-      const col = COLONY_DEFS[c].color;
-      mmc.fillStyle = 'rgb(' + col[0] + ',' + col[1] + ',' + col[2] + ')';
-      for (let k = 0; k < ants.length; k++){
-        const a = ants[k];
-        if (a.colony !== c) continue;
-        mmc.fillRect(a.x, a.y, 1.4, 1.4);
-      }
-      const nst = sim.nests[c];
-      mmc.strokeStyle = 'rgb(' + col[0] + ',' + col[1] + ',' + col[2] + ')';
-      mmc.lineWidth = 1;
-      mmc.beginPath(); mmc.arc(nst.x, nst.y, nst.r * 2, 0, Math.PI * 2); mmc.stroke();
-    }
-    if (followed && !followed.dead){
-      mmc.fillStyle = '#ffffff';
-      mmc.fillRect(followed.x - 1, followed.y - 1, 2.4, 2.4);
-    }
-    // viewport frame
-    const s = worldScale();
-    const hw = (view.w / 2) / s, hh = (view.h / 2) / s;
-    mmc.strokeStyle = 'rgba(255,255,255,0.8)';
-    mmc.lineWidth = 1;
-    mmc.strokeRect(cam.x - hw, cam.y - hh, hw * 2, hh * 2);
-  }
-
   function renderFrame(t){
     renderPheromones();
     if (wallsDirty) renderWalls();
@@ -1450,7 +1412,6 @@ class FormicaSim {
       ctx.stroke();
     }
 
-    renderMinimap();
   }
 
   // ---- tick formatter for the inspector's age readout ----

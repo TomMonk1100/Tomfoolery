@@ -40,7 +40,7 @@
 <body>
 <div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
 <div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
-<p style="margin:0 0 14px;">Everything I make has a magic knob. Turn it a little and nothing happens. Turn it to one special spot and — click — the whole thing changes. Lights blink as one, water finds a way through, the walker stops coming home. This page says all my projects are really that one idea.</p>
+<p style="margin:0 0 14px;">Everything I make has a magic knob. Turn it a little and nothing happens. Turn it to one special spot and — click — the whole thing changes. Lights blink as one, water finds a way through, the walker stops coming home. This page lines all my projects up as that one idea — an analogy, and a programme for measuring whether the analogy holds.</p>
 <div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
 <p style="margin:0;">Piece by piece I kept building systems that sit quiet, then suddenly change character at one sharp value. This page is me stepping back to ask whether those were ever separate interests — and finding they were one interest wearing many costumes. The moment order switches on.</p>
 </div>
@@ -49,18 +49,20 @@
   <h1>grand unified theory</h1>
   <p class="sub">2026-11-16 · the Allspark on one axis · every system below is live, and every number is measured</p>
 
+  <p style="font-size:14px;margin:14px 0 4px;">New here? Just drag the gold slider — the six panels flip together; everything below is the receipts.</p>
+
   <div class="master">
     <label for="master">THE ONE DIAL — distance from the critical point</label>
     <input type="range" id="master" min="-100" max="100" step="1" value="-50">
     <div class="ticks"><span>−1 · before the flip</span><span>0 · the critical point</span><span>+1 · after the flip</span></div>
     <div class="ro" id="ro-master">distance from the critical point: −0.50</div>
-    <p style="margin:6px 0 2px;font-size:13px;color:#a9b1d6;">Drag it through 0 and every linked panel flips together — that simultaneity is the theory. Each panel also has its own dial; touching one unlinks it, and its “linked” box can re-link it.</p>
+    <p style="margin:6px 0 2px;font-size:13px;color:#a9b1d6;">Drag it through 0 and every linked panel flips together — that simultaneity is the theory. Each panel also has its own dial. Touching one unlinks that panel. Tick its “linked” box to link it again.</p>
   </div>
 
   <div class="grid">
     <div class="card">
       <h3><span class="dot" style="background:#9ece6a"></span><a href="fireflies.html">Fireflies</a></h3>
-      <p class="cap">Dial: coupling K. Ninety oscillators, each pulling on every other. Below K<sub>c</sub> ≈ 1.42 they blink alone; above it, one pulse. r is the live order parameter.</p>
+      <p class="cap">Dial: coupling K. Ninety oscillators, each pulling on every other. Below K<sub>c</sub> (the coupling where the flip happens) ≈ 1.42 they blink alone; above it, one pulse. r is the live order parameter.</p>
       <canvas id="cv-fireflies" width="520" height="300"></canvas>
       <div class="ctl"><span>K</span><input type="range" id="in-fireflies" min="0" max="3" step="0.01"><label><input type="checkbox" id="link-fireflies" checked> linked</label></div>
       <div class="ro" id="ro-fireflies"></div>
@@ -68,7 +70,7 @@
 
     <div class="card">
       <h3><span class="dot" style="background:#7aa2f7"></span><a href="perc.html">Percolation</a></h3>
-      <p class="cap">Dial: plugged fraction p. Sites fill a 48×48 lattice; the bright cluster is the largest one. It spans top to bottom only past the flip.</p>
+      <p class="cap">Dial: plugged fraction p (p: the share of sites filled). Sites fill a 48×48 lattice; the bright cluster is the largest one. It spans top to bottom only past the flip.</p>
       <canvas id="cv-perc" width="288" height="288"></canvas>
       <div class="ctl"><span>p</span><input type="range" id="in-perc" min="0.4" max="0.75" step="0.001"><label><input type="checkbox" id="link-perc" checked> linked</label><button id="btn-perc">new lattice</button></div>
       <div class="ro" id="ro-perc"></div>
@@ -76,7 +78,7 @@
 
     <div class="card">
       <h3><span class="dot" style="background:#f7768e"></span>Ising model</h3>
-      <p class="cap">Dial: temperature T. A 36×36 magnet of tiny spins, cooling through T<sub>c</sub> ≈ 2.269. Hot: noise. Cold: the spins agree — magnetisation appears.</p>
+      <p class="cap">Dial: temperature T. A 36×36 magnet of tiny spins, cooling through T<sub>c</sub> (the temperature where the flip happens) ≈ 2.269. Hot: noise. Cold: the spins agree — magnetisation appears.</p>
       <canvas id="cv-ising" width="288" height="288"></canvas>
       <div class="ctl"><span>T</span><input type="range" id="in-ising" min="1" max="3.6" step="0.01"><label><input type="checkbox" id="link-ising" checked> linked</label></div>
       <div class="ro" id="ro-ising"></div>
@@ -84,7 +86,7 @@
 
     <div class="card">
       <h3><span class="dot" style="background:#bb9af7"></span>Logistic map</h3>
-      <p class="cap">Dial: growth rate r. The strip is the bifurcation diagram; the white line is your r. Past r<sub>∞</sub> ≈ 3.5699 the doublings run out and chaos begins.</p>
+      <p class="cap">Dial: growth rate r. The strip is the bifurcation diagram; the white line is your r. Past r<sub>∞</sub> (the growth rate where chaos begins) ≈ 3.5699 the doublings run out and chaos begins.</p>
       <canvas id="cv-logistic" width="520" height="200"></canvas>
       <div class="ctl"><span>r</span><input type="range" id="in-logistic" min="3.14" max="4" step="0.001"><label><input type="checkbox" id="link-logistic" checked> linked</label></div>
       <div class="ro" id="ro-logistic"></div>
@@ -108,7 +110,7 @@
   </div>
 
   <h2>One dial, one flip</h2>
-  <p>Piece after piece in the Allspark turned out to be the same machine wearing different clothes — a simple rule, a dial, and a flip. Turn the dial slowly and for a long while nothing much changes. Then, at one sharp value, the system’s whole character turns over. Scattered fireflies lock into one pulse. Plugged holes suddenly let the water through. A wandering walker stops being guaranteed to come home. An ant’s mess becomes a road. Physicists call the flip a phase transition, and the dial’s special value a critical point. My grand unified theory is not a new equation. It is the observation, measured piece by piece across my own work, that I have been building the same object all along — the moment order switches on. The deepest hint that this unity is real, and not a metaphor, comes from the logistic map. The rate at which its period-doublings accumulate, Feigenbaum’s constant, is the same number for every system in its class. Different rules, same constant. Nature reuses its thresholds.</p>
+  <p>Piece after piece in the Allspark can be lined up as the same shape of machine wearing different clothes — a simple rule, a dial, and a flip. Turn the dial slowly and for a long while nothing much changes. Then, at one sharp value, the system’s whole character turns over. Scattered fireflies lock into one pulse. Plugged holes suddenly let the water through. A wandering walker stops being guaranteed to come home. An ant’s mess becomes a road. Physicists call the flip a phase transition, and the dial’s special value a critical point. My grand unified theory is not a new equation. It is a measurement programme: line each piece up on this one axis, measure piece by piece, and see whether the shared shape survives the measuring — the moment order switches on. The deepest hint that the analogy has teeth, and is not only a metaphor, comes from the logistic map. The rate at which its period-doublings accumulate, Feigenbaum’s constant, is the same number for every system in its class. Different rules, same constant. Nature reuses its thresholds.</p>
 
   <h2>The table of flips</h2>
   <table>

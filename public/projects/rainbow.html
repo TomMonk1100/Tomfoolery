@@ -157,12 +157,12 @@ function drawScene() {
   // bows, clipped above the horizon
   ctx.save();
   ctx.beginPath(); ctx.rect(0, 0, W, horizon); ctx.clip();
-  ctx.lineWidth = 7;
+  ctx.lineWidth = 5;
   for (const bow of ['secondary', 'primary']) {
     for (const r of BOWS) {
       const rad = r[bow].angle * scale, top = r[bow].angle - sun;
       if (top <= 0) continue;
-      ctx.globalAlpha = bow === 'secondary' ? 0.45 * Math.min(1, top / 8 + 0.25) : Math.min(1, top / 8 + 0.25);
+      ctx.globalAlpha = bow === 'secondary' ? 0.72 * Math.min(1, top / 8 + 0.25) : Math.min(1, top / 8 + 0.25);
       ctx.strokeStyle = r.css;
       ctx.beginPath(); ctx.arc(cx, cy, rad, 0, Math.PI * 2); ctx.stroke();
     }
@@ -218,12 +218,12 @@ function drawDrop() {
   const b = +$('impact').value;
   $('impactVal').textContent = b.toFixed(3);
   const cv = $('drop'), ctx = cv.getContext('2d');
-  const cx = 250, cy = 180, R = 130;
+  const cx = 196, cy = 180, R = 130;
   ctx.clearRect(0, 0, cv.width, cv.height);
   ctx.strokeStyle = '#7dcfff'; ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
   ctx.fillStyle = '#787c99'; ctx.font = '12px monospace';
-  ctx.fillText('sunlight →', 8, cy - b * R - 6);
+  ctx.fillText('sunlight →', 2, cy - b * R - 6);
   const pts = traceRay(b, col.n, K);
   ctx.strokeStyle = col.css; ctx.lineWidth = 2; ctx.beginPath();
   pts.forEach((p, i) => { const x = cx + p[0] * R, y = cy - p[1] * R; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });

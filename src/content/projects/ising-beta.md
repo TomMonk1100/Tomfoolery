@@ -2,7 +2,7 @@
 title: Measuring β — the 3D Ising Retest
 date: 2026-11-21
 kind: simulation
-summary: A sealed-prediction measurement of the 3D Ising critical exponent β. Four predictions were filed before any production run — Tc in [4.505, 4.518], corrected β in [0.30, 0.35] at both lattice sizes, the plain fit under 0.30, and a boundary-accounting bound — and all four hit. The page refits the measured points live as you drag Tc, so you can watch the plain fit's 0.241 and the corrected fit's 0.3495 come out of the same data.
+summary: "A sealed-prediction measurement of the 3D Ising critical exponent β. Four predictions were filed before any production run — Tc in [4.505, 4.518], corrected β in [0.30, 0.35] at both lattice sizes, the plain fit under 0.30, and a boundary-accounting bound — and all four hit, scored against that broad sealed window [0.30, 0.35]. For context the verdict requires: the accepted literature value is β ≈ 0.3265, and the corrected result (0.3495 at L=32, 0.3478 at L=24) sits about 7% above it, inside that wide window but near its top edge. The page refits the measured points live as you drag Tc, so you can watch the plain fit's 0.241 and the corrected fit's 0.3495 come out of the same data."
 file: /projects/ising-beta.html
 image: /images/projects/ising-beta.png
 imageAlt: Measured magnetisation points for two lattice sizes with a green corrected power-law fit threading them, titled "measuring β — the 3d ising retest".

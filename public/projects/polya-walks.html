@@ -1,15 +1,32 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head><meta charset="utf-8">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>pólya walks — 2026-11-16</title>
 <style>
-body { font-family: Georgia, serif; max-width: 960px; margin: 2em auto; padding: 0 1em; color: #222; }
-canvas { background: #11141c; display: block; }
-table { border-collapse: collapse; margin: 1em 0; font-variant-numeric: tabular-nums; }
-td, th { border: 1px solid #ccc; padding: 4px 10px; font-size: 13px; }
-.controls { margin: 1em 0; }
-.controls button, .controls input { margin-right: 1em; }
-</style></head>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .card canvas { width: 100%; height: auto; display: block; border: 1px solid #2a2d3e; border-radius: 6px; background: #0f1017; }
+  .ctl { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl button.on { border-color: #e0af68; color: #e0af68; }
+  .ctl input[type=range] { accent-color: #7dcfff; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; }
+</style>
+</head>
 <body>
 <div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
 <div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
@@ -18,46 +35,61 @@ td, th { border: 1px solid #ccc; padding: 4px 10px; font-size: 13px; }
 <p style="margin:0;">Whether you come home depends on the shape of the world you're lost in — that's a strange and lovely fact. I built this to check the famous numbers myself instead of taking 1921's word for it.</p>
 </div>
 
-<h1>pólya walks — does a random walk come home?</h1>
-<p>A walker starts at the origin and steps at random — one axis,
-one direction, each equally likely. In 1921 Pólya proved the split
-this page is about: in <b>one and two dimensions</b> the walk is
-<i>recurrent</i> — it returns to the origin with probability 1,
-given enough time. In <b>three dimensions</b> it is <i>transient</i>:
-the probability of ever returning is only about <b>0.3405</b>, and
-most walks wander off forever. Below, 40 walkers run the rule live
-in the dimension you pick; a walker that comes home turns gold and
-stays home. The live sample is small on purpose — the measured
-numbers are in the table.</p>
-<canvas id="cv" width="700" height="460"></canvas>
-<div class="controls">
-<button id="dim1">1D</button><button id="dim2">2D</button><button id="dim3">3D</button>
-<button id="playBtn">Pause</button>
-<button id="resetBtn">Reset</button>
-<label>speed <input id="speedSlider" type="range" min="1" max="64" step="1" value="8"> <span id="speedVal">8 steps/frame</span></label>
-</div>
-<p>step <span id="stepVal">0</span> of 4,096 · live sample: <span id="homeVal">–</span></p>
-<h2>What the sweep measured (simulation results, horizon stated)</h2>
-<p>20,000 seeded walks per dimension, each followed for up to
-4,096 steps; a walk counts as home only if it reaches the origin
-within the horizon. These are finite-horizon measurements, not the
-theorem: the 1D figure is still climbing toward 1, the 2D figure
-climbs only logarithmically (0.7135 at this horizon against a limit
-of 1), and the 3D figure stalls just below Pólya's constant
-0.340537 — the shortfall is the horizon's, since walks that would
-return after step 4,096 are counted as gone. The highlighted row
-tracks the live animation's step count. Exact check, computed by
-the core in this page: the probability of standing exactly on the
-origin after 20 steps is <span id="exactVal">–</span>.</p>
-<table id="sweepTable"><tr><th>horizon (steps)</th><th>1D ever-return</th><th>2D ever-return</th><th>3D ever-return</th></tr>
+<div class="wrap">
+  <h1><span class="dot" style="background:#7dcfff"></span>pólya walks — does a random walk come home?</h1>
+  <p class="sub">2026-11-16 · simple symmetric random walks in 1, 2 and 3 dimensions · every number below is measured</p>
+
+  <p>A walker starts at the origin and steps at random — one axis,
+  one direction, each equally likely. In 1921 Pólya proved the split
+  this page is about: in <b>one and two dimensions</b> the walk is
+  <i>recurrent</i> — it returns to the origin with probability 1,
+  given enough time. In <b>three dimensions</b> it is <i>transient</i>:
+  the probability of ever returning is only about <b>0.3405</b>, and
+  most walks wander off forever. Below, 40 walkers run the rule live
+  in the dimension you pick; a walker that comes home turns gold and
+  stays home. The live sample is small on purpose — the measured
+  numbers are in the table.</p>
+
+  <div class="card">
+    <canvas id="cv" width="1040" height="520"></canvas>
+    <div class="ctl">
+      <button id="dim1">1D</button><button id="dim2" class="on">2D</button><button id="dim3">3D</button>
+      <button id="playBtn">Pause</button>
+      <button id="resetBtn">Reset</button>
+      <label>speed <input id="speedSlider" type="range" min="1" max="64" step="1" value="8"> <span id="speedVal">8 steps/frame</span></label>
+    </div>
+    <div class="ro">step <span id="stepVal">0</span> of 4,096 · live sample: <span id="homeVal">–</span></div>
+  </div>
+
+  <h2>What the sweep measured (simulation results, horizon stated)</h2>
+  <p>20,000 seeded walks per dimension, each followed for up to
+  4,096 steps; a walk counts as home only if it reaches the origin
+  within the horizon. These are finite-horizon measurements, not the
+  theorem: the 1D figure is still climbing toward 1, the 2D figure
+  climbs only logarithmically (0.7135 at this horizon against a limit
+  of 1), and the 3D figure stalls just below Pólya's constant
+  0.340537 — the shortfall is the horizon's, since walks that would
+  return after step 4,096 are counted as gone. The highlighted row
+  tracks the live animation's step count. Exact check, computed by
+  the core in this page: the probability of standing exactly on the
+  origin after 20 steps is <span id="exactVal">–</span>.</p>
+  <table id="sweepTable"><tr><th>horizon (steps)</th><th>1D ever-return</th><th>2D ever-return</th><th>3D ever-return</th></tr>
 <tr data-t="16"><td>16</td><td>0.8030</td><td>0.4556</td><td>0.2671</td></tr>
 <tr data-t="64"><td>64</td><td>0.9030</td><td>0.5515</td><td>0.3013</td></tr>
 <tr data-t="256"><td>256</td><td>0.9514</td><td>0.6211</td><td>0.3196</td></tr>
 <tr data-t="1024"><td>1,024</td><td>0.9759</td><td>0.6738</td><td>0.3284</td></tr>
 <tr data-t="4096"><td>4,096</td><td>0.9874</td><td>0.7135</td><td>0.3326</td></tr>
-</table>
-<p>Reading: recurrence fills the bar; transience leaves it
-permanently part-empty.</p>
+  </table>
+  <p>Reading: recurrence fills the bar; transience leaves it
+  permanently part-empty.</p>
+
+  <h2>Methods and caveats</h2>
+  <ul class="notes">
+    <li>The view rescales as the walks spread, so the whole walker field stays in frame, centred on the origin — no walker is ever clipped at an edge.</li>
+    <li>Everything on this page comes from <i>rw-core.mjs</i>; the gates are <i>test-rw-core.mjs</i> and <i>test-rw-page.mjs</i>. The live demo runs the same core, inlined below.</li>
+  </ul>
+</div>
+
 <script>
 // Simple symmetric random walks in d dimensions — one core for
 // harness, sweep, and render. No copied stepping logic anywhere.
@@ -169,30 +201,50 @@ function stepWalkers() {
     }
   }
 }
-function project(p) {
-  // 1D: x along the axis, walkers stacked in rows. 2D: the plane.
-  // 3D: oblique projection, z leaning up-right.
-  var cx = cv.width / 2, cy = cv.height / 2;
-  if (DIM === 1) return [cx + p[0] * scale, 40 + (p[3] || 0)];
-  if (DIM === 2) return [cx + p[0] * scale, cy - p[1] * scale];
-  return [cx + (p[0] + 0.5 * p[2]) * scale, cy - (p[1] + 0.35 * p[2]) * scale];
+// Project a lattice position to unit canvas offsets from the centre
+// (before scaling). 1D: x along the axis, walkers stacked in rows via
+// p[3]. 2D: the plane. 3D: oblique projection, z leaning up-right.
+function projectRaw(p) {
+  if (DIM === 1) return [p[0], ((p[3] || 0) - 30) / 9 - (NW - 1) / 2];
+  if (DIM === 2) return [p[0], -p[1]];
+  return [p[0] + 0.5 * p[2], -(p[1] + 0.35 * p[2])];
 }
 var scale = 6;
-function draw() {
-  ctx.fillStyle = '#11141c';
-  ctx.fillRect(0, 0, cv.width, cv.height);
-  // fit: grow the view to the farthest walker
-  var maxc = 8;
+function fitScale() {
+  // Fit the whole drawn field: the largest projected offset over every
+  // trail point and head, in each axis, sets the scale — so the view
+  // always contains every walker, centred on the origin, no clipping.
+  var mx = 8, my = 8;
   for (var i = 0; i < walkers.length; i++) {
-    var p = walkers[i].pos;
-    for (var a = 0; a < DIM; a++) maxc = Math.max(maxc, Math.abs(p[a]));
+    var w = walkers[i];
+    for (var j = 0; j < w.trail.length; j++) {
+      var q = w.trail[j].slice();
+      if (DIM === 1) q[3] = 30 + i * 9;
+      var u = projectRaw(q);
+      if (Math.abs(u[0]) > mx) mx = Math.abs(u[0]);
+      if (Math.abs(u[1]) > my) my = Math.abs(u[1]);
+    }
+    var head = w.pos.slice();
+    if (DIM === 1) head[3] = 30 + i * 9;
+    var hu = projectRaw(head);
+    if (Math.abs(hu[0]) > mx) mx = Math.abs(hu[0]);
+    if (Math.abs(hu[1]) > my) my = Math.abs(hu[1]);
   }
-  scale = Math.min(14, (cv.width / 2 - 16) / (maxc * (DIM === 3 ? 1.5 : 1)));
+  return Math.min(14, (cv.width / 2 - 20) / mx, (cv.height / 2 - 20) / my);
+}
+function project(p) {
+  var u = projectRaw(p);
+  return [cv.width / 2 + u[0] * scale, cv.height / 2 + u[1] * scale];
+}
+function draw() {
+  ctx.fillStyle = '#0f1017';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  scale = fitScale();
   // origin marker: a line across the rows in 1D, a ring otherwise
   ctx.strokeStyle = '#ffd94a';
   ctx.beginPath();
   if (DIM === 1) {
-    ctx.moveTo(cv.width / 2, 56); ctx.lineTo(cv.width / 2, cv.height - 16);
+    ctx.moveTo(cv.width / 2, 16); ctx.lineTo(cv.width / 2, cv.height - 16);
   } else {
     var o = project([0, 0, 0]);
     ctx.arc(o[0], o[1], 6, 0, 2 * Math.PI);
@@ -207,7 +259,7 @@ function draw() {
       var xy = project(q);
       if (j === 0) ctx.moveTo(xy[0], xy[1]); else ctx.lineTo(xy[0], xy[1]);
     }
-    ctx.strokeStyle = w.home ? 'rgba(255,217,74,0.9)' : 'rgba(120,180,255,0.45)';
+    ctx.strokeStyle = w.home ? 'rgba(255,217,74,0.9)' : 'rgba(125,207,255,0.45)';
     ctx.stroke();
     var head = w.pos.slice();
     if (DIM === 1) head[3] = 30 + i * 9;
@@ -223,7 +275,7 @@ function draw() {
   var rows = document.querySelectorAll('#sweepTable tr[data-t]');
   rows.forEach(function (r) {
     var rt = Number(r.getAttribute('data-t'));
-    r.style.background = (rt <= t && (rt * 4 > t || rt === 4096)) ? '#fff3cd' : '';
+    r.style.background = (rt <= t && (rt * 4 > t || rt === 4096)) ? 'rgba(224,175,104,.16)' : '';
   });
 }
 function frame() {
@@ -244,6 +296,9 @@ document.getElementById('speedSlider').addEventListener('input', function (e) {
 [1, 2, 3].forEach(function (d) {
   document.getElementById('dim' + d).addEventListener('click', function () {
     DIM = d; reset();
+    [1, 2, 3].forEach(function (e) {
+      document.getElementById('dim' + e).classList.toggle('on', e === d);
+    });
   });
 });
 // exact-value check from the inlined core: P(at origin after 20 steps)

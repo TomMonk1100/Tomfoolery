@@ -47,7 +47,12 @@
     <label>day <input type="range" id="day" min="0" max="29" step="1" value="0"></label>
     <button id="prev">← prev day</button>
     <button id="next">next day →</button>
+    <button id="play">▶ play — advance the day</button>
     <span id="daylab"></span>
+  </div>
+  <p style="font-size:13px;color:#787c99;margin:10px 0 0;">The day scrubber zooms into a single day: the green curve below is that one day, with its high and low times and heights marked. Press play and the day advances on its own.</p>
+  <div class="ctl" id="toggles" style="margin-top:12px;">
+    <span><b>constituents on/off</b> — untick a wave and both curves are redrawn without it. Try unticking M2: on a day that had two highs, the second daily tide vanishes, because what is left is mostly the once-a-day waves.</span>
   </div>
   <div class="flex" style="margin-top:14px;">
     <div style="flex:1;min-width:300px;">
@@ -62,7 +67,7 @@
 </div>
 
 <h2>the waves being added</h2>
-<p>Every row is one published constituent for Galveston Pier 21 (NOAA harmonic constituents endpoint for station 8771450, fetched 2026-11-21; amplitudes as published in feet, converted at 1 ft = 0.3048 m). The model is h(t) = Σ A·cos(speed·t − phase), with t in hours since 2026-11-21 00:00 UTC and the published GMT phase lag applied at that start instant. K1 and O1 — the once-a-day waves — are the biggest terms here. That is the whole reason Galveston's tide is mostly diurnal.</p>
+<p>Every row is one steady wave; NOAA calls them constituents. Each row is one published constituent for Galveston Pier 21 (NOAA harmonic constituents endpoint for station 8771450, fetched 2026-11-21). <b>Units note:</b> amplitudes are shown in feet as NOAA publishes them, with metres alongside (1 ft = 0.3048 m); everywhere else on this page heights are in metres. The model is h(t) = Σ A·cos(speed·t − phase), with t in hours since 2026-11-21 00:00 UTC and the published GMT phase lag applied at that start instant. K1 and O1 — the once-a-day waves — are the biggest terms here. That is the whole reason Galveston's tide is mostly diurnal.</p>
 <table>
   <tr><th class="l">constituent</th><th>amplitude (ft)</th><th>amplitude (m)</th><th>phase GMT (°)</th><th>speed (°/h)</th><th>period (h)</th></tr>
   <tr><td class="l">K1</td><td>0.427</td><td>0.130</td><td>53.3</td><td>15.041069</td><td>23.93</td></tr>
@@ -88,7 +93,7 @@
 <p>NOAA publishes 37 constituents for this station. This page uses the 19 above (amplitude at least 0.010 ft, speed at least 12°/h). The annual and semiannual terms (SA, SSA) and the terms under 0.010 ft are left out on purpose — see the notes.</p>
 
 <h2>daily range over the 30 days (model output)</h2>
-<p>Low, high and range for each day, computed by the same gated core that draws the curves. Watch the range breathe: that breathing is the M2/S2 beat (period 14.765 days, checked in the gate) plus the diurnal waves drifting in and out of step. Over the whole month the model spans −0.48 m to +0.28 m, a 0.76 m range — the station's published great diurnal range (GT) is 0.43 m, so the model's month is the right size, not a wild one.</p>
+<p>Low, high and range for each day, computed by the same gated core that draws the curves. Watch the range breathe: that breathing is the M2/S2 beat (period 14.765 days, checked in the gate) plus the diurnal waves drifting in and out of step. Over the whole month the model spans −0.48 m to +0.28 m, a 0.76 m max-to-min span across all 30 days. That span is not the number to set against the station's published great diurnal range (GT, 0.43 m), which is a mean daily range. Like for like: the model's mean daily range over the same 30 days, computed from the same harmonic sum, is 0.47 m — close to GT's 0.43 m.</p>
 <table>
   <tr><th class="l">date (UTC)</th><th>low (m)</th><th>high (m)</th><th>range (m)</th></tr>
 <tr><td class='l'>2026-11-21</td><td>-0.48</td><td>+0.28</td><td>0.76</td></tr>
@@ -133,6 +138,7 @@
   <li>Left out on purpose: SA and SSA (the annual and semiannual waves, 0.289 ft and 0.302 ft). Their phases cannot be honestly pinned to an arbitrary start date in this simplified convention, and they carry seasonal drift, not the daily rhythm. Everything under 0.010 ft is also out. The cost is a slow seasonal offset the page does not model.</li>
   <li>The moon dial uses a mean synodic month of 29.53059 days from a new-moon epoch of 2000-01-06 18:14 UTC. Checked against published phase times for this month (timeanddate, lunation 1285): the dial lands 0.06 days from the full moon on 2026-11-24 14:53 UTC and 0.19 days from the first quarter on 2026-11-17 — but 0.62 days from the new moon on 2026-11-09. Real lunations run 29.27–29.83 days, so a mean dial can be off by about half a day on any single phase. Treat it as a rhythm indicator, not a calendar.</li>
   <li>Gate: the pure core behind this page passed 57 checks with 0 failures — every constituent's period against its published speed, the M2+S2 beat at 14.765 days (inside 14.7–14.8), the 30-day range inside 0.3–1.5 m (measured 0.76 m), no NaN anywhere, and the two moon checks above. The script on this page was extracted and syntax-checked, and its output spot-checked against the core.</li>
+  <li>The constituent checkboxes remove waves from the same sum the core computes — nothing is redrawn from stored curves. With M2 unticked, a sample day (2026-11-22) goes from two highs and two lows to one high and one low in the model's own extrema finder: the second daily tide is M2's contribution, and switching it off makes that visible.</li>
   <li>Times are shown in UTC. Galveston is on CST in November, UTC−6 — subtract 6 hours for local clock time.</li>
 </ul>
 </div>
@@ -148,7 +154,8 @@ const RAW = [
   ['K2',0.010,4.1,30.082138]
 ];
 const CONS = RAW.map(r => ({ name: r[0], amp: r[1] * 0.3048, phase: r[2], speed: r[3] }));
-function heightAt(tH) { let h = 0; for (const c of CONS) h += c.amp * Math.cos((c.speed * tH - c.phase) * Math.PI / 180); return h; }
+const OFF = new Set();
+function heightAt(tH) { let h = 0; for (const c of CONS) { if (OFF.has(c.name)) continue; h += c.amp * Math.cos((c.speed * tH - c.phase) * Math.PI / 180); } return h; }
 const SYNODIC = 29.53059, MOON_EPOCH = Date.UTC(2000, 0, 6, 18, 14, 0);
 function moonAge(ms) { const d = (ms - MOON_EPOCH) / 86400000; return ((d % SYNODIC) + SYNODIC) % SYNODIC; }
 function moonName(a) {
@@ -232,6 +239,22 @@ function drawMoon(ms) {
   ctx.strokeStyle = '#787c99'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke();
   $('moonlab').textContent = moonName(a) + ' · age ' + a.toFixed(1) + ' d · ' + Math.round(illum * 100) + '% lit';
 }
+// constituent toggles: one checkbox per constituent in the table above
+CONS.forEach(c => {
+  const lab = document.createElement('label');
+  const cb = document.createElement('input');
+  cb.type = 'checkbox'; cb.checked = true; cb.dataset.name = c.name;
+  cb.addEventListener('change', () => { cb.checked ? OFF.delete(c.name) : OFF.add(c.name); drawDay(+$('day').value); });
+  lab.appendChild(cb); lab.appendChild(document.createTextNode(' ' + c.name));
+  $('toggles').appendChild(lab);
+});
+// play: advance the selected day about once a second
+let playTimer = null;
+$('play').addEventListener('click', () => {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; $('play').textContent = '▶ play — advance the day'; return; }
+  $('play').textContent = '⏸ pause';
+  playTimer = setInterval(() => { const v = (+$('day').value + 1) % 30; $('day').value = v; drawDay(v); }, 900);
+});
 $('day').addEventListener('input', () => drawDay(+$('day').value));
 $('prev').addEventListener('click', () => { const v = Math.max(0, +$('day').value - 1); $('day').value = v; drawDay(v); });
 $('next').addEventListener('click', () => { const v = Math.min(29, +$('day').value + 1); $('day').value = v; drawDay(v); });

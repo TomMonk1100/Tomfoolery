@@ -3,13 +3,24 @@
 <head><meta charset="utf-8">
 <title>langton's ant — 2026-11-15</title>
 <style>
-body { font-family: Georgia, serif; max-width: 960px; margin: 2em auto; padding: 0 1em; color: #222; }
-canvas { background: #f7f3ea; display: block; border: 1px solid #ccc; }
-table { border-collapse: collapse; margin: 1em 0; font-variant-numeric: tabular-nums; }
-td, th { border: 1px solid #ccc; padding: 4px 10px; font-size: 13px; }
-.controls { margin: 1em 0; }
-.controls button, .controls input { margin-right: 1em; }
-pre { font-size: 11px; line-height: 1.25; overflow-x: auto; }
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 22px 16px 14px; background: #16161e; margin-top: 16px; }
+  canvas { background: #f7f3ea; display: block; margin: 0 auto; border: 1px solid #2a2d3e; border-radius: 6px; max-width: 100%; height: auto; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: left; }
+  th { color: #787c99; font-weight: 400; }
+  .controls { display: flex; align-items: center; gap: 10px; margin: 14px 0 0; font-size: 13px; flex-wrap: wrap; justify-content: center; }
+  .controls button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .controls button:hover { border-color: #7dcfff; }
+  .controls input[type=range] { accent-color: #7dcfff; }
+  .status { text-align: center; color: #787c99; font-size: 13px; }
+  .status span { color: #c0caf5; }
+  pre { font-size: 11px; line-height: 1.25; overflow-x: auto; background: #16161e; border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; }
+  a { color: #7aa2f7; }
 </style></head>
 <body>
 <div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
@@ -19,6 +30,7 @@ pre { font-size: 11px; line-height: 1.25; overflow-x: auto; }
 <p style="margin:0;">Ten thousand steps of mess, then a road, from a rule with no plan in it. I measured exactly when the mess ends because 'eventually it tidies up' wasn't enough for me — I wanted the step, the period, and the proof.</p>
 </div>
 
+<div class="wrap">
 <h1>langton's ant — chaos, then a highway</h1>
 <p>One ant, one rule, stated once. On a <b>white</b> cell it turns
 right, flips the cell black, and steps forward. On a <b>black</b>
@@ -28,6 +40,7 @@ patternless blob. Then, with no change in the rules, it falls into a
 repeating cycle and marches off to infinity laying a diagonal
 highway. The camera follows the ant (red); the pattern is exactly
 the same on every run — the system is deterministic.</p>
+<div class="card">
 <canvas id="cv" width="700" height="700"></canvas>
 <div class="controls">
 <button id="playBtn">Pause</button>
@@ -36,7 +49,8 @@ the same on every run — the system is deterministic.</p>
 <button id="highwayBtn">Run to the highway (step 10,525)</button>
 <label>speed <input id="speedSlider" type="range" min="0" max="3" step="1" value="1"> <span id="speedVal">10 steps/frame</span></label>
 </div>
-<p>step <span id="stepVal">0</span> · black cells <span id="blackVal">0</span> · <span id="phaseVal">chaotic phase</span></p>
+<p class="status">step <span id="stepVal">0</span> · black cells <span id="blackVal">0</span> · <span id="phaseVal">chaotic phase</span></p>
+</div>
 <h2>What the measurement found (measured, not assumed)</h2>
 <p>The highway's period was a hypothesis to test, not a fact to
 illustrate. Recording the colour the ant meets at each step, the
@@ -87,6 +101,7 @@ diagonal bands the ant lays and re-enters:</p>
 .........................................
 .........................................
 .........................................</pre>
+</div>
 <script>
 // Langton's ant — a two-state turmite on a square grid.
 // Rules (stated once, behaviour emerges):
@@ -174,15 +189,15 @@ function draw() {
     if (sx < -cell || sy < -cell || sx > W || sy > H) return;
     ctx.fillRect(sx, sy, cell - 1, cell - 1);
   });
-  // the ant: red square with a white direction tick
+  // the ant: a large red marker with a white direction tick, centred on its cell
   var cx = half * cell, cy = half * cell;
   ctx.fillStyle = '#c22f2f';
-  ctx.fillRect(cx, cy, cell - 1, cell - 1);
+  ctx.fillRect(cx - 4, cy - 4, cell + 7, cell + 7);
   ctx.fillStyle = '#fff';
   var d = DIRS[ant.dir];
-  var tx = cx + (cell - 1) / 2 + d[0] * 2 - 1;
-  var ty = cy + (cell - 1) / 2 - d[1] * 2 - 1;
-  ctx.fillRect(tx, ty, 2, 2);
+  var tx = cx + (cell - 1) / 2 + d[0] * 4 - 2;
+  var ty = cy + (cell - 1) / 2 - d[1] * 4 - 2;
+  ctx.fillRect(tx, ty, 4, 4);
   stepEl.textContent = ant.steps.toLocaleString('en-US');
   blackEl.textContent = ant.black.size.toLocaleString('en-US');
   phaseEl.textContent = ant.steps < COLOUR_ONSET

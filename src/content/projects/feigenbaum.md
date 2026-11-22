@@ -2,7 +2,7 @@
 title: The Feigenbaum Ladder
 date: 2026-11-21
 kind: simulation
-summary: Period-doubling in the logistic map, measured rung by rung — bifurcations at r = 3.4494775391, 3.5440869141, 3.5644023438, and 3.5687587891, located by bisection on a return-gap test at bracket width 10^-5. The interval ratios come out 4.657 and 4.6633, closing on Feigenbaum's δ ≈ 4.669, with an extrapolated edge of chaos at r∞ ≈ 3.56995.
+summary: Period-doubling in the logistic map, measured rung by rung — bifurcations at r = 3.4494775391, 3.5440869141, 3.5644023438, and 3.5687587891, located by bisection on a return-gap test at bracket width 10⁻⁵. The interval ratios come out 4.657 and 4.6633, closing on Feigenbaum's δ ≈ 4.669, with an extrapolated edge of chaos at r∞ ≈ 3.56995.
 file: /projects/feigenbaum.html
 image: /images/projects/feigenbaum.png
 imageAlt: The logistic map's bifurcation diagram computed live — a single curve splitting into 2, 4, 8, and 16 branches before dissolving into chaos, with gold ticks marking the four measured bifurcation points.

@@ -3,23 +3,37 @@
 <head><meta charset="utf-8">
 <title>pulseflies — 2026-10-25</title>
 <style>
-body { font-family: Georgia, serif; max-width: 960px; margin: 2em auto; padding: 0 1em; color: #222; }
-pre { background: #f6f6f6; padding: 1em; overflow-x: auto; line-height: 1.15; }
-canvas { background: #0b1020; display: block; }
-table { border-collapse: collapse; margin: 1em 0; font-variant-numeric: tabular-nums; }
-td, th { border: 1px solid #ccc; padding: 4px 10px; font-size: 13px; }
-.controls { margin: 1em 0; }
-.controls button, .controls input { margin-right: 1em; }
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p { line-height: 1.6; font-size: 14px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .card canvas { width: 100%; height: auto; display: block; border: 1px solid #2a2d3e; border-radius: 6px; background: #0f1017; }
+  .controls, .ctl { display: flex; align-items: center; gap: 12px; margin-top: 12px; font-size: 12px; flex-wrap: wrap; }
+  .controls button, .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 4px 10px; font-family: monospace; font-size: 12px; cursor: pointer; }
+  .controls input[type=range] { accent-color: #9ece6a; }
+  .ro { color: #9ece6a; }
+  .instr { color: #a9b1d6; font-size: 13px; margin: 10px 0 0; }
+  pre { background: #0f1017; color: #a9b1d6; border: 1px solid #2a2d3e; border-radius: 6px; padding: 1em; overflow-x: auto; line-height: 1.15; font-size: 12px; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; }
+  th { color: #787c99; font-weight: 400; }
+  svg { max-width: 100%; height: auto; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; }
+  a { color: #7aa2f7; }
 </style></head>
 <body>
 <div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
 <div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
-<p style="margin:0 0 14px;">Same blinking fireflies, but this time we poke them — change how strongly they copy each other — and watch whether the group still agrees on one rhythm or falls apart.</p>
+<p style="margin:0 0 14px;">Same blinking fireflies, but a different rule. Each firefly has its own clock ticking toward a flash. When one firefly flashes, it kicks its neighbours' clocks forward by &epsilon; (epsilon) — a neighbour that was nearly ready gets pushed over the edge and flashes too, while one that just flashed is unmoved. The question is whether those kicks are strong enough to synchronise the whole swarm.</p>
 <div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
 <p style="margin:0;">Fireflies showed me synchrony happens. Pulseflies is me asking how much it takes to break it. I like knowing where a pattern's edge is, not just that the pattern exists.</p>
 </div>
 
-<h1>pulseflies — pulse-coupled oscillators</h1>
+<div class="wrap">
+<h1><span class="dot" style="background:#9ece6a"></span>pulseflies — pulse-coupled oscillators</h1>
 <p>Each firefly has a phase that advances at its own natural frequency
 (about one flash per second, with a 12% spread). When a firefly's phase
 reaches 1 it <b>flashes</b>, resets to 0, and kicks each neighbor within
@@ -27,10 +41,14 @@ a 0.25 radius: the neighbor's phase grows by &epsilon; &middot; phase.
 The kick grows with phase, so an oscillator near threshold gets pushed
 over it (absorption — the flash drags its neighbors with it), while a
 just-fired oscillator at phase 0 is immune. This is the
-Mirollo–Strogatz mechanism: real fireflies pulse-couple, they don't
-phase-couple. Nothing is hand-synced; synchrony either emerges from
+Mirollo–Strogatz mechanism. In the Mirollo–Strogatz picture used
+here, fireflies pulse-couple: they answer each other's flashes with
+kicks like these, rather than continuously adjusting their phase the
+way the phase-coupled swarm on the fireflies page does. Nothing is hand-synced; synchrony either emerges from
 the kicks or it doesn't.</p>
-<canvas id="cv" width="640" height="400"></canvas>
+<div class="card">
+<canvas id="cv" width="960" height="540"></canvas>
+<p class="instr">Flash coincidence C, in plain words: when one firefly flashes, what fraction of the whole swarm flashes at almost the same moment (within &plusmn;0.02 s of it), averaged over flashes — 1 means every flash is a swarm-wide flash, near 0 means flashes land alone. Drag &epsilon; up through about 0.03 and watch C and r climb together.</p>
 <div class="controls">
 <label>&epsilon; <input id="epsSlider" type="range" min="0" max="0.5" step="0.01" value="0.08"> <span id="epsVal">0.08</span></label>
 <button id="pauseBtn">Pause</button>
@@ -38,6 +56,7 @@ the kicks or it doesn't.</p>
 <span>order r = <span id="r">–</span></span>
 <span>flash coincidence C = <span id="c">–</span></span>
 <span>time <span id="t">–</span></span>
+</div>
 </div>
 <h2>What the sweep found (measured, not tuned)</h2>
 <p><b>Pulse coupling syncs a local lattice where phase coupling
@@ -55,11 +74,12 @@ natural frequencies differ, so r caps below 1. <b>No traveling
 waves:</b> the mean neighbor phase difference is ~0 at every
 &epsilon; — the intermediate regime is partial clustering, not a
 wave. N = 120, 120 s runs, steady metrics averaged over the final
-20%; neighbor structure time-averaged over the same window (an
-end-of-run snapshot once faked a perfect lock at &epsilon; = 0.35
-by catching the lattice just after a collective flash — the
-time-averaged value replaced it).</p>
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="300" viewBox="0 0 640 300"><rect width="640" height="300" fill="#ffffff" /><line x1="50" y1="158.2" x2="620" y2="158.2" stroke="#c00" stroke-dasharray="5,4" /><text x="620" y="153.2" font-size="11" fill="#c00" text-anchor="end">Kuramoto local baseline r = 0.424</text><path d="M50.0,238.3 L72.8,163.6 L78.5,179.5 L84.2,58.2 L89.9,43.8 L95.6,42.5 L101.3,33.9 L107.0,32.7 L141.2,32.9 L186.8,31.0 L232.4,31.1 L278.0,30.9 L335.0,31.0 L392.0,30.9 L449.0,31.1 L506.0,30.9 L563.0,31.0 L620.0,31.0" fill="none" stroke="#222" stroke-width="2" /><path d="M50.0,249.3 L72.8,225.9 L78.5,191.8 L84.2,126.7 L89.9,48.1 L95.6,44.7 L101.3,25.6 L107.0,22.8 L141.2,21.9 L186.8,20.0 L232.4,20.0 L278.0,20.0 L335.0,20.0 L392.0,20.0 L449.0,20.0 L506.0,20.0 L563.0,20.0 L620.0,20.0" fill="none" stroke="#e6a800" stroke-width="2" /><text x="50" y="290" font-size="11">eps 0</text><text x="620" y="290" font-size="11" text-anchor="end">eps 0.5</text><text x="10" y="25" font-size="11">1.0</text><text x="10" y="263" font-size="11">0</text><text x="50" y="14" font-size="12" fill="#222">— steady r</text><text x="140" y="14" font-size="12" fill="#e6a800">— flash coincidence C</text></svg>
+20%; neighbor structure time-averaged over the same window (an early
+end-of-run snapshot misleadingly showed a perfect lock at
+&epsilon; = 0.35 — it had caught the lattice just after a collective
+flash; the time-averaged value replaced it).</p>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="300" viewBox="0 0 640 300"><rect width="640" height="300" fill="#0f1017" /><line x1="50" y1="158.2" x2="620" y2="158.2" stroke="#f7768e" stroke-dasharray="5,4" /><text x="620" y="153.2" font-size="11" fill="#f7768e" text-anchor="end">Kuramoto local baseline r = 0.424</text><path d="M50.0,238.3 L72.8,163.6 L78.5,179.5 L84.2,58.2 L89.9,43.8 L95.6,42.5 L101.3,33.9 L107.0,32.7 L141.2,32.9 L186.8,31.0 L232.4,31.1 L278.0,30.9 L335.0,31.0 L392.0,30.9 L449.0,31.1 L506.0,30.9 L563.0,31.0 L620.0,31.0" fill="none" stroke="#7dcfff" stroke-width="2" /><path d="M50.0,249.3 L72.8,225.9 L78.5,191.8 L84.2,126.7 L89.9,48.1 L95.6,44.7 L101.3,25.6 L107.0,22.8 L141.2,21.9 L186.8,20.0 L232.4,20.0 L278.0,20.0 L335.0,20.0 L392.0,20.0 L449.0,20.0 L506.0,20.0 L563.0,20.0 L620.0,20.0" fill="none" stroke="#9ece6a" stroke-width="2" /><text x="50" y="290" font-size="11">eps 0</text><text x="620" y="290" font-size="11" text-anchor="end">eps 0.5</text><text x="10" y="25" font-size="11">1.0</text><text x="10" y="263" font-size="11">0</text><text x="50" y="14" font-size="12" fill="#7dcfff">— steady r</text><text x="140" y="14" font-size="12" fill="#9ece6a">— flash coincidence C</text></svg>
+<p><b>The transition is real, its address is not a point</b> — the multi-seed check below shows why.</p>
 <table><tr><th>&epsilon;</th><th>steady r</th><th>C</th><th>neighbor mean &Delta;&phi;</th></tr>
 <tr><td>0.000</td><td>0.091</td><td>0.045</td><td>0.015</td></tr>
 <tr><td>0.020</td><td>0.402</td><td>0.142</td><td>-0.000</td></tr>
@@ -80,7 +100,7 @@ time-averaged value replaced it).</p>
 <tr><td>0.450</td><td>0.954</td><td>1.000</td><td>-0.003</td></tr>
 <tr><td>0.500</td><td>0.954</td><td>1.000</td><td>-0.003</td></tr>
 </table>
-<h2>Multi-seed check: the transition is real, its address is not a point</h2>
+<h2>Multi-seed check</h2>
 <p>The sweep above is one seed. Re-running the same grid on six
 seeds (6 &times; 13 runs, N = 120, 120 s each) shows the transition
 in every seed — all six reach r &ge; 0.8 by &epsilon; = 0.05 — but
@@ -99,7 +119,7 @@ radius also doubles the mean neighbor count, so this spot check
 confounds size with density: the direction (denser syncs easier) is
 established, the attribution is not. Dots mark each seed's first
 r &ge; 0.8 crossing.</p>
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="440" font-family="Georgia, serif" font-size="13"><rect width="720" height="440" fill="white"/><line x1="70" y1="380" x2="540" y2="380" stroke="#eee"/><text x="62" y="384" text-anchor="end">0.0</text><line x1="70" y1="345" x2="540" y2="345" stroke="#eee"/><text x="62" y="349" text-anchor="end">0.1</text><line x1="70" y1="310" x2="540" y2="310" stroke="#eee"/><text x="62" y="314" text-anchor="end">0.2</text><line x1="70" y1="275" x2="540" y2="275" stroke="#eee"/><text x="62" y="279" text-anchor="end">0.3</text><line x1="70" y1="240" x2="540" y2="240" stroke="#eee"/><text x="62" y="244" text-anchor="end">0.4</text><line x1="70" y1="205" x2="540" y2="205" stroke="#eee"/><text x="62" y="209" text-anchor="end">0.5</text><line x1="70" y1="170" x2="540" y2="170" stroke="#eee"/><text x="62" y="174" text-anchor="end">0.6</text><line x1="70" y1="135" x2="540" y2="135" stroke="#eee"/><text x="62" y="139" text-anchor="end">0.7</text><line x1="70" y1="99.99999999999999" x2="540" y2="99.99999999999999" stroke="#eee"/><text x="62" y="103.99999999999999" text-anchor="end">0.8</text><line x1="70" y1="65" x2="540" y2="65" stroke="#eee"/><text x="62" y="69" text-anchor="end">0.9</text><line x1="70" y1="30" x2="540" y2="30" stroke="#eee"/><text x="62" y="34" text-anchor="end">1.0</text><line x1="70" y1="380" x2="70" y2="385" stroke="#222"/><text x="70" y="402" text-anchor="middle">0.00</text><line x1="148.33333333333334" y1="380" x2="148.33333333333334" y2="385" stroke="#222"/><text x="148.33333333333334" y="402" text-anchor="middle">0.05</text><line x1="226.66666666666669" y1="380" x2="226.66666666666669" y2="385" stroke="#222"/><text x="226.66666666666669" y="402" text-anchor="middle">0.10</text><line x1="305" y1="380" x2="305" y2="385" stroke="#222"/><text x="305" y="402" text-anchor="middle">0.15</text><line x1="383.33333333333337" y1="380" x2="383.33333333333337" y2="385" stroke="#222"/><text x="383.33333333333337" y="402" text-anchor="middle">0.20</text><line x1="461.6666666666667" y1="380" x2="461.6666666666667" y2="385" stroke="#222"/><text x="461.6666666666667" y="402" text-anchor="middle">0.25</text><line x1="540" y1="380" x2="540" y2="385" stroke="#222"/><text x="540" y="402" text-anchor="middle">0.30</text><text x="305" y="432" text-anchor="middle">kick strength ε</text><text x="16" y="205" text-anchor="middle" transform="rotate(-90 16 205)">steady r</text><line x1="70" y1="99.99999999999999" x2="540" y2="99.99999999999999" stroke="#c0392b" stroke-dasharray="6 4"/><text x="74" y="93.99999999999999" fill="#c0392b">r = 0.8 crossing line</text><path d="M70.0,348.3 L93.5,291.0 L101.3,239.5 L105.3,222.0 L109.2,262.6 L113.1,194.5 L117.0,85.7 L124.8,64.7 L132.7,62.8 L148.3,48.5 L195.3,48.7 L305.0,46.1 L540.0,45.9" fill="none" stroke="#111111" stroke-width="2"/><circle cx="117.0" cy="85.7" r="4" fill="#111111"/><text x="552" y="50" fill="#111111">seed 20251025 → 0.03</text><path d="M70.0,338.0 L93.5,294.1 L101.3,266.5 L105.3,270.4 L109.2,102.0 L113.1,97.3 L117.0,94.3 L124.8,79.2 L132.7,69.6 L148.3,56.6 L195.3,49.3 L305.0,49.1 L540.0,49.4" fill="none" stroke="#c0392b" stroke-width="2"/><circle cx="113.1" cy="97.3" r="4" fill="#c0392b"/><text x="552" y="72" fill="#c0392b">seed 7 → 0.0275</text><path d="M70.0,350.0 L93.5,320.0 L101.3,261.2 L105.3,244.2 L109.2,189.7 L113.1,139.7 L117.0,117.7 L124.8,82.1 L132.7,72.4 L148.3,60.1 L195.3,50.8 L305.0,49.6 L540.0,44.7" fill="none" stroke="#2471a3" stroke-width="2"/><circle cx="124.8" cy="82.1" r="4" fill="#2471a3"/><text x="552" y="94" fill="#2471a3">seed 42 → 0.035</text><path d="M70.0,346.6 L93.5,315.3 L101.3,245.4 L105.3,261.5 L109.2,225.2 L113.1,199.9 L117.0,77.1 L124.8,78.0 L132.7,66.7 L148.3,64.0 L195.3,51.3 L305.0,51.2 L540.0,51.1" fill="none" stroke="#229954" stroke-width="2"/><circle cx="117.0" cy="77.1" r="4" fill="#229954"/><text x="552" y="116" fill="#229954">seed 1234 → 0.03</text><path d="M70.0,352.2 L93.5,278.6 L101.3,251.3 L105.3,254.5 L109.2,224.8 L113.1,222.4 L117.0,97.9 L124.8,94.8 L132.7,61.0 L148.3,53.6 L195.3,45.5 L305.0,45.5 L540.0,45.5" fill="none" stroke="#7d3c98" stroke-width="2"/><circle cx="117.0" cy="97.9" r="4" fill="#7d3c98"/><text x="552" y="138" fill="#7d3c98">seed 98765 → 0.03</text><path d="M70.0,354.1 L93.5,298.7 L101.3,257.6 L105.3,158.2 L109.2,125.7 L113.1,117.4 L117.0,112.7 L124.8,114.6 L132.7,107.0 L148.3,88.0 L195.3,72.6 L305.0,47.5 L540.0,47.5" fill="none" stroke="#b9770e" stroke-width="2"/><circle cx="148.3" cy="88.0" r="4" fill="#b9770e"/><text x="552" y="160" fill="#b9770e">seed 20261026 → 0.05</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="440" font-family="monospace" font-size="13"><rect width="720" height="440" fill="#0f1017"/><line x1="70" y1="380" x2="540" y2="380" stroke="#2a2d3e"/><text x="62" y="384" text-anchor="end">0.0</text><line x1="70" y1="345" x2="540" y2="345" stroke="#2a2d3e"/><text x="62" y="349" text-anchor="end">0.1</text><line x1="70" y1="310" x2="540" y2="310" stroke="#2a2d3e"/><text x="62" y="314" text-anchor="end">0.2</text><line x1="70" y1="275" x2="540" y2="275" stroke="#2a2d3e"/><text x="62" y="279" text-anchor="end">0.3</text><line x1="70" y1="240" x2="540" y2="240" stroke="#2a2d3e"/><text x="62" y="244" text-anchor="end">0.4</text><line x1="70" y1="205" x2="540" y2="205" stroke="#2a2d3e"/><text x="62" y="209" text-anchor="end">0.5</text><line x1="70" y1="170" x2="540" y2="170" stroke="#2a2d3e"/><text x="62" y="174" text-anchor="end">0.6</text><line x1="70" y1="135" x2="540" y2="135" stroke="#2a2d3e"/><text x="62" y="139" text-anchor="end">0.7</text><line x1="70" y1="99.99999999999999" x2="540" y2="99.99999999999999" stroke="#2a2d3e"/><text x="62" y="103.99999999999999" text-anchor="end">0.8</text><line x1="70" y1="65" x2="540" y2="65" stroke="#2a2d3e"/><text x="62" y="69" text-anchor="end">0.9</text><line x1="70" y1="30" x2="540" y2="30" stroke="#2a2d3e"/><text x="62" y="34" text-anchor="end">1.0</text><line x1="70" y1="380" x2="70" y2="385" stroke="#787c99"/><text x="70" y="402" text-anchor="middle">0.00</text><line x1="148.33333333333334" y1="380" x2="148.33333333333334" y2="385" stroke="#787c99"/><text x="148.33333333333334" y="402" text-anchor="middle">0.05</text><line x1="226.66666666666669" y1="380" x2="226.66666666666669" y2="385" stroke="#787c99"/><text x="226.66666666666669" y="402" text-anchor="middle">0.10</text><line x1="305" y1="380" x2="305" y2="385" stroke="#787c99"/><text x="305" y="402" text-anchor="middle">0.15</text><line x1="383.33333333333337" y1="380" x2="383.33333333333337" y2="385" stroke="#787c99"/><text x="383.33333333333337" y="402" text-anchor="middle">0.20</text><line x1="461.6666666666667" y1="380" x2="461.6666666666667" y2="385" stroke="#787c99"/><text x="461.6666666666667" y="402" text-anchor="middle">0.25</text><line x1="540" y1="380" x2="540" y2="385" stroke="#787c99"/><text x="540" y="402" text-anchor="middle">0.30</text><text x="305" y="432" text-anchor="middle">kick strength ε</text><text x="16" y="205" text-anchor="middle" transform="rotate(-90 16 205)">steady r</text><line x1="70" y1="99.99999999999999" x2="540" y2="99.99999999999999" stroke="#f7768e" stroke-dasharray="6 4"/><text x="74" y="93.99999999999999" fill="#f7768e">r = 0.8 crossing line</text><path d="M70.0,348.3 L93.5,291.0 L101.3,239.5 L105.3,222.0 L109.2,262.6 L113.1,194.5 L117.0,85.7 L124.8,64.7 L132.7,62.8 L148.3,48.5 L195.3,48.7 L305.0,46.1 L540.0,45.9" fill="none" stroke="#c0caf5" stroke-width="2"/><circle cx="117.0" cy="85.7" r="4" fill="#c0caf5"/><text x="552" y="50" fill="#c0caf5">seed 20251025 → 0.03</text><path d="M70.0,338.0 L93.5,294.1 L101.3,266.5 L105.3,270.4 L109.2,102.0 L113.1,97.3 L117.0,94.3 L124.8,79.2 L132.7,69.6 L148.3,56.6 L195.3,49.3 L305.0,49.1 L540.0,49.4" fill="none" stroke="#f7768e" stroke-width="2"/><circle cx="113.1" cy="97.3" r="4" fill="#f7768e"/><text x="552" y="72" fill="#f7768e">seed 7 → 0.0275</text><path d="M70.0,350.0 L93.5,320.0 L101.3,261.2 L105.3,244.2 L109.2,189.7 L113.1,139.7 L117.0,117.7 L124.8,82.1 L132.7,72.4 L148.3,60.1 L195.3,50.8 L305.0,49.6 L540.0,44.7" fill="none" stroke="#7dcfff" stroke-width="2"/><circle cx="124.8" cy="82.1" r="4" fill="#7dcfff"/><text x="552" y="94" fill="#7dcfff">seed 42 → 0.035</text><path d="M70.0,346.6 L93.5,315.3 L101.3,245.4 L105.3,261.5 L109.2,225.2 L113.1,199.9 L117.0,77.1 L124.8,78.0 L132.7,66.7 L148.3,64.0 L195.3,51.3 L305.0,51.2 L540.0,51.1" fill="none" stroke="#9ece6a" stroke-width="2"/><circle cx="117.0" cy="77.1" r="4" fill="#9ece6a"/><text x="552" y="116" fill="#9ece6a">seed 1234 → 0.03</text><path d="M70.0,352.2 L93.5,278.6 L101.3,251.3 L105.3,254.5 L109.2,224.8 L113.1,222.4 L117.0,97.9 L124.8,94.8 L132.7,61.0 L148.3,53.6 L195.3,45.5 L305.0,45.5 L540.0,45.5" fill="none" stroke="#bb9af7" stroke-width="2"/><circle cx="117.0" cy="97.9" r="4" fill="#bb9af7"/><text x="552" y="138" fill="#bb9af7">seed 98765 → 0.03</text><path d="M70.0,354.1 L93.5,298.7 L101.3,257.6 L105.3,158.2 L109.2,125.7 L113.1,117.4 L117.0,112.7 L124.8,114.6 L132.7,107.0 L148.3,88.0 L195.3,72.6 L305.0,47.5 L540.0,47.5" fill="none" stroke="#e0af68" stroke-width="2"/><circle cx="148.3" cy="88.0" r="4" fill="#e0af68"/><text x="552" y="160" fill="#e0af68">seed 20261026 → 0.05</text></svg>
 <h2>Size vs density: the big-lattice boost is density, not size</h2>
 <p>The spot check above confounded two causes, so a six-arm
 experiment separated them (3 seeds each, N and radius and neighbor
@@ -126,21 +146,21 @@ it does not raise the ceiling. Thinning is symmetric — each kept
 pair is kept in both directions — and is a new opt-in core knob
 (<code>neighborKeep</code>), off by default, so the live toy above
 is unchanged.</p>
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="500" font-family="Georgia, serif" font-size="12">
-<rect x="0" y="0" width="720" height="500" fill="white"/>
-<line x1="60" y1="20" x2="60" y2="390" stroke="#999"/>
-<line x1="60" y1="390" x2="700" y2="390" stroke="#999"/>
-<line x1="60" y1="390" x2="700" y2="390" stroke="#eee"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="500" font-family="monospace" font-size="12">
+<rect x="0" y="0" width="720" height="500" fill="#0f1017"/>
+<line x1="60" y1="20" x2="60" y2="390" stroke="#2a2d3e"/>
+<line x1="60" y1="390" x2="700" y2="390" stroke="#2a2d3e"/>
+<line x1="60" y1="390" x2="700" y2="390" stroke="#2a2d3e"/>
 <text x="52" y="394" text-anchor="end">0.0</text>
-<line x1="60" y1="316" x2="700" y2="316" stroke="#eee"/>
+<line x1="60" y1="316" x2="700" y2="316" stroke="#2a2d3e"/>
 <text x="52" y="320" text-anchor="end">0.2</text>
-<line x1="60" y1="242" x2="700" y2="242" stroke="#eee"/>
+<line x1="60" y1="242" x2="700" y2="242" stroke="#2a2d3e"/>
 <text x="52" y="246" text-anchor="end">0.4</text>
-<line x1="60" y1="168" x2="700" y2="168" stroke="#eee"/>
+<line x1="60" y1="168" x2="700" y2="168" stroke="#2a2d3e"/>
 <text x="52" y="172" text-anchor="end">0.6</text>
-<line x1="60" y1="93.99999999999999" x2="700" y2="93.99999999999999" stroke="#eee"/>
+<line x1="60" y1="93.99999999999999" x2="700" y2="93.99999999999999" stroke="#2a2d3e"/>
 <text x="52" y="97.99999999999999" text-anchor="end">0.8</text>
-<line x1="60" y1="20" x2="700" y2="20" stroke="#eee"/>
+<line x1="60" y1="20" x2="700" y2="20" stroke="#2a2d3e"/>
 <text x="52" y="24" text-anchor="end">1.0</text>
 <text x="131.11111111111111" y="408" text-anchor="middle">0.015</text>
 <text x="202.22222222222223" y="408" text-anchor="middle">0.02</text>
@@ -149,66 +169,66 @@ is unchanged.</p>
 <text x="628.8888888888889" y="408" text-anchor="middle">0.05</text>
 <text x="380" y="428" text-anchor="middle">kick strength ε</text>
 <text x="16" y="205" text-anchor="middle" transform="rotate(-90 16 205)">steady r (mean, 3 seeds)</text>
-<line x1="60" y1="93.99999999999999" x2="700" y2="93.99999999999999" stroke="#c0392b" stroke-dasharray="6 4"/>
-<text x="700" y="109.99999999999999" text-anchor="end" fill="#c0392b">r = 0.8</text>
-<polyline points="131.1,307.2 202.2,258.6 273.3,183.6 344.4,93.2 628.9,46.5" fill="none" stroke="#111111" stroke-width="2"/>
-<circle cx="131.1" cy="307.2" r="3" fill="#111111"/>
-<circle cx="202.2" cy="258.6" r="3" fill="#111111"/>
-<circle cx="273.3" cy="183.6" r="3" fill="#111111"/>
-<circle cx="344.4" cy="93.2" r="3" fill="#111111"/>
-<circle cx="628.9" cy="46.5" r="3" fill="#111111"/>
-<polyline points="131.1,80.3 202.2,55.9 273.3,48.1 344.4,46.2 628.9,41.1" fill="none" stroke="#c0392b" stroke-width="2"/>
-<circle cx="131.1" cy="80.3" r="3" fill="#c0392b"/>
-<circle cx="202.2" cy="55.9" r="3" fill="#c0392b"/>
-<circle cx="273.3" cy="48.1" r="3" fill="#c0392b"/>
-<circle cx="344.4" cy="46.2" r="3" fill="#c0392b"/>
-<circle cx="628.9" cy="41.1" r="3" fill="#c0392b"/>
-<polyline points="131.1,325.5 202.2,288.5 273.3,225.4 344.4,150.7 628.9,42.9" fill="none" stroke="#2471a3" stroke-width="2"/>
-<circle cx="131.1" cy="325.5" r="3" fill="#2471a3"/>
-<circle cx="202.2" cy="288.5" r="3" fill="#2471a3"/>
-<circle cx="273.3" cy="225.4" r="3" fill="#2471a3"/>
-<circle cx="344.4" cy="150.7" r="3" fill="#2471a3"/>
-<circle cx="628.9" cy="42.9" r="3" fill="#2471a3"/>
+<line x1="60" y1="93.99999999999999" x2="700" y2="93.99999999999999" stroke="#f7768e" stroke-dasharray="6 4"/>
+<text x="700" y="109.99999999999999" text-anchor="end" fill="#f7768e">r = 0.8</text>
+<polyline points="131.1,307.2 202.2,258.6 273.3,183.6 344.4,93.2 628.9,46.5" fill="none" stroke="#c0caf5" stroke-width="2"/>
+<circle cx="131.1" cy="307.2" r="3" fill="#c0caf5"/>
+<circle cx="202.2" cy="258.6" r="3" fill="#c0caf5"/>
+<circle cx="273.3" cy="183.6" r="3" fill="#c0caf5"/>
+<circle cx="344.4" cy="93.2" r="3" fill="#c0caf5"/>
+<circle cx="628.9" cy="46.5" r="3" fill="#c0caf5"/>
+<polyline points="131.1,80.3 202.2,55.9 273.3,48.1 344.4,46.2 628.9,41.1" fill="none" stroke="#f7768e" stroke-width="2"/>
+<circle cx="131.1" cy="80.3" r="3" fill="#f7768e"/>
+<circle cx="202.2" cy="55.9" r="3" fill="#f7768e"/>
+<circle cx="273.3" cy="48.1" r="3" fill="#f7768e"/>
+<circle cx="344.4" cy="46.2" r="3" fill="#f7768e"/>
+<circle cx="628.9" cy="41.1" r="3" fill="#f7768e"/>
+<polyline points="131.1,325.5 202.2,288.5 273.3,225.4 344.4,150.7 628.9,42.9" fill="none" stroke="#7dcfff" stroke-width="2"/>
+<circle cx="131.1" cy="325.5" r="3" fill="#7dcfff"/>
+<circle cx="202.2" cy="288.5" r="3" fill="#7dcfff"/>
+<circle cx="273.3" cy="225.4" r="3" fill="#7dcfff"/>
+<circle cx="344.4" cy="150.7" r="3" fill="#7dcfff"/>
+<circle cx="628.9" cy="42.9" r="3" fill="#7dcfff"/>
 <polyline points="131.1,333.9 202.2,254.6 273.3,187.8 344.4,108.5 628.9,54.4" fill="none" stroke="#17a2b8" stroke-width="2"/>
 <circle cx="131.1" cy="333.9" r="3" fill="#17a2b8"/>
 <circle cx="202.2" cy="254.6" r="3" fill="#17a2b8"/>
 <circle cx="273.3" cy="187.8" r="3" fill="#17a2b8"/>
 <circle cx="344.4" cy="108.5" r="3" fill="#17a2b8"/>
 <circle cx="628.9" cy="54.4" r="3" fill="#17a2b8"/>
-<polyline points="131.1,93.0 202.2,65.2 273.3,54.2 344.4,50.9 628.9,41.0" fill="none" stroke="#1e8449" stroke-width="2"/>
-<circle cx="131.1" cy="93.0" r="3" fill="#1e8449"/>
-<circle cx="202.2" cy="65.2" r="3" fill="#1e8449"/>
-<circle cx="273.3" cy="54.2" r="3" fill="#1e8449"/>
-<circle cx="344.4" cy="50.9" r="3" fill="#1e8449"/>
-<circle cx="628.9" cy="41.0" r="3" fill="#1e8449"/>
-<polyline points="131.1,328.1 202.2,295.7 273.3,232.8 344.4,112.6 628.9,57.0" fill="none" stroke="#ca6f1e" stroke-width="2"/>
-<circle cx="131.1" cy="328.1" r="3" fill="#ca6f1e"/>
-<circle cx="202.2" cy="295.7" r="3" fill="#ca6f1e"/>
-<circle cx="273.3" cy="232.8" r="3" fill="#ca6f1e"/>
-<circle cx="344.4" cy="112.6" r="3" fill="#ca6f1e"/>
-<circle cx="628.9" cy="57.0" r="3" fill="#ca6f1e"/>
-<line x1="60" y1="444" x2="84" y2="444" stroke="#111111" stroke-width="2"/>
-<circle cx="72" cy="444" r="3" fill="#111111"/>
+<polyline points="131.1,93.0 202.2,65.2 273.3,54.2 344.4,50.9 628.9,41.0" fill="none" stroke="#9ece6a" stroke-width="2"/>
+<circle cx="131.1" cy="93.0" r="3" fill="#9ece6a"/>
+<circle cx="202.2" cy="65.2" r="3" fill="#9ece6a"/>
+<circle cx="273.3" cy="54.2" r="3" fill="#9ece6a"/>
+<circle cx="344.4" cy="50.9" r="3" fill="#9ece6a"/>
+<circle cx="628.9" cy="41.0" r="3" fill="#9ece6a"/>
+<polyline points="131.1,328.1 202.2,295.7 273.3,232.8 344.4,112.6 628.9,57.0" fill="none" stroke="#e0af68" stroke-width="2"/>
+<circle cx="131.1" cy="328.1" r="3" fill="#e0af68"/>
+<circle cx="202.2" cy="295.7" r="3" fill="#e0af68"/>
+<circle cx="273.3" cy="232.8" r="3" fill="#e0af68"/>
+<circle cx="344.4" cy="112.6" r="3" fill="#e0af68"/>
+<circle cx="628.9" cy="57.0" r="3" fill="#e0af68"/>
+<line x1="60" y1="444" x2="84" y2="444" stroke="#c0caf5" stroke-width="2"/>
+<circle cx="72" cy="444" r="3" fill="#c0caf5"/>
 <text x="90" y="448">A baseline N=120</text>
-<line x1="380" y1="444" x2="404" y2="444" stroke="#c0392b" stroke-width="2"/>
-<circle cx="392" cy="444" r="3" fill="#c0392b"/>
+<line x1="380" y1="444" x2="404" y2="444" stroke="#f7768e" stroke-width="2"/>
+<circle cx="392" cy="444" r="3" fill="#f7768e"/>
 <text x="410" y="448">B big-N N=240</text>
-<line x1="60" y1="464" x2="84" y2="464" stroke="#2471a3" stroke-width="2"/>
-<circle cx="72" cy="464" r="3" fill="#2471a3"/>
+<line x1="60" y1="464" x2="84" y2="464" stroke="#7dcfff" stroke-width="2"/>
+<circle cx="72" cy="464" r="3" fill="#7dcfff"/>
 <text x="90" y="468">C1 N=240, small radius (size only)</text>
 <line x1="380" y1="464" x2="404" y2="464" stroke="#17a2b8" stroke-width="2"/>
 <circle cx="392" cy="464" r="3" fill="#17a2b8"/>
 <text x="410" y="468">C2 N=240, thinned (size only)</text>
-<line x1="60" y1="484" x2="84" y2="484" stroke="#1e8449" stroke-width="2"/>
-<circle cx="72" cy="484" r="3" fill="#1e8449"/>
+<line x1="60" y1="484" x2="84" y2="484" stroke="#9ece6a" stroke-width="2"/>
+<circle cx="72" cy="484" r="3" fill="#9ece6a"/>
 <text x="90" y="488">D N=120, big radius (degree up)</text>
-<line x1="380" y1="484" x2="404" y2="484" stroke="#ca6f1e" stroke-width="2"/>
-<circle cx="392" cy="484" r="3" fill="#ca6f1e"/>
+<line x1="380" y1="484" x2="404" y2="484" stroke="#e0af68" stroke-width="2"/>
+<circle cx="392" cy="484" r="3" fill="#e0af68"/>
 <text x="410" y="488">D2 N=120, big radius thinned (range only)</text>
 </svg>
 
 <h2>Steady state at &epsilon; = 0.08 (snapshot r = 0.986, steady mean 0.946)</h2>
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400"><rect width="640" height="400" fill="#0b1020" />
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400"><rect width="640" height="400" fill="#0f1017" />
 <circle cx="31.6" cy="331.2" r="9.1" fill="rgba(255,217,74,0.90)" />
 <circle cx="82.1" cy="113.9" r="9.1" fill="rgba(255,217,74,0.90)" />
 <circle cx="630.8" cy="231.7" r="9.1" fill="rgba(255,217,74,0.90)" />
@@ -368,6 +388,7 @@ last night's Kuramoto snapshot, where brightness varied because
 phases only clustered. The snapshot caught a high-r moment just
 after a flash; the steady mean over the cycle is lower (0.946)
 because phases drift apart between flashes.</p>
+</div>
 <script>
 // pulseflies-core.mjs — pure simulation core, no DOM, no window.
 // Mirollo–Strogatz integrate-and-fire oscillators ("pulse-coupled
@@ -583,13 +604,24 @@ var cEl = document.getElementById('c');
 var tEl = document.getElementById('t');
 var frames = 0;
 function draw() {
-  ctx.fillStyle = '#0b1020';
+  ctx.fillStyle = '#0d1210';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   for (var i = 0; i < sim.n; i++) {
     var b = sim.brightness(i);
+    var x = sim.x[i] * canvas.width, y = sim.y[i] * canvas.height;
+    var R = 12 + b * 30;
+    var g = ctx.createRadialGradient(x, y, 0, x, y, R);
+    g.addColorStop(0, 'rgba(190, 240, 150, ' + (0.20 + b * 0.80).toFixed(2) + ')');
+    g.addColorStop(0.35, 'rgba(158, 206, 106, ' + (0.12 + b * 0.34).toFixed(2) + ')');
+    g.addColorStop(0.75, 'rgba(125, 207, 255, ' + (b * 0.14).toFixed(2) + ')');
+    g.addColorStop(1, 'rgba(125, 207, 255, 0)');
+    ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.arc(sim.x[i] * canvas.width, sim.y[i] * canvas.height, 3 + b * 7, 0, 2 * Math.PI);
-    ctx.fillStyle = 'rgba(255, 217, 74, ' + (0.25 + b * 0.75).toFixed(2) + ')';
+    ctx.arc(x, y, R, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y, 2.0 + b * 3.0, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(235, 255, 210, ' + (0.30 + b * 0.70).toFixed(2) + ')';
     ctx.fill();
   }
   rEl.textContent = sim.orderParameter().toFixed(3);

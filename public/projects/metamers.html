@@ -30,7 +30,8 @@
   .col { flex: 1 1 480px; }
   .swatch { height: 64px; border: 1px solid #2a2d3e; border-radius: 8px; margin-top: 10px; }
   .bump { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #787c99; margin-top: 6px; flex-wrap: wrap; }
-  .bigsw { height: 96px; border: 1px solid #2a2d3e; border-radius: 8px; }
+  .bigsw { height: 96px; border: 2px solid #565f89; border-radius: 10px; box-shadow: 0 0 0 4px #16161e, 0 0 0 6px #2a2d3e; }
+  .swatch { border-color: #565f89; }
 </style>
 </head>
 <body>
@@ -49,6 +50,7 @@
 <canvas id="cmfchart" width="1060" height="150" style="width:100%;max-width:1060px;height:150px;background:#0f1017;border:1px solid #2a2d3e;border-radius:8px;"></canvas>
 <p class="sub" style="margin-top:6px;">the three colour-matching functions: <span style="color:#f7768e;">x̄</span> · <span style="color:#9ece6a;">ȳ</span> · <span style="color:#7dcfff;">z̄</span> — every colour below is these three curves doing the squeezing.</p>
 
+<p style="font-size:14px;"><b>Drag on a spectrum to paint it.</b></p>
 <div class="cols">
   <div class="col"><div class="card">
     <b>spectrum A</b>
@@ -56,6 +58,7 @@
     <div class="ctl">
       <button data-preset="A:flat">flat</button><button data-preset="A:warm">warm</button><button data-preset="A:cool">cool</button><button data-preset="A:spiky">spiky</button><button data-preset="A:black">black</button>
     </div>
+    <p class="sub" style="margin:8px 0 0;">presets: flat = equal energy at every wavelength; warm = tilted toward long wavelengths; cool = tilted toward short wavelengths; spiky = a few narrow lines; black = no light.</p>
     <div id="bumpsA"></div>
     <div class="swatch" id="swA"></div>
     <div class="ro" id="roA"></div>
@@ -67,6 +70,7 @@
     <div class="ctl">
       <button data-preset="B:flat">flat</button><button data-preset="B:warm">warm</button><button data-preset="B:cool">cool</button><button data-preset="B:spiky">spiky</button><button data-preset="B:black">black</button>
     </div>
+    <p class="sub" style="margin:8px 0 0;">presets: flat = equal energy at every wavelength; warm = tilted toward long wavelengths; cool = tilted toward short wavelengths; spiky = a few narrow lines; black = no light.</p>
     <div id="bumpsB"></div>
     <div class="swatch" id="swB"></div>
     <div class="ro" id="roB"></div>
@@ -82,6 +86,7 @@
     <div class="col">
       <div class="ctl"><button id="newtarget">new target</button><button id="construct">construct a metamer</button></div>
       <div class="ro" id="roM"></div>
+      <p class="sub" style="margin-top:4px;">the mismatch number: lower mismatch = the two colours are identical to the standard observer.</p>
       <table id="spiketab" style="display:none;">
         <tr><th class="l">spike (nm)</th><th>amplitude</th></tr>
       </table>
@@ -293,16 +298,16 @@ function makeEditor(key, cvId, swId, roId, warnId, bumpsId, init) {
   function refresh() {
     ctx.clearRect(0, 0, cv.width, cv.height);
     ctx.strokeStyle = '#2a2d3e'; ctx.beginPath(); ctx.moveTo(0, cv.height - 1); ctx.lineTo(cv.width, cv.height - 1); ctx.stroke();
-    ctx.strokeStyle = key === 'A' ? '#7dcfff' : '#bb9af7'; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.strokeStyle = key === 'A' ? '#7dcfff' : '#bb9af7'; ctx.lineWidth = 3; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 6; ctx.beginPath();
     ed.spec.forEach((v, i) => { const x = i / (N - 1) * cv.width, y = cv.height - clamp01(v / 2) * (cv.height - 8) - 1; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
-    ctx.stroke(); ctx.lineWidth = 1;
+    ctx.stroke(); ctx.lineWidth = 1; ctx.shadowBlur = 0;
     ctx.fillStyle = '#787c99'; ctx.font = '11px monospace';
     ctx.fillText('380', 4, cv.height - 6); ctx.fillText('780 nm', cv.width - 48, cv.height - 6);
     const xyz = spectrumToXYZ(ed.spec);
     const { lin, srgb, inGamut } = xyzToSrgb(xyz);
     $(swId).style.background = hexOf(srgb);
     $(roId).textContent = `XYZ (${xyz.map(v => v.toFixed(3)).join(', ')}) · sRGB ${hexOf(srgb)}`;
-    $(warnId).textContent = inGamut ? '' : `out of sRGB gamut — linear RGB (${lin.map(v => v.toFixed(2)).join(', ')}); the swatch is clipped, not the real colour`;
+    $(warnId).textContent = inGamut ? '' : `out of sRGB gamut — linear RGB (${lin.map(v => v.toFixed(2)).join(', ')}); the swatch is clipped, not the real colour — out of gamut means your screen physically cannot show this colour`;
     ed.xyz = xyz;
   }
   ed.refresh = refresh;

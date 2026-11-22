@@ -41,7 +41,7 @@
 </div>
 <div class="wrap">
 <h1>lights out</h1>
-<p class="sub">a toggle puzzle whose fate is decided by exact GF(2) algebra before you press anything · 2026-11-21</p>
+<p class="sub">a toggle puzzle whose fate is decided by exact GF(2) algebra — GF(2) is arithmetic where 1 + 1 = 0, which is exactly what a toggle does — before you press anything · 2026-11-21</p>
 
 <div class="card">
   <div class="ctl">
@@ -63,13 +63,13 @@
 </div>
 
 <h2>the exact facts, per size</h2>
-<p>Computed by the same GF(2) code the game runs — rank and nullity of the press matrix A. A board is solvable exactly when it lies in the image of A; the solution set, when one exists, is a coset of the kernel, so there are always exactly 2<sup>nullity</sup> solutions and exactly 2<sup>−nullity</sup> of all boards are solvable.</p>
+<p>Computed by the same GF(2) code the game runs — rank and nullity of the press matrix A. A board is solvable exactly when it lies in the image of A — that is, when it is one of the boards you can actually reach by pressing. When a solution exists, the full set of solutions is a coset of the kernel: the kernel is the set of press patterns that change nothing, and each solution drags a whole family of look-alikes with it, got by adding one of those do-nothing patterns. So there are always exactly 2<sup>nullity</sup> solutions, and exactly 2<sup>−nullity</sup> of all boards are solvable.</p>
 <table id="facts"></table>
 
 <h2>quiet patterns</h2>
 <p>Press patterns that change nothing at all — the kernel of A, shown live by the solver for the current board size (purple outline button below replays one on your board, if any exist). They are also the impossibility witnesses: a board is unsolvable exactly when it has odd overlap with the effect pattern of one of these. On 3×3 there are none, which is why every 3×3 board is solvable.</p>
 <div id="quietWrap"></div>
-<div class="ctl"><button id="quietBtn">press a quiet pattern on my board (watch nothing change)</button></div>
+<div class="ctl"><button id="quietBtn">press a quiet pattern on my board — a pattern of presses that cancels itself out (watch nothing change)</button></div>
 
 <h2>notes</h2>
 <ul class="notes">
@@ -234,7 +234,7 @@ $('solveBtn').addEventListener('click', () => {
   }
   const count = Math.pow(2, rankNullity(n).nullity);
   const presses = sol.map((v, i) => v ? i : -1).filter(i => i >= 0);
-  say('solvable — ' + count + ' solution' + (count === 1 ? '' : 's') + ' exist' + (count === 1 ? 's' : '') + ' (2^nullity). playing one of them: ' + presses.length + ' presses, outlined in green.', false);
+  say('solvable — ' + count + ' solution' + (count === 1 ? '' : 's') + ' exist' + (count === 1 ? 's' : '') + ' (2 raised to the nullity). playing one of them: ' + presses.length + ' presses, outlined in green.', false);
   solMarks = new Array(n * n).fill(0); render();
   let k = 0;
   timer = setInterval(() => {

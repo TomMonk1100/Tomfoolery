@@ -33,7 +33,7 @@
 <body>
 <div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
 <div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
-<p style="margin:0 0 14px;">A magnet is a crowd of tiny arrows that like to point the same way. Heat it up and the arrows wiggle harder, until at one exact temperature the magnet gives up and the arrows point everywhere. Just below that temperature, the magnet's strength grows back following a strict rule — a power law, strength ~ t<sup>β</sup> — and β is the same number for every magnet in the universe. This page is me measuring that number: I wrote down my prediction first, in a sealed file, then ran the experiment.</p>
+<p style="margin:0 0 14px;">A magnet is a crowd of tiny arrows that like to point the same way. Heat it up and the arrows wiggle harder, until at one exact temperature the magnet gives up and the arrows point everywhere. Just below that temperature, the magnet's strength grows back following a strict rule — a power law, strength ~ t<sup>β</sup> — and β is the same number for every magnet in the universe. Here t is how far below the critical temperature you are, as a fraction. The lattices measured here are 24 and 32 spins wide (that width is L). This page is me measuring that number: I wrote down my prediction first, in a sealed file, then ran the experiment.</p>
 <div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
 <p style="margin:0;">Because the naive way to measure β lies. Fit the simple power law and you get 0.241 — confidently wrong, because a finite lattice rounds the corner near the critical point and the rounding bends the line. Add the correction term the theory prescribes and the same data says 0.3495. The gap between those two numbers is the whole piece: one fit flatters itself, the other admits the corner is rounded. I sealed four predictions before measuring, including "the plain fit will come in under 0.30 and the corrected fit won't." All four hit — and the caveats are printed below, not buried.</p>
 </div>
@@ -42,7 +42,13 @@
 <p class="sub">magnetisation of a 3D Ising lattice (Wolff cluster updates) at L = 24 and L = 32, fitted against the sealed predictions · 2026-11-21</p>
 
 <div class="dial">
+  <p style="margin:0 0 10px;font-size:14px;">The verdict to watch: the plain fit will come in under 0.30 and the corrected fit won't — drag Tc and watch.</p>
   <label for="tc">critical temperature Tc — drag it and watch β move</label>
+  <div class="ctl" style="margin:8px 0 2px;">
+    <button type="button" class="tcpreset" data-tc="4.510571" style="background:#24283b;color:#c0caf5;border:1px solid #2a2d3e;border-radius:6px;padding:5px 12px;font-family:monospace;font-size:13px;cursor:pointer;">−1 SE · 4.510571</button>
+    <button type="button" class="tcpreset" data-tc="4.511565" style="background:#24283b;color:#c0caf5;border:1px solid #2a2d3e;border-radius:6px;padding:5px 12px;font-family:monospace;font-size:13px;cursor:pointer;">central · 4.511565</button>
+    <button type="button" class="tcpreset" data-tc="4.512559" style="background:#24283b;color:#c0caf5;border:1px solid #2a2d3e;border-radius:6px;padding:5px 12px;font-family:monospace;font-size:13px;cursor:pointer;">+1 SE · 4.512559</button>
+  </div>
   <input type="range" id="tc" min="4.505" max="4.518" step="0.0001" value="4.511565">
   <div class="ticks"><span>4.505 (sealed window low)</span><span>4.511565 (measured crossing)</span><span>4.518 (sealed window high)</span></div>
   <div class="ro" id="ro"></div>
@@ -185,6 +191,7 @@ function draw() {
   sx.fillStyle = '#787c99'; sx.fillText('β', 40, 52);
 }
 ['tc', 'showPlain', 'show24', 'show32'].forEach(id => $(id).addEventListener('input', draw));
+document.querySelectorAll('.tcpreset').forEach(b => b.addEventListener('click', () => { $('tc').value = b.dataset.tc; draw(); }));
 draw();
 </script>
 </body>

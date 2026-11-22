@@ -150,27 +150,27 @@ function dirVec(bearingDeg) { const r = bearingDeg * Math.PI / 180; return { x: 
 function drawMap() {
   const cv = $('map'), ctx = cv.getContext('2d'), W = cv.width, cx = W / 2, cy = W / 2, R = W / 2 - 26;
   ctx.clearRect(0, 0, W, W);
-  ctx.strokeStyle = C.border; ctx.fillStyle = C.muted; ctx.font = '12px monospace'; ctx.lineWidth = 1;
+  ctx.strokeStyle = '#4a4f78'; ctx.fillStyle = C.muted; ctx.font = '12px monospace'; ctx.lineWidth = 1;
   for (let m = 500; m <= 3000; m += 500) {
     ctx.beginPath(); ctx.arc(cx, cy, R * m / 3000, 0, Math.PI * 2); ctx.stroke();
   }
-  ctx.fillText('N', cx - 3, 16); ctx.fillText('3 km', cx + R * 0.97 - 14, cy - 6);
+  ctx.fillText('N', cx - 3, 16); ctx.fillText('3 km', cx - 14, cy + R + 16 > W ? cy + R - 8 : cy + R + 16);
   // sun arrow
   const sv = dirVec(state.sun);
   ctx.strokeStyle = C.amber; ctx.fillStyle = C.amber; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + sv.x * R * 0.92, cy + sv.y * R * 0.92); ctx.stroke();
   ctx.beginPath(); ctx.arc(cx + sv.x * R * 0.92, cy + sv.y * R * 0.92, 9, 0, Math.PI * 2); ctx.fill();
-  ctx.fillText('sun ' + Math.round(state.sun) + '°', cx + sv.x * R * 0.72 + 12, cy + sv.y * R * 0.72);
+  ctx.fillText('sun ' + Math.round(state.sun) + '°', cx + sv.x * R * 0.60 - 64, cy + sv.y * R * 0.60 + 22);
   // food
   const fv = dirVec(state.bearing), fr = R * Math.min(state.dist, 3000) / 3000;
   ctx.strokeStyle = C.green; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + fv.x * fr, cy + fv.y * fr); ctx.stroke();
   ctx.fillStyle = C.green;
   ctx.beginPath(); ctx.arc(cx + fv.x * fr, cy + fv.y * fr, 7, 0, Math.PI * 2); ctx.fill();
-  ctx.fillText('food', cx + fv.x * fr + 10, cy + fv.y * fr + 4);
+  ctx.fillText('food', cx + fv.x * fr + 12, cy + fv.y * fr + 16);
   // hive
   ctx.fillStyle = C.text; ctx.fillRect(cx - 4, cy - 4, 8, 8);
-  ctx.fillText('hive', cx + 8, cy + 14);
+  ctx.fillText('hive', cx + 10, cy + 4);
 }
 
 function combPoint(p, angleDeg, cx, cy, scale) {
@@ -189,7 +189,7 @@ function drawComb(ts) {
   ctx.beginPath(); ctx.moveTo(cx, 18); ctx.lineTo(cx, W - 18); ctx.stroke(); ctx.setLineDash([]);
   ctx.fillStyle = C.muted; ctx.font = '12px monospace';
   ctx.fillText('up = toward the sun', cx + 10, 30);
-  ctx.fillText('gravity ↓', cx + 10, W - 24);
+  ctx.fillText('gravity ↓', W - 104, W - 24);
   if (enc.danceType === 'round') {
     // round dance: a simple circling bee, no directional run
     const t = (ts / 900) % (Math.PI * 2), rr = 62;

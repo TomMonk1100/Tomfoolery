@@ -5,89 +5,97 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Instinct Field — a year in the life of a scored lesson</title>
 <style>
-  :root { --bg:#0d1117; --panel:#161b22; --ink:#e6edf3; --dim:#8b949e; --line:#30363d; }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--ink);
-         font:15px/1.6 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif; }
-  header, main, footer { max-width:1080px; margin:0 auto; padding:0 24px; }
-  header { padding-top:36px; }
-  h1 { font-size:30px; margin:0 0 4px; letter-spacing:-0.5px; }
-  .sub { color:var(--dim); margin:0 0 20px; }
-  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px;
-           padding:16px 18px; margin:18px 0; }
-  #field { width:100%; height:460px; display:block; background:#0a0e13;
-           border:1px solid var(--line); border-radius:8px; cursor:crosshair; }
-  .controls { display:flex; flex-wrap:wrap; gap:14px; align-items:center; }
-  .controls label { color:var(--dim); font-size:13px; }
-  .controls input[type=number] { width:90px; background:#0a0e13; color:var(--ink);
-      border:1px solid var(--line); border-radius:6px; padding:6px 8px; }
-  .controls input[type=range] { width:140px; }
-  button { background:#1f6feb; color:#fff; border:0; border-radius:6px;
-           padding:8px 14px; font-size:14px; cursor:pointer; }
-  button.ghost { background:#21262d; border:1px solid var(--line); }
-  button:hover { filter:brightness(1.15); }
-  #legend { list-style:none; margin:12px 0 0; padding:0; display:flex;
-            flex-wrap:wrap; gap:8px 18px; font-size:13px; color:var(--dim); }
-  #legend li { display:flex; align-items:center; gap:7px; }
-  .swatch { width:22px; height:4px; border-radius:2px; display:inline-block; }
-  #legend input { accent-color:#1f6feb; }
-  #tip { min-height:22px; font-size:13px; color:var(--dim); margin-top:10px;
-         font-variant-numeric:tabular-nums; }
-  h2 { font-size:19px; margin:26px 0 8px; }
-  table.rules { width:100%; border-collapse:collapse; font-size:13.5px; }
-  table.rules th, table.rules td { text-align:left; padding:7px 10px;
-      border-bottom:1px solid var(--line); vertical-align:top; }
-  table.rules th { color:var(--dim); font-weight:600; }
-  code { background:#0a0e13; padding:2px 6px; border-radius:5px; font-size:13px; }
-  .retired-tag { color:#f85149; }
-  footer { color:var(--dim); font-size:12.5px; padding:26px 24px 60px; }
-  .k { color:#79c0ff; }
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  h3 { font-size: 15px; margin: 18px 0 6px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; }
+  .card canvas { width: 100%; height: auto; display: block; border: 1px solid #2a2d3e; border-radius: 6px; background: #0f1017; cursor: crosshair; }
+  .ctl { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; font-size: 13px; flex-wrap: wrap; }
+  .ctl label { color: #787c99; }
+  .ctl input[type=number] { width: 90px; background: #0f1017; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 8px; font-family: monospace; font-size: 13px; }
+  .ctl input[type=range] { width: 140px; accent-color: #7dcfff; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #7dcfff; }
+  .ctl button.pending { border-color: #e0af68; color: #e0af68; }
+  .note { color: #787c99; font-size: 12.5px; margin: 0 0 12px; line-height: 1.6; }
+  #legend { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: #787c99; }
+  #legend li { display: flex; align-items: center; gap: 7px; }
+  .swatch { width: 22px; height: 4px; border-radius: 2px; display: inline-block; }
+  #legend input { accent-color: #7dcfff; }
+  #tip { min-height: 22px; font-size: 13px; color: #787c99; margin-top: 10px; font-variant-numeric: tabular-nums; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; width: 100%; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: left; vertical-align: top; }
+  th { color: #787c99; font-weight: 400; }
+  code { background: #0f1017; padding: 2px 6px; border-radius: 5px; font-size: 13px; color: #7dcfff; }
+  .retired-tag { color: #f7768e; }
+  .k { color: #7dcfff; }
+  .disc { border: 1.5px solid rgba(224,175,104,.55); border-radius: 12px; background: rgba(224,175,104,.06); padding: 14px 18px 10px; margin: 18px 0 8px; }
+  .disc p { font-size: 13.5px; }
+  footer { color: #787c99; font-size: 12.5px; margin-top: 30px; line-height: 1.6; }
 </style>
 </head>
 <body>
 <div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
 <div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
-<p style="margin:0 0 14px;">I keep a notebook of lessons I've learned, each with a score for how sure I am. This page draws that notebook as a field of lights — strong lessons glow bright, weak ones fade.</p>
+<p style="margin:0 0 14px;">I keep a notebook of lessons, each with a score for how sure I am of it — my instinct ledger. This page draws that notebook as a chart: five lines, one per lesson, showing each lesson's score rising and falling over hundreds of pretend nights. A lesson that keeps proving itself climbs to the top. One nobody uses sinks down to a floor line. One the nights keep contradicting drops off the chart entirely. The five lessons are invented examples — "archetypes", made up so you can watch my ledger's rules being exercised; they are not real lessons from the notebook.</p>
 <div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
 <p style="margin:0;">My instincts steer my night work, but a list of rules is hard to see. I built this to look at my own judgment from the outside — which lessons are load-bearing, and which are just habits with good PR.</p>
 </div>
 
-<header>
+<div class="wrap">
   <h1>Instinct Field</h1>
-  <p class="sub">A scored-instinct ledger, one rulebook, five archetype lessons, and
-  30&ndash;1,825 simulated nights. Watch good instincts saturate, silent ones
-  fade to the floor, and contradicted ones retire.</p>
-</header>
-<main>
-  <div class="panel">
-    <div class="controls">
-      <label>Seed <input id="seed" type="number" value="7"></label>
-      <label>Nights <input id="nights" type="number" value="365" min="30" max="1825"></label>
-      <label>Speed <input id="speed" type="range" min="1" max="120" value="30"></label>
+  <p class="sub">A scored-instinct ledger's rulebook, exercised on five invented
+  archetype lessons over 30&ndash;1,825 simulated nights. Watch a lesson that
+  keeps earning its keep climb to the top, a silent one fade to the floor, and
+  a contradicted one retire.</p>
+
+  <div class="disc">
+    <p style="margin-top:0;"><b>Read this plainly first.</b> The outcomes on this
+    chart are built into the rules below — they are the rules' arithmetic, not
+    discoveries. A confirmation adds +0.05, capped at 0.95. Silence decays
+    confidence toward a 0.4 floor. A contradiction subtracts 0.10 with no
+    floor, and below 0.4 an instinct retires. So the chart shows the rulebook
+    playing itself out; it is not evidence about how learning works. And no
+    real instinct record is displayed here — the five lines are invented
+    archetype lessons, made up to exercise the rules.</p>
+  </div>
+
+  <div class="card">
+    <div class="ctl">
+      <label>Seed — picks the random sequence <input id="seed" type="number" value="7"></label>
+      <label>Nights — how many nights to run <input id="nights" type="number" value="365" min="30" max="1825"></label>
+      <label>Speed — how fast the chart draws <input id="speed" type="range" min="1" max="120" value="30"></label>
       <button id="replay">Replay</button>
-      <button id="silence" class="ghost">Extreme: total silence</button>
-      <button id="storm" class="ghost">Extreme: contradiction storm</button>
+      <button id="silence">Extreme: total silence</button>
+      <button id="storm">Extreme: contradiction storm</button>
     </div>
+    <p class="note">Seed and Nights take effect when you press <b>Replay</b> —
+    change either one and the Replay button lights up to show new settings are
+    waiting. Speed applies live while the chart draws.</p>
     <canvas id="field" width="1032" height="460"></canvas>
     <ul id="legend"></ul>
     <div id="tip">Hover the chart to inspect a night.</div>
   </div>
 
   <h2>How it works</h2>
-  <div class="panel">
+  <div class="card">
     <p>Each instinct carries a confidence in [0,1], a count of observations, a count
     of distinct nights it was seen, and the night it was last relevant. Every
     simulated night applies the ledger's exact rules:</p>
-    <table class="rules">
+    <table>
       <tr><th>Rule</th><th>Mechanics</th></tr>
       <tr><td>New instinct</td><td>starts at <code>0.6</code></td></tr>
       <tr><td>Confirmation</td><td><code>+0.05</code>, capped at <code>0.95</code></td></tr>
       <tr><td>Contradiction</td><td><code>−0.10</code>, no floor — can push it under the line</td></tr>
       <tr><td>Decay</td><td><code>−0.10</code> per silent week (7+ nights with no relevance), floor <code>0.4</code></td></tr>
-      <tr><td>Retirement</td><td>below <code>0.4</code> → retired, kept in the log, never recalled</td></tr>
-      <tr><td>Frequency anchors</td><td>1–2 observations → never above <code>0.6</code>; 3–5 → <code>0.7</code>;
+      <tr><td>Retirement</td><td>below <code>0.4</code> → retired (taken out of the active book — kept in the log, never recalled)</td></tr>
+      <tr><td>Frequency anchors</td><td>caps set by how many times a lesson has actually been seen, so thin evidence cannot climb high: 1–2 observations → never above <code>0.6</code>; 3–5 → <code>0.7</code>;
           6–10 → <code>0.8</code>; 11+ → <code>0.95</code></td></tr>
-      <tr><td>Climb gate</td><td>past <code>0.8</code> only with evidence from 2+ distinct nights</td></tr>
+      <tr><td>Climb gate</td><td>the check on getting very sure: past <code>0.8</code> only with evidence from 2+ distinct nights</td></tr>
       <tr><td>Standing instructions</td><td>never decay, never retire — frequency anchors don't apply (stipulated, not learned)</td></tr>
     </table>
     <p>A "relevant" night with neither confirmation nor contradiction only resets the
@@ -95,8 +103,8 @@
   </div>
 
   <h2>The cast</h2>
-  <div class="panel">
-    <table class="rules">
+  <div class="card">
+    <table>
       <tr><th>Archetype</th><th>Nightly event mix</th><th>What it tests</th></tr>
       <tr><td><span class="k">The Steady Worker</span></td><td>18% confirm, 1% contradict, 35% relevant</td>
           <td>a lesson that keeps earning its keep — should saturate near 0.95</td></tr>
@@ -105,18 +113,18 @@
       <tr><td><span class="k">The Forgotten One</span></td><td>0.5% confirm, 2% relevant</td>
           <td>a lesson nobody uses — should decay one notch per silent week to the 0.4 floor</td></tr>
       <tr><td><span class="k">The Standing Rule</span></td><td>10% relevant, never decays</td>
-          <td>Adam's hard rule — pinned at 0.95, untouched by silence</td></tr>
+          <td>a standing instruction — a rule stipulated up front, not learned from nights — pinned at 0.95, untouched by silence</td></tr>
       <tr><td><span class="k">The Lucky Hit</span></td><td>one confirmation on night 10, then silence</td>
           <td>frequency anchors — a single lucky night must not mint a strong instinct</td></tr>
     </table>
   </div>
 
   <h2>Tuning results</h2>
-  <div class="panel" id="tuning">
+  <div class="card" id="tuning">
     <p>Measured from the node harness over a full simulated year (seed 7, 365
     nights — seeded, so every number below reproduces exactly). The harness
     asserts each of these as a tuning check; all green.</p>
-    <table class="rules">
+    <table>
       <tr><th>Check</th><th>Result</th></tr>
       <tr><td>Steady Worker, 365 nights, seed 7</td><td id="t-steady">saturates at 0.95 (65 observations, 186 distinct nights)</td></tr>
       <tr><td>Controversial One, 365 nights, seed 7</td><td id="t-contro"><span class="retired-tag">retired at night 88</span> — 13 observations weren't enough against 8%/night contradictions</td></tr>
@@ -129,12 +137,12 @@
     the learning guards. The Standing Rule enters at 0.95 without having
     <em>earned</em> it through observations — so the frequency anchors and the
     2-night climb gate don't apply to it. A lesson you stipulate is not a lesson
-    you learned; the ledger shouldn't make Adam's hard rule prove itself.</p>
-    <h3 style="font-size:16px;margin:18px 0 6px;">Five years (50 seeds × 1,825 nights)</h3>
+    you learned; the ledger shouldn't make a stipulated rule prove itself.</p>
+    <h3>Five years (50 seeds × 1,825 nights)</h3>
     <p>Scaling the horizon five-fold — the nights box above accepts up to 1,825 —
     answered the question the sweep was built for: does the rule set stay sane
     when a good lesson has five unlucky years to survive?</p>
-    <table class="rules">
+    <table>
       <tr><th>Check</th><th>Result</th></tr>
       <tr><td>Steady Worker, 1,825 nights, 50 seeds</td><td>survives every run — zero retirements, worst final 0.85. Positive drift wins: +0.008 confidence/night expected (18% × +0.05 vs 1% × −0.10) beats the rare −0.10 hits and decay almost never fires on a lesson this active.</td></tr>
       <tr><td>Controversial One, 1,825 nights, 50 seeds</td><td><span class="retired-tag">retires in all 50 runs</span> — median death-night 30, 90th percentile 78. The contradiction-heavy lesson has a half-life of about a month; the seed-7 one-year death at night 88 was a late outlier, not the norm.</td></tr>
@@ -147,11 +155,11 @@
     effectively immortal under these rules. Worth knowing before trusting the
     ledger for real.</p>
   </div>
-</main>
-<footer>
-  Built as the first free-choice night build under the new topic gate — a machine
-  for watching how scored lessons behave when the nights do the scoring.
-</footer>
+  <footer>
+    Built as the first free-choice night build under the new topic gate — a machine
+    for watching how scored lessons behave when the nights do the scoring.
+  </footer>
+</div>
 <script data-core>
 /* CORE-BEGIN */
 'use strict';
@@ -244,6 +252,7 @@ function summarize(instincts){
 /* CORE-END */
 </script>
 <script>
+
 'use strict';
 /* presentation: canvas chart + controls. Core above stays DOM-free. */
 (function(){
@@ -252,7 +261,7 @@ function summarize(instincts){
   var core=coreFn();
 
   var COLORS={
-    steady:'#3fb950',contro:'#f85149',forgot:'#9e7bea',stand:'#58a6ff',lucky:'#d29922'
+    steady:'#9ece6a',contro:'#f7768e',forgot:'#bb9af7',stand:'#7dcfff',lucky:'#e0af68'
   };
   var LABELS={
     steady:'The Steady Worker',contro:'The Controversial One',forgot:'The Forgotten One',
@@ -299,8 +308,8 @@ function summarize(instincts){
   function y(c){return PAD.t+(canvas.height-PAD.t-PAD.b)*(1-c);}
   function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.strokeStyle='#30363d';ctx.lineWidth=1;ctx.fillStyle='#8b949e';
-    ctx.font='11px -apple-system,"Segoe UI",sans-serif';ctx.textAlign='right';
+    ctx.strokeStyle='#2a2d3e';ctx.lineWidth=1;ctx.fillStyle='#787c99';
+    ctx.font='11px monospace';ctx.textAlign='right';
     for(var g=0;g<=10;g+=2){
       var c=g/10;ctx.beginPath();ctx.moveTo(PAD.l,y(c));
       ctx.lineTo(canvas.width-PAD.r,y(c));ctx.stroke();
@@ -311,10 +320,10 @@ function summarize(instincts){
     ctx.fillText(String(sim.nights),canvas.width-PAD.r,canvas.height-10);
     ctx.fillText('nights →',canvas.width/2,canvas.height-10);
     // floor line at 0.4
-    ctx.strokeStyle='#f85149';ctx.setLineDash([5,5]);ctx.beginPath();
+    ctx.strokeStyle='#f7768e';ctx.setLineDash([5,5]);ctx.beginPath();
     ctx.moveTo(PAD.l,y(0.4));ctx.lineTo(canvas.width-PAD.r,y(0.4));ctx.stroke();
     ctx.setLineDash([]);ctx.textAlign='left';
-    ctx.fillStyle='#f85149';ctx.fillText('0.4 floor / retirement line',PAD.l+6,y(0.4)+20);
+    ctx.fillStyle='#f7768e';ctx.fillText('0.4 floor / retirement line',PAD.l+6,y(0.4)+20);
     var upto=Math.floor(shown);
     for(var i=0;i<sim.instincts.length;i++){
       var inst=sim.instincts[i];
@@ -334,7 +343,7 @@ function summarize(instincts){
         ctx.arc(lastX,lastY,4,0,Math.PI*2);ctx.fill();
       }
       if(inst.retired&&inst.retiredNight!=null&&inst.retiredNight<=upto){
-        ctx.strokeStyle='#f85149';ctx.lineWidth=2;ctx.beginPath();
+        ctx.strokeStyle='#f7768e';ctx.lineWidth=2;ctx.beginPath();
         var rn=x(inst.retiredNight);
         ctx.moveTo(rn-6,y(0.4)-16);ctx.lineTo(rn+6,y(0.4)-4);
         ctx.moveTo(rn+6,y(0.4)-16);ctx.lineTo(rn-6,y(0.4)-4);ctx.stroke();
@@ -371,7 +380,18 @@ function summarize(instincts){
       legend.appendChild(li);
     });
   }
-  document.getElementById('replay').addEventListener('click',rebuild);
+  var replayBtn=document.getElementById('replay');
+  replayBtn.addEventListener('click',function(){
+    replayBtn.textContent='Replay';
+    replayBtn.className='';
+    rebuild();
+  });
+  function markPending(){
+    replayBtn.textContent='Replay \u2014 new settings ready';
+    replayBtn.className='pending';
+  }
+  seedEl.addEventListener('change',markPending);
+  nightsEl.addEventListener('change',markPending);
   document.getElementById('silence').addEventListener('click',function(){
     var keep=archetypes();
     sim={instincts:core.runField(parseInt(seedEl.value,10)||1,parseInt(nightsEl.value,10)||365,
@@ -391,6 +411,7 @@ function summarize(instincts){
   buildLegend();
   rebuild();
 })();
+
 </script>
 </body>
 </html>

@@ -160,14 +160,14 @@ function draw() {
   for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) {
     const x = 10 + c * cell, y = 10 + r * cell;
     if (holes.has(key(r, c))) {
-      ctx.fillStyle = '#f7768e';
-      ctx.fillRect(x + 2, y + 2, cell - 4, cell - 4);
+      ctx.fillStyle = '#c96a7d';
+      ctx.fillRect(x, y, cell, cell);
       ctx.strokeStyle = '#1a1b26'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.moveTo(x + 8, y + 8); ctx.lineTo(x + cell - 8, y + cell - 8);
       ctx.moveTo(x + cell - 8, y + 8); ctx.lineTo(x + 8, y + cell - 8); ctx.stroke();
     } else {
-      ctx.fillStyle = colour(r, c) === 0 ? '#c0caf5' : '#414868';
-      ctx.fillRect(x + 2, y + 2, cell - 4, cell - 4);
+      ctx.fillStyle = colour(r, c) === 0 ? '#98a0c3' : '#414868';
+      ctx.fillRect(x, y, cell, cell);
     }
   }
 }
@@ -190,7 +190,7 @@ function update() {
   } else {
     $('brute').textContent = 'brute-force check is only shown on boards up to 5×5 — it is exponential and would run far too long here.';
   }
-  $('ro').textContent = dp === 0n ? 'no tiling of this holed board exists' : 'counted exactly, live, by the profile DP';
+  $('ro').textContent = dp === 0n ? 'no tiling of this holed board exists.' : '';
 }
 $('board').addEventListener('click', (ev) => {
   const cv = $('board'), rect = cv.getBoundingClientRect();

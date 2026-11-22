@@ -7,10 +7,36 @@
 <style>
   html, body { margin:0; padding:0; height:100%; background:#04070d; overflow:hidden; }
   canvas { display:block; width:100vw; height:100vh; }
+  #ui{
+    position:fixed;top:16px;left:16px;z-index:2;max-width:640px;
+    padding:16px 20px 14px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;
+    background:rgba(6,9,17,.88);color:#c0caf5;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.55;
+  }
+  #ui .lab{font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;}
+  #ui p{margin:0 0 12px;font-size:13.5px;}
+  #ui .ctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;}
+  #ui button{
+    background:#24283b;color:#c0caf5;border:1px solid #2a2d3e;border-radius:6px;
+    padding:5px 12px;font-family:inherit;font-size:12.5px;cursor:pointer;
+  }
+  #ui button:hover{border-color:#7dcfff;}
+  #ui .hint{color:rgba(192,202,245,.55);}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<div id="ui">
+  <div class="lab">Explain it like I'm 5</div>
+  <p>Grains of silt drift in dark water. Each grain is a visit, and each grain's identity fades with time — after enough days away, a grain lets go and settles into the bed at the bottom, its name gone, only the sediment left. The small log at the bottom testifies to releases: it records that forgetting happened, never what was forgotten.</p>
+  <div class="lab">Why you're looking at this</div>
+  <p>This is the companion to The Chain — where the Chain is about memory that persists, Silt is about deliberate forgetting. It is an artwork, not an exhibit: there are no findings here. Visit, and your presence stirs the bed. Stay away, and it settles without you.</p>
+  <div class="ctl">
+    <button id="btnPause" type="button">pause</button>
+    <button id="btnClear" type="button">clear / re-settle</button>
+    <span class="hint">click the water to stir the bed there — grains nearby are pushed aside, and the faintest ones let go and settle</span>
+  </div>
+</div>
 <script>
 //__CORE_START__
 // Silt core — pure logic, no DOM. The water keeps what it is given and lets
@@ -84,9 +110,9 @@ function grainPos(g, nowMs, bedTop){
   const P = grainParams(g);
   const age = Math.max(0, nowMs - g.bornMs);
   const c = clarity(g, nowMs);
-  const x = P.x0 + P.ax * Math.sin(age * P.w1 + P.p1) + 0.5 * P.ax * Math.sin(age * P.w2 + P.p2);
+  const x = P.x0 + (g.ox || 0) + P.ax * Math.sin(age * P.w1 + P.p1) + 0.5 * P.ax * Math.sin(age * P.w2 + P.p2);
   const restY = Math.min(Math.max(bedTop - 0.02, 0), 0.94);
-  const y = P.y0 + (restY - P.y0) * (1 - c) + P.ay * Math.sin(age * P.w3 + P.p3);
+  const y = P.y0 + (g.oy || 0) + (restY - P.y0) * (1 - c) + P.ay * Math.sin(age * P.w3 + P.p3);
   return { x: clamp01(x), y: clamp01(y), r: P.r };
 }
 
@@ -102,6 +128,34 @@ function tick(st, nowMs){
   st.grains = keep;
   if(released.length > 0) pushLog(st, nowMs, released.length, 0);
   return released;
+}
+
+// A visitor stirs the bed at a point (nx, ny are 0..1 fractions of the
+// viewport). Real effect on grain state, not presentation: grains near the
+// point are pushed aside — a lasting offset (ox, oy) is stored on the grain
+// itself, so it survives save/load — and the faintest grains near the point
+// (clarity below 0.35) let go entirely: released to silt, and logged.
+function stir(st, nowMs, nx, ny, bedTop){
+  const R = 0.18;
+  let released = 0, moved = 0;
+  const keep = [];
+  for(const g of st.grains){
+    const p = grainPos(g, nowMs, bedTop);
+    const dx = p.x - nx, dy = p.y - ny;
+    const d = Math.hypot(dx, dy);
+    if(d < R){
+      if(clarity(g, nowMs) < 0.35){ st.silt++; released++; continue; }
+      const push = (R - d) / R * 0.12;
+      const ux = d > 1e-6 ? dx / d : 1, uy = d > 1e-6 ? dy / d : 0;
+      g.ox = (g.ox || 0) + ux * push;
+      g.oy = (g.oy || 0) + uy * push;
+      moved++;
+    }
+    keep.push(g);
+  }
+  st.grains = keep;
+  if(released > 0) pushLog(st, nowMs, released, 0, "stirred loose by a visitor");
+  return { released: released, moved: moved };
 }
 
 function bedHeightFrac(silt){
@@ -145,7 +199,7 @@ function load(storage){
 }
 
 if(typeof module !== "undefined" && module.exports){
-  module.exports = { TUNE, mulberry32, makeState, visit, clarity, grainParams, grainPos, tick, bedHeightFrac, pushLog, logLine, save, load };
+  module.exports = { TUNE, mulberry32, makeState, visit, clarity, grainParams, grainPos, tick, stir, bedHeightFrac, pushLog, logLine, save, load };
 }
 //__CORE_END__
 
@@ -173,7 +227,7 @@ if(typeof module !== "undefined" && module.exports){
   }
 
   const core = (typeof module !== "undefined" && module.exports) ? module.exports : null;
-  const C = core || { TUNE, mulberry32, makeState, visit, clarity, grainPos, tick, bedHeightFrac, pushLog, logLine, save, load };
+  const C = core || { TUNE, mulberry32, makeState, visit, clarity, grainPos, tick, stir, bedHeightFrac, pushLog, logLine, save, load };
 
   const loaded = C.load(storage);
   const st = loaded.state;
@@ -233,6 +287,43 @@ if(typeof module !== "undefined" && module.exports){
   const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function bedTopFrac(){ return 1 - C.bedHeightFrac(st.silt); }
+
+  // --- visitor controls: stir (click), pause, clear / re-settle ---
+  let paused = false;
+  function stirAt(clientX, clientY){
+    const nowMs = Date.now();
+    const res = C.stir(st, nowMs, W > 0 ? clientX / W : 0, H > 0 ? clientY / H : 0, bedTopFrac());
+    for(let k = 0; k < 6; k++) settling.push({ x: clientX + (Math.random() - 0.5) * 24, y: clientY + (Math.random() - 0.5) * 16, born: nowMs });
+    C.save(st, storage);
+    if(reduced) render(nowMs);
+    return res;
+  }
+  function togglePause(){
+    paused = !paused;
+    const b = document.getElementById("btnPause");
+    if(b && "textContent" in b) b.textContent = paused ? "resume" : "pause";
+    if(!paused && !reduced) requestAnimationFrame(frame);
+    return paused;
+  }
+  function clearResettle(){
+    st.grains = []; st.silt = 0; st.log = []; st.seq = 0;
+    const nowMs = Date.now();
+    C.pushLog(st, nowMs, 0, 0, "the bed was cleared — the silt starts over");
+    C.visit(st, nowMs); // this visit still leaves its grain
+    speckleBucket = -1; buildSpeckle();
+    C.save(st, storage);
+    if(reduced) render(nowMs);
+    return st;
+  }
+  if(canvas.addEventListener) canvas.addEventListener("click", e => stirAt(e.clientX, e.clientY));
+  const btnPause = document.getElementById("btnPause");
+  if(btnPause && btnPause.addEventListener) btnPause.addEventListener("click", togglePause);
+  const btnClear = document.getElementById("btnClear");
+  if(btnClear && btnClear.addEventListener) btnClear.addEventListener("click", clearResettle);
+  if(typeof window !== "undefined"){
+    window.__silt = { stirAt: stirAt, togglePause: togglePause, clearResettle: clearResettle,
+      isPaused: () => paused, state: st };
+  }
 
   function render(nowMs){
     buildSpeckle();
@@ -340,6 +431,7 @@ if(typeof module !== "undefined" && module.exports){
 
   let lastSave = 0;
   function frame(){
+    if(paused) return; // frozen: loop stops until resume re-registers it
     const nowMs = Date.now();
     const released = C.tick(st, nowMs);
     if(released.length){
@@ -361,7 +453,7 @@ if(typeof module !== "undefined" && module.exports){
   window.addEventListener("pagehide", () => C.save(st, storage));
 
   resize();
-  if(reduced){ render(Date.now()); setInterval(() => { const n=Date.now(); C.tick(st,n); render(n); }, 2000); }
+  if(reduced){ render(Date.now()); setInterval(() => { if(paused) return; const n=Date.now(); C.tick(st,n); render(n); }, 2000); }
   else requestAnimationFrame(frame);
 })();
 </script>

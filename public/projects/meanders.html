@@ -39,7 +39,7 @@
 </div>
 <div class="wrap">
 <h1>river meanders</h1>
-<p class="sub">a stylised centreline migration model — curvature drives the bank, the bank moves the river · 2026-11-21 · model output, not field data</p>
+<p class="sub">a stylised centreline migration model — the centreline is the line down the middle of the channel, and each point of it moves in its normal direction, at right angles to the flow — curvature drives the bank, the bank moves the river · 2026-11-21 · model output, not field data</p>
 
 <div class="card">
   <canvas id="cv" width="1080" height="520"></canvas>
@@ -54,15 +54,17 @@
     </label>
     <label>seed <input type="text" id="seed" value="7" maxlength="6"></label>
     <button id="reseed">reseed</button>
-    <label><input type="checkbox" id="proc"> show the process</label>
+    <button id="stepOnce">step once</button>
+    <label>migration rate — how fast a bend moves for a given amount of curve <input type="range" id="rate" min="100" max="6000" step="100" value="2600"> <span id="rateVal">2600</span></label>
+    <label><input type="checkbox" id="proc"> Show the process: colour the banks where the model erodes the outside and deposits on the inside</label>
   </div>
   <div class="ro" id="ro"></div>
   <div class="legend" id="legend" style="display:none"><b class="ero">— outer bank: erosion (cut bank)</b> &nbsp; <b class="dep">— inner bank: deposition (point bar)</b> &nbsp; shown where the model's curvature is strong</div>
 </div>
 
 <h2>the story the model is built from</h2>
-<p>Flow around a bend is not uniform. Helicoidal (secondary) flow sweeps surface water toward the outer bank, the outer edge runs fastest, and it erodes — that steep eroding side is the <b>cut bank</b>. The inner edge runs slowest and deposits sediment — the <b>point bar</b>. Erosion outside plus deposition inside moves the whole bend outward, and because the flow's response lags the bend, bends also migrate downstream. When two bends grow until the neck of land between them is cut through, flood flow takes the shortcut: a <b>cutoff</b>. The abandoned loop, its ends silted up, is an <b>oxbow lake</b>. (Definitions: U.S. National Park Service, "Fluvial Features — Meandering Stream"; LibreTexts, <i>The Physical Environment</i>, §18.5.)</p>
-<p>The model's one rule is a documented simplification of the Johannesson–Parker linear bend theory: migration rate at a point is proportional to an <b>upstream-weighted average of curvature</b> — curvature here, weighted by curvature just upstream, decaying over about 1.4 channel widths. The lag is what turns pure outward growth into growth plus downstream travel, and it is why loops eventually meet themselves.</p>
+<p>Flow around a bend is not uniform. The bend's spiral current sweeps surface water toward the outer bank — helicoidal flow — so the outer edge runs fastest, and it erodes — that steep eroding side is the <b>cut bank</b>. The inner edge runs slowest and deposits sediment — the <b>point bar</b>. Erosion outside plus deposition inside moves the whole bend outward, and because the flow's response lags the bend, bends also migrate downstream. When two bends grow until the neck of land between them is cut through, flood flow takes the shortcut: a <b>cutoff</b>. The abandoned loop, its ends silted up, is an <b>oxbow lake</b>. (Definitions: U.S. National Park Service, "Fluvial Features — Meandering Stream"; LibreTexts, <i>The Physical Environment</i>, §18.5.)</p>
+<p>The model's one rule is a documented simplification of the Johannesson–Parker linear bend theory: migration rate at a point (in its normal direction — at right angles to the flow, along the centreline, the line down the middle of the channel) is proportional to an <b>upstream-weighted average of curvature</b> — curvature here, weighted by curvature just upstream, decaying over about 1.4 channel widths. The lag is what turns pure outward growth into growth plus downstream travel, and it is why loops eventually meet themselves.</p>
 
 <h2>numbers that come from measurements, not from this model</h2>
 <table>
@@ -213,7 +215,8 @@ function draw() {
       ctx.stroke();
     }
   }
-  $('ro').textContent = 'step ' + river.step + ' · sinuosity ' + sinuosity(river.points).toFixed(3) + ' · cutoffs ' + river.cutoffs + ' · oxbow lakes ' + river.oxbows.length + ' · seed ' + river.seed;
+  const s0 = river.startSinuosity === null ? sinuosity(river.points) : river.startSinuosity;
+  $('ro').textContent = 'step ' + river.step + ' · sinuosity ' + sinuosity(river.points).toFixed(3) + ' (sinuosity = channel length \u00f7 valley length \u2014 1 is straight; this river starts at ' + s0.toFixed(3) + ') · cutoffs ' + river.cutoffs + ' · oxbow lakes ' + river.oxbows.length + ' · seed ' + river.seed;
 }
 function frame() {
   if (playing) { const n = +$('speed').value; for (let i = 0; i < n; i++) migrate(river); }
@@ -221,6 +224,8 @@ function frame() {
   requestAnimationFrame(frame);
 }
 $('play').addEventListener('click', () => { playing = !playing; $('play').textContent = playing ? 'pause' : 'play'; });
+$('stepOnce').addEventListener('click', () => { if (playing) { playing = false; $('play').textContent = 'play'; } migrate(river); draw(); });
+$('rate').addEventListener('input', () => { const v = +$('rate').value; $('rateVal').textContent = v; river.tune = Object.assign({}, river.tune, { erodibility: v }); });
 $('reseed').addEventListener('click', () => { const sd = parseInt($('seed').value.replace(/\D/g, ''), 10); river = createRiver(isNaN(sd) ? 7 : sd); yRange = 120; });
 $('proc').addEventListener('change', () => { $('legend').style.display = $('proc').checked ? 'block' : 'none'; });
 draw();

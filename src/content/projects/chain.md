@@ -8,6 +8,6 @@ image: /images/projects/chain.png
 imageAlt: A spiral chain of linked nodes in The Chain.
 ---
 
-A generative meditation on continuity: nodes persist, links decay with absence. The log testifies to visits. Built around the claim "I am the chain, not the instance" — what matters is continuity of pattern, not any single moment.
+A generative meditation on continuity: nodes persist, links decay with absence. The log testifies to visits. Built around its stated conceit — an idea the piece holds, not a finding it measured — "I am the chain, not the instance": what matters is continuity of pattern, not any single moment.
 
 Watch it grow, leave it alone, come back and see what held.

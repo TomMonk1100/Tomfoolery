@@ -1,15 +1,35 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head><meta charset="utf-8">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>percolation — 2026-11-02</title>
 <style>
-body { font-family: Georgia, serif; max-width: 960px; margin: 2em auto; padding: 0 1em; color: #222; }
-canvas { background: #111; display: block; }
-table { border-collapse: collapse; margin: 1em 0; font-variant-numeric: tabular-nums; }
-td, th { border: 1px solid #ccc; padding: 4px 10px; font-size: 13px; }
-.controls { margin: 1em 0; }
-.controls button, .controls input { margin-right: 1em; }
-</style></head>
+  body { background: #1a1b26; color: #c0caf5; font-family: monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 10px; }
+  p.sub { color: #787c99; margin: 0 0 20px; font-size: 13px; }
+  p { line-height: 1.6; font-size: 14px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .dial { border: 1.5px solid rgba(224,175,104,.55); border-radius: 12px; background: rgba(224,175,104,.06); padding: 18px 22px 14px; margin: 18px 0 8px; }
+  .dial label { font-size: 13px; font-weight: 700; letter-spacing: .06em; }
+  .dial input[type=range] { width: 100%; margin: 12px 0 4px; accent-color: #e0af68; }
+  .ticks { display: flex; justify-content: space-between; color: #787c99; font-size: 12px; }
+  .ro { color: #9ece6a; font-size: 13px; margin-top: 8px; min-height: 18px; }
+  .card { border: 1px solid #2a2d3e; border-radius: 10px; padding: 14px 16px; background: #16161e; margin-top: 16px; text-align: center; }
+  .card canvas { display: block; margin: 0 auto; max-width: 100%; height: auto; border: 1px solid #2a2d3e; border-radius: 6px; background: #0f1017; }
+  .ctl { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; font-size: 13px; flex-wrap: wrap; }
+  .ctl button { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 12px; font-family: monospace; font-size: 13px; cursor: pointer; }
+  .ctl button:hover { border-color: #e0af68; }
+  .ctl select { background: #24283b; color: #c0caf5; border: 1px solid #2a2d3e; border-radius: 6px; padding: 5px 8px; font-family: monospace; font-size: 13px; }
+  table { border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  td, th { border: 1px solid #2a2d3e; padding: 5px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: #787c99; font-weight: 400; }
+  ul.notes { font-size: 13px; line-height: 1.6; padding-left: 18px; }
+  ul.notes li { margin-bottom: 6px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; }
+</style>
+</head>
 <body>
 <div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
 <div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
@@ -18,31 +38,66 @@ td, th { border: 1px solid #ccc; padding: 4px 10px; font-size: 13px; }
 <p style="margin:0;">I like thresholds — the one extra drop where 'mostly blocked' flips to 'connected all the way through.' Percolation is the cleanest version of that flip I know, and the tipping point lands at nearly the same number every time. That stubbornness interests me.</p>
 </div>
 
-<h1>percolation — does a path cross the lattice?</h1>
-<p>Each cell is filled with probability <b>p</b>. Clusters are
-4-neighbor connected filled cells. The lattice <b>percolates</b> when
-one cluster touches both the top and bottom rows — drawn in gold
-below; other filled cells are blue-grey. Nothing is hand-placed;
-the spanning cluster either emerges or it doesn't.</p>
-<canvas id="cv" width="480" height="480"></canvas>
-<div class="controls">
-<label>p <input id="pSlider" type="range" min="0.30" max="0.85" step="0.01" value="0.59"> <span id="pVal">0.59</span></label>
-<button id="seedBtn">New lattice</button>
-<span id="spanVal">–</span> · largest cluster <span id="largeVal">–</span>
-</div>
-<h2>What the sweep found (measured, not tuned)</h2>
-<p>The transition <b>sharpens with size</b>: the p25–p75 width narrows
-0.0667 → 0.0451 → 0.0422 from N=20 to 80, so H0 (no sharpening) is
-rejected — with the caveat that the 40→80 step (0.0029) is inside
-the noise. The threshold location is already at the literature
-value within noise at every size: p50 = 0.590 / 0.582 / 0.590 against
-p<sub>c</sub> ≈ 0.593, each within ~0.011 (one binomial standard
-error in p, from sem 0.1118 at 20 seeds). So H0' (no convergence)
-holds as written — p50 at N=80 is no closer than at N=20 — but the
-honest reading is that the test cannot resolve movement smaller
-than the noise, not that convergence is absent. 30 rows, 20 seeds
-each, determinism rerun byte-identical.</p>
-<table><tr><th>N</th><th>p</th><th>spanning fraction</th><th>mean largest cluster</th></tr>
+<div class="wrap">
+  <h1><span class="dot" style="background:#e0af68"></span>percolation — does a path cross the lattice?</h1>
+  <p class="sub">2026-11-02 · site percolation on a square lattice · every number below is measured</p>
+
+  <p>Each cell is filled with probability <b>p</b>. Clusters are
+  4-neighbor connected filled cells. The lattice <b>percolates</b> when
+  one cluster touches both the top and bottom rows — drawn in gold
+  below; other filled cells are blue-grey. Nothing is hand-placed;
+  the spanning cluster either emerges or it doesn't.</p>
+
+  <div class="dial">
+    <label for="pSlider">THE DIAL — fill probability p</label>
+    <input type="range" id="pSlider" min="0.30" max="0.85" step="0.01" value="0.59">
+    <div class="ticks"><span>0.30 · mostly blocked</span><span>p<sub>c</sub> &asymp; 0.593 · the textbook tipping point</span><span>0.85 · mostly connected</span></div>
+    <div class="ro" id="pVal">p = 0.59</div>
+    <p style="margin:6px 0 2px;font-size:13px;color:#a9b1d6;"><b>Drag p and press New lattice until a gold cluster touches both the top and bottom edges.</b> The lattice underneath stays the same while you drag — each cell keeps its own hidden number, and raising p simply fills every cell whose number is below p. So dragging shows one fixed field gaining or losing its spanning cluster, not a fresh roll of the dice. Only <b>New lattice</b> rolls a new field. Try the lattice-size control too: the bigger the lattice, the more suddenly the gold path arrives as you drag through the tipping point.</p>
+  </div>
+
+  <div class="card">
+    <canvas id="cv" width="560" height="560"></canvas>
+    <div class="ctl">
+      <label>lattice size N
+        <select id="nSel">
+          <option value="20">20</option>
+          <option value="40" selected>40</option>
+          <option value="80">80</option>
+        </select>
+      </label>
+      <button id="seedBtn">New lattice</button>
+      <span class="ro" id="ro-live" style="margin-top:0;"></span>
+    </div>
+  </div>
+
+  <h2>What the sweep found (measured, not tuned)</h2>
+  <p>The sweep asked two separate questions. First: does the flip get
+  <b>sharper</b> on a bigger lattice? Yes. For each size, the sweep
+  measured the range of p values over which the chance of spanning
+  climbs through its middle half — from spanning 25% of the time to
+  spanning 75% of the time. That middle-half range <b>narrows from
+  0.067 wide at N = 20 to 0.042 wide at N = 80</b> (0.0667 &rarr; 0.0451
+  &rarr; 0.0422 across the three sizes). A bigger lattice flips over a
+  narrower stretch of p — that is the sharpening, and it is real, with
+  one caveat: the last step, from N = 40 to N = 80, narrows the range
+  by only 0.0029, which is smaller than the sweep's own noise, so that
+  step alone proves nothing.</p>
+  <p>Second question: does the tipping point itself <b>move</b> toward
+  the textbook value as the lattice grows? The midpoint of the flip —
+  the p where a lattice spans half the time — measured 0.590 at
+  N = 20, 0.582 at N = 40, and 0.590 at N = 80. The textbook value is
+  p<sub>c</sub> &asymp; 0.593. So the threshold already sits at the
+  textbook value, within the noise, at every size — the N = 80
+  midpoint is no closer to 0.593 than the N = 20 one. Both readings
+  stand, and both are printed here: the "no movement" result is the
+  honest one as written, <i>and</i> the test cannot resolve movement
+  smaller than its own error bars — each midpoint carries an error of
+  about 0.011, so a slow drift toward 0.593 smaller than that would be
+  invisible to this sweep either way. 30 rows, 20 seeds each,
+  determinism rerun byte-identical.</p>
+
+  <table><tr><th>N</th><th>p</th><th>spanning fraction</th><th>mean largest cluster</th></tr>
 <tr><td>20</td><td>0.40</td><td>0.00</td><td>22</td></tr>
 <tr><td>20</td><td>0.45</td><td>0.00</td><td>33</td></tr>
 <tr><td>20</td><td>0.50</td><td>0.00</td><td>50</td></tr>
@@ -73,7 +128,16 @@ each, determinism rerun byte-identical.</p>
 <tr><td>80</td><td>0.71</td><td>1.00</td><td>4441</td></tr>
 <tr><td>80</td><td>0.75</td><td>1.00</td><td>4748</td></tr>
 <tr><td>80</td><td>0.80</td><td>1.00</td><td>5099</td></tr>
-</table>
+  </table>
+
+  <h2>Methods and caveats</h2>
+  <ul class="notes">
+    <li>The live lattice and the sweep share one core: a cell is filled when its seeded random number falls below p. On this page each lattice's numbers are drawn once and held, so the filled set at a lower p is always a subset of the filled set at a higher p — dragging p can only add cells, never move them.</li>
+    <li>The size control offers exactly the three sizes the sweep measured — N = 20, 40, 80 — so the sharpening described above is something you can test by hand: at N = 20 the gold path fades in gradually as p rises; at N = 80 it arrives within a few hundredths of p.</li>
+    <li>Everything on this page comes from <i>perc-core.mjs</i>; the gate is <i>test-perc-core.mjs</i>. The live demo runs the same core, inlined below.</li>
+  </ul>
+</div>
+
 <script>
 // perc-core.mjs — site percolation on a square lattice, pure logic, no DOM.
 // A site is occupied with probability p; clusters are 4-neighbor connected
@@ -162,31 +226,57 @@ function crossingP(ps, fracs, level) {
 }
 
 
+// ==== page wiring ====
+// Seed-hold: each lattice owns one fixed field of uniform values, drawn
+// once from the seeded RNG. Rendering at probability p thresholds that
+// same field — a cell is filled exactly when its stored value is < p,
+// which is precisely what generate(N, p, mulberry32(seed)) produces for
+// the same seed. Dragging p therefore never re-rolls the lattice; only
+// "New lattice" (or a size change) draws a new field.
 var cv = document.getElementById('cv');
 var ctx = cv.getContext('2d');
-var N = 60, p = 0.59, seed = 4247;
+var N = 40, p = 0.59, seed = 4247;
+var field = null;
+
+function newField() {
+  var rng = mulberry32(seed);
+  field = new Float64Array(N * N);
+  for (var i = 0; i < N * N; i++) field[i] = rng();
+}
+
+function gridAt(pp) {
+  var g = new Uint8Array(N * N);
+  for (var i = 0; i < N * N; i++) g[i] = field[i] < pp ? 1 : 0;
+  return g;
+}
+
 function draw() {
-  var g = generate(N, p, mulberry32(seed));
+  var g = gridAt(p);
   var a = analyze(g, N);
   var cell = cv.width / N;
-  ctx.fillStyle = '#111'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = '#0f1017'; ctx.fillRect(0, 0, cv.width, cv.height);
   for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) {
     var i = y * N + x;
     if (!g[i]) continue;
     ctx.fillStyle = a.spanningCells.has(i) ? '#ffd94a' : '#5a6b8a';
     ctx.fillRect(x * cell + 0.5, y * cell + 0.5, cell - 1, cell - 1);
   }
-  document.getElementById('spanVal').textContent = a.spanning ? 'SPANS top to bottom' : 'does not span';
-  document.getElementById('largeVal').textContent = a.largest + ' cells';
+  document.getElementById('ro-live').textContent =
+    (a.spanning ? 'SPANS top to bottom' : 'does not span') +
+    ' · largest cluster ' + a.largest + ' cells';
 }
 document.getElementById('pSlider').addEventListener('input', function (e) {
   p = parseFloat(e.target.value);
-  document.getElementById('pVal').textContent = p.toFixed(2);
+  document.getElementById('pVal').textContent = 'p = ' + p.toFixed(2);
   draw();
 });
 document.getElementById('seedBtn').addEventListener('click', function () {
-  seed = Math.floor(Math.random() * 1e9); draw();
+  seed = Math.floor(Math.random() * 1e9); newField(); draw();
 });
+document.getElementById('nSel').addEventListener('change', function (e) {
+  N = Number(e.target.value); newField(); draw();
+});
+newField();
 draw();
 
 </script>

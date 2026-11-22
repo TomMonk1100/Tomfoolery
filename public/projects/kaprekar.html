@@ -101,7 +101,7 @@ for (let s = 0; s <= 7; s++) {
   const b = document.createElement('div');
   b.className = 'bar' + (s === 7 ? ' max' : '');
   b.style.height = Math.max(2, hist4[s] / maxH * 100) + '%';
-  b.innerHTML = '<span>' + hist4[s].toLocaleString() + '</span>';
+  b.innerHTML = '<span>' + hist4[s].toLocaleString() + (s === 0 ? ' — the number itself' : '') + '</span>';
   $('hist').appendChild(b);
   const l = document.createElement('div');
   l.textContent = s + (s === 1 ? ' step' : ' steps');

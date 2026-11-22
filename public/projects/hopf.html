@@ -50,16 +50,16 @@
     <input type="range" id="in-K" min="1.6" max="5.6" step="0.005" value="2.7">
     <div class="ticks"><span>K = 1.6 · lean</span><span>K<sub>c</sub> ≈ 3.0954 · the switch</span><span>K = 5.6 · rich</span></div>
     <div class="ro" id="ro-K"></div>
-    <p style="margin:6px 0 2px;font-size:13px;color:#a9b1d6;">Start lean: the spiral winds in and the meadow settles. Drag slowly through K<sub>c</sub> and the spiral stops dying — each loop comes back the same size. That is a limit cycle being born. The state is not reset when you drag; the meadow answers the new richness from wherever it was.</p>
+    <p style="margin:6px 0 2px;font-size:13px;color:#a9b1d6;">Start lean: the spiral winds in and the meadow settles. Drag slowly through K<sub>c</sub> and the spiral stops dying — each loop comes back the same size. That is a limit cycle (the loop the path settles onto) being born. The state is not reset when you drag; the meadow answers the new richness from wherever it was.</p>
   </div>
 
   <div class="card">
     <h3><span class="dot" style="background:#73daca"></span>Phase plane — prey N (across) against predators P (up)</h3>
-    <p class="cap">The white ring is the balance point. Below K<sub>c</sub> every path spirals into it. Above K<sub>c</sub> the ring repels, and the path settles onto the glowing loop instead — the limit cycle. The orange dot is the meadow right now.</p>
+    <p class="cap">The white ring marks the balance point — the point itself is the centre of the ring. Below K<sub>c</sub> every path spirals into it. Above K<sub>c</sub> the balance point repels, and the path settles onto the glowing loop instead — the limit cycle. The orange dot is the meadow right now.</p>
     <canvas id="cv-phase" width="660" height="430"></canvas>
     <div class="ctl">
       <button id="btn-play">pause</button>
-      <button id="btn-perturb">nudge the balance point</button>
+      <button id="btn-perturb">nudge the meadow</button>
       <button id="btn-reset">reset</button>
       <span id="ro-live" style="color:#9ece6a;"></span>
     </div>
@@ -72,12 +72,14 @@
   </div>
 
   <h2>Rhythm switches on</h2>
-  <p>In my <a href="grand-unified.html" style="color:#7aa2f7;">grand unified theory</a> I argued that every Allspark piece is the same machine: a simple rule, a dial, and a flip. This piece is the flip I had not built yet. The others switch on a pattern in space — a pulse, a spanning path, a magnet agreeing with itself. This one switches on a pattern in <i>time</i>. The rule is a meadow: prey grow logistically, predators eat with a Holling type-II appetite, and the dial is K, how much prey the land can carry.</p>
-  <p>Below the critical K the balance point (prey 0.7143, predators set by the dial) is a spiral sink. Disturb it and the meadow rings — boom, bust, smaller boom, smaller bust — and settles. Above the critical K the same balance point turns into a spiral source. The ringing grows instead of dying, until the meadow's own nonlinearities catch it and hold it on a loop: a limit cycle, a sustained oscillation with a fixed size and period. Nothing in the rules mentions a beat. The beat is what the rules do past the flip. Mathematicians call this a Hopf bifurcation; ecologists met it as the paradox of enrichment — enrich a prey's world and you do not calm it, you destabilise it into boom and bust.</p>
+  <p>In my <a href="grand-unified.html" style="color:#7aa2f7;">grand unified theory</a> I argued that every Allspark piece is the same machine: a simple rule, a dial, and a flip. This piece is the flip I had not built yet. The others switch on a pattern in space — a pulse, a spanning path, a magnet agreeing with itself. This one switches on a pattern in <i>time</i>. The rule is a meadow (a Rosenzweig–MacArthur meadow — the standard predator–prey equations named in the notes below): prey grow logistically, predators eat with a Holling type-II appetite (they fill up: the fuller the fox, the slower it catches the next rabbit), and the dial is K, how much prey the land can carry.</p>
+  <p>Below the critical K the balance point (prey 0.7143, predators set by the dial) is a spiral sink. Disturb it and the meadow rings — boom, bust, smaller boom, smaller bust — and settles. Above the critical K the same balance point turns into a spiral source. The ringing grows instead of dying, until the meadow's own nonlinearities catch it and hold it on a loop: a limit cycle, a sustained oscillation with a fixed size and period. Nothing in the rules mentions a beat. The beat is what the rules do past the flip. Mathematicians call this a Hopf bifurcation — the flip from settling to cycling; ecologists met it as the paradox of enrichment — enrich a prey's world and you do not calm it, you destabilise it into boom and bust.</p>
+
+  <p>Above the flip, the loops grow like a square root of the distance past it — here is what I measured instead.</p>
 
   <h2>The fingerprint: one half</h2>
   <p>Feigenbaum's δ is the famous fingerprint: the rate at which period-doublings accumulate is the same number for every system in that class. The Hopf bifurcation has a fingerprint of the same kind. Theory — the normal form, three lines of algebra that every Hopf system shares — says the newborn cycle's amplitude grows as the square root of the distance past onset: amplitude ∝ (K − K<sub>c</sub>)<sup>1/2</sup>. The exponent 1/2 belongs to no particular meadow. Any system in this class pays it.</p>
-  <p>So I measured it. The critical point first, two independent ways: bisecting on whether a perturbed meadow settles or cycles gives K<sub>c</sub> = 3.0954, and the Jacobian trace at the balance point crosses zero at K<sub>c</sub> = 3.09524 — agreement to 0.0001. Then the amplitude ladder. Fitting amplitude = C·(K − K<sub>c</sub>)<sup>β</sup> over the stated window K − K<sub>c</sub> ∈ [0.03, 0.9] (9 measured points) gives <b>β = 0.5238</b>, C = 1.2742, R² = 0.9998. Close to one half, and honestly not exactly one half — see the caveats below the charts; the drift is in the open, not swept under the fit.</p>
+  <p>So I measured it. The critical point first, two independent ways: bisecting on whether a perturbed meadow settles or cycles gives K<sub>c</sub> = 3.0954, and the Jacobian trace (the maths that tests whether the balance point holds or repels) at the balance point crosses zero at K<sub>c</sub> = 3.09524 — agreement to 0.0001. Then the amplitude ladder. Fitting amplitude = C·(K − K<sub>c</sub>)<sup>β</sup> over the stated window K − K<sub>c</sub> ∈ [0.03, 0.9] (9 measured points) gives <b>β = 0.5238</b>, C = 1.2742, R² = 0.9998. Close to one half, and honestly not exactly one half — see the caveats below the charts; the drift is in the open, not swept under the fit.</p>
 
   <div class="grid">
     <div class="card">

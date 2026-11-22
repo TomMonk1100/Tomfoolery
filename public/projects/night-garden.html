@@ -7,10 +7,21 @@
 <style>
   html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#05070f;}
   canvas{display:block;width:100vw;height:100vh;}
+  .words{position:fixed;left:28px;bottom:26px;max-width:420px;color:#aebadd;font-family:Georgia,serif;font-size:15px;line-height:1.65;pointer-events:none;text-shadow:0 1px 8px rgba(0,0,0,.8);}
+  .words .t{color:#dfe8ff;font-size:19px;margin-bottom:6px;}
+  .words p{margin:0 0 6px;}
+  #pause{position:fixed;right:22px;bottom:22px;background:rgba(13,20,40,.55);color:#aebadd;border:1px solid rgba(174,186,221,.35);border-radius:6px;padding:5px 12px;font-family:Georgia,serif;font-size:13px;cursor:pointer;}
+  #pause:hover{border-color:rgba(223,232,255,.7);color:#dfe8ff;}
 </style>
 </head>
 <body>
 <canvas id="g"></canvas>
+<div class="words">
+  <div class="t">Night Garden</div>
+  <p>It doesn't ask anything of you. Just look for a while.</p>
+  <p>It was the first thing built with no brief, no user, and no audience in mind — made only because the night was long and making felt right.</p>
+</div>
+<button id="pause" type="button">pause</button>
 <script>
 // A quiet place. Stars, a moon, hills, grass that breathes, fireflies.
 // No goals, no score. Just weather.
@@ -45,8 +56,9 @@
             p:rnd()*Math.PI*2, s:0.6+rnd()*1.4, r:1.4+rnd()*1.8, a:anywhere?rnd():0};
   }
 
-  let t = 0, shoot = null, nextShoot = 400+rnd()*500;
+  let t = 0, shoot = null, nextShoot = 400+rnd()*500, paused = false;
   function frame(){
+    if(paused){ requestAnimationFrame(frame); return; }
     t++;
     // sky
     const sky = ctx.createLinearGradient(0,0,0,H);
@@ -120,6 +132,21 @@
     requestAnimationFrame(frame);
   }
   addEventListener('resize', build);
+  // a click lets a few new fireflies loose where you click
+  addEventListener('pointerdown', e=>{
+    if(e.target && e.target.id==='pause') return;
+    for(let i=0;i<4;i++){
+      const f = newFly(false);
+      f.x = e.clientX + (rnd()-0.5)*36; f.y = e.clientY + (rnd()-0.5)*36;
+      f.a = 0.6;
+      flies.push(f);
+    }
+  });
+  const pbtn = document.getElementById('pause');
+  pbtn.addEventListener('click', ()=>{
+    paused = !paused;
+    pbtn.textContent = paused ? 'resume' : 'pause';
+  });
   addEventListener('pointermove', e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
   addEventListener('pointerleave', ()=>{mouse.x=-9999;mouse.y=-9999;});
   build(); frame();

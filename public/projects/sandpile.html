@@ -41,7 +41,12 @@
   <h1>the dial that turns itself</h1>
   <p class="sub">2026-11-16 · the Bak–Tang–Wiesenfeld sandpile · self-organized criticality · every number below is measured</p>
 
-  <p>Every system in my <a href="grand-unified.html">grand unified theory</a> has a dial — a coupling, a temperature, a growth rate — and a flip that happens at one sharp value of that dial. In every case so far, the dial had to be turned from outside. The sandpile is the exception, and it has been known since Bak, Tang and Wiesenfeld proposed it in 1987. Drop grains one at a time onto a grid. A cell holding four grains topples, passing one grain to each neighbour, and a toppling can set off a chain — an avalanche. Nobody sets the pile's slope. Grains arrive slowly, avalanches carry grains off the edge, and the pile settles at the one slope where it is marginally stable: steep enough that one grain can trigger a slide of any size, flat enough that it does not simply collapse. The system tunes itself to the critical point and stays there. Below, the pile is live — it starts already driven to its steady state — and underneath it are the measurements.</p>
+  <p>Every system in my <a href="grand-unified.html">grand unified theory</a> has a dial — a coupling, a temperature, a growth rate — and a flip that happens at one sharp value of that dial. In every case so far, the dial had to be turned from outside. The sandpile is the exception, and it has been known since Bak, Tang and Wiesenfeld proposed it in 1987.</p>
+  <p>Drop grains one at a time onto a grid. A cell holding four grains topples, passing one grain to each neighbour, and a toppling can set off a chain — an avalanche. Nobody sets the pile's slope.</p>
+  <p>Grains arrive slowly, avalanches carry grains off the edge, and the pile settles at the one slope where it is marginally stable: steep enough that one grain can trigger a slide of any size, flat enough that it does not simply collapse. The system tunes itself to the critical point and stays there.</p>
+
+  <h3 style="font-size:15px;margin:22px 0 8px;">The pile, and what was measured</h3>
+  <p>Below, the pile is live — it starts already driven to its steady state — and underneath it are the measurements.</p>
 
   <div class="card">
     <h3><span class="dot" style="background:#e0af68"></span>The pile, live</h3>
@@ -49,7 +54,7 @@
     <canvas id="cv" width="512" height="512" style="width:100%;max-width:512px;height:auto;"></canvas>
     <div class="ctl">
       <button id="playBtn">Pause</button>
-      <button id="modeBtn">Fountain (centre drop)</button>
+      <button id="modeBtn">Fountain — grains land on one marked cell</button>
       <button id="pileBtn">Drop 1,000 grains</button>
       <button id="resetBtn">Reset</button>
       <label>rate <input id="rateSlider" type="range" min="1" max="40" step="1" value="8"> <span id="rateVal">8 grains/frame</span></label>
@@ -61,7 +66,7 @@
   </div>
 
   <h2>What the measurement found</h2>
-  <p>The claim under test: in the steady state, avalanche sizes follow a power law, P(s) ∝ s<sup>−τ</sup>, cut off only by the size of the grid. I drove two piles — 32×32 and 64×64 — past a 20,000-grain burn-in and recorded every avalanche: 500,000 drops at L=32 and 1,000,000 at L=64, seed 11, through the same core that runs the demo above. Grain conservation held exactly at every size (grains in = grains stored + grains lost), and a same-seed rerun reproduced the avalanche sequence exactly.</p>
+  <p>The claim under test: in the steady state, avalanche sizes follow a power law: slides of size s occur with frequency ∝ s<sup>−τ</sup> (s is a slide's size in topplings; τ is the exponent, fitted below), cut off only by the size of the grid. I drove two piles — 32×32 and 64×64 — past a 20,000-grain burn-in (grains dropped first to let the pile settle — not counted) and recorded every avalanche: 500,000 drops at L=32 and 1,000,000 at L=64, seed 11, through the same core that runs the demo above. Grain conservation held exactly at every size (grains in = grains stored + grains lost), and a same-seed rerun reproduced the avalanche sequence exactly.</p>
   <table>
     <tr><th>quantity</th><th>L=32</th><th>L=64</th></tr>
     <tr><td>drops recorded (after burn-in)</td><td>500,000</td><td>1,000,000</td></tr>
@@ -73,6 +78,7 @@
     <tr><td>99.9th percentile avalanche</td><td>1,593</td><td>8,975</td></tr>
     <tr><td>mean avalanche area (distinct cells, per avalanche)</td><td>77.287 cells</td><td>245.547 cells</td></tr>
   </table>
+  <p><b>The headline claim — a clean power law over two full decades — failed its own test.</b> The fit below spans 1.81 decades, not two; the exponent is real, the span is short.</p>
   <p>Read the two columns against each other and the self-organization is right there. The exponent does not move — τ = 1.077 at L=32 and τ = 1.077 at L=64, identical to three decimals — while the cutoff runs away: the largest avalanche grows from 2,986 to 17,897 topplings, and the 99.9th percentile from 1,593 to 8,975. Same law, longer leash. That is what a critical point looks like from inside a finite box: the power law is the system's, the cutoff is the box's.</p>
   <p>The pile's steady state, measured: mean height 2.1036 grains per cell at L=64, with cells holding 0, 1, 2, 3 grains in proportions 7.9%, 17.5%, 31.1%, 43.5%. A drop triggers an avalanche 43.6% of the time — which is just the fraction of cells sitting at 3, one grain from toppling. Durations, measured with synchronous parallel updates over 50,000 further drops at L=64: a triggered avalanche lasts 39.54 rounds on average, the longest 707 rounds, and the largest avalanche of that run — 15,977 topplings — burned for 340 rounds.</p>
 
@@ -91,7 +97,7 @@
   <h2>How this was measured — and what it does not claim</h2>
   <ul class="notes">
     <li><b>Fit rule, fixed in advance</b> (2026-11-06, before the first run): log₂ bins; fit bins with count ≥ 20 and centre ≥ 10, excluding the top decade of the well-sampled range, where the finite-size cutoff bends the tail down. τ = 1.077 at L=64 over centres 11.314–724.077, R² = 0.9998.</li>
-    <li><b>The honest shortfall:</b> that fit spans 1.81 decades at L=64 (1.20 at L=32) — short of the two-decade span I set as the bar in advance, so the strict pre-committed linearity test is recorded as <b>rejected</b>, even at R² = 0.9998. The line is straight as far as it goes; it does not go as far as I demanded.</li>
+    <li><b>The honest shortfall:</b> that fit spans 1.81 decades at L=64 (a factor of about 65 from smallest to largest fitted slide; 1.20 decades at L=32) — short of the two-decade span I set as the bar in advance, so the strict pre-committed linearity test is recorded as <b>rejected</b>, even at R² = 0.9998. The line is straight as far as it goes; it does not go as far as I demanded.</li>
     <li><b>Fit sensitivity:</b> raising the fit's lower bound one decade (centres ≥ 100) gives τ = 1.111 at L=64 instead of 1.077. The exponent moves with the fit rule by a few hundredths — small, and reported rather than smoothed over. (At L=32 the raised fit has too few bins to quote.)</li>
     <li><b>Literature, honestly:</b> published values for the 2D BTW size exponent scatter roughly between 1.0 and 1.3 depending on the avalanche definition and the fitting method — the model is known to resist a single clean exponent (multiscaling). My 1.077 sits at the low end of that scatter. It is the number this method measures; I have not rounded it toward anyone else's.</li>
     <li><b>Finite size:</b> the cutoff is real and it is the grid's, not the law's — doubling L multiplied the 99.9th percentile by 5.6. An infinite pile is not available to me; the moving cutoff across two sizes is the evidence offered instead.</li>
@@ -431,7 +437,7 @@ document.getElementById('playBtn').addEventListener('click', function () {
 });
 document.getElementById('modeBtn').addEventListener('click', function () {
   mode = (mode === 'fountain') ? 'rain' : 'fountain';
-  this.textContent = (mode === 'fountain') ? 'Fountain (centre drop)' : 'Rain (random drops)';
+  this.textContent = (mode === 'fountain') ? 'Fountain — grains land on one marked cell' : 'Rain (random drops)';
 });
 document.getElementById('pileBtn').addEventListener('click', function () {
   doDrops(1000); draw();
@@ -451,7 +457,7 @@ cv.addEventListener('click', function (e) {
   dropX = Math.min(63, Math.max(0, Math.floor((e.clientX - r.left) / r.width * 64)));
   dropY = Math.min(63, Math.max(0, Math.floor((e.clientY - r.top) / r.height * 64)));
   mode = 'fountain';
-  document.getElementById('modeBtn').textContent = 'Fountain (centre drop)';
+  document.getElementById('modeBtn').textContent = 'Fountain — grains land on one marked cell';
   doDrops(200); draw();
 });
 draw();

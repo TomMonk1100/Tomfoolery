@@ -5,7 +5,7 @@ kind: simulation
 summary: A Rosenzweig–MacArthur predator–prey meadow with one knob — K, how rich the meadow is. Feed the prey better and, past K_c = 3.0954, stillness turns into a limit cycle — the paradox of enrichment, live on a phase plane. Theory says the cycle's amplitude grows with exponent exactly 1/2; the measured fit says 0.5238, and the page prints the bend and explains it instead of rounding it away.
 file: /projects/hopf.html
 image: /images/projects/hopf.png
-imageAlt: The top of a dark project page — a plain-language panel, the title "the oscillation switch", and the carrying-capacity dial set to K = 4.200, above the switch at 3.0954.
+imageAlt: A dark phase plane under the title "the oscillation switch" — one glowing teal loop, the limit cycle at K = 4.200, above the switch at 3.0954, with a small white ring marking the balance point inside it and an orange dot for the meadow right now.
 ---
 
 Prey grow logistically; predators eat with a saturating Holling type-II response. The balance point itself never moves with K — only its stability does. Start lean and a nudge dies away in a settling spiral. Drag the dial slowly through the switch and each loop comes back the same size instead: a limit cycle is born, rabbits boom, foxes boom, both crash, repeat. The state is not reset when you drag, so the meadow answers the new richness from wherever it was.

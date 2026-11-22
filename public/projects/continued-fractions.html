@@ -42,6 +42,7 @@
 <p class="sub">the staircase inside a number, and the best fractions it gives you · 2026-11-21</p>
 
 <div class="card">
+  <p style="margin-top:2px;">Pick a number, or type your own D and press custom √D.</p>
   <div class="ctl">
     <button data-num="sqrt2">√2</button>
     <button data-num="sqrt3">√3</button>
@@ -56,12 +57,12 @@
   <div class="ro" id="ro"></div>
   <div id="tableWrap"></div>
   <h2 style="margin-top:22px;">how fast the fractions close in</h2>
-  <p>log₁₀ of the error |α − p/q| at each convergent. Lower is closer. <span class="blue">Blue</span> is the number you picked; <span class="gold">gold</span> is φ, drawn every time as the reference — its line sinks the slowest, because every one of its partial quotients is 1 (Hurwitz's theorem: no irrational can be approximated much worse than φ is).</p>
+  <p>How close each fraction gets — lower on this plot means closer. <span class="blue">Blue</span> is the number you picked; <span class="gold">gold</span> is φ, drawn every time as the reference — its line sinks the slowest, because every one of its partial quotients is 1 (Hurwitz's theorem: no irrational can be approximated much worse than φ is).</p>
   <canvas id="plot" width="1020" height="360"></canvas>
 </div>
 
 <div class="card">
-  <h2 style="margin-top:4px;">the khinchin check</h2>
+  <h2 style="margin-top:4px;">the khinchin check — the typical size of the staircase steps, averaged the geometric way</h2>
   <p id="khinchin"></p>
 </div>
 
@@ -71,7 +72,7 @@
   <li>e's terms are also exact, but for a different reason: e = [2; 1, 2, 1, 1, 4, 1, 1, 6, 1, 1, 8, …] is a proved pattern, and the page generates terms from that pattern rather than measuring a decimal.</li>
   <li>π's terms are <b>not</b> derived on this page: the first 30 partial quotients (3; 7, 15, 1, 292, 1, 1, 1, 2, …) are taken from π's known published expansion. The convergents computed from them are exact BigInt fractions; the decimal and error columns are ordinary double-precision floating point, so errors below about 1e-16 are the float's floor, not the fraction's.</li>
   <li>The Khinchin panel uses only the 29 known π quotients after the integer part. Khinchin's theorem is about the limit over infinitely many terms of a typical number; a 29-term sample of one specific number is a check of the flavour, not of the theorem — and the panel says so with its own number.</li>
-  <li>φ's scaled error q²|φ − p/q| settles at 1/√5 ≈ 0.4472, the worst (largest) limiting value any irrational can have in Hurwitz's sense. √2 settles at 1/(2√2) ≈ 0.3536; √3 alternates between two bands, ≈ 0.5774 and ≈ 0.2887.</li>
+  <li>φ's scaled error q²|φ − p/q| settles at 1/√5 ≈ 0.4472, the worst (largest) limiting value any irrational can have in Hurwitz's sense (Hurwitz's theorem, in plain words: every irrational number has fractions that get at least this close to it — φ is the case where "this close" is as bad as it ever gets). √2 settles at 1/(2√2) ≈ 0.3536; √3 alternates between two bands, ≈ 0.5774 and ≈ 0.2887.</li>
 </ul>
 </div>
 <script>

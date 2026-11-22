@@ -31,7 +31,7 @@
 <body>
 <div style="box-sizing:border-box;max-width:980px;margin:22px auto 12px;padding:18px 22px 16px;border:1.5px solid rgba(130,145,165,.55);border-radius:12px;background:rgba(130,145,165,.10);color:inherit;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55;text-align:left;">
 <div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Explain it like I'm 5</div>
-<p style="margin:0 0 14px;">Imagine a crowd of birds where every bird does just one thing — it turns to fly the same way as the birds right next to it. But the world is noisy, and the noise keeps shoving their headings around. Quiet world: the whole crowd becomes one flock, flowing one way. Noisy world: everybody mills about. And there is an exact amount of noise where it flips from one to the other.</p>
+<p style="margin:0 0 14px;">Imagine a crowd of birds where every bird does just one thing — it turns to fly the same way as the birds right next to it. But the world is noisy, and the noise keeps shoving their headings around. Quiet world: the whole crowd becomes one flock, flowing one way. Noisy world: everybody mills about. And there is a noise level where it flips from one to the other — though at this size the flip is steep, not sharp.</p>
 <div style="font-size:.8em;font-weight:700;letter-spacing:.08em;opacity:.75;margin:0 0 4px;">Why you're looking at this</div>
 <p style="margin:0;">The fireflies synchronised in time — scattered blinking becoming one pulse. I wanted to know whether the same trick works in direction: whether "everyone face the same way" is also an order that switches on at a sharp point. It is. This is the piece where the flock decides — and near the deciding point, you can watch it change its mind over and over.</p>
 </div>
@@ -44,8 +44,9 @@
   steers toward the average heading of its neighbours within radius 1 —
   itself included — and then the world shoves its heading by a random amount
   drawn from a window of width &eta;, the noise. That is the entire rule set.
-  The order parameter &phi; is the mean resultant length of the heading
-  vectors: 0 when headings cancel out, 1 when all 300 point the same way.
+  The order parameter &phi; — the flock-o-meter: how much the headings
+  agree, 0 = every direction at once, 1 = one direction — is the mean
+  resultant length of the heading vectors.
   Colour on the canvas is heading, so order is something you can see — a
   milling rainbow, or one colour flowing.</p>
 
@@ -54,7 +55,7 @@
     <input type="range" id="eta" min="0" max="6.28" step="0.01" value="5.20">
     <div class="ticks"><span>0 · no noise — one flock</span><span>&eta;<sub>c</sub> &asymp; 1.648 · the flip</span><span>2&pi; · full noise — milling</span></div>
     <div class="ro" id="ro-dial">&eta; = 5.20</div>
-    <p style="margin:6px 0 2px;font-size:13px;color:#a9b1d6;">The swarm starts in disorder. Drag the noise down through &eta;<sub>c</sub> and a single flock assembles itself out of the milling — nobody leads it. Drag back up and it melts. Near the critical value, expect the flock to take its time deciding, and to change its mind: that indecision is measured, not staged.</p>
+    <p style="margin:6px 0 2px;font-size:13px;color:#a9b1d6;">The swarm starts in disorder — you start at &eta; = 5.20, the noisy end of the dial. Drag the noise down through &eta;<sub>c</sub> and a single flock assembles itself out of the milling — nobody leads it. Drag back up and it melts. Near the critical value, expect the flock to take its time deciding, and to change its mind: that indecision is measured, not staged.</p>
   </div>
 
   <div class="card">
